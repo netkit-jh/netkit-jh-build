@@ -1,14 +1,7 @@
-BUILD_DIR=build
 KERNEL_DIR=kernel
 FS_DIR=fs
 
-all: init build-kernel build-fs
-
-clean:
-	rm -rf ${BUILD_DIR}
-
-init: clean
-	mkdir ${BUILD_DIR}
+all: build-kernel build-fs
 
 build-kernel:
 	$(MAKE)	-C ${KERNEL_DIR}
