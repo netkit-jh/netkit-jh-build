@@ -1,0 +1,200 @@
+diff -urpN b/arch/um/drivers/Makefile a/arch/um/drivers/Makefile
+--- b/arch/um/drivers/Makefile	2013-12-16 19:28:47.782089822 +0100
++++ a/arch/um/drivers/Makefile	2013-12-16 19:30:49.150095750 +0100
+@@ -17,9 +17,9 @@ ubd-objs := ubd_kern.o ubd_user.o
+ port-objs := port_kern.o port_user.o
+ harddog-objs := harddog_kern.o harddog_user.o
+ 
+-LDFLAGS_pcap.o := -r $(shell $(CC) $(KBUILD_CFLAGS) -print-file-name=libpcap.a)
++LDFLAGS_pcap.o := -r -L$(shell dirname `$(CC) $(KBUILD_CFLAGS) -print-file-name=libpcap.a`) -lpcap
+ 
+-LDFLAGS_vde.o := -r $(shell $(CC) $(CFLAGS) -print-file-name=libvdeplug.a)
++LDFLAGS_vde.o := -r -L$(shell dirname `$(CC) $(CFLAGS) -print-file-name=libvdeplug.a`) -lvdeplug
+ 
+ targets := pcap_kern.o pcap_user.o vde_kern.o vde_user.o
+ 
+diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
+--- b/arch/um/drivers/net_kern.c	2013-12-16 19:28:47.798089823 +0100
++++ a/arch/um/drivers/net_kern.c	2013-12-17 10:29:25.779434932 +0100
+@@ -25,6 +25,13 @@
+ #include "net_kern.h"
+ #include "net_user.h"
+ 
++#include <crypto/sha.h>
++#include <linux/string.h>
++#include <linux/crypto.h>
++#include <linux/err.h>
++#include <linux/scatterlist.h>
++#include "os.h"
++
+ #define DRIVER_NAME "uml-netdev"
+ 
+ static DEFINE_SPINLOCK(opened_lock);
+@@ -293,10 +300,46 @@ static void uml_net_user_timer_expire(un
+ #endif
+ }
+ 
++#ifndef CONFIG_UML_NET_RANDOM_MAC
++
++/* Compute a SHA1 hash of the UML instance's id and
++ *  * an interface name. */
++static int compute_hash(const char *umid, const char *ifname, char *hash) {
++	char vmif[1024];
++	struct scatterlist sg;
++	struct crypto_hash *tfm;
++	struct hash_desc desc;
++
++	strcpy (vmif, umid);
++	strcat (vmif, ifname);
++
++	tfm = crypto_alloc_hash("sha1", 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(tfm))
++		return 1;
++
++	desc.tfm = tfm;
++	desc.flags = 0;
++
++	sg_init_table(&sg, 1);
++	sg_set_buf(&sg, vmif, strlen(vmif));
++
++	if (crypto_hash_digest(&desc, &sg, strlen(vmif), hash)) {
++		crypto_free_hash(tfm);
++		return 1;
++	}
++
++	crypto_free_hash(tfm);
++
++	return 0;
++}
++
++#endif
++
+ static void setup_etheraddr(char *str, unsigned char *addr, char *name)
+ {
+ 	char *end;
+ 	int i;
++	u8 hash[SHA1_DIGEST_SIZE];
+ 
+ 	if (str == NULL)
+ 		goto random;
+@@ -337,9 +380,26 @@ static void setup_etheraddr(char *str, u
+ 	return;
+ 
+ random:
++#ifdef CONFIG_UML_NET_RANDOM_MAC
++ 	printk(KERN_INFO
++ 	       "Choosing a random ethernet address for device %s\n", name);
++ 	eth_hw_addr_random(addr);
++#else
+ 	printk(KERN_INFO
+-	       "Choosing a random ethernet address for device %s\n", name);
+-	random_ether_addr(addr);
++	       "Computing a digest to use as ethernet address for device %s\n", name);
++	if (compute_hash(get_umid(), name, hash)) {
++		printk(KERN_WARNING
++		       "Could not compute digest to use as ethernet address for device %s. "
++		       "Using random address instead.\n", name);
++		random_ether_addr(addr);
++	} else {
++		for (i=0; i < 6; i++)
++			addr[i] = (hash[i] + hash[i+6]) % 0x100;
++	}
++	addr [0] &= 0xfe; /* clear multicast bit */
++	addr [0] |= 0x02; /* set local assignment bit (IEEE802) */
++#endif
++	return;
+ }
+ 
+ static DEFINE_SPINLOCK(devices_lock);
+diff -urpN b/arch/um/drivers/port_user.c a/arch/um/drivers/port_user.c
+--- b/arch/um/drivers/port_user.c	2013-12-16 19:28:47.774089822 +0100
++++ a/arch/um/drivers/port_user.c	2013-12-16 19:30:49.174093915 +0100
+@@ -5,6 +5,7 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
+ #include <errno.h>
+ #include <termios.h>
+ #include <unistd.h>
+@@ -167,10 +168,31 @@ static void port_pre_exec(void *arg)
+ int port_connection(int fd, int *socket, int *pid_out)
+ {
+ 	int new, err;
+-	char *argv[] = { "/usr/sbin/in.telnetd", "-L",
+-			 "/usr/lib/uml/port-helper", NULL };
+ 	struct port_pre_exec_data data;
+ 
++	/************************************************/
++	/* Changed for better compatibility with Netkit */
++	/************************************************/
++
++/*	char *argv[] = { "/usr/sbin/in.telnetd", "-L",
++			 "/usr/lib/uml/port-helper", NULL }; */
++
++	char *netkit_home, port_helper_bin[4096];
++	
++	netkit_home = getenv("NETKIT_HOME");
++	if (!netkit_home)
++		netkit_home = getenv("VLAB_HOME");
++
++	if (!netkit_home)
++		strcpy (port_helper_bin, "/usr/lib/uml/port-helper");
++	else
++		sprintf (port_helper_bin, "%s/bin/port-helper", netkit_home);
++
++	char *argv[] = { "/usr/sbin/in.telnetd", "-L",
++			 port_helper_bin, NULL };
++
++	/*****************************************/
++
+ 	new = accept(fd, NULL, 0);
+ 	if (new < 0)
+ 		return -errno;
+diff -urpN b/arch/um/drivers/ubd_kern.c a/arch/um/drivers/ubd_kern.c
+--- b/arch/um/drivers/ubd_kern.c	2013-12-16 19:28:47.770089822 +0100
++++ a/arch/um/drivers/ubd_kern.c	2013-12-16 19:30:49.182093627 +0100
+@@ -745,7 +745,7 @@ static void ubd_close_dev(struct ubd *ub
+ static int ubd_open_dev(struct ubd *ubd_dev)
+ {
+ 	struct openflags flags;
+-	char **back_ptr;
++	char **back_ptr, *tmp;
+ 	int err, create_cow, *create_ptr;
+ 	int fd;
+ 
+@@ -754,6 +754,11 @@ static int ubd_open_dev(struct ubd *ubd_
+ 	create_ptr = (ubd_dev->cow.file != NULL) ? &create_cow : NULL;
+ 	back_ptr = ubd_dev->no_cow ? NULL : &ubd_dev->cow.file;
+ 
++
++	tmp = strchr(ubd_dev->file, ',');
++	if (tmp)
++		ubd_dev->file[tmp - ubd_dev->file] = '\0';
++
+ 	fd = open_ubd_file(ubd_dev->file, &ubd_dev->openflags, ubd_dev->shared,
+ 				back_ptr, &ubd_dev->cow.bitmap_offset,
+ 				&ubd_dev->cow.bitmap_len, &ubd_dev->cow.data_offset,
+diff -urpN b/arch/um/Kconfig.net a/arch/um/Kconfig.net
+--- b/arch/um/Kconfig.net	2013-12-16 19:28:47.714089820 +0100
++++ a/arch/um/Kconfig.net	2013-12-16 19:30:49.142096611 +0100
+@@ -21,6 +21,19 @@ config UML_NET
+         enable at least one of the following transport options to actually
+         make use of UML networking.
+ 
++config UML_NET_RANDOM_MAC
++	bool "Use random MAC addresses for network interfaces"
++	default n
++	depends on UML_NET
++	help
++        Virtual network devices inside a User-Mode Linux instance must be
++        assigned a MAC (Ethernet) address. If none is specified on the UML
++        command line, one must be automatically computed. If this option is
++        enabled, a randomly generated address is used. Otherwise, if this
++        option is disabled, the address is generated from a SHA1 hash of
++        the umid of the UML instance and the interface name. The latter choice
++        is useful to make MAC addresses predictable.
++
+ config UML_NET_ETHERTAP
+ 	bool "Ethertap transport"
+ 	depends on UML_NET
