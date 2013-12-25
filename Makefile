@@ -1,12 +1,28 @@
 KERNEL_DIR=kernel
 FS_DIR=fs
 
-SUBARCH=i386
+include Makefile.am
 
-all: build-kernel build-fs
+default: build-kernel build-fs
 
-build-kernel:
-	$(MAKE)	-C ${KERNEL_DIR} SUBARCH=${SUBARCH}
+.PHONY: build-fs
+build-fs: ${FS_ARCHIVE_FILE}
 
-build-fs:
+.PHONY: build-kernel
+build-kernel: ${KERNEL_ARCHIVE_FILE}
+
+${KERNEL_ARCHIVE_FILE}:
+	$(MAKE)	-C ${KERNEL_DIR}
+
+${FS_ARCHIVE_FILE}:
 	$(MAKE) -C ${FS_DIR}
+
+.PHONY: clean
+clean:
+	$(MAKE) -C ${KERNEL_DIR} clean
+	$(MAKE) -C ${FS_DIR} clean
+
+.PHONY: mrproper
+mrproper: clean
+	$(MAKE) -C ${KERNEL_DIR} mrproper
+	$(MAKE) -C ${FS_DIR} mrproper

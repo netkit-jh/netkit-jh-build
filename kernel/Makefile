@@ -1,17 +1,24 @@
-NETKIT_KERNEL_RELEASE=K3.0
+include ../Makefile.am
+
 KERNEL_VERSION=user-mode-linux-3.2-2um
 KERNEL_NUMBER=3.2.51
 
-BUILD_DIR=../build/kernel
+BUILD_DIR=build
 DEBIAN_PACKAGE_DIR=${BUILD_DIR}/${KERNEL_VERSION}
 
 FINAL_ARCHIVE=../../netkit-kernel-i386-${NETKIT_KERNEL_RELEASE}.tar.bz2
 
-all: ${FINAL_ARCHIVE}
+default: ${FINAL_ARCHIVE}
 
+.PHONY: clean
 clean:
 	rm -rf ${BUILD_DIR}
 
+.PHONY: mrproper
+mrproper: clean
+	rm -rf ${FINAL_ARCHIVE}
+
+.PHONY: init
 init: clean
 	mkdir -p ${BUILD_DIR}
 
