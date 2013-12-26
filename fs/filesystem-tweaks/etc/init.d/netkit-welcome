@@ -1,0 +1,50 @@
+#! /bin/sh -e
+
+#
+### BEGIN INIT INFO
+# Provides:          netkit-welcome
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+### END INIT INFO
+#
+#
+# This script prints a welcome message
+
+#     Copyright 2002-2007 Massimo Rimondini - Computer Networks Research Group,
+#     Roma Tre University.
+#
+#     This file is part of Netkit.
+#
+#     Netkit is free software: you can redistribute it and/or modify it under
+#     the terms of the GNU General Public License as published by the Free
+#     Software Foundation, either version 3 of the License, or (at your option)
+#     any later version.
+#
+#     Netkit is distributed in the hope that it will be useful, but WITHOUT ANY
+#     WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+#     FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+#     details.
+#
+#     You should have received a copy of the GNU General Public License along
+#     with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+HOSTNAME=`cat /proc/cmdline | awk -v FS== -v RS=" " '($1=="name") {print $2}'`
+NETKIT_FILESYSTEM_VERSION=`awk '/filesystem version/ {print $NF}' /etc/netkit-filesystem-version`
+NETKIT_KERNEL_VERSION=`uname -r | awk -v FS=- '{print $NF}'`
+KERNEL_VERSION=`uname -r | awk -v FS=- '{print $1}'`
+: ${NETKIT_FILESYSTEM_VERSION:="<unknown>"}
+: ${NETKIT_KERNEL_VERSION:="<unknown>"}
+: ${KERNEL_VERSION:="<unknown>"}
+
+echo "Netkit kernel $NETKIT_KERNEL_VERSION ($KERNEL_VERSION), filesystem $NETKIT_FILESYSTEM_VERSION"
+echo -e "\e[34;1m##################################"
+echo "##                              ##"
+echo "##           NETKIT             ##"
+echo "##                              ##"
+echo -e "##################################\e[0m"
+echo
+echo -e "\e[1mVirtual machine \"$HOSTNAME\" booting up...\e[0m"
+echo
+

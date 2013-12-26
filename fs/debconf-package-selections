@@ -1,0 +1,561 @@
+# Time zone:
+# Choices: Adelaide, Brisbane, Broken Hill, Canberra, Currie, Darwin, Eucla, Hobart, Lindeman, Lord Howe, Melbourne, Perth, Sydney, Yancowinna
+tzdata	tzdata/Zones/Australia	select	
+# Other startup options for named:
+bind9	bind9/different-configuration-file	string	
+# Do you want system-wide readable home directories?
+adduser	adduser/homedir-permission	boolean	true
+# What do you want to do about modified configuration file ?
+# Choices: install the package maintainer's version, keep the local version currently installed, show the differences between the versions, show a side-by-side difference between the versions, start a new shell to examine the situation
+ucf	ucf/changeprompt	select	keep_current
+# Keymap:
+# Choices: Programmer, latin1, latin1 - no dead keys
+console-data	console-data/keymap/qwertz/german/standard/keymap	select	
+# Local SSL certificates must be replaced
+ssl-cert	make-ssl-cert/vulnerable_prng	note	
+# Keymap:
+# Choices: Apple USB, Standard, latin1, latin1-lk450
+console-data	console-data/keymap/qwertz/swiss/german/keymap	select	
+# Keymap:
+# Choices: No dead keys, Standard
+console-data	console-data/keymap/qwerty/estonian/standard/keymap	select	
+# Keymap:
+# Choices: latin1, latin1 - no dead keys
+console-data	console-data/keymap/qwertz/german/apple_usb/keymap	select	
+# Override local changes to /etc/pam.d/common-*?
+libpam-runtime	libpam-runtime/override	boolean	false
+# Services to restart for PAM library upgrade:
+libpam0g:i386	libpam0g/restart-services	string	
+# Keyboard variant:
+# Choices: Apple USB, Standard
+console-data	console-data/keymap/qwerty/swedish/variant	select	
+# Time zone:
+# Choices: Aden, Almaty, Amman, Anadyr, Aqtau, Aqtobe, Ashgabat, Baghdad, Bahrain, Baku, Bangkok, Beirut, Bishkek, Brunei, Choibalsan, Chongqing, Colombo, Damascus, Dhaka, Dili, Dubai, Dushanbe, Gaza, Harbin, Hebron, Ho Chi Minh City, Hong Kong, Hovd, Irkutsk, Istanbul, Jakarta, Jayapura, Jerusalem, Kabul, Kamchatka, Karachi, Kashgar, Katmandu, Khandyga, Kolkata, Krasnoyarsk, Kuala Lumpur, Kuching, Kuwait, Macau, Magadan, Makassar, Manila, Muscat, Nicosia, Novokuznetsk, Novosibirsk, Omsk, Oral, Phnom Penh, Pontianak, Pyongyang, Qatar, Qyzylorda, Rangoon, Riyadh, Riyadh87, Riyadh88, Riyadh89, Sakhalin, Samarkand, Seoul, Shanghai, Singapore, Taipei, Tashkent, Tbilisi, Tehran, Tel Aviv, Thimphu, Tokyo, Ujung Pandang, Ulaanbaatar, Urumqi, Ust-Nera, Vientiane, Vladivostok, Yakutsk, Yekaterinburg, Yerevan
+tzdata	tzdata/Zones/Asia	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/serbian/standard/keymap	select	
+# Prepare /etc/resolv.conf for dynamic updates?
+resolvconf	resolvconf/linkify-resolvconf	boolean	true
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/serbian/variant	select	
+# Keyboard layout:
+# Choices: 
+console-common	console-data/keymap/template/layout	select	
+console-data	console-data/keymap/template/layout	select	
+# Keyboard layout:
+# Choices: Brazilian, British, Bulgarian, Byelorussian, Canadian, Czech, Danish, Dutch, Estonian, Finnish, Greek, Hebrew, Hungarian, Icelandic, Italian, Japanese, Kirghiz, Latin American, Latvian, Lithuanian, Macedonian, Norwegian, Polish, Portugese, Romanian, Russian, Serbian, Slovak, Spanish, Swedish, Thai, Turkish, US american, Ukrainian
+console-data	console-data/keymap/qwerty/layout	select	
+# Time zone:
+# Choices: AST4, AST4ADT, CST6, CST6CDT, EST5, EST5EDT, HST10, MST7, MST7MDT, PST8, PST8PDT, YST9, YST9YDT
+tzdata	tzdata/Zones/SystemV	select	
+# Keyboard layout:
+# Choices: Belgian, French
+console-data	console-data/keymap/azerty/layout	select	
+# Host name:
+ssl-cert	make-ssl-cert/hostname	string	localhost
+# Keyboard variant:
+# Choices: Apple USB, PC keyboard (non-US 102 keys), Same as X11 (latin 1), With Euro (latin 9)
+console-data	console-data/keymap/azerty/french/variant	select	
+# Keymap:
+# Choices: latin4, unicode
+console-data	console-data/keymap/qwerty/lithuanian/standard/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/polish/variant	select	
+# Keyboard variant:
+# Choices: Apple USB, Old (obsolete), Standard
+console-data	console-data/keymap/qwerty/finnish/variant	select	
+# Fix permissions of 'cache_dir'?
+squid	squid/fix_cachedir_perms	boolean	false
+# Enable subpixel rendering for screen:
+# Choices: Automatic, Always, Never
+fontconfig-config	fontconfig/subpixel_rendering	select	Automatic
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/thai/standard/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/czech/variant	select	
+# Keymap:
+# Choices: Old keymap, Standard
+console-data	console-data/keymap/qwerty/portugese/standard/keymap	select	
+# Keymap:
+# Choices: F Layout, F Layout with Unicode
+console-data	console-data/keymap/fggiod/turkish/standard/keymap	select	
+# Keymap:
+# Choices: CP-1251 (1), CP-1251 (2), CP-866, KOI8-R (102 Keys), KOI8-R (105 Keys), KOI8-R (MS Cyrillic Layout), KOI8-R (RightAlt), KOI8-R (RightCtrl), KOI8-R (Yawerty Layout)
+console-data	console-data/keymap/qwerty/russian/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/swedish/apple_usb/keymap	select	
+# Keyboard layout family:
+# Choices: azerty, dvorak, fgGIod, qwerty, qwertz
+console-common	console-data/keymap/family	select	qwerty
+console-data	console-data/keymap/family	select	qwerty
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/brazilian/br-latin1/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/estonian/variant	select	
+# Keymap:
+# Choices: Apple USB, Standard, latin1
+console-data	console-data/keymap/qwertz/swiss/french/keymap	select	
+# Time zone:
+# Choices: Apia, Auckland, Chatham, Chuuk, Easter, Efate, Enderbury, Fakaofo, Fiji, Funafuti, Galapagos, Gambier, Guadalcanal, Guam, Honolulu, Johnston, Kiritimati, Kosrae, Kwajalein, Majuro, Marquesas, Midway, Nauru, Niue, Norfolk, Noumea, Pago Pago, Palau, Pitcairn, Pohnpei, Pohnpei, Port Moresby, Rarotonga, Saipan, Samoa, Tahiti, Tarawa, Tongatapu, Truk, Wake, Wallis, Yap
+tzdata	tzdata/Zones/Pacific	select	
+# Keyboard layout:
+# Choices: Unknown
+console-data	console-data/keymap/dvorak/layout	select	
+# Keymap to use:
+# Choices: American English, Belarusian, Belgian, Brazilian (ABNT2 layout), Brazilian (EUA layout), British English, Bulgarian, Canadian French, Canadian Multilingual, Croatian, Czech, Danish, Dutch, Dvorak, Estonian, Finnish, French, German, Greek, Hebrew, Hungarian, Icelandic, Italian, Japanese, Kirghiz, Latin American, Latvian, Lithuanian, Macedonian, Norwegian, Polish, Portuguese, Romanian, Russian, Serbian, Slovakian, Slovene, Spanish, Swedish, Swiss French, Swiss German, Thai, Turkish (F layout), Turkish (Q layout), Ukrainian
+console-data	console-keymaps-at/keymap	select	
+# Keymap to use:
+# Choices: American English, French, German, Italian, Spanish, Swedish, Swiss German
+console-data	console-keymaps-amiga/keymap	select	
+# Keymap:
+# Choices: Academic, Standard, With comma
+console-data	console-data/keymap/qwerty/romanian/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/finnish/apple_usb/keymap	select	
+# Proceed with the udev upgrade despite the kernel incompatibility?
+udev	udev/new_kernel_needed	boolean	false
+# Disable inetd entries?
+update-inetd	update-inetd/ask-disable-entries	boolean	false
+# Do you want to upgrade glibc now?
+libc6	glibc/upgrade	boolean	true
+libc6:i386	glibc/upgrade	boolean	true
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/kirghiz/variant	select	
+# Keyboard variant:
+# Choices: French, German
+console-data	console-data/keymap/qwertz/swiss/variant	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/norwegian/variant	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/slovak/variant	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/canadian/french/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/hungarian/variant	select	
+# Enable bitmapped fonts by default?
+fontconfig-config	fontconfig/enable_bitmaps	boolean	false
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/macedonian/variant	select	
+# Keyboard variant:
+# Choices: Apple USB, Standard
+console-data	console-data/keymap/qwertz/german/variant	select	
+# Ignore multiple entries and continue without changes?
+update-inetd	update-inetd/ask-several-entries	boolean	true
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/azerty/belgian/apple_usb/keymap	select	
+# Keymap:
+# Choices: Standard ABNT2
+console-data	console-data/keymap/qwerty/brazilian/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/slovene/standard/keymap	select	
+# Keyboard variant:
+# Choices: Apple USB, Standard
+console-data	console-data/keymap/qwerty/british/variant	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/ukrainian/variant	select	
+# Keymap:
+# Choices: Standard, US
+console-data	console-data/keymap/qwerty/icelandic/standard/keymap	select	
+# Should resolv.conf settings be overridden?
+bind9	bind9/run-resolvconf	boolean	false
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/british/apple_usb/keymap	select	
+# Reboot recommended
+resolvconf	resolvconf/reboot-recommended-after-removal	note	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/slovak/variant	select	
+# Keymap to use for a USB keyboard:
+# Choices: American English, Belgian, British English, Danish, Dvorak, Finnish, French, German, Italian, Italian, Portuguese, Spanish, Swedish, Swiss French, Swiss German
+console-data	console-keymaps-usb/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/bulgarian/standard/keymap	select	
+# Keymap to use:
+# Choices: American English, Belarusian, Belgian, Brazilian (ABNT2 layout), Brazilian (EUA layout), British English, Bulgarian, Canadian Multilingual, Croatian, Czech, Danish, Dutch, Dvorak, Estonian, Finnish, French, German, Greek, Hebrew, Hungarian, Icelandic, Italian, Japanese, Kirghiz, Latin American, Latvian, Lithuanian, Macedonian, Norwegian, Polish, Portuguese, Romanian, Russian, Serbian, Slovakian, Slovene, Spanish, Swedish, Swiss French, Swiss German, Turkish (F layout), Turkish (Q layout), Ukrainian
+console-data	console-keymaps-acorn/keymap	select	
+# Keymap:
+# Choices: Programmer, Standard, US Layout
+console-data	console-data/keymap/qwerty/czech/standard/keymap	select	
+# Run proftpd:
+# Choices: from inetd, standalone
+proftpd-basic	shared/proftpd/inetd_or_standalone	select	standalone
+# Keymap:
+# Choices: latin4, latin7
+console-data	console-data/keymap/qwerty/latvian/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/polish/standard/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/latin_american/variant	select	
+# Users allowed to start the X server:
+# Choices: Root Only, Console Users Only, Anybody
+x11-common	x11-common/xwrapper/allowed_users	select	Console Users Only
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/spanish/apple_usb/keymap	select	
+# Should man and mandb be installed 'setuid man'?
+man-db	man-db/install-setuid	boolean	false
+# Line by line differences between versions
+ucf	ucf/show_diff	note	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/dvorak/unknown/right_single-handed/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/us_american/apple_usb/keymap	select	
+# Are you ready for the ADB key codes transition?
+console-common	console-data/keymap/powerpcadb	boolean	
+console-data	console-data/keymap/powerpcadb	boolean	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/serbian/variant	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/azerty/belgian/standard/keymap	select	
+# Leave existing entry and continue without changes?
+update-inetd	update-inetd/ask-entry-present	boolean	true
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/croat/variant	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/czech/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/canadian/english/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/fggiod/turkish/variant	select	
+# Keymap to use:
+# Choices: American English, British English, Czech, Finnish, French, German, Japanese (type 4), Japanese (type 5), Norwegian (type 4), Norwegian (type 5), Polish, Russian, Spanish (type 4), Spanish (type 5), Turkish (Q layout)
+console-data	console-keymaps-sun/keymap	select	
+# Keyboard variant:
+# Choices: 
+console-common	console-data/keymap/template/variant	select	
+console-data	console-data/keymap/template/variant	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/romanian/variant	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/greek/variant	select	
+# Keyboard variant:
+# Choices: CP 1251 coding, Standard
+console-data	console-data/keymap/qwerty/bulgarian/variant	select	
+# Keymap:
+# Choices: ANSI, Dvorak Classic, Dvorak French, Dvorak French Bepo, Dvorak French Bepo (UTF8), Dvorak German, Dvorak Lisp machine, Dvorak Russian, Dvorak United Kingdom, Standard, With French and Spanish accents
+console-data	console-data/keymap/dvorak/unknown/standard/keymap	select	
+# Time zone:
+# Choices: Azores, Bermuda, Canary, Cape Verde, Faroe, Jan Mayen, Madeira, Reykjavik, South Georgia, St. Helena, Stanley
+tzdata	tzdata/Zones/Atlantic	select	
+# The desktop environment to install when the desktop task is selected
+# Choices: gnome, kde, xfce, lxde
+tasksel	tasksel/desktop	multiselect	gnome
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/polish/variant	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/dvorak/unknown/left_single-handed/keymap	select	
+# Upgrade squid.conf automatically?
+squid	squid/fix_lines	boolean	true
+# What do you want to do about modified configuration file ?
+# Choices: install the package maintainer's version, keep the local version currently installed, show the differences between the versions, show a side-by-side difference between the versions, show a 3-way difference between available versions, do a 3-way merge between available versions (experimental), start a new shell to examine the situation
+ucf	ucf/changeprompt_threeway	select	keep_current
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/turkish/variant	select	
+# Ignored boot-time keymap in an old location
+console-common	console-data/keymap/ignored	note	
+console-data	console-data/keymap/ignored	note	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/icelandic/variant	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/azerty/belgian/wang/keymap	select	
+# Should non-superusers be able to capture packets?
+wireshark-common	wireshark-common/install-setuid	boolean	false
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/danish/variant	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/finnish/standard/keymap	select	
+# Keymap to use:
+# Choices: American English
+console-data	console-keymaps-dec/keymap	select	
+# Time zone:
+# Choices: Alaska, Aleutian, Arizona, Central, Eastern, Hawaii, Starke County (Indiana), Michigan, Mountain, Pacific Ocean, Pacific-New, Samoa
+tzdata	tzdata/Zones/US	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/bulgarian/cp_1251_coding/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/latvian/variant	select	
+# Keyboard variant:
+# Choices: Apple USB, Left single-handed, Right single-handed, Standard
+console-data	console-data/keymap/dvorak/unknown/variant	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/hebrew/variant	select	
+# Reboot recommended
+resolvconf	resolvconf/downup-interfaces	note	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/lithuanian/variant	select	
+# PAM profiles to enable:
+# Choices: Unix authentication, Inheritable Capabilities Management
+libpam-runtime	libpam-runtime/profiles	multiselect	unix, capability
+# Keymap:
+# Choices: unicode
+console-data	console-data/keymap/qwerty/kirghiz/standard/keymap	select	
+# Keymap:
+# Choices: Old Phonetic, Phonetic, Standard, il-Heb
+console-data	console-data/keymap/qwerty/hebrew/standard/keymap	select	
+# Interface to use:
+# Choices: Dialog, Readline, Gnome, Kde, Editor, Noninteractive
+debconf	debconf/frontend	select	Dialog
+# Choose software to install:
+# Choices: Debian desktop environment, Web server, Print server, SQL database, DNS Server, File server, Mail server, SSH server, Laptop, Standard system utilities
+tasksel	tasksel/first	multiselect	standard
+# Time zone:
+# Choices: GMT, GMT+0, GMT+1, GMT+10, GMT+11, GMT+12, GMT+2, GMT+3, GMT+4, GMT+5, GMT+6, GMT+7, GMT+8, GMT+9, GMT-0, GMT-1, GMT-10, GMT-11, GMT-12, GMT-13, GMT-14, GMT-2, GMT-3, GMT-4, GMT-5, GMT-6, GMT-7, GMT-8, GMT-9, GMT0, Greenwich, UCT, UTC, Universal, Zulu
+tzdata	tzdata/Zones/Etc	select	UTC
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/hungarian/standard/keymap	select	
+# for internal use
+x11-common	x11-common/xwrapper/actual_allowed_users	string	console
+# Keyboard layout:
+# Choices: Turkish
+console-data	console-data/keymap/fggiod/layout	select	
+# Keymap:
+# Choices: Standard, latin1
+console-data	console-data/keymap/qwerty/norwegian/standard/keymap	select	
+# Remove inetd entries?
+update-inetd	update-inetd/ask-remove-entries	boolean	false
+# Keymap:
+# Choices: Programmer, Standard
+console-data	console-data/keymap/qwertz/slovak/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/british/standard/keymap	select	
+# Keymap:
+# Choices: Standard, US International (ISO 8859-1), US International (ISO 8859-15), With latin1
+console-data	console-data/keymap/qwerty/us_american/standard/keymap	select	
+# Time zone:
+# Choices: Longyearbyen
+tzdata	tzdata/Zones/Arctic	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/hungarian/variant	select	
+# Choose software to install:
+# Choices: 
+tasksel	tasksel/tasks	multiselect	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/czech/variant	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/hungarian/standard/keymap	select	
+# Alternative name(s):
+ssl-cert	make-ssl-cert/altname	string	
+# Keymap:
+# Choices: Alternate, Alternate - unicode, Standard (koi8u), WS, WS - unicode, unicode
+console-data	console-data/keymap/qwerty/ukrainian/standard/keymap	select	
+# Keymap:
+# Choices: AltGr only diacritics, Diacritics with AltGr and Alt
+console-data	console-data/keymap/qwerty/polish/standard/keymap	select	
+# Keyboard variant:
+# Choices: English, French, Multilingual
+console-data	console-data/keymap/qwerty/canadian/variant	select	
+# Font tuning method for screen (system default):
+# Choices: Native, Autohinter, None
+fontconfig-config	fontconfig/hinting_type	select	Native
+# Time zone:
+# Choices: Casey, Davis, Dumont d'Urville, Macquarie, Mawson, McMurdo (South Pole), Palmer, Rothera, Syowa, Vostok
+tzdata	tzdata/Zones/Antarctica	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/dvorak/unknown/apple_usb/keymap	select	
+# Keyboard variant:
+# Choices: Apple USB, Standard
+console-data	console-data/keymap/qwerty/spanish/variant	select	
+# Ignore questions with a priority less than:
+# Choices: critical, high, medium, low
+debconf	debconf/priority	select	high
+# Keymap:
+# Choices: amiga / Unknown / French / Standard / Standard, amiga / Unknown / German / Standard / Standard, amiga / Unknown / Italian / Standard / Standard, amiga / Unknown / Spanish / Standard / Standard, amiga / Unknown / Swedish / Standard / Standard, amiga / Unknown / Swiss / German / Standard, amiga / Unknown / US american / Standard / Standard, atari / Unknown / British / Standard / Standard, atari / Unknown / British / Standard / With dead keys, atari / Unknown / German / Standard / Emacs-like, atari / Unknown / German / Standard / Standard, atari / Unknown / German / Standard / With dead keys, atari / Unknown / Swedish / Standard / Standard, atari / Unknown / Swedish / Standard / With dead keys, atari / Unknown / US american / Standard / Standard, atari / Unknown / US american / Standard / With dead keys, mac / Unknown / British / Standard / Standard, mac / Unknown / British / Standard / iBook2, mac / Unknown / Finnish / Standard / Standard, mac / Unknown / French / Standard / Alternate, mac / Unknown / French / Standard / Extended, mac / Unknown / French / Standard / MacBook, mac / Unknown / French / Standard / New, mac / Unknown / French / Standard / Standard, mac / Unknown / French / Standard / Swiss, mac / Unknown / German / Standard / MacBook, mac / Unknown / German / Standard / Standard, mac / Unknown / German / Standard / iBook, mac / Unknown / German / Standard / iBook with dead keys, mac / Unknown / Italian / Apple USB / Standard, mac / Unknown / Italian / Standard / Standard, mac / Unknown / Italian / Standard / iBook, mac / Unknown / Italian / Standard / iBook (alternate), mac / Unknown / Polish / Standard / Standard, mac / Unknown / Portuguese / Apple USB / Standard, mac / Unknown / Portuguese / Standard / Standard, mac / Unknown / Spanish / Standard / Standard, mac / Unknown / US american / Standard / Dvorak, mac / Unknown / US american / Standard / Extended, mac / Unknown / US american / Standard / New, mac / Unknown / US american / Standard / Standard, pc / azerty / Belgian / Apple USB / Standard, pc / azerty / Belgian / Standard / Standard, pc / azerty / Belgian / Wang / Standard, pc / azerty / French / Apple USB / Standard, pc / azerty / French / Same as X11 (latin 9) / Standard, pc / dvorak / Unknown / Apple USB / Standard, pc / dvorak / Unknown / Left single-handed / Standard, pc / dvorak / Unknown / Right single-handed / Standard, pc / dvorak / Unknown / Standard / ANSI, pc / dvorak / Unknown / Standard / Dvorak Classic, pc / dvorak / Unknown / Standard / Dvorak French, pc / dvorak / Unknown / Standard / Dvorak French Bepo, pc / dvorak / Unknown / Standard / Dvorak French Bepo (UTF8), pc / dvorak / Unknown / Standard / Dvorak German, pc / dvorak / Unknown / Standard / Dvorak Lisp machine, pc / dvorak / Unknown / Standard / Dvorak Russian, pc / dvorak / Unknown / Standard / Dvorak United Kingdom, pc / dvorak / Unknown / Standard / Standard, pc / dvorak / Unknown / Standard / With French and Spanish accents, pc / fgGIod / Turkish / Standard / F Layout, pc / fgGIod / Turkish / Standard / F Layout with Unicode, pc / qwerty / Brazilian / BR-Latin1 / Standard, pc / qwerty / Brazilian / Standard / Standard ABNT2, pc / qwerty / British / Apple USB / Standard, pc / qwerty / British / Standard / Standard, pc / qwerty / Bulgarian / CP 1251 coding / Standard, pc / qwerty / Bulgarian / Standard / Standard, pc / qwerty / Byelorussian / Standard / Standard, pc / qwerty / Canadian / English / Standard, pc / qwerty / Canadian / French / Standard, pc / qwerty / Canadian / Multilingual / Standard, pc / qwerty / Czech / Standard / Programmer, pc / qwerty / Czech / Standard / Standard, pc / qwerty / Czech / Standard / US Layout, pc / qwerty / Danish / Standard / Apple USB, pc / qwerty / Danish / Standard / Dead keys, pc / qwerty / Danish / Standard / Standard, pc / qwerty / Dutch / Standard / Standard, pc / qwerty / Estonian / Standard / No dead keys, pc / qwerty / Estonian / Standard / Standard, pc / qwerty / Finnish / Apple USB / Standard, pc / qwerty / Finnish / Old (obsolete) / Standard, pc / qwerty / Finnish / Standard / Standard, pc / qwerty / Greek / Standard / Standard, pc / qwerty / Greek / Standard / gr-pc, pc / qwerty / Hebrew / Standard / Old Phonetic, pc / qwerty / Hebrew / Standard / Phonetic, pc / qwerty / Hebrew / Standard / Standard, pc / qwerty / Hebrew / Standard / il-Heb, pc / qwerty / Hungarian / Standard / Standard, pc / qwerty / Icelandic / Standard / Standard, pc / qwerty / Icelandic / Standard / US, pc / qwerty / Italian / Standard / IBM, pc / qwerty / Italian / Standard / Standard, pc / qwerty / Italian / Standard / it2, pc / qwerty / Japanese / PC 110 / Standard, pc / qwerty / Japanese / Standard / Standard, pc / qwerty / Kirghiz / Standard / unicode, pc / qwerty / Latin American / Standard / Standard, pc / qwerty / Latvian / Standard / latin4, pc / qwerty / Latvian / Standard / latin7, pc / qwerty / Lithuanian / Standard / latin4, pc / qwerty / Lithuanian / Standard / unicode, pc / qwerty / Macedonian / Standard / unicode, pc / qwerty / Norwegian / Standard / Standard, pc / qwerty / Norwegian / Standard / latin1, pc / qwerty / Polish / Standard / AltGr only diacritics, pc / qwerty / Polish / Standard / Diacritics with AltGr and Alt, pc / qwerty / Portugese / Standard / Old keymap, pc / qwerty / Portugese / Standard / Standard, pc / qwerty / Romanian / Standard / Academic, pc / qwerty / Romanian / Standard / Standard, pc / qwerty / Romanian / Standard / With comma, pc / qwerty / Russian / Standard / CP-1251 (1), pc / qwerty / Russian / Standard / CP-1251 (2), pc / qwerty / Russian / Standard / CP-866, pc / qwerty / Russian / Standard / KOI8-R (102 Keys), pc / qwerty / Russian / Standard / KOI8-R (105 Keys), pc / qwerty / Russian / Standard / KOI8-R (MS Cyrillic Layout), pc / qwerty / Russian / Standard / KOI8-R (RightAlt), pc / qwerty / Russian / Standard / KOI8-R (RightCtrl), pc / qwerty / Russian / Standard / KOI8-R (Yawerty Layout), pc / qwerty / Serbian / Standard / Standard, pc / qwerty / Slovak / Standard / Alternate programmer, pc / qwerty / Slovak / Standard / Programmer, pc / qwerty / Slovak / Standard / Standard, pc / qwerty / Spanish / Apple USB / Standard, pc / qwerty / Spanish / Standard / CP850, pc / qwerty / Spanish / Standard / Standard, pc / qwerty / Swedish / Apple USB / Standard, pc / qwerty / Swedish / Standard / Standard, pc / qwerty / Thai / Standard / Standard, pc / qwerty / Turkish / Standard / Alternate, pc / qwerty / Turkish / Standard / Q Layout, pc / qwerty / Turkish / Standard / Q Layout with Unicode, pc / qwerty / US american / Apple USB / Standard, pc / qwerty / US american / Standard / Lisp Machine, pc / qwerty / US american / Standard / Standard, pc / qwerty / US american / Standard / US International (ISO 8859-1), pc / qwerty / US american / Standard / US International (ISO 8859-15), pc / qwerty / US american / Standard / With latin1, pc / qwerty / Ukrainian / Standard / Alternate, pc / qwerty / Ukrainian / Standard / Alternate - unicode, pc / qwerty / Ukrainian / Standard / Standard (koi8u), pc / qwerty / Ukrainian / Standard / WS, pc / qwerty / Ukrainian / Standard / WS - unicode, pc / qwerty / Ukrainian / Standard / unicode, pc / qwertz / Croat / Standard / Standard, pc / qwertz / Czech / Standard / Standard, pc / qwertz / German / Apple USB / latin1, pc / qwertz / German / Apple USB / latin1 - no dead keys, pc / qwertz / German / Standard / Programmer, pc / qwertz / German / Standard / latin1, pc / qwertz / German / Standard / latin1 - no dead keys, pc / qwertz / Hungarian / Standard / Standard, pc / qwertz / Polish / Standard / Standard, pc / qwertz / Serbian / Standard / Standard, pc / qwertz / Slovak / Standard / Programmer, pc / qwertz / Slovak / Standard / Standard, pc / qwertz / Slovene / Standard / Standard, pc / qwertz / Swiss / French / Apple USB, pc / qwertz / Swiss / French / Standard, pc / qwertz / Swiss / French / latin1, pc / qwertz / Swiss / German / Apple USB, pc / qwertz / Swiss / German / Standard, pc / qwertz / Swiss / German / latin1, pc / qwertz / Swiss / German / latin1-lk450, sparc / Type 4 / Finnish / Standard / Standard, sparc / Type 4 / Japanese / Standard / Standard, sparc / Type 4 / Norwegian / Standard / Standard, sparc / Type 4 / Spanish / Standard / Standard, sparc / Type 5 / British / Standard / Standard, sparc / Type 5 / Finnish / Standard / Standard, sparc / Type 5 / French / Standard / Standard, sparc / Type 5 / German / Standard / Standard, sparc / Type 5 / Japanese / Standard / Standard, sparc / Type 5 / Norwegian / Standard / Standard, sparc / Type 5 / Russian / Standard / Standard, sparc / Type 5 / Spanish / Standard / Standard, sparc / Type 5 / Turkish / Standard / Standard, sparc / Type 5 / US american / Standard / Standard, sparc / Type 6 / British / Standard / Standard, sparc / Unknown (Polish) / Polish / Standard / Standard, sparc / dvorak / Unknown / Standard / Standard
+console-common	console-data/keymap/full	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/italian/variant	select	
+# Default parameters changed since version 5.2.1
+snmpd	snmpd/upgradefrom521	note	
+# for internal use; can be preseeded
+man-db	man-db/auto-update	boolean	true
+# Keyboard variant:
+# Choices: BR-Latin1, Standard
+console-data	console-data/keymap/qwerty/brazilian/variant	select	
+# Keymap to use:
+# Choices: American English, British English, French, German, Swedish
+console-data	console-keymaps-atari/keymap	select	
+# Keymap:
+# Choices: Alternate, Q Layout, Q Layout with Unicode
+console-data	console-data/keymap/qwerty/turkish/standard/keymap	select	
+# Append original file to dynamic file?
+resolvconf	resolvconf/link-tail-to-original	boolean	false
+# Time zone:
+# Choices: Amsterdam, Andorra, Athens, Belfast, Belgrade, Berlin, Bratislava, Brussels, Bucharest, Budapest, Busingen, Chisinau, Copenhagen, Dublin, Gibraltar, Guernsey, Helsinki, Isle_of_Man, Istanbul, Jersey, Kaliningrad, Kiev, Lisbon, Ljubljana, London, Luxembourg, Madrid, Malta, Mariehamn, Minsk, Monaco, Moscow, Nicosia, Oslo, Paris, Podgorica, Prague, Riga, Rome, Samara, San_Marino, Sarajevo, Simferopol, Skopje, Sofia, Stockholm, Tallinn, Tirane, Tiraspol, Uzhgorod, Vaduz, Vatican, Vienna, Vilnius, Volgograd, Warsaw, Zagreb, Zaporozhye, Zurich
+tzdata	tzdata/Zones/Europe	select	Paris
+# Keymap:
+# Choices: Apple USB, Dead keys, Standard
+console-data	console-data/keymap/qwerty/danish/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/byelorussian/standard/keymap	select	
+# Keyboard layout:
+# Choices: Croat, Czech, German, Hungarian, Polish, Serbian, Slovak, Slovene, Swiss
+console-data	console-data/keymap/qwertz/layout	select	
+# Services to restart for GNU libc library upgrade:
+libc6	glibc/restart-services	string	
+libc6:i386	glibc/restart-services	string	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/dutch/variant	select	
+# Restart services during package upgrades without asking?
+libc6	libraries/restart-without-asking	boolean	false
+libc6:i386	libraries/restart-without-asking	boolean	false
+libpam0g:i386	libraries/restart-without-asking	boolean	false
+# Keymap:
+# Choices: unicode
+console-data	console-data/keymap/qwerty/macedonian/standard/keymap	select	
+# Keyboard variant:
+# Choices: PC 110, Standard
+console-data	console-data/keymap/qwerty/japanese/variant	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/portugese/variant	select	
+# Time zone:
+# Choices: Abidjan, Accra, Addis_Ababa, Algiers, Asmara, Bamako, Bangui, Banjul, Bissau, Blantyre, Brazzaville, Bujumbura, Cairo, Casablanca, Ceuta, Conakry, Dakar, Dar_es_Salaam, Djibouti, Douala, El_Aaiun, Freetown, Gaborone, Harare, Johannesburg, Juba, Kampala, Khartoum, Kigali, Kinshasa, Lagos, Libreville, Lome, Luanda, Lubumbashi, Lusaka, Malabo, Maputo, Maseru, Mbabane, Mogadishu, Monrovia, Nairobi, Ndjamena, Niamey, Nouakchott, Ouagadougou, Porto-Novo, Sao_Tome, Timbuktu, Tripoli, Tunis, Windhoek
+tzdata	tzdata/Zones/Africa	select	
+# Keymap:
+# Choices: CP850, Standard
+console-data	console-data/keymap/qwerty/spanish/standard/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/russian/variant	select	
+# Time zone:
+# Choices: Adak, Anchorage, Anguilla, Antigua, Araguaina, Argentina/Buenos_Aires, Argentina/Catamarca, Argentina/Cordoba, Argentina/Jujuy, Argentina/La_Rioja, Argentina/Mendoza, Argentina/Rio_Gallegos, Argentina/Salta, Argentina/San_Juan, Argentina/San_Luis, Argentina/Tucuman, Argentina/Ushuaia, Aruba, Asuncion, Atikokan, Atka, Bahia, Bahia_Banderas, Barbados, Belem, Belize, Blanc-Sablon, Boa_Vista, Bogota, Boise, Cambridge_Bay, Campo_Grande, Cancun, Caracas, Cayenne, Cayman, Chicago, Chihuahua, Coral_Harbour, Costa_Rica, Creston, Cuiaba, Curacao, Danmarkshavn, Dawson, Dawson_Creek, Denver, Detroit, Dominica, Edmonton, Eirunepe, El_Salvador, Ensenada, Fortaleza, Glace_Bay, Godthab, Goose_Bay, Grand_Turk, Grenada, Guadeloupe, Guatemala, Guayaquil, Guyana, Halifax, Havana, Hermosillo, Indiana/Indianapolis, Indiana/Knox, Indiana/Marengo, Indiana/Petersburg, Indiana/Tell_City, Indiana/Vevay, Indiana/Vincennes, Indiana/Winamac, Inuvik, Iqaluit, Jamaica, Juneau, Kentucky/Louisville, Kentucky/Monticello, Kralendijk, La_Paz, Lima, Los_Angeles, Lower_Princes, Maceio, Managua, Manaus, Marigot, Martinique, Matamoros, Mazatlan, Menominee, Merida, Metlakatla, Mexico_City, Miquelon, Moncton, Monterrey, Montevideo, Montreal, Montserrat, Nassau, New_York, Nipigon, Nome, Noronha, North_Dakota/Beulah, North_Dakota/Center, North_Dakota/New_Salem, Ojinaga, Panama, Pangnirtung, Paramaribo, Phoenix, Port-au-Prince, Port_of_Spain, Porto_Acre, Porto_Velho, Puerto_Rico, Rainy_River, Rankin_Inlet, Recife, Regina, Resolute, Rio_Branco, Santa_Isabel, Santarem, Santiago, Santo_Domingo, Sao_Paulo, Scoresbysund, Shiprock, Sitka, St_Barthelemy, St_Johns, St_Kitts, St_Lucia, St_Thomas, St_Vincent, Swift_Current, Tegucigalpa, Thule, Thunder_Bay, Tijuana, Toronto, Tortola, Vancouver, Virgin, Whitehorse, Winnipeg, Yakutat, Yellowknife
+tzdata	tzdata/Zones/America	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/finnish/old__obsolete_/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/serbian/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/dutch/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/croat/standard/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/byelorussian/variant	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/japanese/pc_110/keymap	select	
+# Keymap to use:
+# Choices: American English (82 keys), American English (extended kbd), French (alternate), French (extended kbd), German (extended kbd)
+console-data	console-keymaps-mac/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/japanese/standard/keymap	select	
+# Keymap:
+# Choices: 
+console-common	console-data/keymap/template/keymap	select	
+console-data	console-data/keymap/template/keymap	select	
+# Use dash as the default system shell (/bin/sh)?
+dash	dash/sh	boolean	true
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/latin_american/standard/keymap	select	
+# Services to restart to make them use the new libraries:
+libssl1.0.0:i386	libssl1.0.0/restart-services	string	
+# System's default paper size:
+# Choices: letter, a4, note, legal, executive, halfletter, halfexecutive, 11x17, statement, folio, quarto, 10x14, ledger, tabloid, a0, a1, a2, a3, a5, a6, a7, a8, a9, a10, b0, b1, b2, b3, b4, b5, c5, DL, Comm10, Monarch, archE, archD, archC, archB, archA, flsa, flse, csheet, dsheet, esheet
+libpaper1:i386	libpaper/defaultpaper	select	a4
+# Keyboard variant:
+# Choices: Apple USB, Standard
+console-data	console-data/keymap/qwerty/us_american/variant	select	
+# Geographic area:
+# Choices: Africa, America, Antarctica, Australia, Arctic Ocean, Asia, Atlantic Ocean, Europe, Indian Ocean, Pacific Ocean, System V timezones, US, None of the above
+tzdata	tzdata/Areas	select	Etc
+# Keyboard variant:
+# Choices: Apple USB, Standard, Wang
+console-data	console-data/keymap/azerty/belgian/variant	select	
+# Policy for handling keymaps:
+# Choices: Select keymap from arch list, Don't touch keymap, Keep kernel keymap, Select keymap from full list
+console-common	console-data/keymap/policy	select	Don't touch keymap
+console-data	console-data/keymap/policy	select	Don't touch keymap
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/canadian/multilingual/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/thai/variant	select	
+# User account for running the BIND9 daemon:
+bind9	bind9/start-as-user	string	bind
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/azerty/french/apple_usb/keymap	select	
+# for internal use
+console-common	console-data/bootmap-md5sum	string	none
+console-data	console-data/bootmap-md5sum	string	none
+# Keymap:
+# Choices: Standard, gr-pc
+console-data	console-data/keymap/qwerty/greek/standard/keymap	select	
+# Keyboard variant:
+# Choices: Standard
+console-data	console-data/keymap/qwertz/slovene/variant	select	
+# Keymap:
+# Choices: Alternate programmer, Programmer, Standard
+console-data	console-data/keymap/qwerty/slovak/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/qwerty/swedish/standard/keymap	select	
+# Make /etc/mrtg.cfg owned by and readable only by root?
+mrtg	mrtg/conf_mods	boolean	true
+# Keymap:
+# Choices: IBM, Standard, it2
+console-data	console-data/keymap/qwerty/italian/standard/keymap	select	
+# Keymap:
+# Choices: Standard
+console-data	console-data/keymap/azerty/french/same_as_x11__latin_9_/keymap	select	
+# Time zone:
+# Choices: Antananarivo, Chagos, Christmas, Cocos, Comoro, Kerguelen, Mahe, Maldives, Mauritius, Mayotte, Reunion
+tzdata	tzdata/Zones/Indian	select	
