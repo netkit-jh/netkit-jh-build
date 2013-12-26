@@ -6,7 +6,7 @@ KERNEL_NUMBER=3.2.51
 BUILD_DIR=build
 DEBIAN_PACKAGE_DIR=${BUILD_DIR}/${KERNEL_VERSION}
 
-FINAL_ARCHIVE=../../netkit-kernel-i386-${NETKIT_KERNEL_RELEASE}.tar.bz2
+FINAL_ARCHIVE=../${KERNEL_ARCHIVE_FILE}
 
 default: ${FINAL_ARCHIVE}
 
@@ -38,5 +38,5 @@ ${FINAL_ARCHIVE}: ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml
 	mkdir -p ${BUILD_DIR}/netkit/kernel/modules/
 	cp -r ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/lib/ ${BUILD_DIR}/netkit/kernel/modules/
 	echo "Netkit kernel version $(NETKIT_KERNEL_RELEASE)" > ${BUILD_DIR}/netkit/kernel/netkit-kernel-version
-	cd ${BUILD_DIR}/ ; tar cvjf ${FINAL_ARCHIVE} netkit/
+	cd ${BUILD_DIR}/ ; tar cvjf ../${FINAL_ARCHIVE} netkit/
 
