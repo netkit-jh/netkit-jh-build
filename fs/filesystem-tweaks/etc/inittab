@@ -1,5 +1,5 @@
 # /etc/inittab: init(8) configuration.
-# $Id: inittab.runtime,v 1.2 2007-10-02 09:29:45 max Exp $
+# $Id: inittab,v 1.91 2002/01/25 13:35:21 miquels Exp $
 
 # The default runlevel.
 id:2:initdefault:
@@ -30,10 +30,10 @@ l6:6:wait:/etc/init.d/rc 6
 z6:6:respawn:/sbin/sulogin
 
 # What to do when CTRL-ALT-DEL is pressed.
-ca:12345:ctrlaltdel:/sbin/halt
+ca:12345:ctrlaltdel:/sbin/shutdown -t1 -a -r now
 
 # Action on special keypress (ALT-UpArrow).
-kb::kbrequest:/bin/echo "Keyboard Request--edit /etc/inittab to let this work."
+#kb::kbrequest:/bin/echo "Keyboard Request--edit /etc/inittab to let this work."
 
 # What to do when the power fails/returns.
 pf::powerwait:/etc/init.d/powerfail start
@@ -47,10 +47,16 @@ po::powerokwait:/etc/init.d/powerfail stop
 #
 # Format:
 #  <id>:<runlevels>:<action>:<process>
-1:2345:respawn:/sbin/mingetty --noclear --noissue --autologin root tty0
-2:2345:respawn:/sbin/mingetty --noclear --noissue --autologin root tty1
-#3:2345:respawn:/sbin/getty 38400 vc/2
-#4:2345:respawn:/sbin/getty 38400 vc/3
+#
+# Note that on most Debian systems tty7 is used by the X Window System,
+# so if you want to add more getty's go ahead but skip tty7 if you run X.
+#
+1:2345:respawn:/sbin/mingetty --noclear --noissue --autologin root tty1
+#2:23:respawn:/sbin/getty 38400 tty2
+#3:23:respawn:/sbin/getty 38400 tty3
+#4:23:respawn:/sbin/getty 38400 tty4
+#5:23:respawn:/sbin/getty 38400 tty5
+#6:23:respawn:/sbin/getty 38400 tty6
 
 # Example how to put a getty on a serial line (for a terminal)
 #
