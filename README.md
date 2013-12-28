@@ -6,7 +6,7 @@ I am using Netkit for self-learning and teaching network security. But netkit de
 since some time and the scripts to build the fs and the kernel are now broken due to a bug in deboostrap which
 is not going to be fixed (the fs is based on the now deprecated debian Sid).
 
-I found a lot of scripts to build a kernel and an fs image for UML machines, but most are not maintenable
+I found a lot of scripts to build kernels and fs images for UML machines, but most are not maintenable
 (and are not maintened). I was looking for a generic way to build and expand kernel and image for Netkit.
 
 Hence, the build scripts leverage build tools in debian. More specifically:
@@ -30,4 +30,6 @@ Launch the build with the command make in the root directory of the project.
 
 The following files can help an user to configure the build.
 
+## Bug
 
+* The filesystem uses the sparse mode. On encrypted partition, the disk access can be very slow (very!).
