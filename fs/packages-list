@@ -13,7 +13,7 @@ console-data
 console-tools
 dnsmasq
 dnsutils
-dsniff
+# dsniff --removed because of X11 dependencies
 ebtables
 emacs23-nox
 file
