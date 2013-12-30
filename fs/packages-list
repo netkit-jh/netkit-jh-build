@@ -35,7 +35,7 @@ mime-support
 mingetty
 minicom
 mrd6
-mrtg
+# mrtg --removed because of X11 dependencies
 mtr-tiny
 ndisc6
 netcat6
@@ -73,7 +73,13 @@ tftpd
 vim
 vlan
 zsh
-# conflict: openswan, racoon & ike-server
-# conflict: smcroute & pimd
-# ssl error: freeradius, openssh
-# error during configuration: ppp, pppoe, uml-utilities
+# openswan -- removed because of ike-server conflict
+# racoon -- removed because of ike-server conflict
+# ike-server
+# smcroute -- removed because of smcroute conflict
+# pimd -- removed because of pimd conflict
+# freeradius
+# openssh
+# ppp -- error during configuration
+# pppoe -- error during configuration
+# uml-utilities -- error during configuration
