@@ -33,7 +33,7 @@ ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml: ${DEBIAN_PACKAGE
 
 ${FINAL_ARCHIVE}: ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml
 	mkdir -p ${BUILD_DIR}/netkit/kernel
-	cp ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml ${BUILD_DIR}/netkit/kernel/netkit-kernel-i386-3.2.51-K3.0
+	cp ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml ${BUILD_DIR}/netkit/kernel/netkit-kernel-${SUBARCH}-${KERNEL_NUMBER}-${NETKIT_KERNEL_RELEASE}
 	cd ${BUILD_DIR}/netkit/kernel/ ; ln -s netkit-kernel-${SUBARCH}-${KERNEL_NUMBER}-${NETKIT_KERNEL_RELEASE} netkit-kernel
 	mkdir -p ${BUILD_DIR}/netkit/kernel/modules/
 	cp -r ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/lib/ ${BUILD_DIR}/netkit/kernel/modules/
