@@ -57,6 +57,12 @@ for SERVICE in `cat $WORKDIR/disabled-services`; do
    chroot $TARGET update-rc.d -f ${SERVICE} remove
 done
 
+# disabling unneeded system services
+for SERVICE in `cat $WORKDIR/disabled-system-services`; do
+   chroot $TARGET update-rc.d -f ${SERVICE} remove
+   mv ${TARGET}/etc/init.d/${SERVICE} ${TARGET}/etc/init.d/\#${SERVICE}
+done
+
 # save cache deb files
 cp -n $TARGET/var/cache/apt/archives/*.deb $WORKDIR/cache
 
@@ -66,5 +72,10 @@ rm -f $TARGET/var/cache/apt/archives/*.deb
 # save debconf-package-selections
 chroot $TARGET debconf-get-selections > $WORKDIR/build/debconf-package-selections.last
 
+# create compatibility linl from /etc/mtab to /proc/mounts
+rm -f $TARGET/etc/mtab
+ln -s /proc/mounts $TARGET/etc/mtab
+
 # unmount /proc
 chroot $TARGET umount /proc
+
