@@ -18,5 +18,5 @@ rpcbind
 screen-cleanup
 snmpd
 squid
-sshd
+ssh
 x11-common
