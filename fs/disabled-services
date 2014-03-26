@@ -5,6 +5,7 @@ cron
 dbus
 dnsmasq
 ebtables
+freeradius
 mrd6
 mtab.sh
 openbsd-inetd
@@ -17,4 +18,5 @@ rpcbind
 screen-cleanup
 snmpd
 squid
+sshd
 x11-common
