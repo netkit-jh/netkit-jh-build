@@ -6,6 +6,7 @@ avahi-daemon
 avahi-utils
 bash-completion
 bind9
+bind9-host
 bridge-utils 
 bzip2
 console-common
@@ -13,12 +14,11 @@ console-data
 console-tools
 dnsmasq
 dnsutils
-# dsniff --removed because of X11 dependencies
 ebtables
 emacs23-nox
 file
+freeradius
 ftp
-bind9-host
 hping3
 httptunnel
 iperf
@@ -35,15 +35,14 @@ mime-support
 mingetty
 minicom
 mrd6
-# mrtg --removed because of X11 dependencies
 mtr-tiny
 ndisc6
 netcat6
 netmask
 nmap
+openssh
 openssl
 pdns-recursor
-rpcbind
 proftpd-basic
 psmisc
 python
@@ -51,6 +50,7 @@ radvd
 rcconf
 rdnssd
 realpath
+rpcbind
 screen
 sendip
 snmp
@@ -67,9 +67,9 @@ tcpslice
 tcptraceroute
 telnet
 telnetd
-tshark
 tftp
 tftpd
+tshark
 vim
 vlan
 zsh
@@ -78,8 +78,6 @@ zsh
 # ike-server
 # smcroute -- removed because of smcroute conflict
 # pimd -- removed because of pimd conflict
-# freeradius
-# openssh
 # ppp -- error during configuration
 # pppoe -- error during configuration
 # uml-utilities -- error during configuration
