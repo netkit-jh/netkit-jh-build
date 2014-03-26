@@ -32,8 +32,10 @@ KERNEL="$(uname -s)"
 mount_filesystems () {
         MNTMODE="$1"
 
+# disabled by NETKIT
         # Mount a tmpfs on /run/shm
-        mount_shm "$MNTMODE"
+#        mount_shm "$MNTMODE"
+# end disabled by netkit
 
         # Mount /dev/pts
         if [ "$KERNEL" = Linux ]
