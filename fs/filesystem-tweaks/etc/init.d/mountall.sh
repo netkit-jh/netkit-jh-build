@@ -76,13 +76,11 @@ do_start() {
 # disabled by NETKIT
 #        mount_run mount_noupdate
 #        mount_lock mount_noupdate
-# end disabled by NETKIT
-        mount_shm mount_noupdate
+#        mount_shm mount_noupdate
 
         # Now we have mounted everything, check whether we need to
         # mount a tmpfs on /tmp.  We can now also determine swap size
         # to factor this into our size limit.
-# disabled by NETKIT
 #        mount_tmp mount_noupdate
 # end disabled by NETKIT
 }
