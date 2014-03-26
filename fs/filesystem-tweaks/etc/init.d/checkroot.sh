@@ -46,49 +46,53 @@ do_start () {
 	# before fsck, since fsck can be quite memory-hungry.
 	#
 	ENABLE_SWAP=no
-	case "$KERNEL" in
-	  Linux)
-	  	if [ "$NOSWAP" = yes ]
-		then
-			[ "$VERBOSE" = no ] || log_warning_msg "Not activating swap as requested via bootoption noswap."
-			ENABLE_SWAP=no
-		else
-			if [ "$swap_on_lv" = yes ]
-			then
-				[ "$VERBOSE" = no ] || log_warning_msg "Not activating swap on logical volume."
-			elif [ "$swap_on_file" = yes ]
-			then
-				[ "$VERBOSE" = no ] || log_warning_msg "Not activating swap on swapfile."
-			else
-				ENABLE_SWAP=yes
-			fi
-		fi
-		;;
-	  *)
-		ENABLE_SWAP=yes
-		;;
-	esac
 # disabled by NETKIT
-#	if [ "$ENABLE_SWAP" = yes ]
-#	then
-#		if [ "$VERBOSE" = no ]
+#	case "$KERNEL" in
+#	  Linux)
+#	  	if [ "$NOSWAP" = yes ]
 #		then
-#			log_action_begin_msg "Activating swap"
-#			swapon -a -e >/dev/null 2>&1
-#			log_action_end_msg $?
+#			[ "$VERBOSE" = no ] || log_warning_msg "Not activating swap as requested via bootoption noswap."
+#			ENABLE_SWAP=no
 #		else
-#			log_daemon_msg "Activating swap"
-#			swapon -a -v
-#			log_end_msg $?
+#			if [ "$swap_on_lv" = yes ]
+#			then
+#				[ "$VERBOSE" = no ] || log_warning_msg "Not activating swap on logical volume."
+#			elif [ "$swap_on_file" = yes ]
+#			then
+#				[ "$VERBOSE" = no ] || log_warning_msg "Not activating swap on swapfile."
+#			else
+#				ENABLE_SWAP=yes
+#			fi
 #		fi
-#	fi
+#		;;
+#	  *)
+#		ENABLE_SWAP=yes
+#		;;
+#	esac
 #end disabled by NETKIT
+	if [ "$ENABLE_SWAP" = yes ]
+	then
+		if [ "$VERBOSE" = no ]
+		then
+			log_action_begin_msg "Activating swap"
+			swapon -a -e >/dev/null 2>&1
+			log_action_end_msg $?
+		else
+			log_daemon_msg "Activating swap"
+			swapon -a -v
+			log_end_msg $?
+		fi
+	fi
 
 	#
 	# Does the root device in /etc/fstab match with the actual device ?
 	# If not we try to use the /dev/root alias device, and if that
 	# fails we create a temporary node in /run.
 	#
+# hack by by NETKIT
+rootcheck=no
+rootfatal=no
+# end hack by netkit
 	if [ "$rootcheck" = yes ]
 	then
 		ddev="$(mountpoint -qx $rootdev)"
@@ -111,7 +115,6 @@ do_start () {
 			fi
 		fi
 	fi
-
 	#
 	# Bother, said Pooh.
 	#
@@ -214,26 +217,26 @@ Will restart in 5 seconds."
 			spinner=""
 		fi
 
-# disabled by NETKIT
-#		if [ "$VERBOSE" = no ]
-#		then
-#			log_action_begin_msg "Checking root file system"
-#			logsave -s $FSCK_LOGFILE fsck $spinner $force $fix -t $roottype $rootdev
-#			FSCKCODE=$?
-#			if [ "$FSCKCODE" = 0 ]
-#			then
-#				log_action_end_msg 0
-#			else
-#				log_action_end_msg 1 "code $FSCKCODE"
-#			fi
-#		else
-#			log_daemon_msg "Will now check root file system"
-#			logsave -s $FSCK_LOGFILE fsck $spinner $force $fix -V -t $roottype $rootdev
-#			FSCKCODE=$?
-#			log_end_msg $FSCKCODE
-#		fi
+		if [ "$VERBOSE" = no ]
+		then
+			log_action_begin_msg "Checking root file system"
+			logsave -s $FSCK_LOGFILE fsck $spinner $force $fix -t $roottype $rootdev
+			FSCKCODE=$?
+			if [ "$FSCKCODE" = 0 ]
+			then
+				log_action_end_msg 0
+			else
+				log_action_end_msg 1 "code $FSCKCODE"
+			fi
+		else
+			log_daemon_msg "Will now check root file system"
+			logsave -s $FSCK_LOGFILE fsck $spinner $force $fix -V -t $roottype $rootdev
+			FSCKCODE=$?
+			log_end_msg $FSCKCODE
+		fi
+# hack by NETKIT
 FSCKCODE=0
-# end disabled by NETKIT
+# end hack by NETKIT
 	fi
 
 	#
