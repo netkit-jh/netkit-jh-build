@@ -19,67 +19,75 @@ PATH=/sbin:/bin
 
 # for ntfs-3g to get correct file name encoding
 if [ -r /etc/default/locale ]; then
-	. /etc/default/locale
-	export LANG
+        . /etc/default/locale
+        export LANG
 fi
 
 do_start() {
-	#
-	# Mount local file systems in /etc/fstab.
-	#
-	mount_all_local() {
-	    mount -a -t nonfs,nfs4,smbfs,cifs,ncp,ncpfs,coda,ocfs2,gfs,gfs2,ceph \
-		-O no_netdev
-	}
-	pre_mountall
-	if [ "$VERBOSE" = no ]
-	then
-		log_action_begin_msg "Mounting local filesystems"
-		mount_all_local
-		log_action_end_msg $?
-	else
-		log_daemon_msg "Will now mount local filesystems"
-		mount_all_local
-		log_end_msg $?
-	fi
-	post_mountall
+        #
+        # Mount local file systems in /etc/fstab.
+        #
+        mount_all_local() {
+            mount -a -t 
+nonfs,nfs4,smbfs,cifs,ncp,ncpfs,coda,ocfs2,gfs,gfs2,ceph \
+                -O no_netdev
+        }
+        pre_mountall
+        if [ "$VERBOSE" = no ]
+        then
+                log_action_begin_msg "Mounting local filesystems"
+                mount_all_local
+                log_action_end_msg $?
+        else
+                log_daemon_msg "Will now mount local filesystems"
+                mount_all_local
+                log_end_msg $?
+        fi
+        post_mountall
 
-	# We might have mounted something over /run; see if
-	# /run/initctl is present.  Look for
-	# /usr/share/sysvinit/update-rc.d to verify that sysvinit (and
-	# not upstart) is installed).
-	INITCTL="/run/initctl"
-	if [ ! -p "$INITCTL" ] && [ -f "/usr/share/sysvinit/update-rc.d" ]; then
-		# Create new control channel
-		rm -f "$INITCTL"
-		mknod -m 600 "$INITCTL" p
+        # We might have mounted something over /run; see if
+        # /run/initctl is present.  Look for
+        # /usr/share/sysvinit/update-rc.d to verify that sysvinit (and
+        # not upstart) is installed).
+        INITCTL="/run/initctl"
+        if [ ! -p "$INITCTL" ] && [ -f "/usr/share/sysvinit/update-rc.d" 
+]; then
+                # Create new control channel
+                rm -f "$INITCTL"
+                mknod -m 600 "$INITCTL" p
 
-		# Reopen control channel.
+                # Reopen control channel.
+
 # hack by NETKIT
-# to avoid error msg: /etc/init.d/mountall.sh: 59: kill: Illegal number: 766 1
+# to avoid error msg: /etc/init.d/mountall.sh: 59: kill: Illegal number: 
+766 1
 # because there is two init running
-#		PID="$(pidof /sbin/init || echo 1)"
-		PID="1"
+#               PID="$(pidof /sbin/init || echo 1)"
+                PID="1"
 # end hack by NETKIT
-		[ -n "$PID" ] && kill -s USR1 "$PID"
-	fi
+                [ -n "$PID" ] && kill -s USR1 "$PID"
+        fi
 
-	# Execute swapon command again, in case we want to swap to
-	# a file on a now mounted filesystem.
+        # Execute swapon command again, in case we want to swap to
+        # a file on a now mounted filesystem.
 # disabled by NETKIT
-#	swaponagain 'swapfile'
+#       swaponagain 'swapfile'
 # end disabled by NETKIT
 
-	# Remount tmpfs filesystems; with increased VM after swapon,
-	# the size limits may be adjusted.
-	mount_run mount_noupdate
-	mount_lock mount_noupdate
-	mount_shm mount_noupdate
+        # Remount tmpfs filesystems; with increased VM after swapon,
+        # the size limits may be adjusted.
+# disabled by NETKIT
+#        mount_run mount_noupdate
+#        mount_lock mount_noupdate
+# end disabled by NETKIT
+        mount_shm mount_noupdate
 
-	# Now we have mounted everything, check whether we need to
-	# mount a tmpfs on /tmp.  We can now also determine swap size
-	# to factor this into our size limit.
-	mount_tmp mount_noupdate
+        # Now we have mounted everything, check whether we need to
+        # mount a tmpfs on /tmp.  We can now also determine swap size
+        # to factor this into our size limit.
+# disabled by NETKIT
+#        mount_tmp mount_noupdate
+# end disabled by NETKIT
 }
 
 case "$1" in
