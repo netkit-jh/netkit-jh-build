@@ -40,7 +40,8 @@ ndisc6
 netcat6
 netmask
 nmap
-openssh
+openssh-client
+openssh-server
 openssl
 pdns-recursor
 proftpd-basic
