@@ -43,15 +43,13 @@ mount_filesystems () {
         # Only mount sysfs if it is supported (kernel >= 2.6)
         if grep -E -qs "sysfs\$" /proc/filesystems
         then
-                domount "$MNTMODE" sysfs "" /sys sysfs 
-"-onodev,noexec,nosuid"
+                domount "$MNTMODE" sysfs "" /sys sysfs "-onodev,noexec,nosuid"
         fi
 }
 
 case "$1" in
   "")
-        echo "Warning: mountkernfs should be called with the 'start' 
-argument." >&2
+        echo "Warning: mountkernfs should be called with the 'start' argument." >&2
         mount_filesystems mount_noupdate
         ;;
   start)

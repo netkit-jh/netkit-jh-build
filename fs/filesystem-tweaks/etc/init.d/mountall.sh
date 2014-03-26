@@ -28,8 +28,7 @@ do_start() {
         # Mount local file systems in /etc/fstab.
         #
         mount_all_local() {
-            mount -a -t 
-nonfs,nfs4,smbfs,cifs,ncp,ncpfs,coda,ocfs2,gfs,gfs2,ceph \
+            mount -a -t nonfs,nfs4,smbfs,cifs,ncp,ncpfs,coda,ocfs2,gfs,gfs2,ceph \
                 -O no_netdev
         }
         pre_mountall
@@ -50,8 +49,7 @@ nonfs,nfs4,smbfs,cifs,ncp,ncpfs,coda,ocfs2,gfs,gfs2,ceph \
         # /usr/share/sysvinit/update-rc.d to verify that sysvinit (and
         # not upstart) is installed).
         INITCTL="/run/initctl"
-        if [ ! -p "$INITCTL" ] && [ -f "/usr/share/sysvinit/update-rc.d" 
-]; then
+        if [ ! -p "$INITCTL" ] && [ -f "/usr/share/sysvinit/update-rc.d" ]; then
                 # Create new control channel
                 rm -f "$INITCTL"
                 mknod -m 600 "$INITCTL" p
@@ -59,8 +57,7 @@ nonfs,nfs4,smbfs,cifs,ncp,ncpfs,coda,ocfs2,gfs,gfs2,ceph \
                 # Reopen control channel.
 
 # hack by NETKIT
-# to avoid error msg: /etc/init.d/mountall.sh: 59: kill: Illegal number: 
-766 1
+# to avoid error msg: /etc/init.d/mountall.sh: 59: kill: Illegal number: 766 1
 # because there is two init running
 #               PID="$(pidof /sbin/init || echo 1)"
                 PID="1"

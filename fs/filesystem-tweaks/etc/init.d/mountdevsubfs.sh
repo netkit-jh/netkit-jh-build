@@ -41,18 +41,15 @@ mount_filesystems () {
                 if [ ! -d /dev/pts ]
                 then
                         mkdir --mode=755 /dev/pts
-                        [ -x /sbin/restorecon ] && /sbin/restorecon 
-/dev/pts
+                        [ -x /sbin/restorecon ] && /sbin/restorecon /dev/pts
                 fi
-                domount "$MNTMODE" devpts "" /dev/pts devpts 
-"-onoexec,nosuid,gid=$TTYGRP,mode=$TTYMODE"
+                domount "$MNTMODE" devpts "" /dev/pts devpts "-onoexec,nosuid,gid=$TTYGRP,mode=$TTYMODE"
         fi
 }
 
 case "$1" in
   "")
-        echo "Warning: mountdevsubfs should be called with the 'start' 
-argument." >&2
+        echo "Warning: mountdevsubfs should be called with the 'start' argument." >&2
         mount_filesystems mount_noupdate
         ;;
   start)
