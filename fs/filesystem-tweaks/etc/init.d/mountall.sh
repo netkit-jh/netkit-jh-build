@@ -73,16 +73,14 @@ do_start() {
 
         # Remount tmpfs filesystems; with increased VM after swapon,
         # the size limits may be adjusted.
-# disabled by NETKIT
-#        mount_run mount_noupdate
-#        mount_lock mount_noupdate
-#        mount_shm mount_noupdate
+        mount_run mount_noupdate
+        mount_lock mount_noupdate
+        mount_shm mount_noupdate
 
         # Now we have mounted everything, check whether we need to
         # mount a tmpfs on /tmp.  We can now also determine swap size
         # to factor this into our size limit.
-#        mount_tmp mount_noupdate
-# end disabled by NETKIT
+        mount_tmp mount_noupdate
 }
 
 case "$1" in

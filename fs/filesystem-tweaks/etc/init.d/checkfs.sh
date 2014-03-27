@@ -40,7 +40,9 @@ do_start () {
 #		fi
 #	fi
 	BAT=""
-	fscheck="yes"
+# hack by NETKIT
+	fscheck="no"
+# end hack by NETKIT
 
 	if [ -f /fastboot ] || grep -s -w -i "fastboot" /proc/cmdline
 	then
@@ -51,88 +53,86 @@ do_start () {
 	#
 	# Check the rest of the file systems.
 	#
-# disabled by NETKIT
-#	if [ "$fscheck" = yes ] && [ ! "$BAT" ] && [ "$FSCKTYPES" != "none" ]
-#	then
-#
-#		# Execute swapon command again, in case there are lvm
-#		# or md swap partitions.  fsck can suck RAM.
-#		swaponagain 'lvm and md'
-#
-#		if [ -f /forcefsck ] || grep -s -w -i "forcefsck" /proc/cmdline
-#		then
-#			force="-f"
-#		else
-#			force=""
-#		fi
-#		if [ "$FSCKFIX" = yes ]
-##		then
-#			fix="-y"
-#		else
-#			fix="-a"
-#		fi
-#		spinner="-C"
-#		case "$TERM" in
-#		  dumb|network|unknown|"")
-#			spinner=""
-#			;;
-#		esac
-#		[ "$(uname -m)" = s390x ] && spinner=""  # This should go away
-#		FSCKTYPES_OPT=""
-#		[ "$FSCKTYPES" ] && FSCKTYPES_OPT="-t $FSCKTYPES"
-#		handle_failed_fsck() {
-#			log_failure_msg "File system check failed. 
-#A log is being saved in ${FSCK_LOGFILE} if that location is writable. 
-#Please repair the file system manually."
-#			log_warning_msg "A maintenance shell will now be started. 
-#CONTROL-D will terminate this shell and resume system boot."
-#			# Start a single user shell on the console
-#			if ! sulogin $CONSOLE
-#			then
-#				log_failure_msg "Attempt to start maintenance shell failed. 
-#Continuing with system boot in 5 seconds."
-#				sleep 5
-#			fi
-#		}
-#		if [ "$VERBOSE" = no ]
-#		then
-#			log_action_begin_msg "Checking file systems"
-#			logsave -s $FSCK_LOGFILE fsck $spinner -R -A $fix $force $FSCKTYPES_OPT
-#			FSCKCODE=$?
-#
-#			if [ "$FSCKCODE" -eq 32 ]
-#			then
-#				log_action_end_msg 1 "code $FSCKCODE"
-#				log_warning_msg "File system check was interrupted by user"
-#			elif [ "$FSCKCODE" -gt 1 ]
-#			then
-#				log_action_end_msg 1 "code $FSCKCODE"
-#				handle_failed_fsck
-#			else
-#				log_action_end_msg 0
-#			fi
-#		else
-#			if [ "$FSCKTYPES" ]
-#			then
-#				log_action_msg "Will now check all file systems of types $FSCKTYPES"
-#			else
-#				log_action_msg "Will now check all file systems"
-#			fi
-#			logsave -s $FSCK_LOGFILE fsck $spinner -V -R -A $fix $force $FSCKTYPES_OPT
-#			FSCKCODE=$?
-#			if [ "$FSCKCODE" -eq 32 ]
-#			then
-#				log_warning_msg "File system check was interrupted by user"
-#			elif [ "$FSCKCODE" -gt 1 ]
-#			then
-#				handle_failed_fsck
-#			else
-#				log_success_msg "Done checking file systems. 
-#A log is being saved in ${FSCK_LOGFILE} if that location is writable."
-#			fi
-#		fi
-#	fi
-# end disabled by NETKIT
+	if [ "$fscheck" = yes ] && [ ! "$BAT" ] && [ "$FSCKTYPES" != "none" ]
+	then
+
+		# Execute swapon command again, in case there are lvm
+		# or md swap partitions.  fsck can suck RAM.
+		swaponagain 'lvm and md'
+
+		if [ -f /forcefsck ] || grep -s -w -i "forcefsck" /proc/cmdline
+		then
+			force="-f"
+		else
+			force=""
+		fi
+		if [ "$FSCKFIX" = yes ]
+		then
+			fix="-y"
+		else
+			fix="-a"
+		fi
+		spinner="-C"
+		case "$TERM" in
+		  dumb|network|unknown|"")
+			spinner=""
+			;;
+		esac
+		[ "$(uname -m)" = s390x ] && spinner=""  # This should go away
+		FSCKTYPES_OPT=""
+		[ "$FSCKTYPES" ] && FSCKTYPES_OPT="-t $FSCKTYPES"
+		handle_failed_fsck() {
+			log_failure_msg "File system check failed. 
+A log is being saved in ${FSCK_LOGFILE} if that location is writable. 
+Please repair the file system manually."
+			log_warning_msg "A maintenance shell will now be started. 
+CONTROL-D will terminate this shell and resume system boot."
+			# Start a single user shell on the console
+			if ! sulogin $CONSOLE
+			then
+				log_failure_msg "Attempt to start maintenance shell failed. 
+Continuing with system boot in 5 seconds."
+				sleep 5
+			fi
+		}
+		if [ "$VERBOSE" = no ]
+		then
+			log_action_begin_msg "Checking file systems"
+			logsave -s $FSCK_LOGFILE fsck $spinner -R -A $fix $force $FSCKTYPES_OPT
+			FSCKCODE=$?
+
+			if [ "$FSCKCODE" -eq 32 ]
+			then
+				log_action_end_msg 1 "code $FSCKCODE"
+				log_warning_msg "File system check was interrupted by user"
+			elif [ "$FSCKCODE" -gt 1 ]
+			then
+				log_action_end_msg 1 "code $FSCKCODE"
+				handle_failed_fsck
+			else
+				log_action_end_msg 0
+			fi
+		else
+			if [ "$FSCKTYPES" ]
+			then
+				log_action_msg "Will now check all file systems of types $FSCKTYPES"
+			else
+				log_action_msg "Will now check all file systems"
+			fi
+			logsave -s $FSCK_LOGFILE fsck $spinner -V -R -A $fix $force $FSCKTYPES_OPT
+			FSCKCODE=$?
+			if [ "$FSCKCODE" -eq 32 ]
+			then
+				log_warning_msg "File system check was interrupted by user"
+			elif [ "$FSCKCODE" -gt 1 ]
+			then
+				handle_failed_fsck
+			else
+				log_success_msg "Done checking file systems. 
+A log is being saved in ${FSCK_LOGFILE} if that location is writable."
+			fi
+		fi
+	fi
 	rm -f /fastboot /forcefsck 2>/dev/null
 }
 
