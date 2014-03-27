@@ -22,6 +22,7 @@ ftp
 hping3
 httptunnel
 iperf
+iproute
 ipsec-tools
 ipv6calc
 less
@@ -43,10 +44,12 @@ nmap
 openssh-client
 openssh-server
 openssl
+openvpn
 pdns-recursor
 proftpd-basic
 psmisc
 python
+quagga
 radvd
 rcconf
 rdnssd
@@ -71,6 +74,7 @@ telnetd
 tftp
 tftpd
 tshark
+ucarp
 vim
 vlan
 zsh
