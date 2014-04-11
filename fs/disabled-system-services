@@ -4,6 +4,5 @@ keymap.sh
 mountnfs.sh
 mountnfs-bootclean.sh
 networking
-resolvconf
 setkey
 udev 
