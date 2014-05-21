@@ -44,15 +44,24 @@ fi
 # copy netkit filesystem files
 tar -C $WORKDIR/filesystem-tweaks -c . | tar -C $TARGET -x
 
+# copy netkit-filesystem-version
+cp $WORKDIR/build/netkit/fs/netkit-filesystem-version $TARGET/etc/
+
 # install netkit startup scripts
 chroot $TARGET update-rc.d netkit-phase1 defaults 00 99
 chroot $TARGET update-rc.d netkit-phase2 defaults 99 10
-chroot $TARGET update-rc.d netkit-mount-modules-dir start 00 S stop 99 0 6
 chroot $TARGET update-rc.d netkit-welcome start 01 S
+chroot $TARGET update-rc.d netkit-mount-modules-dir start 00 S stop 99 0 6
 
 # disabling unneeded services
 for SERVICE in `cat $WORKDIR/disabled-services`; do
    chroot $TARGET update-rc.d -f ${SERVICE} remove
+done
+
+# disabling unneeded system services
+for SERVICE in `cat $WORKDIR/disabled-system-services`; do
+   chroot $TARGET update-rc.d -f ${SERVICE} remove
+   mv ${TARGET}/etc/init.d/${SERVICE} ${TARGET}/etc/init.d/\#${SERVICE}
 done
 
 # save cache deb files
@@ -64,5 +73,10 @@ rm -f $TARGET/var/cache/apt/archives/*.deb
 # save debconf-package-selections
 chroot $TARGET debconf-get-selections > $WORKDIR/build/debconf-package-selections.last
 
+# create compatibility link from /etc/mtab to /proc/mounts
+rm -f $TARGET/etc/mtab
+ln -s /proc/mounts $TARGET/etc/mtab
+
 # unmount /proc
 chroot $TARGET umount /proc
+

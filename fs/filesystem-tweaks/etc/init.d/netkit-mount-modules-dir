@@ -41,7 +41,7 @@ case "$1" in
 MODULES=`cat /proc/cmdline | awk -v FS== -v RS=' ' '{if ($1=="modules") {print $2}}'`
 
 if [ -n "$MODULES" ]; then
-   MODULES="$MODULES"/lib/modules
+   MODULES="$MODULES"/lib/uml/modules
    echo "Mounting kernel modules directory ($MODULES) on /lib/modules/ ..."
    # Write access is needed for depmod in order to work properly
    if [ ! -d /lib/modules ]
@@ -63,3 +63,4 @@ fi
 
 ;;
 esac
+

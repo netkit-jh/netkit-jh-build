@@ -6,6 +6,7 @@ avahi-daemon
 avahi-utils
 bash-completion
 bind9
+bind9-host
 bridge-utils 
 bzip2
 console-common
@@ -13,15 +14,15 @@ console-data
 console-tools
 dnsmasq
 dnsutils
-dsniff
 ebtables
 emacs23-nox
 file
+freeradius
 ftp
-bind9-host
 hping3
 httptunnel
 iperf
+iproute
 ipsec-tools
 ipv6calc
 less
@@ -35,22 +36,25 @@ mime-support
 mingetty
 minicom
 mrd6
-mrtg
 mtr-tiny
 ndisc6
 netcat6
 netmask
 nmap
+openssh-client
+openssh-server
 openssl
+openvpn
 pdns-recursor
-rpcbind
 proftpd-basic
 psmisc
 python
+quagga
 radvd
 rcconf
 rdnssd
 realpath
+rpcbind
 screen
 sendip
 snmp
@@ -67,13 +71,18 @@ tcpslice
 tcptraceroute
 telnet
 telnetd
-tshark
 tftp
 tftpd
+tshark
+ucarp
 vim
 vlan
 zsh
-# conflict: openswan, racoon & ike-server
-# conflict: smcroute & pimd
-# ssl error: freeradius, openssh
-# error during configuration: ppp, pppoe, uml-utilities
+# openswan -- removed because of ike-server conflict
+# racoon -- removed because of ike-server conflict
+# ike-server
+# smcroute -- removed because of smcroute conflict
+# pimd -- removed because of pimd conflict
+# ppp -- error during configuration
+# pppoe -- error during configuration
+# uml-utilities -- error during configuration
