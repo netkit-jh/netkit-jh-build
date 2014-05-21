@@ -1,0 +1,4 @@
+fs/build/
+kernel/build/
+fs/cache/
+*.tar.bz2

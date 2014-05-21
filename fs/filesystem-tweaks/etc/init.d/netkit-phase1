@@ -1,0 +1,165 @@
+#!/bin/bash
+
+#     Copyright 2002-2007 Maurizio Patrignani, Stefano Pettini, Maurizio Pizzonia,
+#     Fabio Ricci, Massimo Rimondini - Computer Networks Research Group, Roma Tre
+#     University.
+#
+#     This file is part of Netkit.
+#
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+
+### BEGIN INIT INFO
+# Provides:          netkit-phase1
+# Required-Start:
+# Required-Stop:
+# Should-Start:
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Netkit phase 1
+# Description:       This is a Netkit initialization script. It is intended for
+#                    usage inside virtual machines.
+### END INIT INFO
+
+# Function that mounts a certain directory on the host
+mountdir() {
+   HOST_DIR="$1"
+   GUEST_DIR="$2"
+   MESSAGE="$3"
+
+   echo  "$MESSAGE"
+   mkdir -p "$GUEST_DIR"
+   mount none "$GUEST_DIR" -t hostfs -o rw,"$HOST_DIR"
+}
+
+# ANSI style escape sequences
+DELIMITER_TEXT=$'\e[34;1m'
+NORMAL_TEXT=$'\e[0m\e[34m'
+INFO_FIELD=$'\e[34;4;1m'
+PLAIN_TEXT=$'\e[0m'
+
+case "$1" in
+   start) 
+      echo
+      echo "${DELIMITER_TEXT}--- Starting Netkit phase 1 init script ---${NORMAL_TEXT}"
+
+      ASSIGN_VARIABLES=`cat /proc/cmdline | awk -v FS== -v RS=' ' \
+         '
+            ($1=="name") {print "HOSTNAME=" $2}
+            ($1=="hosthome") {print "HOSTHOME=" $2}
+            ($1=="hostlab") {print "HOSTLAB=" $2}
+            ($1=="title") {print "TITLE=" $2}
+            ($1=="def_route") {print "DEFAULT_ROUTE=" $2}
+            ($1=="ubd0") {print "FILESYSTEM=" $2}
+         '`
+
+      eval "$ASSIGN_VARIABLES"
+      COW=`echo $FILESYSTEM|awk -v FS=, '{print $2}'`
+
+      AUTOCONF_INTERFACES=`cat /proc/cmdline | awk -v FS== -v RS=' ' \
+         '(match($1,"autoconf_eth[0-9]+")) {
+               gsub("autoconf_","",$1)
+               gsub("\n","",$2)
+               print "echo \"Bringing up interface " $1 " (" $2 ")...\""
+               print "ifconfig " $1 " " $2 " up"
+            }
+         '`
+
+      export HOSTNAME
+
+      # Set title for the terminal window
+      if [ -n "$TITLE" ]; then
+         echo -ne "\e]2;${TITLE}\a"
+         # For Konsole (no longer used because title is set using the --title option)
+#         echo -ne "\e]30;${TITLE}\a"
+      fi
+
+      # Mount host directories inside the guest
+      [ -n "$HOSTHOME" ] && mountdir "$HOSTHOME" /hosthome "Mounting $HOSTHOME on /hosthome..."
+      [ -n "$HOSTLAB" ] && mountdir "$HOSTLAB" /hostlab "Mounting $HOSTLAB on /hostlab ..."
+
+      # Configure virtual host for the first boot
+      if [ ! -e /etc/vhostconfigured ]; then
+
+         if [ -n "$HOSTNAME" ]; then
+            echo "Configuring host name..."
+            echo $HOSTNAME > /etc/hostname
+            hostname --file /etc/hostname
+
+            mv /etc/hosts /etc/hosts.tmp
+            echo 127.0.0.1 $HOSTNAME > /etc/hosts
+            cat /etc/hosts.tmp >> /etc/hosts
+            rm /etc/hosts.tmp
+         fi
+
+         if [ "`echo /hostlab/shared/*`" != "/hostlab/shared/*" ]; then
+            echo "Copying shared files from /hostlab/shared/..."
+            # tar all the files inside the directory instead of just the
+            # directory itself, in order to properly cope with virtual
+            # machine directories that are symbolic links.
+            tar --exclude=CVS --exclude=.svn -C / -c hostlab/shared/* | tar -o -C / --strip 2 -xv | \
+            # Now mirror user's permissions to the group and to others
+            sed -r 's/^[^/]+\/[^/]+\//\//' | xargs stat --format="%a %n" | { while read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} $FILE; done; }
+         fi
+
+         if [ "`echo /hostlab/$HOSTNAME/*`" != "/hostlab/$HOSTNAME/*" ]; then
+            echo "Copying $HOSTNAME specific files from /hostlab/$HOSTNAME/..."
+            tar --exclude=CVS --exclude=.svn -C / -c hostlab/$HOSTNAME/* | tar -o -C / --strip 2 -xv | sed -r 's/^[^/]+\/[^/]+\//\//' | xargs stat --format="%a %n" | { while read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} $FILE; done; }
+         fi
+         
+         [ ! -z "$COW" ] && touch /etc/vhostconfigured
+      fi
+
+      # Autoconfigure interfaces, if asked to
+      if [ -n "$AUTOCONF_INTERFACES" ]; then
+         eval "$AUTOCONF_INTERFACES"
+      fi
+
+      # Insert a default entry in the routing table, if asked to
+      # (this must be done after autoconfiguring interfaces)
+      if [ -n "$DEFAULT_ROUTE" ]; then
+         echo "Configuring default gateway: $DEFAULT_ROUTE..."
+         route add default gateway $DEFAULT_ROUTE
+      fi
+
+      echo "${DELIMITER_TEXT}--- Netkit phase 1 initialization terminated ---${PLAIN_TEXT}"
+      echo
+      ;;
+
+   stop)
+      echo
+      echo "${DELIMITER_TEXT}--- Starting Netkit phase 1 shutdown script ---${NORMAL_TEXT}"
+
+      if [ -d /hostlab ]; then
+         echo  "Unmounting and removing /hostlab..."
+         umount /hostlab
+         rmdir /hostlab
+      fi
+
+      echo  "Unmounting and removing /hosthome..."
+      umount /hosthome
+      rmdir /hosthome
+
+      echo "${DELIMITER_TEXT}--- Netkit phase 1 shutdown terminated ---${PLAIN_TEXT}"
+      echo
+      ;;
+
+   *)
+      echo "Usage: $0 {start|stop}"
+      exit 1
+      ;;
+
+esac
+

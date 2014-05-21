@@ -1,0 +1,88 @@
+apache2
+apache2-utils
+arping
+arptables
+avahi-daemon
+avahi-utils
+bash-completion
+bind9
+bind9-host
+bridge-utils 
+bzip2
+console-common
+console-data
+console-tools
+dnsmasq
+dnsutils
+ebtables
+emacs23-nox
+file
+freeradius
+ftp
+hping3
+httptunnel
+iperf
+iproute
+ipsec-tools
+ipv6calc
+less
+locate
+lrzsz
+lsof
+lua5.1
+lynx
+mdns-scan
+mime-support
+mingetty
+minicom
+mrd6
+mtr-tiny
+ndisc6
+netcat6
+netmask
+nmap
+openssh-client
+openssh-server
+openssl
+openvpn
+pdns-recursor
+proftpd-basic
+psmisc
+python
+quagga
+radvd
+rcconf
+rdnssd
+realpath
+rpcbind
+screen
+sendip
+snmp
+snmpd
+squid
+ssl-cert
+ssldump
+strace
+tcpd
+tcpdump
+tcpreen
+tcpreplay
+tcpslice
+tcptraceroute
+telnet
+telnetd
+tftp
+tftpd
+tshark
+ucarp
+vim
+vlan
+zsh
+# openswan -- removed because of ike-server conflict
+# racoon -- removed because of ike-server conflict
+# ike-server
+# smcroute -- removed because of smcroute conflict
+# pimd -- removed because of pimd conflict
+# ppp -- error during configuration
+# pppoe -- error during configuration
+# uml-utilities -- error during configuration
