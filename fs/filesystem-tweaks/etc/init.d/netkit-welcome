@@ -32,7 +32,7 @@
 
 HOSTNAME=`cat /proc/cmdline | awk -v FS== -v RS=" " '($1=="name") {print $2}'`
 NETKIT_FILESYSTEM_VERSION=`awk '/filesystem version/ {print $NF}' /etc/netkit-filesystem-version`
-NETKIT_KERNEL_VERSION=`uname -r | cut -d '-' -f 3-`
+NETKIT_KERNEL_VERSION=`uname -r | cut -d '-' -f 4-`
 KERNEL_VERSION=`uname -r | cut -d '-' -f 1`
 : ${NETKIT_FILESYSTEM_VERSION:="<unknown>"}
 : ${NETKIT_KERNEL_VERSION:="<unknown>"}
