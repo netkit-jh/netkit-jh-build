@@ -6,6 +6,7 @@ dbus
 dnsmasq
 ebtables
 freeradius
+lxc
 mrd6
 mtab.sh
 openbsd-inetd
