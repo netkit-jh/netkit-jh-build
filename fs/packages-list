@@ -30,6 +30,8 @@ locate
 lrzsz
 lsof
 lua5.1
+lxc
+lxctl
 lynx
 mdns-scan
 mime-support
@@ -44,6 +46,7 @@ nmap
 openssh-client
 openssh-server
 openssl
+openswan
 openvpn
 pdns-recursor
 proftpd-basic
@@ -78,11 +81,7 @@ ucarp
 vim
 vlan
 zsh
-# openswan -- removed because of ike-server conflict
-# racoon -- removed because of ike-server conflict
-# ike-server
 # smcroute -- removed because of smcroute conflict
 # pimd -- removed because of pimd conflict
 # ppp -- error during configuration
 # pppoe -- error during configuration
-# uml-utilities -- error during configuration

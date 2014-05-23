@@ -1,6 +1,9 @@
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/danish/variant	select	
+# Linux Container: Shutdown method
+# Choices: halt, stop
+lxc	lxc/shutdown	select	/usr/bin/lxc-halt
 # Time zone:
 # Choices: Adelaide, Brisbane, Broken Hill, Canberra, Currie, Darwin, Eucla, Hobart, Lindeman, Lord Howe, Melbourne, Perth, Sydney, Yancowinna
 tzdata	tzdata/Zones/Australia	select	
@@ -53,6 +56,8 @@ console-data	console-data/keymap/qwerty/hebrew/variant	select
 console-data	console-data/keymap/qwerty/swedish/variant	select	
 # Services to restart for PAM library upgrade:
 libpam0g:i386	libpam0g/restart-services	string	
+# File name of your PEM format X.509 RootCA:
+openswan	openswan/existing_x509_rootca_filename	string	
 # Reboot recommended
 resolvconf	resolvconf/downup-interfaces	note	
 # Dummy template
@@ -84,6 +89,10 @@ console-data	console-data/keymap/qwerty/hebrew/standard/keymap	select
 # Interface to use:
 # Choices: Dialog, Readline, Gnome, Kde, Editor, Noninteractive
 debconf	debconf/frontend	select	Dialog
+# File name of your PEM format X.509 private key:
+openswan	openswan/existing_x509_key_filename	string	
+# Modification of /etc/ipsec.conf
+openswan	openswan/no-oe_include_file	note	
 # Choose software to install:
 # Choices: 
 tasksel	tasksel/first	multiselect	standard
@@ -121,6 +130,8 @@ openssh-server	ssh/use_old_init_script	boolean	true
 console-data	console-data/keymap/azerty/layout	select	
 # Conflicts found in three-way merge
 ucf	ucf/conflicts_found	error	
+# Old runlevel management superseded
+openswan	openswan/runlevel_changes	note	
 # Host name:
 ssl-cert	make-ssl-cert/hostname	string	localhost
 # Dummy template
@@ -137,6 +148,8 @@ console-data	console-data/keymap/qwertz/slovak/standard/keymap	select
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwertz/polish/variant	select	
+# State or province name for the X.509 certificate request:
+openswan	openswan/x509_state_name	string	
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/british/standard/keymap	select	
@@ -165,6 +178,8 @@ console-data	console-data/keymap/fggiod/turkish/standard/keymap	select
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/russian/standard/keymap	select	
+# Email address for the X.509 certificate request:
+openswan	openswan/x509_email_address	string	
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/us_american/standard/keymap	select	
@@ -178,6 +193,8 @@ tzdata	tzdata/Zones/Arctic	select
 # Choices: azerty, dvorak, fgGIod, qwerty, qwertz
 console-common	console-data/keymap/family	select	qwerty
 console-data	console-data/keymap/family	select	qwerty
+# LXC directory:
+lxc	lxc/directory	string	
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/estonian/variant	select	
@@ -267,9 +284,13 @@ debconf	debconf/priority	select	high
 # Keymap:
 # Choices: amiga / Unknown / French / Standard / Standard, amiga / Unknown / German / Standard / Standard, amiga / Unknown / Italian / Standard / Standard, amiga / Unknown / Spanish / Standard / Standard, amiga / Unknown / Swedish / Standard / Standard, amiga / Unknown / Swiss / German / Standard, amiga / Unknown / US american / Standard / Standard, atari / Unknown / British / Standard / Standard, atari / Unknown / British / Standard / With dead keys, atari / Unknown / German / Standard / Emacs-like, atari / Unknown / German / Standard / Standard, atari / Unknown / German / Standard / With dead keys, atari / Unknown / Swedish / Standard / Standard, atari / Unknown / Swedish / Standard / With dead keys, atari / Unknown / US american / Standard / Standard, atari / Unknown / US american / Standard / With dead keys, mac / Unknown / British / Standard / Standard, mac / Unknown / British / Standard / iBook2, mac / Unknown / Finnish / Standard / Standard, mac / Unknown / French / Standard / Alternate, mac / Unknown / French / Standard / Extended, mac / Unknown / French / Standard / MacBook, mac / Unknown / French / Standard / New, mac / Unknown / French / Standard / Standard, mac / Unknown / French / Standard / Swiss, mac / Unknown / German / Standard / MacBook, mac / Unknown / German / Standard / Standard, mac / Unknown / German / Standard / iBook, mac / Unknown / German / Standard / iBook with dead keys, mac / Unknown / Italian / Apple USB / Standard, mac / Unknown / Italian / Standard / Standard, mac / Unknown / Italian / Standard / iBook, mac / Unknown / Italian / Standard / iBook (alternate), mac / Unknown / Polish / Standard / Standard, mac / Unknown / Portuguese / Apple USB / Standard, mac / Unknown / Portuguese / Standard / Standard, mac / Unknown / Spanish / Standard / Standard, mac / Unknown / US american / Standard / Dvorak, mac / Unknown / US american / Standard / Extended, mac / Unknown / US american / Standard / New, mac / Unknown / US american / Standard / Standard, pc / azerty / Belgian / Apple USB / Standard, pc / azerty / Belgian / Standard / Standard, pc / azerty / Belgian / Wang / Standard, pc / azerty / French / Apple USB / Standard, pc / azerty / French / Same as X11 (latin 9) / Standard, pc / dvorak / Unknown / Apple USB / Standard, pc / dvorak / Unknown / Left single-handed / Standard, pc / dvorak / Unknown / Right single-handed / Standard, pc / dvorak / Unknown / Standard / ANSI, pc / dvorak / Unknown / Standard / Dvorak Classic, pc / dvorak / Unknown / Standard / Dvorak French, pc / dvorak / Unknown / Standard / Dvorak French Bepo, pc / dvorak / Unknown / Standard / Dvorak French Bepo (UTF8), pc / dvorak / Unknown / Standard / Dvorak German, pc / dvorak / Unknown / Standard / Dvorak Lisp machine, pc / dvorak / Unknown / Standard / Dvorak Russian, pc / dvorak / Unknown / Standard / Dvorak United Kingdom, pc / dvorak / Unknown / Standard / Standard, pc / dvorak / Unknown / Standard / With French and Spanish accents, pc / fgGIod / Turkish / Standard / F Layout, pc / fgGIod / Turkish / Standard / F Layout with Unicode, pc / qwerty / Brazilian / BR-Latin1 / Standard, pc / qwerty / Brazilian / Standard / Standard ABNT2, pc / qwerty / British / Apple USB / Standard, pc / qwerty / British / Standard / Standard, pc / qwerty / Bulgarian / CP 1251 coding / Standard, pc / qwerty / Bulgarian / Standard / Standard, pc / qwerty / Byelorussian / Standard / Standard, pc / qwerty / Canadian / English / Standard, pc / qwerty / Canadian / French / Standard, pc / qwerty / Canadian / Multilingual / Standard, pc / qwerty / Czech / Standard / Programmer, pc / qwerty / Czech / Standard / Standard, pc / qwerty / Czech / Standard / US Layout, pc / qwerty / Danish / Standard / Apple USB, pc / qwerty / Danish / Standard / Dead keys, pc / qwerty / Danish / Standard / Standard, pc / qwerty / Dutch / Standard / Standard, pc / qwerty / Estonian / Standard / No dead keys, pc / qwerty / Estonian / Standard / Standard, pc / qwerty / Finnish / Apple USB / Standard, pc / qwerty / Finnish / Old (obsolete) / Standard, pc / qwerty / Finnish / Standard / Standard, pc / qwerty / Greek / Standard / Standard, pc / qwerty / Greek / Standard / gr-pc, pc / qwerty / Hebrew / Standard / Old Phonetic, pc / qwerty / Hebrew / Standard / Phonetic, pc / qwerty / Hebrew / Standard / Standard, pc / qwerty / Hebrew / Standard / il-Heb, pc / qwerty / Hungarian / Standard / Standard, pc / qwerty / Icelandic / Standard / Standard, pc / qwerty / Icelandic / Standard / US, pc / qwerty / Italian / Standard / IBM, pc / qwerty / Italian / Standard / Standard, pc / qwerty / Italian / Standard / it2, pc / qwerty / Japanese / PC 110 / Standard, pc / qwerty / Japanese / Standard / Standard, pc / qwerty / Kirghiz / Standard / unicode, pc / qwerty / Latin American / Standard / Standard, pc / qwerty / Latvian / Standard / latin4, pc / qwerty / Latvian / Standard / latin7, pc / qwerty / Lithuanian / Standard / latin4, pc / qwerty / Lithuanian / Standard / unicode, pc / qwerty / Macedonian / Standard / unicode, pc / qwerty / Norwegian / Standard / Standard, pc / qwerty / Norwegian / Standard / latin1, pc / qwerty / Polish / Standard / AltGr only diacritics, pc / qwerty / Polish / Standard / Diacritics with AltGr and Alt, pc / qwerty / Portugese / Standard / Old keymap, pc / qwerty / Portugese / Standard / Standard, pc / qwerty / Romanian / Standard / Academic, pc / qwerty / Romanian / Standard / Standard, pc / qwerty / Romanian / Standard / With comma, pc / qwerty / Russian / Standard / CP-1251 (1), pc / qwerty / Russian / Standard / CP-1251 (2), pc / qwerty / Russian / Standard / CP-866, pc / qwerty / Russian / Standard / KOI8-R (102 Keys), pc / qwerty / Russian / Standard / KOI8-R (105 Keys), pc / qwerty / Russian / Standard / KOI8-R (MS Cyrillic Layout), pc / qwerty / Russian / Standard / KOI8-R (RightAlt), pc / qwerty / Russian / Standard / KOI8-R (RightCtrl), pc / qwerty / Russian / Standard / KOI8-R (Yawerty Layout), pc / qwerty / Serbian / Standard / Standard, pc / qwerty / Slovak / Standard / Alternate programmer, pc / qwerty / Slovak / Standard / Programmer, pc / qwerty / Slovak / Standard / Standard, pc / qwerty / Spanish / Apple USB / Standard, pc / qwerty / Spanish / Standard / CP850, pc / qwerty / Spanish / Standard / Standard, pc / qwerty / Swedish / Apple USB / Standard, pc / qwerty / Swedish / Standard / Standard, pc / qwerty / Thai / Standard / Standard, pc / qwerty / Turkish / Standard / Alternate, pc / qwerty / Turkish / Standard / Q Layout, pc / qwerty / Turkish / Standard / Q Layout with Unicode, pc / qwerty / US american / Apple USB / Standard, pc / qwerty / US american / Standard / Lisp Machine, pc / qwerty / US american / Standard / Standard, pc / qwerty / US american / Standard / US International (ISO 8859-1), pc / qwerty / US american / Standard / US International (ISO 8859-15), pc / qwerty / US american / Standard / With latin1, pc / qwerty / Ukrainian / Standard / Alternate, pc / qwerty / Ukrainian / Standard / Alternate - unicode, pc / qwerty / Ukrainian / Standard / Standard (koi8u), pc / qwerty / Ukrainian / Standard / WS, pc / qwerty / Ukrainian / Standard / WS - unicode, pc / qwerty / Ukrainian / Standard / unicode, pc / qwertz / Croat / Standard / Standard, pc / qwertz / Czech / Standard / Standard, pc / qwertz / German / Apple USB / latin1, pc / qwertz / German / Apple USB / latin1 - no dead keys, pc / qwertz / German / Standard / Programmer, pc / qwertz / German / Standard / latin1, pc / qwertz / German / Standard / latin1 - no dead keys, pc / qwertz / Hungarian / Standard / Standard, pc / qwertz / Polish / Standard / Standard, pc / qwertz / Serbian / Standard / Standard, pc / qwertz / Slovak / Standard / Programmer, pc / qwertz / Slovak / Standard / Standard, pc / qwertz / Slovene / Standard / Standard, pc / qwertz / Swiss / French / Apple USB, pc / qwertz / Swiss / French / Standard, pc / qwertz / Swiss / French / latin1, pc / qwertz / Swiss / German / Apple USB, pc / qwertz / Swiss / German / Standard, pc / qwertz / Swiss / German / latin1, pc / qwertz / Swiss / German / latin1-lk450, sparc / Type 4 / Finnish / Standard / Standard, sparc / Type 4 / Japanese / Standard / Standard, sparc / Type 4 / Norwegian / Standard / Standard, sparc / Type 4 / Spanish / Standard / Standard, sparc / Type 5 / British / Standard / Standard, sparc / Type 5 / Finnish / Standard / Standard, sparc / Type 5 / French / Standard / Standard, sparc / Type 5 / German / Standard / Standard, sparc / Type 5 / Japanese / Standard / Standard, sparc / Type 5 / Norwegian / Standard / Standard, sparc / Type 5 / Russian / Standard / Standard, sparc / Type 5 / Spanish / Standard / Standard, sparc / Type 5 / Turkish / Standard / Standard, sparc / Type 5 / US american / Standard / Standard, sparc / Type 6 / British / Standard / Standard, sparc / Unknown (Polish) / Polish / Standard / Standard, sparc / dvorak / Unknown / Standard / Standard
 console-common	console-data/keymap/full	select	
+# Country code for the X.509 certificate request:
+openswan	openswan/x509_country_code	string	AT
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/canadian/french/keymap	select	
+# Create a self-signed X.509 certificate?
+openswan	openswan/x509_self_signed	boolean	true
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/italian/variant	select	
@@ -278,6 +299,8 @@ console-data	console-data/keymap/qwerty/italian/variant	select
 console-data	console-data/keymap/qwerty/hungarian/variant	select	
 # Enable bitmapped fonts by default?
 fontconfig-config	fontconfig/enable_bitmaps	boolean	false
+# Length of RSA key to be created:
+openswan	openswan/rsa_key_length	string	2048
 # Default parameters changed since version 5.2.1
 snmpd	snmpd/upgradefrom521	note	
 # Dummy template
@@ -294,6 +317,8 @@ console-data	console-data/keymap/qwerty/brazilian/variant	select
 # Keymap to use:
 # Choices: American English, British English, French, German, Swedish
 console-data	console-keymaps-atari/keymap	select	
+# Automatically start Linux Containers on boot?
+lxc	lxc/auto	boolean	true
 # Incompatible PAM profiles selected.
 libpam-runtime	libpam-runtime/conflicts	error	
 # Ignore multiple entries and continue without changes?
@@ -345,6 +370,8 @@ libpam0g:i386	libraries/restart-without-asking	boolean	false
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/macedonian/standard/keymap	select	
+# Restart Openswan now?
+openswan	openswan/restart	boolean	true
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/icelandic/standard/keymap	select	
@@ -375,6 +402,8 @@ tzdata	tzdata/Zones/Africa	select
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/spanish/standard/keymap	select	
+# File name of your PEM format X.509 certificate:
+openswan	openswan/existing_x509_certificate_filename	string	
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/bulgarian/standard/keymap	select	
@@ -402,6 +431,8 @@ console-data	console-data/keymap/qwerty/finnish/old__obsolete_/keymap	select
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/latvian/standard/keymap	select	
+# Common Name for the X.509 certificate request:
+openswan	openswan/x509_common_name	string	
 # Trust new certificates from certificate authorities?
 # Choices: yes, no, ask
 ca-certificates	ca-certificates/trust_new_crts	select	yes
@@ -411,6 +442,8 @@ console-data	console-data/keymap/qwerty/serbian/standard/keymap	select
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/dutch/standard/keymap	select	
+# Use an X.509 certificate for this host?
+openswan	openswan/install_x509_certificate	boolean	false
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwertz/croat/standard/keymap	select	
@@ -423,6 +456,8 @@ console-data	console-data/keymap/qwertz/polish/standard/keymap	select
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/japanese/pc_110/keymap	select	
+# Organizational unit for the X.509 certificate request:
+openswan	openswan/x509_organizational_unit	string	
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/latin_american/variant	select	
@@ -466,6 +501,8 @@ console-data	console-data/keymap/qwerty/latin_american/standard/keymap	select
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/us_american/apple_usb/keymap	select	
+# Locality name for the X.509 certificate request:
+openswan	openswan/x509_locality_name	string	
 # Are you ready for the ADB key codes transition?
 console-common	console-data/keymap/powerpcadb	boolean	
 console-data	console-data/keymap/powerpcadb	boolean	
@@ -490,6 +527,9 @@ console-data	console-data/keymap/qwerty/us_american/variant	select
 # Geographic area:
 # Choices: Africa, America, Antarctica, Australia, Arctic Ocean, Asia, Atlantic Ocean, Europe, Indian Ocean, Pacific Ocean, System V timezones, US, None of the above
 tzdata	tzdata/Areas	select	Etc
+# Methods for using a X.509 certificate to authenticate this host:
+# Choices: create, import
+openswan	openswan/how_to_get_x509_certificate	select	create
 # Leave existing entry and continue without changes?
 update-inetd	update-inetd/ask-entry-present	boolean	true
 # Dummy template
@@ -577,6 +617,8 @@ ucf	ucf/changeprompt_threeway	select	keep_current
 console-data	console-data/keymap/qwerty/swedish/standard/keymap	select	
 # Dummy template
 mrtg	mrtg/conf_mods	boolean	true
+# Organization name for the X.509 certificate request:
+openswan	openswan/x509_organization_name	string	
 # xscreensaver and xlockmore must be restarted before upgrading
 libpam-modules	libpam-modules/disable-screensaver	error	
 # Ignored boot-time keymap in an old location
