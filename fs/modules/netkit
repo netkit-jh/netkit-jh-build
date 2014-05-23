@@ -45,7 +45,7 @@ fi
 tar -C $WORKDIR/filesystem-tweaks -c . | tar -C $TARGET -x
 
 # copy netkit-filesystem-version
-cp $WORKDIR/build/netkit/fs/netkit-filesystem-version $TARGET/etc/
+cp $WORKDIR/build/netkit-ng/fs/netkit-filesystem-version $TARGET/etc/
 
 # install netkit startup scripts
 chroot $TARGET update-rc.d netkit-phase1 defaults 00 99

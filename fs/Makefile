@@ -4,6 +4,9 @@ BUILD_DIR=build
 CACHE_DIR=cache
 FINAL_ARCHIVE=../${FS_ARCHIVE_FILE}
 DEBOOTSTRAP_ARCHIVE=${CACHE_DIR}/debootstrap-cache.tgz
+NETKIT_DIR=${BUILD_DIR}/netkit-ng
+FS_DIR=${NETKIT_DIR}/fs
+MODULES_PATH=../kernel/build/netkit-ng/kernel/modules/lib/uml/modules/
 
 default: ${FINAL_ARCHIVE}
 
@@ -18,17 +21,17 @@ mrproper: clean
 
 .PHONY: init
 init: clean
-	mkdir -p ${BUILD_DIR}/netkit/fs
+	mkdir -p ${FS_DIR}
 
-${FINAL_ARCHIVE}: init ${DEBOOTSTRAP_ARCHIVE}
-	cp -r ../kernel/build/netkit/kernel/modules/lib/uml/modules/ ${BUILD_DIR}
-	echo "Netkit filesystem version ${NETKIT_FS_RELEASE}" > ${BUILD_DIR}/netkit/fs/netkit-filesystem-version
-	rootstrap  ${BUILD_DIR}/netkit/fs/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE}
-	cd ${BUILD_DIR}/netkit/fs ; ln -s netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE} netkit-fs
-	mv ${BUILD_DIR}/netkit/fs/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE} ${BUILD_DIR}/netkit/fs/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE}.old
-	cp --sparse=always ${BUILD_DIR}/netkit/fs/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE}.old ${BUILD_DIR}/netkit/fs/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE}
-	rm -f ${BUILD_DIR}/netkit/fs/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE}.old
-	cd ${BUILD_DIR}/ ; tar -cvSjf ../${FINAL_ARCHIVE} netkit/
+${FINAL_ARCHIVE}: init ${DEBOOTSTRAP_ARCHIVE} ${MODULES_PATH}
+	cp -r ${MODULES_PATH} ${BUILD_DIR}
+	echo "Netkit-NG filesystem version ${NETKIT_FS_RELEASE}" > ${FS_DIR}/netkit-filesystem-version
+	rootstrap  ${FS_DIR}/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE}
+	cd ${FS_DIR} ; ln -s netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE} netkit-fs
+	mv ${FS_DIR}/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE} ${FS_DIR}/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE}.old
+	cp --sparse=always ${FS_DIR}/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE}.old ${FS_DIR}/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE}
+	rm -f ${FS_DIR}/netkit-fs-${SUBARCH}-${NETKIT_FS_RELEASE}.old
+	cd ${BUILD_DIR}/ ; tar -cvSjf ../${FINAL_ARCHIVE} netkit-ng/
 
 ${DEBOOTSTRAP_ARCHIVE}:
 	mkdir -p ${BUILD_DIR}/debootstrap/
