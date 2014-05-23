@@ -6,6 +6,7 @@ dbus
 dnsmasq
 ebtables
 freeradius
+lvm2
 lxc
 mrd6
 mtab.sh
