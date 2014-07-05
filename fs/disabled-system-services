@@ -3,6 +3,5 @@ hwclock.sh
 keymap.sh
 mountnfs.sh
 mountnfs-bootclean.sh
-networking
 setkey
 udev 
