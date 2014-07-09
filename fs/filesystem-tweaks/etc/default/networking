@@ -2,7 +2,7 @@
 # the boot sequence
 
 # Set to 'no' to skip interfaces configuration on boot
-CONFIGURE_INTERFACES=no
+CONFIGURE_INTERFACES=yes
 
 # Don't configure these interfaces. Shell wildcards supported/
 #EXCLUDE_INTERFACES=

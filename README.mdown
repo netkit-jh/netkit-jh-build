@@ -54,3 +54,18 @@ The following files can help an user to configure the build:
 ## Bug
 
 * The filesystem uses the sparse mode. On encrypted partition, the disk access can be very slow (very!).
+
+## History
+
+#### Version 0.1.2
+
+* networking init.d script is enabled at startup
+
+#### Version 0.1.1
+
+* install directory is now 'netkit-ng'
+* add lxc and openswan
+
+#### Version 0.1
+
+* first official stable release
