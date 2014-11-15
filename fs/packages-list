@@ -50,6 +50,8 @@ openssl
 strongswan
 openvpn
 pdns-recursor
+ppp
+pppoe
 proftpd-basic
 psmisc
 python
@@ -81,9 +83,7 @@ tshark
 ucarp
 vim
 vlan
-x2ltp
+xl2tpd
 zsh
 # smcroute -- removed because of smcroute conflict
 # pimd -- removed because of pimd conflict
-ppp
-pppoe

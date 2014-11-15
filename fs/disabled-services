@@ -6,6 +6,7 @@ dbus
 dnsmasq
 ebtables
 freeradius
+ipsec
 lvm2
 lxc
 mrd6
@@ -24,3 +25,5 @@ snmpd
 squid
 ssh
 x11-common
+xl2tpd
+
