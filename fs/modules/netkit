@@ -25,6 +25,11 @@ chroot $TARGET mount -t proc proc /proc
 # load debconf-package-selections
 cat $WORKDIR/debconf-package-selections | chroot $TARGET debconf-set-selections
 
+# fix ppp install error: install dummy files
+mkdir -p $TARGET/etc/ppp/
+cp $WORKDIR/filesystem-tweaks/etc/ppp/chap-secrets $TARGET/etc/ppp/chap-secrets
+cp $WORKDIR/filesystem-tweaks/etc/ppp/pap-secrets $TARGET/etc/ppp/pap-secrets
+
 # install packages in packages-list
 if test "$install" = "true"; then
     packages_list=`cat $WORKDIR/packages-list | grep -v '#'`

@@ -12,6 +12,7 @@ bzip2
 console-common
 console-data
 console-tools
+curl
 dnsmasq
 dnsutils
 ebtables
@@ -46,9 +47,11 @@ nmap
 openssh-client
 openssh-server
 openssl
-openswan
+strongswan
 openvpn
 pdns-recursor
+ppp
+pppoe
 proftpd-basic
 psmisc
 python
@@ -80,8 +83,7 @@ tshark
 ucarp
 vim
 vlan
+xl2tpd
 zsh
 # smcroute -- removed because of smcroute conflict
 # pimd -- removed because of pimd conflict
-# ppp -- error during configuration
-# pppoe -- error during configuration
