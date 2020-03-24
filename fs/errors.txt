@@ -1,0 +1,14 @@
+N: Can't select versions from package 'console-tools' as it is purely virtual
+N: No packages found
+N: Can't select versions from package 'emacs23-nox' as it is purely virtual
+N: No packages found
+N: Unable to locate package #
+N: Unable to locate package removed
+N: Unable to locate package because
+N: Unable to locate package of
+N: Unable to locate package conflict
+N: Unable to locate package #
+N: Unable to locate package removed
+N: Unable to locate package because
+N: Unable to locate package of
+N: Unable to locate package conflict

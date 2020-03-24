@@ -1,0 +1,7 @@
+console-screen.sh
+hwclock.sh
+keymap.sh
+mountnfs.sh
+mountnfs-bootclean.sh
+setkey
+udev 

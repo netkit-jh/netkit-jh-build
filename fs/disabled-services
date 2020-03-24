@@ -20,7 +20,7 @@ quagga
 radvd
 rdnssd
 rpcbind
-screen-cleanup
+# screen-cleanup
 snmpd
 squid
 ssh
