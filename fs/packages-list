@@ -11,14 +11,45 @@ bridge-utils
 bzip2
 console-common
 console-data
+# console-tools
+curl
+dnsmasq
+dnsutils
+ebtables
+uml-utilities
+# emacs23-nox
+file
+freeradius
+ftp
+hping3
+httptunnel
+iperf
+iproute2
+ipv6calc
+less
+locate
+lrzsz
+lsof
+lua5.1
+lxc
+lxctl
+lynx
 mdns-scan
+mime-support
+mingetty
+minicom
+mrd6
+mtr-tiny
+ndisc6
+# netcat6
+netmask
 nmap
 openssh-client
 openssh-server
 openssl
 strongswan
 openvpn
-pdns-recursor
+# cpdns-recursor
 ppp
 pppoe
 proftpd-basic

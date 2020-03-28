@@ -618,7 +618,7 @@ console-data	console-data/keymap/qwerty/japanese/standard/keymap	select
 console-common	console-data/keymap/template/keymap	select	
 console-data	console-data/keymap/template/keymap	select	
 # Use dash as the default system shell (/bin/sh)?
-dash	dash/sh	boolean	true
+dash	dash/sh	boolean	false
 # Dummy template
 # Choices: 
 console-data	console-data/keymap/qwerty/latin_american/standard/keymap	select	

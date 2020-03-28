@@ -36,4 +36,5 @@ ${FINAL_ARCHIVE}: init ${DEBOOTSTRAP_ARCHIVE} ${MODULES_PATH}
 ${DEBOOTSTRAP_ARCHIVE}:
 	mkdir -p ${BUILD_DIR}/debootstrap/
 	mkdir -p ${CACHE_DIR}
-	debootstrap --make-tarball=${DEBOOTSTRAP_ARCHIVE} stretch ${BUILD_DIR}/debootstrap/ http://ftp.fr.debian.org/debian
+	debootstrap --make-tarball=${DEBOOTSTRAP_ARCHIVE} buster ${BUILD_DIR}/debootstrap/ http://ftp.fr.debian.org/debian
+

@@ -43,11 +43,11 @@ case "$1" in
         # Don't run this on package upgrade, for example.
         log_action_begin_msg "Setting up resolvconf"
         # Wipe runtime directories in case they aren't on a tmpfs
-        resolvconf --wipe-runtime-directories || log_action_end_msg_and_exit 1 "failed to delete the old contents of run-time directories"
+        #resolvconf --wipe-runtime-directories || log_action_end_msg_and_exit 1 "failed to delete the old contents of run-time directories"
         # Create runtime directories in case they are on a tmpfs
-        resolvconf --create-runtime-directories || log_action_end_msg_and_exit 1 "failed to create run-time directories"
+        #resolvconf --create-runtime-directories || log_action_end_msg_and_exit 1 "failed to create run-time directories"
         # Request a postponed update (needed in case the base file has content).
-        resolvconf -u || log_action_end_msg_and_exit 1 "failed requesting update"
+        #resolvconf -u || log_action_end_msg_and_exit 1 "failed requesting update"
         # Enable updates and perform the postponed update.
 # hack for NETKIT
         if [ `runlevel | /usr/bin/cut -b 3`  = "2" ]
