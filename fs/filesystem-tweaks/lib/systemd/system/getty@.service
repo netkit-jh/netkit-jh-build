@@ -36,6 +36,7 @@ ConditionPathExists=/dev/tty0
 # The '-o' option value tells agetty to replace 'login' arguments with an
 # option to preserve environment (-p), followed by '--' for safety, and then
 # the entered username.
+# The hardcoded tty0 on ExecStart is a netkit fix
 ExecStart=
 ExecStart=-/sbin/mingetty --noclear --noissue --autologin root tty0
 Type=idle

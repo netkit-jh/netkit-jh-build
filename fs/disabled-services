@@ -4,26 +4,19 @@ bind9
 cron
 dbus
 dnsmasq
-ebtables
 freeradius
 ipsec
 lvm2
 lxc
 mrd6
-mtab.sh
 openbsd-inetd
 openvpn
-pdns-recursor
-pipsecd
 proftpd
-quagga
 radvd
 rdnssd
 rpcbind
-# screen-cleanup
 snmpd
 squid
 ssh
 x11-common
-xl2tpd
 

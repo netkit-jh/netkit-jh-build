@@ -85,5 +85,6 @@ vim
 vlan
 xl2tpd
 zsh
+wireguard
 # smcroute -- removed because of smcroute conflict
 # pimd -- removed because of pimd conflict
