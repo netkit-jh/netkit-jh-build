@@ -1,7 +1,7 @@
 include ../Makefile.am
 
-KERNEL_VERSION=user-mode-linux-4.9-1um
-KERNEL_NUMBER=3.16.0
+KERNEL_VERSION=user-mode-linux-4.19-1um
+KERNEL_NUMBER=4.19
 
 BUILD_DIR=build
 NETKIT_DIR=${BUILD_DIR}/netkit-ng
