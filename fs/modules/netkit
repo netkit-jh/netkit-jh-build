@@ -46,6 +46,15 @@ if test "$install" = "true"; then
     undivert $TARGET/sbin/start-stop-daemon
 fi
 
+echo "Host?"
+cat /proc/version
+echo "Guest?"
+cat $TARGET/proc/version
+echo "Host"
+cat /proc/cpuinfo 
+echo "Guest"
+cat $TARGET/proc/cpuinfo 
+
 # copy netkit filesystem files
 tar -C $WORKDIR/filesystem-tweaks -c . | tar -C $TARGET -x
 
