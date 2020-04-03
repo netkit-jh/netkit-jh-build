@@ -1,3 +1,5 @@
 Netkit-NG kernel and fs build version 0.1.3
 
 Documentations are located here: http://netkit-ng.github.io/
+
+The whole building process of this is very strange due to me trying to build different versions in the same environment. Originally, I wanted to update to Debian Jessie however eventually went to Stretch, Buster then Bullseye. For me, I built the filesystem inside a stretch VM and built the kernel inside a Buster VM.
