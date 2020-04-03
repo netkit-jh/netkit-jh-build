@@ -59,7 +59,6 @@ quagga
 radvd
 rcconf
 rdnssd
-realpath
 rpcbind
 screen
 sendip
