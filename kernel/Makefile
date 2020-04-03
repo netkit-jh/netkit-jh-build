@@ -1,7 +1,7 @@
 include ../Makefile.am
 
-KERNEL_VERSION=user-mode-linux-4.19-1um
-KERNEL_NUMBER=4.19
+KERNEL_VERSION=user-mode-linux-5.6
+KERNEL_NUMBER=5.6
 
 BUILD_DIR=build
 NETKIT_DIR=${BUILD_DIR}/netkit-ng
@@ -12,7 +12,7 @@ default: ../${KERNEL_ARCHIVE_FILE}
 
 .PHONY: clean
 clean:
-	rm -rf ${BUILD_DIR}
+	#rm -rf ${BUILD_DIR}
 
 .PHONY: mrproper
 mrproper: clean
@@ -20,16 +20,18 @@ mrproper: clean
 
 .PHONY: init
 init: clean
-	mkdir -p ${BUILD_DIR}
+	#mkdir -p ${BUILD_DIR}
 
 ${DEBIAN_PACKAGE_DIR}: init
-	cd ${BUILD_DIR} ; apt-get source user-mode-linux
-	cd ${BUILD_DIR} ; apt-get build-dep user-mode-linux
+	#cd ${BUILD_DIR} ; apt-get source user-mode-linux
+	#cd ${BUILD_DIR} ; apt-get build-dep user-mode-linux
 
 ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml: ${DEBIAN_PACKAGE_DIR}
-	sed 's/CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-netkit-ng-$(NETKIT_KERNEL_RELEASE)"/' config.i386 > ${BUILD_DIR}/${KERNEL_VERSION}/config.${SUBARCH}
+	# sed 's/CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-netkit-ng-$(NETKIT_KERNEL_RELEASE)"/' config.i386 > ${BUILD_DIR}/${KERNEL_VERSION}/config.${SUBARCH}
+	# sed 's/CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-8-686-pae"/' ${BUILD_DIR}/${KERNEL_VERSION}/config.${SUBARCH} > ${BUILD_DIR}/${KERNEL_VERSION}/config.${SUBARCH}
+	#cp config.i386 ${BUILD_DIR}/${KERNEL_VERSION}/config.${SUBARCH}
 	cp patches/* ${DEBIAN_PACKAGE_DIR}/debian/patches/
-	cd ${DEBIAN_PACKAGE_DIR} ; dpkg-buildpackage -rfakeroot -nc -uc
+	cd ${DEBIAN_PACKAGE_DIR} ; dpkg-buildpackage -rfakeroot -nc -uc -d
 
 ../${KERNEL_ARCHIVE_FILE}: ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml
 	mkdir -p ${KERNEL_DIR}
