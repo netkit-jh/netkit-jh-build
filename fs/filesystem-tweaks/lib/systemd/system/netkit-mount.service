@@ -1,0 +1,11 @@
+[Unit]
+Description=Netkit Mount Startup
+Before=networking.target systemd-modules-load.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/netkit/netkit-mount-modules-dir start
+StandardOutput=journal+console 
+
+[Install]
+WantedBy=multi-user.target

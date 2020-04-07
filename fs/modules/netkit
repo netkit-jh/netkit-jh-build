@@ -46,15 +46,6 @@ if test "$install" = "true"; then
     undivert $TARGET/sbin/start-stop-daemon
 fi
 
-echo "Host?"
-cat /proc/version
-echo "Guest?"
-cat $TARGET/proc/version
-echo "Host"
-cat /proc/cpuinfo 
-echo "Guest"
-cat $TARGET/proc/cpuinfo 
-
 # copy netkit filesystem files
 tar -C $WORKDIR/filesystem-tweaks -c . | tar -C $TARGET -x
 
@@ -62,10 +53,15 @@ tar -C $WORKDIR/filesystem-tweaks -c . | tar -C $TARGET -x
 cp $WORKDIR/build/netkit-ng/fs/netkit-filesystem-version $TARGET/etc/
 
 # install netkit startup scripts
-chroot $TARGET update-rc.d netkit-phase1 defaults 00 99
-chroot $TARGET update-rc.d netkit-phase2 defaults 99 10
-chroot $TARGET update-rc.d netkit-welcome start 01 S
-chroot $TARGET update-rc.d netkit-mount-modules-dir start 00 S stop 99 0 6
+chroot $TARGET systemctl enable netkit-startup.service
+chroot $TARGET systemctl enable netkit-shutdown.service
+chroot $TARGET systemctl enable netkit-mount.service
+chroot $TARGET systemctl enable netkit-unmount.service
+
+#ln -s $TARGET/lib/systemd/system/netkit-startup.service $TARGET/etc/systemd/system/multi-user.target.wants/netkit-startup.service
+#ln -s $TARGET/lib/systemd/system/netkit-mount.service $TARGET/etc/systemd/system/multi-user.target.wants/netkit-mount.service
+#ln -s $TARGET/lib/systemd/system/netkit-shutdown.service $TARGET/etc/systemd/system/shutdown.target.wants/netkit-shutdown.service
+#ln -s $TARGET/lib/systemd/system/netkit-unmount.service $TARGET/etc/systemd/system/shutdown.target.wants/ netkit-unmount.service
 
 # disabling unneeded services
 for SERVICE in `cat $WORKDIR/disabled-services`; do

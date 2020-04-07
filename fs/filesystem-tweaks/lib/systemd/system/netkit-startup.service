@@ -1,0 +1,14 @@
+[Unit]
+Description=Netkit Startup
+After=netkit-mount.target
+Before=getty.target
+
+[Service]
+Type=oneshot
+ExecPreStart=/etc/netkit/netkit-welcome
+ExecStart=/etc/netkit/netkit-phase1 start
+ExecStartPost=/etc/netkit/netkit-phase2 start
+StandardOutput=journal+console
+
+[Install]
+WantedBy=multi-user.target

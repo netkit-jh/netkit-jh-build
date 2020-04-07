@@ -1,0 +1,12 @@
+[Unit]
+Description=Netkit Shutdown
+Before=shutdown.target
+
+[Service]
+Type=oneshot
+ExecStart=/etc/netkit/netkit-phase1 start
+ExecStartPost=/etc/netkit/netkit-phase2 start
+StandardOutput=journal+console 
+
+[Install]
+WantedBy=shutdown.target
