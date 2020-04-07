@@ -8,6 +8,7 @@ freeradius
 ipsec
 lvm2
 lxc
+lxcfs
 mrd6
 openbsd-inetd
 openvpn
@@ -19,4 +20,3 @@ snmpd
 squid
 ssh
 x11-common
-
