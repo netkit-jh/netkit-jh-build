@@ -40,6 +40,8 @@ if test "$install" = "true"; then
     divert $TARGET/sbin/start-stop-daemon
     chroot $TARGET apt-get update
     chroot $TARGET apt-get $apt_options install $packages_list
+    # TODO: Clean up file systems (for example, headers that are no longer needed)
+    chroot $TARGET apt-get autoremove
     echo "Killing any processes running on the target fs:"
     # kill any processes using the target fs
     fuser -k -v -m $TARGET || true
@@ -53,15 +55,11 @@ tar -C $WORKDIR/filesystem-tweaks -c . | tar -C $TARGET -x
 cp $WORKDIR/build/netkit-ng/fs/netkit-filesystem-version $TARGET/etc/
 
 # install netkit startup scripts
-chroot $TARGET systemctl enable netkit-startup.service
+chroot $TARGET systemctl enable netkit-startup-phase1.service
+chroot $TARGET systemctl enable netkit-startup-phase2.service
 chroot $TARGET systemctl enable netkit-shutdown.service
 chroot $TARGET systemctl enable netkit-mount.service
 chroot $TARGET systemctl enable netkit-unmount.service
-
-#ln -s $TARGET/lib/systemd/system/netkit-startup.service $TARGET/etc/systemd/system/multi-user.target.wants/netkit-startup.service
-#ln -s $TARGET/lib/systemd/system/netkit-mount.service $TARGET/etc/systemd/system/multi-user.target.wants/netkit-mount.service
-#ln -s $TARGET/lib/systemd/system/netkit-shutdown.service $TARGET/etc/systemd/system/shutdown.target.wants/netkit-shutdown.service
-#ln -s $TARGET/lib/systemd/system/netkit-unmount.service $TARGET/etc/systemd/system/shutdown.target.wants/ netkit-unmount.service
 
 # disabling unneeded services
 for SERVICE in `cat $WORKDIR/disabled-services`; do
