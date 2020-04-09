@@ -20,3 +20,4 @@ snmpd
 squid
 ssh
 x11-common
+isc-dhcp-server
