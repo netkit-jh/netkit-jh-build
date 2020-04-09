@@ -46,7 +46,7 @@ mountdir() {
 
 # ANSI style escape sequences
 DELIMITER_TEXT=$'\e[34;1m'
-NORMAL_TEXT=$'\e[0m\e[34m'
+NORMAL_TEXT=$'\e[0m\e[36m'
 INFO_FIELD=$'\e[34;4;1m'
 PLAIN_TEXT=$'\e[0m'
 
