@@ -3,3 +3,14 @@ Netkit-NG kernel and fs build version 0.1.3
 Documentations are located here: http://netkit-ng.github.io/
 
 The whole building process of this is very strange due to me trying to build different versions in the same environment. Originally, I wanted to update to Debian Jessie however eventually went to Stretch, Buster then Bullseye. For me, I built the filesystem inside a stretch VM and built the kernel inside a Buster VM.
+
+# TODO 
+- Create a tutorial on how to build FS and kernel.
+- Possibly setup continious integration.
+- Provide releases on the Github repo.
+
+## Known Issues
+- dnsmasq (v2.81-rc5, v2.80) DHCP server will not reply to DHCPDiscover broadcasts. The packet is received on the server but dnsmasq never responds.
+- Using gnome terminals with labs (`lstart --xterm=gnome`) causes the machines to kernel panic. However starting a VM with `vstart vm --con0=this` works fine.
+- iptables currently uses nftables framework. This can be changed back to the legacy iptables format by using `update-alternatives --set iptables /usr/sbin/iptables-legacy`.
+- The filesystem is currently 4gb uncompressed. This is due to development packages used to build packages are not cleaned up. After everything has been installed, packages such as `linux-headers-*` and `make` can be removed.
