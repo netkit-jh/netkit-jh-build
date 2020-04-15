@@ -21,3 +21,6 @@ squid
 ssh
 x11-common
 isc-dhcp-server
+isc-dhcp-relay
+isc-dhcp-relay6
+systemd-timesyncd

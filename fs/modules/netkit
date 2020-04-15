@@ -39,9 +39,10 @@ if test "$install" = "true"; then
     fi
     divert $TARGET/sbin/start-stop-daemon
     chroot $TARGET apt-get update
+    # We want wireguard without installing wireguard-dkms because we have it built into the kernel tree
+    chroot $TARGET apt-get install --no-install-recommends wireguard-tools
     chroot $TARGET apt-get $apt_options install $packages_list
     # TODO: Clean up file systems (for example, headers that are no longer needed)
-    chroot $TARGET apt-get autoremove
     echo "Killing any processes running on the target fs:"
     # kill any processes using the target fs
     fuser -k -v -m $TARGET || true

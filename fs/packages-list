@@ -84,8 +84,10 @@ vim
 vlan
 xl2tpd
 zsh
-wireguard
 netcat-openbsd
 isc-dhcp-server
+isc-dhcp-relay
+man-db
+nftables
 # smcroute -- removed because of smcroute conflict
 # pimd -- removed because of pimd conflict
