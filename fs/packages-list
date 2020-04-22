@@ -89,5 +89,7 @@ isc-dhcp-server
 isc-dhcp-relay
 man-db
 nftables
+stunnel4
+ncat
 # smcroute -- removed because of smcroute conflict
 # pimd -- removed because of pimd conflict

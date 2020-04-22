@@ -24,3 +24,4 @@ isc-dhcp-server
 isc-dhcp-relay
 isc-dhcp-relay6
 systemd-timesyncd
+stunnel4
