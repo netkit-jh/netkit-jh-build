@@ -42,6 +42,8 @@ if test "$install" = "true"; then
     # We want wireguard without installing wireguard-dkms because we have it built into the kernel tree
     chroot $TARGET apt-get install --no-install-recommends wireguard-tools
     chroot $TARGET apt-get $apt_options install $packages_list
+    echo "Setting iptables to use legacy iptables"
+    chroot $TARGET update-alternatives --set iptables /usr/sbin/iptables-legacy
     # TODO: Clean up file systems (for example, headers that are no longer needed)
     echo "Killing any processes running on the target fs:"
     # kill any processes using the target fs
@@ -49,12 +51,15 @@ if test "$install" = "true"; then
     undivert $TARGET/sbin/start-stop-daemon
 fi
 
+echo "Copying filesystem files..."
 # copy netkit filesystem files
 tar -C $WORKDIR/filesystem-tweaks -c . | tar -C $TARGET -x
 
+echo "Copying netkit-filesystem-version"
 # copy netkit-filesystem-version
 cp $WORKDIR/build/netkit-ng/fs/netkit-filesystem-version $TARGET/etc/
 
+echo "Installing Netkit startup scripts"
 # install netkit startup scripts
 chroot $TARGET systemctl enable netkit-startup-phase1.service
 chroot $TARGET systemctl enable netkit-startup-phase2.service
@@ -62,26 +67,34 @@ chroot $TARGET systemctl enable netkit-shutdown.service
 chroot $TARGET systemctl enable netkit-mount.service
 chroot $TARGET systemctl enable netkit-unmount.service
 
+echo "Disabling unneeded services:"
 # disabling unneeded services
 for SERVICE in `cat $WORKDIR/disabled-services`; do
 	chroot $TARGET systemctl disable ${SERVICE}.service
+	echo "$SERVICE disabled"
 done
 
+echo "Disabling unneeded system services:"
 # disabling unneeded system services
 for SERVICE in `cat $WORKDIR/disabled-system-services`; do
-   chroot $TARGET update-rc.d -f ${SERVICE} remove
-   mv ${TARGET}/etc/init.d/${SERVICE} ${TARGET}/etc/init.d/\#${SERVICE}
+	chroot $TARGET update-rc.d -f ${SERVICE} remove
+	mv ${TARGET}/etc/init.d/${SERVICE} ${TARGET}/etc/init.d/\#${SERVICE}
+	echo "$SERVICE disabled"
 done
 
+echo "Saving cached deb files"
 # save cache deb files
 cp -n $TARGET/var/cache/apt/archives/*.deb $WORKDIR/cache
 
+echo "Removing debs from image fs"
 # remove deb from image fs
 rm -f $TARGET/var/cache/apt/archives/*.deb
 
+echo "Saving debconf-package-selections"
 # save debconf-package-selections
 chroot $TARGET debconf-get-selections > $WORKDIR/build/debconf-package-selections.last
 
+echo "Creating compatibility link"
 # create compatibility link from /etc/mtab to /proc/mounts
 rm -f $TARGET/etc/mtab
 ln -s /proc/mounts $TARGET/etc/mtab

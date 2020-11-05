@@ -1,0 +1,11 @@
+[Unit]
+Description=Netkit Mount Shutdown
+After=networking.target netkit-shutdown.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/netkit/mount-modules-dir stop
+StandardOutput=journal+console
+
+[Install]
+WantedBy=shutdown.target

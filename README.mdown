@@ -1,16 +1,139 @@
-Netkit-NG kernel and fs build version 0.1.3
+Netkit-NG kernel and fs build version 0.1.6
 
-Documentations are located here: http://netkit-ng.github.io/
+Original Netkit documentation are located here: http://netkit-ng.github.io/
 
-The whole building process of this is very strange due to me trying to build different versions in the same environment. Originally, I wanted to update to Debian Jessie however eventually went to Stretch, Buster then Bullseye. For me, I built the filesystem inside a stretch VM and built the kernel inside a Buster VM.
+## Installing Netkit
+From the releases page, download `install_netkit_jh.sh`. Place this script anywhere. This script does not need to be ran as root (but will require root priviledges midway through)
+```
+chmod +x install_netkit_jh.sh
+./install_netkit_jh.sh
+```
+During the installation process, you will be asked for root priviledges to install additional packages that are required.
 
-# TODO 
-- Create a tutorial on how to build FS and kernel.
-- Possibly setup continious integration.
-- Provide releases on the Github repo.
+## Building Netkit
+### Installing Debian Bullseye
+Firstly install a Debian 11 VM - At the time of writing, Bullseye was in it's second alpha, but any Debian Bullseye should work.
+For reference, my `uname -a` was:
+```
+Linux debian 5.9.0-1-amd64 #1 SMP Debian 5.9.1-1 (2020-10-17) x86_64 GNU/Linux
+```
+
+Configure the VM with at least 4GB of RAM, at least 30GB of storage and as much processor power you can allocate it. 
+
+Configure root account with password root.
+Configure debian account with password debian.
+
+### Setting up packages
+Run 
+```
+sudo iptables -j MASQUERADE -t nat -o ens33 -A POSTROUTING
+```
+where ens33 corresponds to your main interface name. 
+```
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 00:0c:29:24:c5:d4 brd ff:ff:ff:ff:ff:ff
+    altname enp2s1
+    inet 192.168.16.128/24 brd 192.168.16.255 scope global dynamic noprefixroute ens33
+       valid_lft 1419sec preferred_lft 1419sec
+    inet6 fe80::20c:29ff:fe24:c5d4/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+```
+As you can see, ens33 is my interface defined by VMware.
+
+Then run this command to install required packages for building.
+```
+apt install git make dpkg-dev debootstrap iptables-persistent
+```
+iptables-persistent will ask you whether you wish to save current iptables rules. Say Yes to both.
+
+### Building the kernel
+**The kernel must be built first as the filesystem depends on it.**
+Run:
+```
+git clone https://github.com/TechSupportJosh/netkit-ng-build.git
+cd netkit-ng-build/kernel
+sudo make
+```
+On my machine, this takes about about 5-10 minutes.
+
+When asked whether you wish to implement random MAC addresses for interfaces, I recommend entering Y (yes).
+
+The kernel will be built in kernel/build/netkit-ng/kernel/netkit-kernel and copied out to netkit-ng-build/netkit-ng/...
+
+### Building the filesystem
+**The kernel MUST be built before this stage!**
+Firstly append
+```
+deb http://deb.debian.org/debian jessie main
+```
+to the end of `/etc/apt/sources.list`.
+
+Then install rootstrap:
+`sudo apt install rootstrap`
+
+Then remove/comment out the line you just added in `/etc/apt/sources.list`.
+```
+# deb http://deb.debian.org/debian jessie main
+```
+
+Run:
+```
+cd netkit-ng-build/fs
+sudo make
+```
+On my machine, this takes approximately 20-40 minutes.
+
+The filesystem will be built in fs/build/netkit-ng/fs/netkit-fs and copied out to netkit-ng-build/netkit-ng/...
+
+### Building TCPdump
+tcpdump cannot be installed via apt, as it includes Debian patches which attempt to drop priviledges after creating the save file. This prevents us from being able to do
+```tcpdump -w /hostlab/lab01.pcap```
+and instead makes us do this
+```
+tcpdump -Z root -C 1 -w /hostlab/lab01.pcap
+```
+
+To get around this, we will build tcpdump from source then copy it over into the filesystem. I built it inside a Netkit VM to ensure compatibility. This means you will need an already working installation of Netkit. Firstly, start a VM using this command:
+```
+vstart netkit_tcpdump --eth0=tap,10.0.0.1,10.0.0.2 --mem=512
+```
+Then once the VM has started, run the commands below:
+```
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+apt update && apt install git make build-essential flex bison
+git clone https://github.com/the-tcpdump-group/tcpdump
+git clone https://github.com/the-tcpdump-group/libpcap
+cd libpcap
+./configure && make
+cd ../tcpdump
+./configure && make
+cp tcpdump /hosthome/tcpdump
+cp tcpdump.1 /hosthome/tcpdump.1
+```
+
+Now replace the tcpdump binary and the man page file inside netkit-ng-build/fs/filesystem-tweaks/.
+
+### Installing new packages
+To add new packages, add the package name to fs/packages-list. It's also recommended that if a package installs a service that will automatically run to update disabled-services with the service name. Then, in your machine startup files, re-enable the service. This is to mimimise the amount of services running on each Netkit VM.
+
+### Common build errors:
+```
+Bus error - the host /dev/shm or /tmp mount likely just ran out of space
+```
+Restart your VM, or expand the size of /dev/shm.
+
+
+```
+I: Unpacking the base system
+Error 2 occured in netkit module: no such file or directory
+```
+Ensure that all the ftp URLs throughout the project all match (i.e. all using ftp.fr.debian.org).
 
 ## Known Issues
-- dnsmasq (v2.81-rc5, v2.80) DHCP server will not reply to DHCPDiscover broadcasts. The packet is received on the server but dnsmasq never responds.
-- Using gnome terminals with labs (`lstart --xterm=gnome`) causes the machines to kernel panic. However starting a VM with `vstart vm --con0=this` works fine.
-- iptables currently uses nftables framework. This can be changed back to the legacy iptables format by using `update-alternatives --set iptables /usr/sbin/iptables-legacy`.
-- The filesystem is currently 4gb uncompressed. This is due to development packages used to build packages are not cleaned up. After everything has been installed, packages such as `linux-headers-*` and `make` can be removed.
+- Using gnome terminals with labs (`lstart --xterm=gnome`) causes the machines to kernel panic. However starting a VM with `vstart vm --con0=this` works fine. (unlikely to be fixed, appears to be an ancient netkit bug with a funky kernel bug)

@@ -5,11 +5,11 @@ diff -urpN b/arch/um/drivers/Makefile a/arch/um/drivers/Makefile
  port-objs := port_kern.o port_user.o
  harddog-objs := harddog_kern.o harddog_user.o
  
--LDFLAGS_pcap.o := -r $(shell $(CC) $(KBUILD_CFLAGS) -print-file-name=libpcap.a)
-+LDFLAGS_pcap.o := -r -L$(shell dirname `$(CC) $(KBUILD_CFLAGS) -print-file-name=libpcap.a`) -lpcap
+-LDFLAGS_pcap.o = $(shell $(CC) $(KBUILD_CFLAGS) -print-file-name=libpcap.a)
++LDFLAGS_pcap.o = -L$(shell dirname `$(CC) $(KBUILD_CFLAGS) -print-file-name=libpcap.a`) -lpcap
  
--LDFLAGS_vde.o := -r $(shell $(CC) $(CFLAGS) -print-file-name=libvdeplug.a)
-+LDFLAGS_vde.o := -r -L$(shell dirname `$(CC) $(CFLAGS) -print-file-name=libvdeplug.a`) -lvdeplug
+-LDFLAGS_vde.o = $(shell $(CC) $(CFLAGS) -print-file-name=libvdeplug.a)
++LDFLAGS_vde.o = -L$(shell dirname `$(CC) $(CFLAGS) -print-file-name=libvdeplug.a`) -lvdeplug
  
  targets := pcap_kern.o pcap_user.o vde_kern.o vde_user.o
 
