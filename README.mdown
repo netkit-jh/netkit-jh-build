@@ -1,4 +1,4 @@
-Netkit-NG kernel and fs build version 0.1.6
+Netkit-NG kernel and fs build version 0.1.7
 
 Original Netkit documentation are located here: http://netkit-ng.github.io/
 
@@ -62,7 +62,7 @@ sudo make
 ```
 On my machine, this takes about about 5-10 minutes.
 
-When asked whether you wish to implement random MAC addresses for interfaces, I recommend entering Y (yes).
+When asked whether you wish to implement random MAC addresses for interfaces, I recommend entering the default N (no).
 
 The kernel will be built in kernel/build/netkit-ng/kernel/netkit-kernel and copied out to netkit-ng-build/netkit-ng/...
 
