@@ -27,18 +27,15 @@ ${DEBIAN_PACKAGE_DIR}: init
 	cd ${BUILD_DIR} ; apt-get build-dep user-mode-linux
 
 ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml: ${DEBIAN_PACKAGE_DIR}
-	# sed 's/CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-netkit-ng-$(NETKIT_KERNEL_RELEASE)"/' config.i386 > ${BUILD_DIR}/${KERNEL_VERSION}/config.${SUBARCH}
-	# sed 's/CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-8-686-pae"/' ${BUILD_DIR}/${KERNEL_VERSION}/config.${SUBARCH} > ${BUILD_DIR}/${KERNEL_VERSION}/config.${SUBARCH}
-	#cp config.i386 ${BUILD_DIR}/${KERNEL_VERSION}/config.${SUBARCH}
 	cp patches/* ${DEBIAN_PACKAGE_DIR}/debian/patches/
 	cd ${DEBIAN_PACKAGE_DIR} ; dpkg-buildpackage -rfakeroot -nc -uc -d
 
 ../${KERNEL_ARCHIVE_FILE}: ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml
 	mkdir -p ${KERNEL_DIR}
-	cp ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml ${KERNEL_DIR}/netkit-kernel-${SUBARCH}-${KERNEL_NUMBER}-${NETKIT_KERNEL_RELEASE}
-	cd ${KERNEL_DIR} ; ln -s netkit-kernel-${SUBARCH}-${KERNEL_NUMBER}-${NETKIT_KERNEL_RELEASE} netkit-kernel
+	cp ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml ${KERNEL_DIR}/netkit-kernel-${KERNEL_NUMBER}
+	cd ${KERNEL_DIR} ; ln -s netkit-kernel-${KERNEL_NUMBER} netkit-kernel
 	mkdir -p ${KERNEL_DIR}/modules/
 	cp -r ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/lib/ ${KERNEL_DIR}/modules/
-	echo "Netkit-NG kernel version $(NETKIT_KERNEL_RELEASE)" > ${KERNEL_DIR}/netkit-kernel-version
+	echo "Netkit-NG UML version $(KERNEL_VERSION)" > ${KERNEL_DIR}/netkit-kernel-version
 	cd ${BUILD_DIR}/ ; tar -cvjf ../../${KERNEL_ARCHIVE_FILE} netkit-ng/
 
