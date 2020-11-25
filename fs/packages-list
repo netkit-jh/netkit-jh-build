@@ -81,6 +81,7 @@ telnetd
 tftp
 tftpd
 tshark
+traceroute
 vim
 vlan
 xl2tpd
