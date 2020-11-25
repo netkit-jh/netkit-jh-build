@@ -13,13 +13,13 @@ diff -urpN b/arch/um/drivers/Makefile a/arch/um/drivers/Makefile
  
  targets := pcap_kern.o pcap_user.o vde_kern.o vde_user.o
 
-diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
---- b/arch/um/drivers/net_kern.c	2020-04-02 07:02:32.000000000 +0100
-+++ a/arch/um/drivers/net_kern.c	2020-04-13 14:55:34.461657397 +0100
+--- b/arch/um/drivers/net_kern.c	2020-11-24 16:08:47.811216212 +0000
++++ a/arch/um/drivers/net_kern.c	2020-11-24 16:24:39.861802602 +0000
 @@ -25,11 +25,69 @@
  #include <net_kern.h>
  #include <net_user.h>
  
++#include <crypto/hash.h>
 +#include <crypto/sha.h>
 +#include <linux/string.h>
 +#include <linux/crypto.h>
@@ -82,11 +82,10 @@ diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
 +}
 +#endif
 +
-+
  /*
   * The drop_skb is used when we can't allocate an skb.  The
   * packet is read into drop_skb in order to get the data off the
-@@ -291,6 +349,7 @@ void uml_net_setup_etheraddr(struct net_
+@@ -279,6 +337,7 @@ void uml_net_setup_etheraddr(struct net_
  	unsigned char *addr = dev->dev_addr;
  	char *end;
  	int i;
@@ -94,7 +93,7 @@ diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
  
  	if (str == NULL)
  		goto random;
-@@ -330,10 +389,27 @@ void uml_net_setup_etheraddr(struct net_
+@@ -318,10 +377,27 @@ void uml_net_setup_etheraddr(struct net_
  	}
  	return;
  
