@@ -4,7 +4,7 @@ After=netkit-mount.service
 
 [Service]
 Type=oneshot
-ExecPreStart=/etc/netkit/netkit-welcome
+ExecStartPre=/etc/netkit/netkit-welcome
 ExecStart=/etc/netkit/netkit-phase1 start
 StandardOutput=journal+console
 
