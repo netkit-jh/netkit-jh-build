@@ -28,6 +28,12 @@ ${DEBIAN_PACKAGE_DIR}: init
 
 ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml: ${DEBIAN_PACKAGE_DIR}
 	cp patches/* ${DEBIAN_PACKAGE_DIR}/debian/patches/
+	# Add Wireguard to kernel config
+	# CONFIG_WIREGUARD=m
+	# WIREGUARD_DEBUG=n
+	sed -i "s/.*CONFIG_WIREGUARD.*/CONFIG_WIREGUARD=m\nCONFIG_WIREGUARD_DEBUG=n/" ${BUILD_DIR}/${KERNEL_VERSION}/config.amd64
+	# Set UML_NET_RANDOM_MAC to N
+	echo "CONFIG_UML_NET_RANDOM_MAC=n" >> ${BUILD_DIR}/${KERNEL_VERSION}/config.amd64
 	cd ${DEBIAN_PACKAGE_DIR} ; dpkg-buildpackage -rfakeroot -nc -uc -d
 
 ../${KERNEL_ARCHIVE_FILE}: ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml
