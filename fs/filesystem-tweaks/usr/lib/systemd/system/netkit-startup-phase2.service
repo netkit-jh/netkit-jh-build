@@ -7,6 +7,7 @@ Before=getty@tty0.service getty@tty1.service
 Type=oneshot
 ExecStart=/etc/netkit/netkit-phase2 start
 StandardOutput=journal+console
+TimeoutSec=300
 
 [Install]
 WantedBy=multi-user.target
