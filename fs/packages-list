@@ -28,6 +28,7 @@ iperf
 iproute2
 ipv6calc
 less
+lftp
 locate
 lrzsz
 lsof
