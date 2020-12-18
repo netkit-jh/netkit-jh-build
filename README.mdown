@@ -48,7 +48,7 @@ As you can see, ens33 is my interface defined by VMware.
 
 Then run this command to install required packages for building.
 ```
-apt install git make dpkg-dev debootstrap iptables-persistent
+apt install git make dpkg-dev debootstrap iptables-persistent libreadline-dev net-tools
 ```
 iptables-persistent will ask you whether you wish to save current iptables rules. Say Yes to both.
 

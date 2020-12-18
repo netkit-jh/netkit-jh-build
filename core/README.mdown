@@ -1,0 +1,3 @@
+Netkit-NG version 3.0.4
+
+Documentation are located here: http://netkit-ng.github.io/
