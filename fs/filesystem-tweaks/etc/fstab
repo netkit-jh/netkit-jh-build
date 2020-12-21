@@ -1,0 +1,4 @@
+/dev/ubda  /       ext2    defaults                        0 1
+proc       /proc   proc    defaults                        0 0
+tmpfs      /tmp    tmpfs   defaults,size=768M              0 0
+tmpfs      /run    tmpfs   nosuid,noexec,size=32M          0 0
