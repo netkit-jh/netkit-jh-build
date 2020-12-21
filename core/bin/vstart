@@ -136,6 +136,7 @@ END_OF_HELP
                           konsole-tab  same as above, but different virtual
                                        machines are opened in different konsole
                                        tabs of the same window
+                          alacritty    use the lightweight Alacritty terminal
                           xterm        use the standard xterm                          
                           
 
@@ -347,7 +348,7 @@ parseCmdLine() {
             shift; CURRENT_ARGUMENT="$1"
             checkSpaces "$CURRENT_ARGUMENT"
             case "$CURRENT_ARGUMENT" in
-               konsole|konsole-tab|gnome|xterm)
+               konsole|konsole-tab|gnome|xterm|alacritty)
                   ASSIGNED_TERM_TYPE=1
                   TERM_TYPE=$CURRENT_ARGUMENT;;
                *)
@@ -428,6 +429,7 @@ if [ $VM_CON0 = "xterm" -o $VM_CON1 = "xterm" ]; then
    TERMINAL_APPLICATION=${TERM_TYPE:-xterm}
    [ $TERMINAL_APPLICATION = "konsole-tab" ] && TERMINAL_APPLICATION=konsole
    [ $TERMINAL_APPLICATION = "gnome" ] && TERMINAL_APPLICATION=gnome-terminal
+   [ $TERMINAL_APPLICATION = "alacritty" ] && TERMINAL_APPLICATION=alacritty
    if ! which $TERMINAL_APPLICATION > /dev/null 2>&1; then
       warning "$SCRIPTNAME" "$CMDLINE" "$0" \
                "Terminal emulator \"$TERMINAL_APPLICATION\" appears not to be available. Please install it or use --xterm."
@@ -652,6 +654,7 @@ if [ $VM_CON0 = "xterm" -a "$CON0_PORTHELPER" != "yes" ]; then
       konsole)       KERNELCMD="konsole --nofork --title $VM_NAME -e $KERNELCMD";;
       konsole-tab)   KERNELCMD="$NETKIT_HOME/bin/konsole-tabs.sh -e $KERNELCMD";;
       gnome)         KERNELCMD="gnome-terminal --window-with-profile=netkit -- $KERNELCMD";;
+      alacritty)         KERNELCMD="alacritty -e $KERNELCMD";;
       *)             KERNELCMD="xterm -e $KERNELCMD";;
    esac
    VM_CON0="this_noporthelper"
