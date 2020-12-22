@@ -23,8 +23,10 @@ init: clean
 	mkdir -p ${BUILD_DIR}
 
 ${DEBIAN_PACKAGE_DIR}: init
-	cd ${BUILD_DIR} ; apt-get source user-mode-linux
-	cd ${BUILD_DIR} ; apt-get build-dep user-mode-linux
+	chown _apt ${BUILD_DIR}
+	cd ${BUILD_DIR} ; apt-get -yq source user-mode-linux
+	cd ${BUILD_DIR} ; apt-get -yq build-dep user-mode-linux
+	chown root ${BUILD_DIR}
 
 ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/bin/linux.uml: ${DEBIAN_PACKAGE_DIR}
 	cp patches/* ${DEBIAN_PACKAGE_DIR}/debian/patches/
