@@ -217,3 +217,38 @@ diff -urpN b/arch/um/drivers/Kconfig a/arch/um/drivers/Kconfig
  config UML_NET_ETHERTAP
  	bool "Ethertap transport"
  	depends on UML_NET
+diff -urpN b/arch/um/os-Linux/umid.c a/arch/um/os-Linux/umid.c
+--- b/arch/um/os-Linux/umid.c	2020-10-17 07:31:22.000000000 +0100
++++ a/arch/um/os-Linux/umid.c	2020-12-19 18:55:25.628997850 +0000
+@@ -97,7 +97,7 @@ static int remove_files_and_dir(char *di
+ 	while ((ent = readdir(directory)) != NULL) {
+ 		if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
+ 			continue;
+-		len = strlen(dir) + sizeof("/") + strlen(ent->d_name) + 1;
++		len = strlen(dir) + strlen("/") + strlen(ent->d_name) + 1;
+ 		if (len > sizeof(file)) {
+ 			ret = -E2BIG;
+ 			goto out;
+@@ -135,7 +135,7 @@ out:
+  */
+ static inline int is_umdir_used(char *dir)
+ {
+-	char pid[sizeof("nnnnn\0")], *end, *file;
++	char pid[sizeof("nnnnnnnnn")], *end, *file;
+ 	int dead, fd, p, n, err;
+ 	size_t filelen;
+ 
+@@ -217,10 +217,10 @@ static int umdir_take_if_dead(char *dir)
+ 
+ static void __init create_pid_file(void)
+ {
+-	char pid[sizeof("nnnnn\0")], *file;
++	char pid[sizeof("nnnnnnnnn")], *file;
+ 	int fd, n;
+ 
+-	n = strlen(uml_dir) + UMID_LEN + sizeof("/pid\0");
++	n = strlen(uml_dir) + UMID_LEN + sizeof("/pid");
+ 	file = malloc(n);
+ 	if (!file)
+ 		return;
+
