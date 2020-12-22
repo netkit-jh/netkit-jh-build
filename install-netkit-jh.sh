@@ -25,9 +25,9 @@ cd "${DOWNLOAD_DIR}"
 # core, kernel and file system from Josh Hawking's updated work
 wget -O release.sha256 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/release.sha256"
 
-wget -O netkit-core.tar.bz2 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/netkit-core-$VERSION.tar.bz2"
-wget -O netkit-fs.tar.bz2 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/netkit-fs-$VERSION.tar.bz2"
-wget -O netkit-kernel.tar.bz2 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/netkit-kernel-$VERSION.tar.bz2"
+wget -O netkit-core-${VERSION}.tar.bz2 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/netkit-core-$VERSION.tar.bz2"
+wget -O netkit-fs-${VERSION}.tar.bz2 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/netkit-fs-$VERSION.tar.bz2"
+wget -O netkit-kernel-${VERSION}.tar.bz2 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/netkit-kernel-$VERSION.tar.bz2"
 
 if ! sha256sum -c release.sha256; then
     echo "File checksums: FAILED" >&2
@@ -39,9 +39,9 @@ echo "File checksums: OK"
 echo "Extracting files..."
 # strip-components removes the netkit-ng directory
 # .tar.bz2
-tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-core.tar.bz2
-tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-fs.tar.bz2
-tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-kernel.tar.bz2
+tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-core-${VERSION}.tar.bz2
+tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-fs-${VERSION}.tar.bz2
+tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-kernel-${VERSION}.tar.bz2
  
 # back up existing bashrc file with date and time as part of filename
 BASHBAK="${HOME}/bashrc_$(date "+%F_%H-%M-%S").bak"
@@ -74,4 +74,4 @@ echo "Future terminals that you launch will automatically get the netkit setting
 echo "To make the netkit settings available in this terminal, run the following command:"
 echo "source ~/.bashrc"
 
-echo -e "\033[1mRun ${UNZIP_TARGET_DIR}/change-terminal.sh to change your terminal emulator (highly recommended\!)\033[0m"
+echo -e "\033[1mRun ${UNZIP_TARGET_DIR}/change_terminal.sh to change your terminal emulator (highly recommended\!)\033[0m"
