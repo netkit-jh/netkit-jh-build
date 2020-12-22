@@ -53,6 +53,9 @@ for SERVICE in `cat $WORK_DIRECTORY/disabled-services`; do
 	chroot $MOUNT_DIRECTORY systemctl disable ${SERVICE}
 done
 
+# Add random-seed entropy
+dd if=/dev/urandom of=$MOUNT_DIRECTORY/var/lib/systemd/random-seed bs=2048 count=1
+
 # Save debconf-package-selections
 chroot $MOUNT_DIRECTORY debconf-get-selections > $WORK_DIRECTORY/build/debconf-package-selections.last
 
