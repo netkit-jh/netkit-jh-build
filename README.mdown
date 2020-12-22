@@ -3,15 +3,56 @@ Netkit-NG kernel and fs build version 0.1.8
 Original Netkit documentation are located here: http://netkit-ng.github.io/
 
 ## Installing Netkit
-From the releases page, download `install_netkit_jh.sh`. Place this script anywhere. This script does not need to be ran as root (but will require root priviledges midway through)
+From the releases page, download `install_netkit_jh.sh`. Place this script anywhere. This script does not need to be run as root (but will require root privileges midway through)
 ```
 chmod +x install_netkit_jh.sh
 ./install_netkit_jh.sh
 ```
-During the installation process, you will be asked for root priviledges to install additional packages that are required.
+During the installation process, you will be asked for root privileges to install additional packages that are required.
 
 ## Building Netkit
-### Installing Debian Bullseye
+
+The current options for building netkit are using docker, or using debian bullseye. If you choose to build using a debian system we recomend using a virtual machine.
+
+### Building Netkit (Docker)
+
+The following commands assume you have cloned this repository and your working directory is the root of the repo:
+
+```
+git clone https://github.com/TechSupportJosh/netkit-ng-build.git
+cd netkit-ng-build
+```
+
+First you need to build the docker image (netkit-builder-deb) which will later be used for building netkit:
+
+```
+[netkit-ng-build] $ docker build -t netkit-builder-deb .
+```
+
+Now this can be used to build everything with:
+```
+[netkit-ng-build] $ docker run --privileged -v $(pwd):/netkit-build -it netkit-builder-deb
+```
+
+Alternatively if you don't want to make everything, or you just want to clean up build files you can pass arguments to make using the MAKE_ARGS environment variable.
+
+E.g. for make clean
+```
+[netkit-ng-build] $ docker run --privileged -v $(pwd):/netkit-build -e MAKE_ARGS="clean" -it netkit-builder-deb
+```
+
+or to make the filesystem:
+```
+[netkit-ng-build] $ docker run --privileged -v $(pwd):/netkit-build -e MAKE_ARGS="build-fs" -it netkit-builder-deb
+```
+N.B: the kernel needs to be build before the filesystem can be built.
+
+
+
+
+### Building Netkit (Debian VM)
+
+#### Installing Debian Bullseye
 Firstly install a Debian 11 VM - At the time of writing, Bullseye was in it's second alpha, but any Debian Bullseye should work.
 For reference, my `uname -a` was:
 ```
@@ -23,13 +64,25 @@ Configure the VM with at least 4GB of RAM, at least 30GB of storage and as much 
 Configure root account with password root.
 Configure debian account with password debian.
 
-### Setting up packages
+#### Setting up packages
 Run this command to install required packages for building.
 ```
 apt install git make dpkg-dev debootstrap libreadline-dev
 ```
 
-### Building the kernel
+#### Building everything
+
+Run:
+```
+git clone https://github.com/TechSupportJosh/netkit-ng-build.git
+cd netkit-ng-build
+sudo make
+```
+
+See the below sections if you would prefer to build the different components separately and for more details.
+
+
+#### Building the kernel
 **The kernel must be built first as the filesystem depends on it.**
 Run:
 ```
@@ -43,7 +96,7 @@ When asked whether you wish to implement random MAC addresses for interfaces, I 
 
 The kernel will be built in kernel/build/netkit-ng/kernel/netkit-kernel and copied out to netkit-ng-build/netkit-ng/...
 
-### Building the filesystem
+#### Building the filesystem
 **The kernel MUST be built before this stage!**
 Run:
 ```
@@ -54,7 +107,7 @@ On my machine, this takes approximately 10 minutes.
 
 The filesystem will be built in fs/build/netkit-ng/fs/netkit-fs and copied out to netkit-ng-build/netkit-ng/...
 
-### Building TCPdump
+#### Building TCPdump
 tcpdump cannot be installed via apt, as it includes Debian patches which attempt to drop priviledges after creating the save file. This prevents us from being able to do
 ```tcpdump -w /hostlab/lab01.pcap```
 and instead makes us do this
