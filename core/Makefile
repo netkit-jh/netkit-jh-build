@@ -41,3 +41,6 @@ clean:
 	cd bin; find . -mindepth 1 -maxdepth 1 -type l -exec unlink {} ";"
 	rm -rf $(BUILD_DIR)
 	rm -f ../$(CORE_ARCHIVE_FILE)
+
+.PHONY: mrproper
+mrproper: clean
