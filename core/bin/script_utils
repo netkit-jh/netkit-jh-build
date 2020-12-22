@@ -157,7 +157,7 @@ showVersion() {
    [ -L "$VM_KERNEL" ] && { KERNEL_FILE_NAME=`readlink "$VM_KERNEL"`;
                             KERNEL_FILE_NAME=`basename "$KERNEL_FILE_NAME"`; }
    NETKIT_KERNEL_VERSION="${KERNEL_FILE_NAME##netkit-kernel-}"
-   echo $NETKIT_KERNEL_VERSION
+   echo "${NETKIT_KERNEL_VERSION}"
    
    # Netkit filesystem version information
    echo -n "Netkit filesystem version: "
@@ -166,12 +166,7 @@ showVersion() {
    [ -L "$VM_MODEL_FS" ] && { NETKIT_FILESYSTEM_NAME=`readlink "$VM_MODEL_FS"`;
                               NETKIT_FILESYSTEM_NAME=`basename "$NETKIT_FILESYSTEM_NAME"`; }
    NETKIT_FILESYSTEM_VERSION="${NETKIT_FILESYSTEM_NAME##netkit-fs-}"
-   if echo "$NETKIT_FILESYSTEM_VERSION" | grep -Eq "F([0-9]+[\.\-])+[0-9]+[a-zA-Z]*$"; then
-      # This appears to be a valid version number
-      echo "${NETKIT_FILESYSTEM_VERSION##*-} [${NETKIT_FILESYSTEM_VERSION%%-*}]"
-   else
-      echo "<unknown>"
-   fi
+   echo "${NETKIT_FILESYSTEM_VERSION}"
    
    # Host kernel version information
    echo -n "Host kernel version:       "
