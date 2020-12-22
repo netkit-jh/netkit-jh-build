@@ -36,15 +36,17 @@ cp $BUILD_DIRECTORY/netkit-filesystem-version $MOUNT_DIRECTORY/etc/netkit-filesy
 # Create kernel module directory
 mkdir -p $MOUNT_DIRECTORY/lib/modules
 
-# Copy in kernel modules (unused as kernel modules are mounted at runtime)
-# cp -r $KERNEL_MODULES/* /lib/modules/
+# Copy in kernel modules (kernel modules can instead by mounted at runtime by enabling the netkit-mount service)
+cp -r $KERNEL_MODULES/* $MOUNT_DIRECTORY/lib/modules/
 
 # Install netkit services
 chroot $MOUNT_DIRECTORY systemctl enable netkit-startup-phase1.service
 chroot $MOUNT_DIRECTORY systemctl enable netkit-startup-phase2.service
 chroot $MOUNT_DIRECTORY systemctl enable netkit-shutdown.service
-chroot $MOUNT_DIRECTORY systemctl enable netkit-mount.service
-chroot $MOUNT_DIRECTORY systemctl enable netkit-unmount.service
+
+# Required for mounting kernel modules at runtime
+#chroot $MOUNT_DIRECTORY systemctl enable netkit-mount.service
+#chroot $MOUNT_DIRECTORY systemctl enable netkit-unmount.service
 
 # Disable system services not required
 for SERVICE in `cat $WORK_DIRECTORY/disabled-services`; do
