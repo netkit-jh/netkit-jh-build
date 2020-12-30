@@ -8,7 +8,7 @@
 +      desktop=$(bspc query -D -d 'next.!occupied')
 +      bspc desktop -f $desktop
        for VM in $VHOSTLIST; do
-+         bspc node -f $(bspc query -T -d $desktop | ruby szhelper.rb)
++         bspc node -f $(bspc query -T -d $desktop | szhelper.rb)
           startSingleVM $VM
        done
 +      sleep 2
