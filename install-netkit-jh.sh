@@ -42,7 +42,7 @@ echo "Extracting files..."
 tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-core-${VERSION}.tar.bz2
 tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-fs-${VERSION}.tar.bz2
 tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-kernel-${VERSION}.tar.bz2
- 
+
 # back up existing bashrc file with date and time as part of filename
 BASHBAK="${HOME}/bashrc_$(date "+%F_%H-%M-%S").bak"
 cp "${HOME}/.bashrc" "$BASHBAK"
@@ -67,6 +67,15 @@ sudo apt-get update && sudo apt-get install xterm make net-tools wireshark
 # TODO: Get this to work... Netkit installs fine, but the check-configurator script doesn't read the environment variables properly so thinks something is wrong
 source ~/.bashrc
 cd "$UNZIP_TARGET_DIR"
+
+# Check if bspwm is running, and if so, apply bspwm patch
+if [ ! $(pidof bspwm) ] ; then
+	echo "Bspwm is running! Downloading and applying patch."
+	wget -O bspwm.patch --show-progress "https://raw.githubusercontent.com/TechSupportJosh/netkit-ng-build/master/patches/bspwm.patch"
+	patch -ruN -d bin -i $UNZIP_TARGET_DIR/patches/bspwm.patch
+	rm bspwm.patch
+fi
+
 ./check_configuration.sh
 
 # encourage user to set environment variables for the current bash terminal
