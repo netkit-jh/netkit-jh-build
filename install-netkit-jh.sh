@@ -42,7 +42,7 @@ echo "Extracting files..."
 tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-core-${VERSION}.tar.bz2
 tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-fs-${VERSION}.tar.bz2
 tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-kernel-${VERSION}.tar.bz2
- 
+
 # back up existing bashrc file with date and time as part of filename
 BASHBAK="${HOME}/bashrc_$(date "+%F_%H-%M-%S").bak"
 cp "${HOME}/.bashrc" "$BASHBAK"
@@ -62,11 +62,11 @@ EOF
 echo "Installing packages to run netkit..."
 sudo apt-get update && sudo apt-get install xterm make net-tools wireshark
 
-
 # check netkit install now works
 # TODO: Get this to work... Netkit installs fine, but the check-configurator script doesn't read the environment variables properly so thinks something is wrong
 source ~/.bashrc
 cd "$UNZIP_TARGET_DIR"
+
 ./check_configuration.sh
 
 # encourage user to set environment variables for the current bash terminal
@@ -74,4 +74,4 @@ echo "Future terminals that you launch will automatically get the netkit setting
 echo "To make the netkit settings available in this terminal, run the following command:"
 echo "source ~/.bashrc"
 
-echo -e "\033[1mRun ${UNZIP_TARGET_DIR}/change_terminal.sh to change your terminal emulator (highly recommended\!)\033[0m"
+echo -e "\033[1mRun ${UNZIP_TARGET_DIR}/setup_scripts/change_terminal.sh to change your terminal emulator (highly recommended\!)\033[0m"
