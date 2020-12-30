@@ -67,17 +67,6 @@ sudo apt-get update && sudo apt-get install xterm make net-tools wireshark
 source ~/.bashrc
 cd "$UNZIP_TARGET_DIR"
 
-# Check if bspwm is running, and if so, apply bspwm patch
-pidof bspwm
-if [ $? -eq 0 ] ; then
-	echo "Bspwm is running! Downloading and applying patch."
-	wget -O bspwm.patch --show-progress "https://raw.githubusercontent.com/TechSupportJosh/netkit-ng-build/master/patches/bspwm.patch"
-	wget -O bin/szhelper.rb --show-progress "https://raw.githubusercontent.com/TechSupportJosh/netkit-ng-build/master/scripts/szhelper.rb"
-	chmod +x bin/szhelper.rb
-	patch -ruN -d bin -i $UNZIP_TARGET_DIR/bspwm.patch
-	rm bspwm.patch
-fi
-
 ./check_configuration.sh
 
 # encourage user to set environment variables for the current bash terminal
@@ -85,4 +74,4 @@ echo "Future terminals that you launch will automatically get the netkit setting
 echo "To make the netkit settings available in this terminal, run the following command:"
 echo "source ~/.bashrc"
 
-echo -e "\033[1mRun ${UNZIP_TARGET_DIR}/change_terminal.sh to change your terminal emulator (highly recommended\!)\033[0m"
+echo -e "\033[1mRun ${UNZIP_TARGET_DIR}/setup_scripts/change_terminal.sh to change your terminal emulator (highly recommended\!)\033[0m"
