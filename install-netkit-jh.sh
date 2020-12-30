@@ -62,17 +62,18 @@ EOF
 echo "Installing packages to run netkit..."
 sudo apt-get update && sudo apt-get install xterm make net-tools wireshark
 
-
 # check netkit install now works
 # TODO: Get this to work... Netkit installs fine, but the check-configurator script doesn't read the environment variables properly so thinks something is wrong
 source ~/.bashrc
 cd "$UNZIP_TARGET_DIR"
 
 # Check if bspwm is running, and if so, apply bspwm patch
-if [ ! $(pidof bspwm) ] ; then
+pidof bspwm
+if [ $? -eq 0 ] ; then
 	echo "Bspwm is running! Downloading and applying patch."
 	wget -O bspwm.patch --show-progress "https://raw.githubusercontent.com/TechSupportJosh/netkit-ng-build/master/patches/bspwm.patch"
-	patch -ruN -d bin -i $UNZIP_TARGET_DIR/patches/bspwm.patch
+	wget -O bin/szhelper.rb --show-progress "https://raw.githubusercontent.com/TechSupportJosh/netkit-ng-build/master/scripts/szhelper.rb"
+	patch -ruN -d bin -i $UNZIP_TARGET_DIR/bspwm.patch
 	rm bspwm.patch
 fi
 
