@@ -232,7 +232,7 @@ run_command() {
       return 0
    else
       [ -z "$BE_QUIET" ] && echo "Running ==> $SHOW_COMMAND"
-      eval $3
+      eval $SHOW_COMMAND
       return
    fi
 }
