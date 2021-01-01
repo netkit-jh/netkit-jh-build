@@ -2,8 +2,7 @@
 Description=Netkit Validation script
 
 [Service]
-Type=oneshot
-RemainAfterExit=true
+Type=simple
 ExecStart=/root/test.sh
 
 [Install]
