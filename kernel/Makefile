@@ -37,9 +37,9 @@ ${BUILD_DIR}/linux-${KERNEL_VERSION}: init
 	# If the file exists in the cache directory, copy it to our build directory
 	# Otherwise, download it and copy it to the cache directory
 	cd ${BUILD_DIR} ; test -f ${CACHE_DIR}/${KERNEL_ARCHIVE_NAME} && cp ${CACHE_DIR}/${KERNEL_ARCHIVE_NAME} . || wget ${KERNEL_URL} && cp ${KERNEL_ARCHIVE_NAME} ${CACHE_DIR}/${KERNEL_ARCHIVE_NAME}
-	# The file ending can be either .tar.xz (full-release) or .tar.bz2 (pre-release)
+	# The file ending can be either .tar.xz (full-release) or .tar.gz (pre-release)
 	# Some tar's (GNU tar) do not require additional flags, this is therefore just a compatibility check
-	cd ${BUILD_DIR} ; test "${KERNEL_FILE_EXTENSION}" = "bz2" && tar xjf ${KERNEL_ARCHIVE_NAME} || tar xJf ${KERNEL_ARCHIVE_NAME}	
+	cd ${BUILD_DIR} ; test "${KERNEL_FILE_EXTENSION}" = "gz" && tar xzf ${KERNEL_ARCHIVE_NAME} || tar xJf ${KERNEL_ARCHIVE_NAME}	
 
 ${BUILD_DIR}/linux-${KERNEL_VERSION}/linux: ${BUILD_DIR}/linux-${KERNEL_VERSION}
 	# Apply our patches
