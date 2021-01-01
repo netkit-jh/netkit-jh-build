@@ -67,8 +67,17 @@ for config_file in *; do
 	# Add lab directory to start of each file name
 	expected_files=("${expected_file_names[@]/#/${labs_directory}/${config[LAB_FOLDER]}/}")
 	
-	# CD into lab directory and run the lab
+	# CD into lab directory
 	cd ${labs_directory}/${config[LAB_FOLDER]}
+	
+	# Remove any leftover expected files
+	for file in ${expected_files}; do
+		echo ${file}
+		rm -f ${file}
+	done
+	
+	# Run the lab
+	lclean
 	lstart
 	
 	time_started=$(date +%s)
