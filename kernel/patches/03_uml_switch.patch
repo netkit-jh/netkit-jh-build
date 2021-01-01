@@ -1,0 +1,14 @@
+# Mattia Dongili <malattia@debian.org>
+# Matt Zimmermannn <mdz@debian.org>
+# Use Debian's standard location for uml_net helper
+--- a/arch/um/drivers/daemon_kern.c	2008-02-03 15:09:48.497911268 +0900
++++ b/arch/um/drivers/daemon_kern.c	2008-02-03 15:13:05.546916771 +0900
+@@ -65,7 +65,7 @@
+ 
+ 	*init = ((struct daemon_init)
+ 		{ .sock_type 		= "unix",
+-		  .ctl_sock 		= "/tmp/uml.ctl" });
++ 		  .ctl_sock 		= "/var/run/uml-utilities/uml_switch.ctl" });
+ 
+ 	remain = split_if_spec(str, mac_out, &init->sock_type, &init->ctl_sock,
+ 			       NULL);

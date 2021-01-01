@@ -1,0 +1,30 @@
+commit 17e10328a8bcbdaae372ae333e0a057ece8bc256
+Author: Mattia Dongili <malattia@linux.it>
+Date:   Fri Apr 6 07:18:17 2012 +0900
+
+    uml: Remove unnecessary RPATH definition
+    
+    Signed-off-by: Mattia Dongili <malattia@linux.it>
+
+--- a/arch/um/Makefile
++++ b/arch/um/Makefile
+@@ -119,7 +119,6 @@
+ 	$(Q)$(MAKE) $(build)=$(HOST_DIR)/um include/generated/user_constants.h
+ 
+ LINK-$(CONFIG_LD_SCRIPT_STATIC) += -static
+-LINK-$(CONFIG_LD_SCRIPT_DYN) += -Wl,-rpath,/lib $(call cc-option, -no-pie)
+ 
+ CFLAGS_NO_HARDENING := $(call cc-option, -fno-PIC,) $(call cc-option, -fno-pic,) \
+ 	$(call cc-option, -fno-stack-protector,) \
+--- a/arch/x86/Makefile.um
++++ b/arch/x86/Makefile.um
+@@ -42,9 +42,6 @@
+ ELF_ARCH := i386:x86-64
+ ELF_FORMAT := elf64-x86-64
+ 
+-# Not on all 64-bit distros /lib is a symlink to /lib64. PLD is an example.
+-
+-LINK-$(CONFIG_LD_SCRIPT_DYN) += -Wl,-rpath,/lib64
+ LINK-y += -m64
+ 
+ endif

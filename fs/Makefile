@@ -8,7 +8,7 @@ CACHE_DIR=cache
 FINAL_ARCHIVE=../${FS_ARCHIVE_FILE}
 NETKIT_DIR=${BUILD_DIR}/netkit-ng
 FS_DIR=${NETKIT_DIR}/fs
-MODULES_PATH=../kernel/build/netkit-ng/kernel/modules/lib/uml/modules/
+MODULES_PATH=../kernel/build/kernel_modules/
 
 FS_FILE_NAME=netkit-fs-${NETKIT_BUILD_RELEASE}
 FS_RELEASE=bullseye
@@ -35,7 +35,7 @@ init: clean
 
 ${FINAL_ARCHIVE}: init ${FS_FILE_NAME} ${MODULES_PATH}
 	# cp -r ${MODULES_PATH} ${BUILD_DIR}
-	echo "Netkit-NG filesystem version ${NETKIT_FS_RELEASE} (${NETKIT_BUILD_RELEASE})" > ${FS_DIR}/netkit-filesystem-version
+	echo "Netkit-JH filesystem version ${NETKIT_FS_RELEASE} (${NETKIT_BUILD_RELEASE})" > ${FS_DIR}/netkit-filesystem-version
 	
 	# Run the install script, which will install packages, kernel modules and setup services
 	${MAKEFILE_DIR}/install-netkit-fs.sh ${MAKEFILE_DIR} ${FS_DIR} ${MOUNT_DIRECTORY} ${MODULES_PATH}
