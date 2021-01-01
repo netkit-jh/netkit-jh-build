@@ -104,6 +104,9 @@ case "$1" in
             rm /etc/hosts.tmp
          fi
 
+         echo "Running 'resolvconf -u' to generate /etc/resolv.conf"
+         resolvconf -u
+
          if [ "`echo /hostlab/shared/*`" != "/hostlab/shared/*" ]; then
             echo "Copying shared files from /hostlab/shared/..."
             # tar all the files inside the directory instead of just the
