@@ -2,7 +2,6 @@
 # Download and install netkit-ng in home directory
 # Peter Norris: 22 Nov 2020
 # Adapted for Josh Hawking's development to provide an up-to-date kernel
-# https://github.com/TechSupportJosh/netkit-ng-build/releases/tag/0.1.7
 
 UNZIP_TARGET_DIR="${HOME}/netkit-jh"
 DOWNLOAD_DIR="/tmp"
@@ -23,11 +22,11 @@ cd "${DOWNLOAD_DIR}"
 
 # download netkit files
 # core, kernel and file system from Josh Hawking's updated work
-wget -O release.sha256 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/release.sha256"
+wget -O release.sha256 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/release.sha256"
 
-wget -O netkit-core-${VERSION}.tar.bz2 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/netkit-core-$VERSION.tar.bz2"
-wget -O netkit-fs-${VERSION}.tar.bz2 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/netkit-fs-$VERSION.tar.bz2"
-wget -O netkit-kernel-${VERSION}.tar.bz2 --show-progress "https://github.com/TechSupportJosh/netkit-ng-build/releases/download/$VERSION/netkit-kernel-$VERSION.tar.bz2"
+wget -O netkit-core-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-core-$VERSION.tar.bz2"
+wget -O netkit-fs-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-fs-$VERSION.tar.bz2"
+wget -O netkit-kernel-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-kernel-$VERSION.tar.bz2"
 
 if ! sha256sum -c release.sha256; then
     echo "File checksums: FAILED" >&2
