@@ -319,7 +319,7 @@ if [ ! -z "$REMOVE_TUNNELS" ]; then
       echo "******** This operation requires root privileges ********"
    fi
    if [ "$USE_SUDO" = "yes" ]; then      
-      TUNTAP_COMMAND="sudo -p \"$USER's password:\" $NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME stop\""
+      TUNTAP_COMMAND="sudo -p \"$USER's password: \" $NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME stop"
    else
       TUNTAP_COMMAND="su -mc \"$NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME stop\""
    fi
