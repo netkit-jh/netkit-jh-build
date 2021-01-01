@@ -1,0 +1,6 @@
+NAME=TCPDump
+DESCRIPTION=Simple ABR lab that attempts to create a packet capture on the hostlab directory.
+LAB_FOLDER=tcpdump
+LAB_TIMEOUT=90
+FILES=machine_a.pcap,packet_capture_successful
+FILES_TIMEOUT=30

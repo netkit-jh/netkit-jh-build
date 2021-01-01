@@ -1,0 +1,7 @@
+ifup eth0
+
+# Disable any input packets by default
+iptables -P INPUT DROP 
+
+# Only allow input packets from the gw's wireguard interface (if wireguard is working, our requests will look like they're coming from gw)
+iptables -A INPUT -s 192.168.24.2 -j ACCEPT

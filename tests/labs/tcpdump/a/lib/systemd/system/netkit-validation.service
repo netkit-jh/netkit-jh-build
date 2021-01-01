@@ -1,0 +1,9 @@
+[Unit]
+Description=Netkit Validation script
+
+[Service]
+Type=simple
+ExecStart=/root/test.sh
+
+[Install]
+WantedBy=multi-user.target

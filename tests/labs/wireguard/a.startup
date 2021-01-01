@@ -1,0 +1,5 @@
+ifup eth0
+
+wg-quick up wg0
+
+systemctl start netkit-validation.service

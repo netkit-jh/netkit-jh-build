@@ -6,11 +6,13 @@ wait_for_files() {
 	local files=("$@")
 
 	while test $((wait_seconds--)) -gt 0; do
+		echo -ne "Waiting for files (${wait_seconds}s) \033[0K\r"
+		
 		failed=0
-		for file in ${files}; do
+		for file in "${files[@]}"; do
 			if [ ! -f ${file} ]; then
 				failed=1
-				echo "${file} does not exist"
+				# echo "${file} does not exist"
 			fi
 		done
 		
@@ -25,6 +27,9 @@ wait_for_files() {
 	# Otherwise, return 0 (failed)
 	return 0
 }
+
+# Firstly, start off with a vclean to remove any hanging machines
+vclean --clean-all
 
 # CD into script directory
 cd "${0%/*}"
@@ -71,27 +76,39 @@ for config_file in *; do
 	cd ${labs_directory}/${config[LAB_FOLDER]}
 	
 	# Remove any leftover expected files
-	for file in ${expected_files}; do
-		echo ${file}
-		rm -f ${file}
-	done
+	rm -f "${expected_files[@]}"
+
+	time_started=$(date +%s)
+	
+	lab_arguments=""
+	
+	# Check if a terminal is specified, if so, configure lab arguments
+	if [ -v config[TERMINAL] ]; then
+		lab_arguments="${lab_arguments} --pass=--xterm=${config[TERMINAL]}"
+	fi
 	
 	# Run the lab
 	lclean
-	lstart
+	timeout ${config[LAB_TIMEOUT]} lstart ${lab_arguments}
 	
-	time_started=$(date +%s)
-	
-	wait_for_files ${config[TIMEOUT]} ${expected_files}
-	files_exist=$?
-	
-	# Wait for files
-	if [ ${files_exist} -eq 1 ]; then
-		echo "All files found, test successful."
-		echo -e "${config[NAME]}: Successful (completed in $(expr $(date +%s) - ${time_started}) seconds)" >> ${output_file}
+	# If timeout returns 124, then the command has timed out
+	if [ $? -eq 124 ]; then
+		echo "lstart failed to complete, test failed."
+		echo -e "${config[NAME]}: Failed (lab failed to start after ${config[LAB_TIMEOUT]} seconds)" >> ${output_file}
 	else
-		echo "Files were not found after timeout, test failed."
-		echo -e "${config[NAME]}: Failed (test files were not found after ${config[TIMEOUT]} seconds)" >> ${output_file}
+		
+		wait_for_files ${config[FILES_TIMEOUT]} "${expected_files[@]}"
+		files_exist=$?
+		
+		# Wait for files
+		if [ ${files_exist} -eq 1 ]; then
+			echo "All files found, test successful."
+			echo -e "${config[NAME]}: Successful (completed in $(expr $(date +%s) - ${time_started}) seconds)" >> ${output_file}
+		else
+			echo "Files were not found after timeout, test failed."
+			echo -e "${config[NAME]}: Failed (test files were not found after ${config[FILES_TIMEOUT]} seconds)" >> ${output_file}
+		fi
+		
 	fi
 	
 	# Crash and clean the lab
@@ -99,12 +116,10 @@ for config_file in *; do
 	lclean
 
 	# Now remove any expected files in order to create a clean slate
-	for file in ${expected_files}; do
-		echo ${file}
-		rm -f ${file}
-	done
+	rm -f "${expected_files[@]}"
 	
 	# And return to the configs directory to process the next test
 	cd ${configs_directory}
 done
 
+echo -e "\nTest finished at $(date)" >> ${output_file}
