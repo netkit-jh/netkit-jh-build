@@ -13,9 +13,12 @@ RUN echo "deb-src http://deb.debian.org/debian/ bullseye main" >> /etc/apt/sourc
 RUN echo "deb-src http://security.debian.org/debian-security bullseye-security main" >> /etc/apt/sources.list
 
 # Install tools needed for netkit build
-RUN apt update
-RUN apt install -yq apt-utils git make dpkg-dev debootstrap libreadline-dev init-system-helpers initscripts insserv
+RUN apt update && apt install -yq apt-utils git make debootstrap libreadline-dev \
+    init-system-helpers initscripts insserv bison flex gcc-multilib bc quilt xz-utils libvdeplug-dev
 
 WORKDIR /netkit-build
+
+# Make loop mounting work
+RUN mknod /dev/loop0 b 7 0
 
 CMD /bin/bash -c "mount -t proc proc /proc && make ${MAKE_ARGS}"
