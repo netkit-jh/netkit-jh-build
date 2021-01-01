@@ -19,6 +19,7 @@ dnsmasq
 dnsutils
 ebtables
 uml-utilities
+util-linux
 # emacs23-nox
 file
 freeradius
@@ -39,7 +40,6 @@ lxctl
 lynx
 mdns-scan
 mime-support
-mingetty
 minicom
 mrd6
 mtr-tiny
