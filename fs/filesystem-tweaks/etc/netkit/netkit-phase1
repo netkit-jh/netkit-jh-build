@@ -111,12 +111,12 @@ case "$1" in
             # machine directories that are symbolic links.
             tar --exclude=CVS --exclude=.svn -C / -c hostlab/shared/* | tar -o -h -C / --strip 2 -xv | \
             # Now mirror user's permissions to the group and to others
-            sed -r 's/^[^/]+\/[^/]+\//\//' | xargs stat --format="%a %n" | { while read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} $FILE; done; }
+            sed -r 's/^[^/]+\/[^/]+\//\//' | xargs -d "\n" stat --format="%a-%n" | { while IFS='-' read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} "${FILE}"; done; }
          fi
 
          if [ "`echo /hostlab/$HOSTNAME/*`" != "/hostlab/$HOSTNAME/*" ]; then
             echo "Copying $HOSTNAME specific files from /hostlab/$HOSTNAME/..."
-            tar --exclude=CVS --exclude=.svn -C / -c hostlab/$HOSTNAME/* | tar -o -h -C / --strip 2 -xv | sed -r 's/^[^/]+\/[^/]+\//\//' | xargs stat --format="%a %n" | { while read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} $FILE; done; }
+            tar --exclude=CVS --exclude=.svn -C / -c hostlab/$HOSTNAME/* | tar -o -h -C / --strip 2 -xv | sed -r 's/^[^/]+\/[^/]+\//\//' | xargs -d "\n" stat --format="%a-%n" | { while IFS='-' read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} "${FILE}"; done; }
          fi
          
          [ ! -z "$COW" ] && touch /etc/vhostconfigured
