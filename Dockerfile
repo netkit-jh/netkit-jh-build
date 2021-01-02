@@ -14,7 +14,8 @@ RUN echo "deb-src http://security.debian.org/debian-security bullseye-security m
 
 # Install tools needed for netkit build
 RUN apt update && apt install -yq apt-utils git make debootstrap libreadline-dev \
-    init-system-helpers initscripts insserv bison flex gcc-multilib bc quilt xz-utils libvdeplug-dev
+    init-system-helpers initscripts insserv bison flex gcc-multilib bc quilt xz-utils \
+    curl libvdeplug-dev zstd
 
 WORKDIR /netkit-build
 

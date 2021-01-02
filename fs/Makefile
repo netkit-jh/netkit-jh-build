@@ -3,16 +3,16 @@ MAKEFILE_DIR := $(dir $(MAKEFILE_PATH))
 
 include ../Makefile.am
 
-BUILD_DIR=build
-CACHE_DIR=cache
-FINAL_ARCHIVE=../${FS_ARCHIVE_FILE}
+distro?=debian
+DISTRO_DIR=${MAKEFILE_DIR}/distros/${distro}
+BUILD_DIR=build/${distro}
+CACHE_DIR=cache/${distro}
+FINAL_ARCHIVE=../${distro}-${FS_ARCHIVE_FILE}
 NETKIT_DIR=${BUILD_DIR}/netkit-ng
-FS_DIR=${NETKIT_DIR}/fs
+FS_DIR=${NETKIT_DIR}/fs/${distro}
 MODULES_PATH=../kernel/build/kernel_modules/
 
 FS_FILE_NAME=netkit-fs-${NETKIT_BUILD_RELEASE}
-FS_RELEASE=bullseye
-DEBIAN_MIRROR=http://ftp.uk.debian.org/debian
 # 4M = 4 gigabytes, 1M = 1 gigabyte
 FS_SIZE=4M
 MOUNT_DIRECTORY=${BUILD_DIR}/mount-point
@@ -37,8 +37,12 @@ ${FINAL_ARCHIVE}: init ${FS_FILE_NAME} ${MODULES_PATH}
 	# cp -r ${MODULES_PATH} ${BUILD_DIR}
 	echo "Netkit-JH filesystem version ${NETKIT_FS_RELEASE} (${NETKIT_BUILD_RELEASE})" > ${FS_DIR}/netkit-filesystem-version
 	
-	# Run the install script, which will install packages, kernel modules and setup services
-	${MAKEFILE_DIR}/install-netkit-fs.sh ${MAKEFILE_DIR} ${FS_DIR} ${MOUNT_DIRECTORY} ${MODULES_PATH}
+	# Run distro-specific pre-install script
+	${DISTRO_DIR}/pre-install-netkit-fs.sh ${MAKEFILE_DIR} ${FS_DIR} ${MOUNT_DIRECTORY} ${MODULES_PATH} ${DISTRO_DIR}
+	# Run the install script which will install packages, kernel modules and setup services
+	${MAKEFILE_DIR}/install-netkit-fs.sh ${MAKEFILE_DIR} ${FS_DIR} ${MOUNT_DIRECTORY} ${MODULES_PATH} ${DISTRO_DIR}
+	# Run distro-specific post-install script
+	${DISTRO_DIR}/post-install-netkit-fs.sh ${MAKEFILE_DIR} ${FS_DIR} ${MOUNT_DIRECTORY} ${MODULES_PATH} ${DISTRO_DIR}
 	
 	# Unmount the directory
 	umount ${MOUNT_DIRECTORY}
@@ -59,6 +63,5 @@ ${FS_FILE_NAME}:
 	mke2fs -F ${FS_DIR}/${FS_FILE_NAME}
 	mount ${FS_DIR}/${FS_FILE_NAME} ${MOUNT_DIRECTORY} 
 	
-	# Then debootstrap, installing to MOUNT_DIRECTORY
-	debootstrap ${FS_RELEASE} ${MOUNT_DIRECTORY} ${DEBIAN_MIRROR}
-
+	# Then bootstrap, installing to MOUNT_DIRECTORY
+	${DISTRO_DIR}/bootstrap.sh ${MOUNT_DIRECTORY} ${DISTRO_DIR}
