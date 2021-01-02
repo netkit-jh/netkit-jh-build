@@ -5,7 +5,7 @@ UML_TOOLS_DIR=$(SRC_DIR)
 PATCHES_DIR=$(SRC_DIR)/patches/
 BUILD_DIR=build
 UML_TOOLS_BUILD_DIR=$(BUILD_DIR)/uml_tools/
-NETKIT_BUILD_DIR=$(BUILD_DIR)/netkit-ng/
+NETKIT_BUILD_DIR=$(BUILD_DIR)/netkit-jh/
 UML_TOOLS_BIN_DIR=bin/uml_tools/
 
 FINAL_ARCHIVE="netkit-core-$(NETKIT_BUILD_RELEASE).tar.bz2"
@@ -30,7 +30,7 @@ package: build
 	cp $(UML_TOOLS_BUILD_DIR)/uml_dump/uml_dump $(NETKIT_BUILD_DIR)$(UML_TOOLS_BIN_DIR)
 	
 	(cd $(NETKIT_BUILD_DIR)bin &&  ln -s lstart lrestart; ln -s lstart ltest; find uml_tools -mindepth 1 -maxdepth 1 -type f -exec ln -s {} ';' && cd -)
-	tar -C $(BUILD_DIR) --owner=0 --group=0 -cjf ../$(CORE_ARCHIVE_FILE) netkit-ng
+	tar -C $(BUILD_DIR) --owner=0 --group=0 -cjf ../$(CORE_ARCHIVE_FILE) netkit-jh
 
 build: clean
 	mkdir $(BUILD_DIR)

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Download and install netkit-ng in home directory
+# Download and install netkit-jh in home directory
 # Peter Norris: 22 Nov 2020
 # Adapted for Josh Hawking's development to provide an up-to-date kernel
 
@@ -36,7 +36,7 @@ fi
 echo "File checksums: OK"
 
 echo "Extracting files..."
-# strip-components removes the netkit-ng directory
+# strip-components removes the netkit-jh directory
 # .tar.bz2
 tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-core-${VERSION}.tar.bz2
 tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-fs-${VERSION}.tar.bz2

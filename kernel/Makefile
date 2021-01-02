@@ -11,7 +11,7 @@ KERNEL_FILE_EXTENSION=$$(echo "${KERNEL_ARCHIVE_NAME}" | sed 's:.*\.::')
 KERNEL_JOBS=$$(nproc)
 
 BUILD_DIR=${MAKEFILE_DIR}/build
-NETKIT_DIR=${BUILD_DIR}/netkit-ng
+NETKIT_DIR=${BUILD_DIR}/netkit-jh
 KERNEL_DIR=${NETKIT_DIR}/kernel
 
 # To save downloading the same kernel archive every time, specify a directory to cache the download
@@ -70,5 +70,5 @@ ${BUILD_DIR}/linux-${KERNEL_VERSION}/linux: ${BUILD_DIR}/linux-${KERNEL_VERSION}
 	
 	# cp -r ${DEBIAN_PACKAGE_DIR}/debian/user-mode-linux/usr/lib/ ${KERNEL_DIR}/modules/
 	echo "Netkit-JH UML version $(KERNEL_VERSION)" > ${KERNEL_DIR}/netkit-kernel-version
-	cd ${BUILD_DIR}/ ; tar -cvjf ../../${KERNEL_ARCHIVE_FILE} netkit-ng/
+	cd ${BUILD_DIR}/ ; tar -cvjf ../../${KERNEL_ARCHIVE_FILE} netkit-jh/
 

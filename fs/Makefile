@@ -6,7 +6,7 @@ include ../Makefile.am
 BUILD_DIR=build
 CACHE_DIR=cache
 FINAL_ARCHIVE=../${FS_ARCHIVE_FILE}
-NETKIT_DIR=${BUILD_DIR}/netkit-ng
+NETKIT_DIR=${BUILD_DIR}/netkit-jh
 FS_DIR=${NETKIT_DIR}/fs
 MODULES_PATH=../kernel/build/kernel_modules/
 
@@ -48,7 +48,7 @@ ${FINAL_ARCHIVE}: init ${FS_FILE_NAME} ${MODULES_PATH}
 	mv ${FS_DIR}/${FS_FILE_NAME} ${FS_DIR}/${FS_FILE_NAME}.old
 	cp --sparse=always ${FS_DIR}/${FS_FILE_NAME}.old ${FS_DIR}/${FS_FILE_NAME}
 	rm -f ${FS_DIR}/${FS_FILE_NAME}.old
-	cd ${BUILD_DIR}/ ; tar -cvSjf ../${FINAL_ARCHIVE} netkit-ng/
+	cd ${BUILD_DIR}/ ; tar -cvSjf ../${FINAL_ARCHIVE} netkit-jh/
 
 ${FS_FILE_NAME}:
 	mkdir -p ${BUILD_DIR}
