@@ -1,34 +1,34 @@
 #!/bin/bash
 
-# First argument is the work directory, that contains the packages list, package selections, service lists
+# First argument is the work directory (the fs directory)
 WORK_DIRECTORY="$1"
 # Second argument is the build directory, that contains the filesystem version file
 BUILD_DIRECTORY="$2"
 # Third argument is the directory which the filesystem is mounted at
 MOUNT_DIRECTORY="$3"
-# Forth argument is the kernel module directory which should be copied
+# Fourth argument is the kernel module directory which should be copied
 KERNEL_MODULES="$4"
+# Fifth argument is the distro directory, that contains the packages list, package selections, service lists
+DISTRO_DIRECTORY="$5"
 
 whoami
 
-# Load debconf-package-selections
-cat $WORK_DIRECTORY/debconf-package-selections | chroot $MOUNT_DIRECTORY debconf-set-selections
+source $DISTRO_DIRECTORY/distro.env
 
 # Install packages in packages-list
-PACKAGES_LIST=`cat $WORK_DIRECTORY/packages-list | grep -v '#'`
+PACKAGES_LIST=`cat $DISTRO_DIRECTORY/packages-list | grep -v '#'`
+echo "Installing packages with command $INSTALL_COMMAND"
 
-chroot $MOUNT_DIRECTORY apt update
-chroot $MOUNT_DIRECTORY apt install --assume-yes ${PACKAGES_LIST}
+for package in ${PACKAGES_LIST}; do
+    chroot $MOUNT_DIRECTORY $INSTALL_COMMAND $package
+done
 
-# Now install any additional packages which require specific options
-# We want wireguard without installing wireguard-dkms because we have it built into the kernel tree
-chroot $MOUNT_DIRECTORY apt install --no-install-recommends wireguard-tools
-
-# We want iptables legacy, rather than nftables
-chroot $MOUNT_DIRECTORY update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 # Copy netkit filesystem files
 tar -C $WORK_DIRECTORY/filesystem-tweaks -c . | tar --overwrite --same-owner -C $MOUNT_DIRECTORY -x
+# Copy distro specific tweaks
+mkdir -p $DISTRO_DIRECTORY/filesystem-tweaks # make dir in case it doesnt exist
+tar -C $DISTRO_DIRECTORY/filesystem-tweaks -c . | tar --overwrite --same-owner -C $MOUNT_DIRECTORY -x
 
 # Copy in version file
 cp $BUILD_DIRECTORY/netkit-filesystem-version $MOUNT_DIRECTORY/etc/netkit-filesystem-version
@@ -49,15 +49,13 @@ chroot $MOUNT_DIRECTORY systemctl enable netkit-shutdown.service
 #chroot $MOUNT_DIRECTORY systemctl enable netkit-unmount.service
 
 # Disable system services not required
-for SERVICE in `cat $WORK_DIRECTORY/disabled-services`; do
+for SERVICE in `cat $DISTRO_DIRECTORY/disabled-services`; do
 	chroot $MOUNT_DIRECTORY systemctl disable ${SERVICE}
+done
+
+for SERVICE in `cat $DISTRO_DIRECTORY/enabled-services`; do
+	chroot $MOUNT_DIRECTORY systemctl enable ${SERVICE}
 done
 
 # Add random-seed entropy
 dd if=/dev/urandom of=$MOUNT_DIRECTORY/var/lib/systemd/random-seed bs=2048 count=1
-
-# Save debconf-package-selections
-chroot $MOUNT_DIRECTORY debconf-get-selections > $WORK_DIRECTORY/build/debconf-package-selections.last
-
-# Empty caches
-chroot $MOUNT_DIRECTORY apt clean

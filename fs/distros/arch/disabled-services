@@ -1,0 +1,12 @@
+avahi-daemon
+dbus
+dnsmasq
+freeradius
+ipsec
+lxc
+lxc-net
+radvd
+rpcbind
+snmpd
+squid
+systemd-timesyncd
