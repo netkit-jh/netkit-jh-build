@@ -3,13 +3,15 @@ MAKEFILE_DIR := $(dir $(MAKEFILE_PATH))
 
 include ../Makefile.am
 
+
 distro?=debian
 DISTRO_DIR=${MAKEFILE_DIR}/distros/${distro}
 BUILD_DIR=build/${distro}
 CACHE_DIR=cache/${distro}
 FINAL_ARCHIVE=../${distro}-${FS_ARCHIVE_FILE}
-NETKIT_DIR=${BUILD_DIR}/netkit-ng
+NETKIT_DIR=${BUILD_DIR}/netkit-jh
 FS_DIR=${NETKIT_DIR}/fs/${distro}
+
 MODULES_PATH=../kernel/build/kernel_modules/
 
 FS_FILE_NAME=netkit-fs-${NETKIT_BUILD_RELEASE}
@@ -52,7 +54,7 @@ ${FINAL_ARCHIVE}: init ${FS_FILE_NAME} ${MODULES_PATH}
 	mv ${FS_DIR}/${FS_FILE_NAME} ${FS_DIR}/${FS_FILE_NAME}.old
 	cp --sparse=always ${FS_DIR}/${FS_FILE_NAME}.old ${FS_DIR}/${FS_FILE_NAME}
 	rm -f ${FS_DIR}/${FS_FILE_NAME}.old
-	cd ${BUILD_DIR}/ ; tar -cvSjf ../${FINAL_ARCHIVE} netkit-ng/
+	cd ${BUILD_DIR}/ ; tar -cvSjf ../${FINAL_ARCHIVE} netkit-jh/
 
 ${FS_FILE_NAME}:
 	mkdir -p ${BUILD_DIR}

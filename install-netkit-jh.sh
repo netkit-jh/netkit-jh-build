@@ -1,5 +1,5 @@
 #!/bin/bash
-# Download and install netkit-ng in home directory
+# Download and install netkit-jh in home directory
 # Peter Norris: 22 Nov 2020
 # Adapted for Josh Hawking's development to provide an up-to-date kernel
 
@@ -22,13 +22,13 @@ cd "${DOWNLOAD_DIR}"
 
 # download netkit files
 # core, kernel and file system from Josh Hawking's updated work
-wget -O release.sha256 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/release.sha256"
+test ! -f release-${VERSION}.sha256 && wget -O release-${VERSION}.sha256 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/release.sha256" || echo "Found release-${VERSION}.sha256 in ${DOWNLOAD_DIR}, not downloading..."
 
-wget -O netkit-core-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-core-$VERSION.tar.bz2"
-wget -O netkit-fs-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-fs-$VERSION.tar.bz2"
-wget -O netkit-kernel-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-kernel-$VERSION.tar.bz2"
+test ! -f netkit-core-${VERSION}.tar.bz2 && wget -O netkit-core-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-core-$VERSION.tar.bz2" || echo "Found netkit-core-${VERSION}.tar.bz2 in ${DOWNLOAD_DIR}, not downloading..."
+test ! -f netkit-fs-${VERSION}.tar.bz2 && wget -O netkit-fs-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-fs-$VERSION.tar.bz2" || echo "Found netkit-fs-${VERSION}.tar.bz2 in ${DOWNLOAD_DIR}, not downloading..."
+test ! -f netkit-kernel-${VERSION}.tar.bz2 && wget -O netkit-kernel-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-kernel-$VERSION.tar.bz2" || echo "Found netkit-kernel-${VERSION}.tar.bz2 in ${DOWNLOAD_DIR}, not downloading..."
 
-if ! sha256sum -c release.sha256; then
+if ! sha256sum -c release-${VERSION}.sha256; then
     echo "File checksums: FAILED" >&2
     exit 1
 fi
@@ -36,7 +36,7 @@ fi
 echo "File checksums: OK"
 
 echo "Extracting files..."
-# strip-components removes the netkit-ng directory
+# strip-components removes the netkit-jh directory
 # .tar.bz2
 tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-core-${VERSION}.tar.bz2
 tar -xjvC "$UNZIP_TARGET_DIR" --strip-components=1 -f netkit-fs-${VERSION}.tar.bz2

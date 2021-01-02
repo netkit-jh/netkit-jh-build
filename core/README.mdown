@@ -1,3 +1,1 @@
-Netkit-NG version 3.0.4
-
-Documentation are located here: http://netkit-ng.github.io/
+Netkit-JH documentation can be found at https://netkit-jh.github.io/
