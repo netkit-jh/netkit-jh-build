@@ -1,0 +1,88 @@
+#!/bin/bash
+
+. $NETKIT_HOME/netkit.conf
+
+
+tmux_connect(){ # $1 = machine name
+    tmux -L netkit has-session -t "$1" 2>/dev/null
+    if [ $? != 0 ]; then
+        echo "tmux session does not exist for this machine."
+        exit
+    fi
+    TMUX='' tmux -L netkit attach -t "$1"
+}
+
+open_terminal(){ # $1 = machine name
+    tmux -L netkit has-session -t "$1" 2>/dev/null
+    if [ $? != 0 ]; then
+        echo "tmux session does not exist for this machine."
+        exit
+    fi
+    if [ -z ${TERM_TYPE+x} ]; then
+        echo "No terminal set in netkit.conf."
+        exit 1
+    fi
+
+    case "$TERM_TYPE" in
+        alacritty)          TERMCMD="alacritty -e";;
+        kitty)              TERMCMD="kitty";;
+        konsole)            TERMCMD="konsole --nofork -e";;
+        konsole-tab)        TERMCMD="$NETKIT_HOME/bin/konsole-tabs.sh -e";;
+        *)                  TERMCMD="xterm -e";;
+    esac
+    echo "$TERMCMD"
+    export TMUX=''
+    nohup $TERMCMD tmux -L netkit attach -t "$1" &> /dev/null &
+}
+
+print_help(){
+    echo "HELP"
+}
+
+# from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
+
+while (( "$#" )); do
+  case "$1" in
+    -h|--help)
+      print_help
+      exit
+      ;;
+    -v|--verbose)
+      VERBOSE="TRUE"
+      shift
+      ;;
+    -l|--list)
+      tmux -L netkit list-sessions
+      exit
+      ;;
+    -t|--terminal)
+      OPEN_TERM="TRUE"
+      shift
+      ;;
+    -m|--machine)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        MACHINE_NAME=$2
+        shift 2
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    *)
+      echo "Error: Unsupported flag $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [ -z ${MACHINE_NAME+x} ]; then
+    echo "Machine name not given."
+    print_help
+    exit 1
+fi
+
+if [ "$OPEN_TERM" = "TRUE" ]; then
+    open_terminal $MACHINE_NAME
+else
+    tmux_connect $MACHINE_NAME
+fi

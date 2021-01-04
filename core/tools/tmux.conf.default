@@ -1,0 +1,32 @@
+# Set leader key to ctrl-a (as default is ctrl-b and netkit tmux sessions may be nested in host sessions)
+unbind C-b
+set-option -g prefix C-a
+bind-key C-a send-prefix
+
+set -g mouse on
+set -s escape-time 0
+
+set -g status-left "#S    #{?window_zoomed_flag,🔍, }"
+set -g status-right "🧽 #(cat $NETKIT_HOME/netkit-version) : #(basename `pwd`) "
+set -g status-style "bg=#b666d2 fg=white"
+set -g pane-active-border-style fg=#c78add
+set -g status-left-length 200
+set -g status-right-length 200
+set -g message-command-style "bg=red"
+set -g message-style "bg=red"
+set -g remain-on-exit on
+
+bind-key r source-file $NETKIT_HOME/tools/tmux.conf \; display-message "Netkit tmux.conf reloaded"
+
+set-hook -g session-created 'select-pane -m'
+set-hook -g client-attached 'display-message "Connected to Netkit VM"'
+set -g focus-events on
+
+# Change status bar color if you move to host shell - so you dont get confused between netkit vm and host
+set-hook -g pane-focus-in 'if -F "#{==:#{pane_marked},1}" "set status-style bg=#c78add" "set status-style bg=blue"'
+
+bind c new-window -c "#{pane_current_path}"
+bind '"' split-window -c "#{pane_current_path}"
+bind % split-window -h -c "#{pane_current_path}"
+bind-key -n Home send Escape "OH"
+bind-key -n End send Escape "OF"

@@ -1,0 +1,99 @@
+#!/bin/bash
+
+PARAMS=""
+COMMAND_TIMEOUT="1"
+
+tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
+    session="$1"
+    pane="${session}.0"
+    timeout="$2"
+    verbose="$3"
+    shift 3
+    cmd="$*"
+    tmux -L netkit has-session -t "$session" 2>/dev/null
+    if [ $? != 0 ]; then
+        echo "tmux session does not exist for this machine."
+        exit
+    fi
+
+    # Check bufferlen before command
+    tmux -L netkit set-buffer -b netkit-command-buffer ""
+    tmux -L netkit capture-pane -t "$pane" -b netkit-command-buffer -S -
+    bufferlen=$(tmux -L netkit show-buffer -b netkit-command-buffer | wc -l)
+    [ "$VERBOSE" = "TRUE" ] && echo "bufferlen (before command) = $bufferlen"
+
+    ## RUN COMMAND ##
+    [ "$VERBOSE" = "TRUE" ] && echo "command: $cmd"
+    tmux -L netkit send-keys -t "$pane" "$cmd" ENTER
+
+    ## SLEEP ##
+    sleep "$timeout"
+
+    tmux -L netkit capture-pane -t "$pane" -b netkit-command-buffer -S -
+    post_bufferlen=$(tmux -L netkit show-buffer -b netkit-command-buffer | wc -l)
+    [ "$VERBOSE" = "TRUE" ] && echo "bufferlen (after command) = $post_bufferlen"
+    outlen="$(($post_bufferlen-$bufferlen))"
+    [ "$VERBOSE" = "TRUE" ] && echo "Showing last $outlen lines."
+    tmux -L netkit show-buffer -b netkit-command-buffer | tail -n "$outlen" | head -n -1
+    tmux -L netkit delete-buffer -b netkit-command-buffer
+}
+
+print_help(){
+    echo "HELP"
+}
+
+# from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
+
+while (( "$#" )); do
+  case "$1" in
+    -h|--help)
+      print_help
+      exit
+      ;;
+    -v|--verbose)
+      VERBOSE="TRUE"
+      shift
+      ;;
+    -n|--timeout)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        COMMAND_TIMEOUT=$2
+        shift 2
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    -m|--machine)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        MACHINE_NAME=$2
+        shift 2
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    -c|--command)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        PARAMS="$*"
+        shift $#
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    *) # unsupported flags
+      echo "Error: Unsupported flag $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+eval set -- "$PARAMS"
+
+if [ -z ${MACHINE_NAME+x} ]; then
+    echo "Machine name not given."
+    print_help
+    exit
+fi
+
+tmux_command $MACHINE_NAME $COMMAND_TIMEOUT $VERBOSE $PARAMS

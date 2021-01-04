@@ -151,6 +151,7 @@ fi
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="help,version,verbose,list,pass:,makefile,sequential,wait:,force-lab"
+OPT_LIST="${OPT_LIST},tmux-attached,tmux-detached"
 SHORTOPT_LIST="hd:vlo:p::sw:F"
 if [ "$SCRIPTNAME" = "ltest" ]; then
    OPT_LIST="${OPT_LIST},script-mode,rebuild-signature,verify:"
@@ -181,8 +182,10 @@ parseCmdLine() {
             fi
             LAB_DIRECTORY=`makeAbsolutePath "$CURRENT_ARGUMENT"`;;
          
-         --force-lab|-F)
-            FORCE_LAB=1;;
+         --tmux-attached)
+            PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS --tmux-attached";;
+         --tmux-detached)
+            PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS --tmux-detached";;
             
          --fast|-f)
             FASTMODE=1;;
