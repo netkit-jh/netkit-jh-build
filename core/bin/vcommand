@@ -40,7 +40,7 @@ tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
 
 print_help(){
     echo
-    echo -e " vcommand - send a command to a netkit virtual machine through its tmux."
+    echo -e " vcommand - send a command to a netkit virtual machine through its tmux session."
     echo
     echo -e " Example: vcommand -m web "
     echo
