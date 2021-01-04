@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# This script essentially wraps around gnome/tmux commands and forces them to block.
+# This is needed because gnome-terminal/tmux don't block until the command they're finishing has finished.
+# Netkit relies on this to call the cleanHubs function, by trusting that the terminal/kernel command will block
+# until the VM has ended. However, as gnome/tmux don't do this, the second they have booted the VMs, the hubs are 
+# cleaned, causing a kernel panic.
+#
+# We also use this for all other terminal emulators, as it doesn't change their functionality. In the event that
+# another terminal emulator suddenly swaps to non-blocking behaviour (as gnome did), they won't suddenly stop working.
+#
+# https://askubuntu.com/questions/627019/blocking-start-of-terminal
+
+
+TERM_TYPE="$1"
+shift;
+VM_NAME="$1"
+shift;
+KERNELCMD="$@"
+
+pidfile=$(mktemp)
+
+# Here, we run the specific command depending on term_type
+# Note that most importantly, the pid of the current terminal is inputted into $pidfile
+case "$TERM_TYPE" in
+	konsole)       	konsole --nofork --title $VM_NAME -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
+	konsole-tab)   	$NETKIT_HOME/bin/konsole-tabs.sh -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
+	gnome)		 	gnome-terminal --window-with-profile=netkit -- /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
+	alacritty)	 	alacritty -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
+	kitty)        	kitty /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
+	*)             	xterm -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
+esac
+
+# Wait until $pidfile has been written to
+until [ -s $pidfile ] 
+    do sleep 1s
+done
+
+terminalpid=$(cat "$pidfile")
+rm $pidfile
+
+# Wait until this process is dead
+while ps -p $terminalpid > /dev/null 2>&1; do
+	sleep 1s
+done
+# Finish script, stop blocking
