@@ -459,6 +459,13 @@ Suppress any output except errors and warnings.
 
 .TP
 .B
+--debug
+Run the virtual machine under a gdb instance to report more messages than with
+--verbose, and for further debugging. The process requires a SIGINT delivery
+with kill -INT <pid> to start debugging (if the session booted successfully)
+
+.TP
+.B
 -v
 .TP
 .B
