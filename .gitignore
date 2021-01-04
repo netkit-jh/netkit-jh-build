@@ -3,5 +3,5 @@ kernel/build/
 core/build/
 fs/cache/
 *.tar.bz2
-release.sha256
+release-*.sha256
 install-netkit-jh-*.sh

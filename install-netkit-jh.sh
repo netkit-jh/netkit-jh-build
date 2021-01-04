@@ -6,6 +6,7 @@
 UNZIP_TARGET_DIR="${HOME}/netkit-jh"
 DOWNLOAD_DIR="/tmp"
 VERSION="VERSION_NUMBER"
+BACKUP_TARGET_DIR=""
 
 # rename target dir if already exists
 if [ -d "$UNZIP_TARGET_DIR" ] ; then
@@ -22,7 +23,7 @@ cd "${DOWNLOAD_DIR}"
 
 # download netkit files
 # core, kernel and file system from Josh Hawking's updated work
-test ! -f release-${VERSION}.sha256 && wget -O release-${VERSION}.sha256 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/release.sha256" || echo "Found release-${VERSION}.sha256 in ${DOWNLOAD_DIR}, not downloading..."
+test ! -f release-${VERSION}.sha256 && wget -O release-${VERSION}.sha256 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/release-$VERSION.sha256" || echo "Found release-${VERSION}.sha256 in ${DOWNLOAD_DIR}, not downloading..."
 
 test ! -f netkit-core-${VERSION}.tar.bz2 && wget -O netkit-core-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-core-$VERSION.tar.bz2" || echo "Found netkit-core-${VERSION}.tar.bz2 in ${DOWNLOAD_DIR}, not downloading..."
 test ! -f netkit-fs-${VERSION}.tar.bz2 && wget -O netkit-fs-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-fs-$VERSION.tar.bz2" || echo "Found netkit-fs-${VERSION}.tar.bz2 in ${DOWNLOAD_DIR}, not downloading..."
@@ -61,16 +62,27 @@ EOF
 echo "Installing packages to run netkit..."
 sudo apt-get update && sudo apt-get install xterm make net-tools wireshark
 
+# Restore config + handle updating config
+if [ ! -z "$BACKUP_TARGET_DIR" ]; then
+	echo ""
+	echo "Restoring configuration from previous installation."
+	${UNZIP_TARGET_DIR}/setup_scripts/handle_config.sh "${BACKUP_TARGET_DIR}" "${UNZIP_TARGET_DIR}"
+fi 
+
 # check netkit install now works
 # TODO: Get this to work... Netkit installs fine, but the check-configurator script doesn't read the environment variables properly so thinks something is wrong
 source ~/.bashrc
 cd "$UNZIP_TARGET_DIR"
 
-./check_configuration.sh
-
+# ./check_configuration.sh
 # encourage user to set environment variables for the current bash terminal
+echo "" 
 echo "Future terminals that you launch will automatically get the netkit settings."
 echo "To make the netkit settings available in this terminal, run the following command:"
 echo "source ~/.bashrc"
 
-echo -e "\033[1mRun ${UNZIP_TARGET_DIR}/setup_scripts/change_terminal.sh to change your terminal emulator (highly recommended\!)\033[0m"
+echo ""
+echo "Run source ~/.bashrc, or open a new terminal, and then run ${NETKIT_HOME}/setup_scripts/check_configuration.sh to ensure your Netkit installation works!"
+
+echo ""
+echo -e "\033[1mRun ${UNZIP_TARGET_DIR}/setup_scripts/change_terminal.sh to change your terminal emulator (highly recommended!)\033[0m"

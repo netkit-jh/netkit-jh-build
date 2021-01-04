@@ -661,20 +661,10 @@ else
    KERNELCMD="$KERNELCMD quiet"
 fi
 
-
 ##### Bypass port helper, if required (only allowed for the primary terminal)
 if [ $VM_CON0 = "xterm" -a "$CON0_PORTHELPER" != "yes" ]; then
-   case "$TERM_TYPE" in
-      konsole)       KERNELCMD="konsole --nofork --title $VM_NAME -e $KERNELCMD";;
-      konsole-tab)   KERNELCMD="$NETKIT_HOME/bin/konsole-tabs.sh -e $KERNELCMD";;
-      gnome)         KERNELCMD="gnome-terminal --window-with-profile=netkit -- $KERNELCMD";;
-      alacritty)     KERNELCMD="alacritty -e $KERNELCMD";;
-      kitty)         KERNELCMD="kitty $KERNELCMD";;
-      *)             KERNELCMD="xterm -e $KERNELCMD";;
-   esac
-   VM_CON0="this_noporthelper"
+   	VM_CON0="this_noporthelper"
 fi
-
 
 ##### Attach terminals
 case $VM_CON0 in
@@ -719,6 +709,9 @@ fi
 
 [ -z "$BE_QUIET" ] && echo
 
+# Add our blocking script to the execution order
+KERNELCMD="$NETKIT_HOME/bin/block-wrapper $TERM_TYPE $VM_NAME $KERNELCMD"
+	
 ##### Actually start network hubs
 eval runHubs $HUBLIST
 
