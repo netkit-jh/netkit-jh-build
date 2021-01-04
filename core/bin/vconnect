@@ -2,27 +2,20 @@
 
 . $NETKIT_HOME/netkit.conf
 
+export TMUX='' # allow nesting of tmux sessions
+
+RETRY_COUNT=1
+RETRY_INTERVAL=5
 
 tmux_connect(){ # $1 = machine name
-    tmux -L netkit has-session -t "$1" 2>/dev/null
-    if [ $? != 0 ]; then
-        echo "tmux session does not exist for this machine."
-        exit
-    fi
-    TMUX='' tmux -L netkit attach -t "$1"
+    tmux -L netkit attach -t "$1"
 }
 
 open_terminal(){ # $1 = machine name
-    tmux -L netkit has-session -t "$1" 2>/dev/null
-    if [ $? != 0 ]; then
-        echo "tmux session does not exist for this machine."
-        exit
-    fi
     if [ -z ${TERM_TYPE+x} ]; then
         echo "No terminal set in netkit.conf."
         exit 1
     fi
-
     case "$TERM_TYPE" in
         alacritty)          TERMCMD="alacritty -e";;
         kitty)              TERMCMD="kitty";;
@@ -30,8 +23,6 @@ open_terminal(){ # $1 = machine name
         konsole-tab)        TERMCMD="$NETKIT_HOME/bin/konsole-tabs.sh -e";;
         *)                  TERMCMD="xterm -e";;
     esac
-    echo "$TERMCMD"
-    export TMUX=''
     nohup $TERMCMD tmux -L netkit attach -t "$1" &> /dev/null &
 }
 
@@ -47,10 +38,6 @@ while (( "$#" )); do
       print_help
       exit
       ;;
-    -v|--verbose)
-      VERBOSE="TRUE"
-      shift
-      ;;
     -l|--list)
       tmux -L netkit list-sessions
       exit
@@ -58,6 +45,24 @@ while (( "$#" )); do
     -t|--terminal)
       OPEN_TERM="TRUE"
       shift
+      ;;
+    -r|--retry-count)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        RETRY_COUNT=$2
+        shift 2
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    -n|--interval)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        RETRY_INTERVAL=$2
+        shift 2
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
       ;;
     -m|--machine)
       if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
@@ -80,6 +85,26 @@ if [ -z ${MACHINE_NAME+x} ]; then
     print_help
     exit 1
 fi
+
+
+ATTEMPTS=1
+
+while [ $ATTEMPTS -le $RETRY_COUNT ]; do
+    tmux -L netkit has-session -t "$MACHINE_NAME" 2>/dev/null
+    if [ $? != 0 ]; then
+        ATMSG=""
+        [ $RETRY_COUNT -gt 1 ] && ATMSG="(Attempt $ATTEMPTS)"
+        echo "[vconnect]: tmux session does not exist for this machine. $ATMSG"
+        if [ $ATTEMPTS -eq $RETRY_COUNT ]; then
+            [ $RETRY_COUNT -gt 1 ] && echo "[vconnect]: too many attempts. exiting."
+            exit
+        fi
+        sleep "$RETRY_INTERVAL"
+    else
+        ATTEMPTS=$RETRY_COUNT
+    fi
+    ATTEMPTS=$((ATTEMPTS+1))
+done
 
 if [ "$OPEN_TERM" = "TRUE" ]; then
     open_terminal $MACHINE_NAME

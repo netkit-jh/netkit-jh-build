@@ -7,6 +7,7 @@ BUILD_DIR=build
 UML_TOOLS_BUILD_DIR=$(BUILD_DIR)/uml_tools/
 NETKIT_BUILD_DIR=$(BUILD_DIR)/netkit-jh/
 UML_TOOLS_BIN_DIR=bin/uml_tools/
+TOOLS_DIR=$(NETKIT_BUILD_DIR)/tools
 
 FINAL_ARCHIVE="netkit-core-$(NETKIT_BUILD_RELEASE).tar.bz2"
 
@@ -18,7 +19,9 @@ DEBIAN_VERSION=`cat /etc/debian_version | cut -c 1`
 package: build
 	mkdir $(NETKIT_BUILD_DIR)
 	echo "Netkit version $(NETKIT_BUILD_RELEASE)" > $(NETKIT_BUILD_DIR)/netkit-version
-	cp -r bin setup_scripts man netkit.conf tools/Netkit-konsole.profile README.mdown LICENSE.txt $(NETKIT_BUILD_DIR)
+	cp -r bin setup_scripts man netkit.conf README.mdown LICENSE.txt $(NETKIT_BUILD_DIR)
+	mkdir -p $(TOOLS_DIR)
+	cp -r tools/* $(TOOLS_DIR)
 	mkdir  $(NETKIT_BUILD_DIR)$(UML_TOOLS_BIN_DIR)
 	cp $(UML_TOOLS_BUILD_DIR)/uml_switch/uml_switch $(NETKIT_BUILD_DIR)$(UML_TOOLS_BIN_DIR)
 	cp $(UML_TOOLS_BUILD_DIR)/port-helper/port-helper $(NETKIT_BUILD_DIR)$(UML_TOOLS_BIN_DIR)

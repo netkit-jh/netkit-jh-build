@@ -318,12 +318,12 @@ parseCmdLine() {
 
          --tmux-attached)
             USE_TMUX=TRUE
-            TMUX_START_DETACHED=FALSE
+            TMUX_OPEN_TERMS=TRUE
             ;;
             
          --tmux-detached)
             USE_TMUX=TRUE
-            TMUX_START_DETACHED=TRUE
+            TMUX_OPEN_TERMS=TRUE
             ;;
             
          -F|--foreground)
@@ -660,29 +660,10 @@ if [ -z "$VERBOSE" ]; then
    KERNELCMD="$KERNELCMD quiet"
 fi
 
-#### Start the kernel command in a tmux session
-if [ "$USE_TMUX" = "TRUE" ]; then
-   [ "$TMUX_START_DETACHED" = "TRUE" ] && TM_DET="-d "
-   KERNELCMD="tmux -L netkit -f $NETKIT_HOME/tools/tmux.conf new ${TM_DET}-s $VM_NAME $KERNELCMD"
-fi
-
 ##### Bypass port helper, if required (only allowed for the primary terminal)
 if [ $VM_CON0 = "xterm" -a "$CON0_PORTHELPER" != "yes" ]; then
-   
-   if [ "$USE_TMUX" = "FALSE" ] || [ "$TMUX_START_DETACHED" = "FALSE" ]; then
-       case "$TERM_TYPE" in
-          konsole)       KERNELCMD="konsole --nofork --title $VM_NAME -e $KERNELCMD";;
-          konsole-tab)   KERNELCMD="$NETKIT_HOME/bin/konsole-tabs.sh -e $KERNELCMD";;
-          gnome)         KERNELCMD="gnome-terminal --window-with-profile=netkit -v -- $KERNELCMD";;
-          alacritty)     KERNELCMD="alacritty --hold -e $KERNELCMD";;
-          kitty)         KERNELCMD="kitty $KERNELCMD";;
-          xterm)         KERNELCMD="$KERNELCMD";;
-          *)             KERNELCMD="xterm -e $KERNELCMD";;
-       esac
-   fi
-   VM_CON0="this_noporthelper"
+   	VM_CON0="this_noporthelper"
 fi
-
 
 ##### Attach terminals
 case $VM_CON0 in
@@ -727,6 +708,12 @@ fi
 
 [ -z "$BE_QUIET" ] && echo
 
+#### Start the kernel command in a tmux session
+[ "$USE_TMUX" = "TRUE" ] && TERM_TYPE="tmux"
+
+# Add our blocking script to the execution order
+KERNELCMD="$NETKIT_HOME/bin/block-wrapper $TERM_TYPE $VM_NAME $KERNELCMD"
+	
 ##### Actually start network hubs
 eval runHubs $HUBLIST
 
@@ -756,3 +743,7 @@ if [ "$VM_CON0" = "none" ]; then
 fi
 
 run_command "$JUST_PRINT" "$KERNELCMD" "{ $WAKEUP_PORTHELPER $REMOVE_FS_COMMAND $KERNELCMD; cleanHubs $HUBLIST; } $REDIRECT_CONSOLE $BACKGROUND"
+
+if [ "$TMUX_OPEN_TERMS" = "TRUE" ]; then
+    vconnect -m "$VM_NAME" --terminal --interval 5 --retry-count 20 &> /dev/null &
+fi

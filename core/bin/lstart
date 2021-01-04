@@ -339,13 +339,35 @@ if [ ! -f "$LAB_DIRECTORY/lab.conf" -a ! -f "$LAB_DIRECTORY/lab.dep" -a -z "$FOR
 fi
 
 
-
+update_available() {
+	# Check whether we have polled in the last UPDATE_CHECK_PERIOD days
+	UPDATE_CHECK_PERIOD=5
+	touch ${NETKIT_HOME}/.new-version
+	
+	last_update_check=$(test -f ${NETKIT_HOME}/.last-update-check && cat ${NETKIT_HOME}/.last-update-check || echo 0)
+	new_update_check=$(expr ${last_update_check} + ${UPDATE_CHECK_PERIOD} \* 86400)
+	now=$(date +%s)
+	
+	if [ ${now} -gt ${new_update_check} ]; then
+		# We haven't checked in the past UPDATE_CHECK_PERIOD days, check now
+		echo $(date +%s) > ${NETKIT_HOME}/.last-update-check
+		
+		curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" | # Get latest release from GitHub api
+			grep '"tag_name":' |                                            # Get tag line
+			sed -E 's/.*"([^"]+)".*/\1/' > ${NETKIT_HOME}/.new-version                                  # Pluck JSON value
+	fi
+	
+	latest_version=$(cat ${NETKIT_HOME}/.new-version)
+	current_version=$(sed "s/Netkit version //g" ~/netkit-jh/netkit-version)
+	
+	if [ ${latest_version} != ${current_version} ]; then
+		echo "https://github.com/netkit-jh/netkit-jh-build/releases/${latest_version}"
+	fi
+}
 
 
 # Get ready to start the lab
-
-
-
+UPDATE_AVAILABLE="$(update_available)"
 
 # Print some information about the lab
 [ -z "$SCRIPTMODE" ] && echo
@@ -354,6 +376,7 @@ fi
 [ -z "$SCRIPTMODE" ] && labWelcome
 [ -z "$SCRIPTMODE" ] && echo
 [ -z "$SCRIPTMODE" ] && becho "Having issues starting the lab? Run 'lclean' before running 'lstart'."
+[ -z "$SCRIPTMODE" ] && [ -n "${UPDATE_AVAILABLE}" ] && becho "Update available for Netkit-JH - download at ${UPDATE_AVAILABLE}"
 [ -z "$SCRIPTMODE" ] && becho "================================================================="
 
 
