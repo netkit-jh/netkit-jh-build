@@ -13,7 +13,7 @@ tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
     tmux -L netkit has-session -t "$session" 2>/dev/null
     if [ $? != 0 ]; then
         echo "tmux session does not exist for this machine."
-        exit
+        exit 1
     fi
 
     # Check bufferlen before command
@@ -39,7 +39,20 @@ tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
 }
 
 print_help(){
-    echo "HELP"
+    echo
+    echo -e " vcommand - send a command to a netkit virtual machine through its tmux."
+    echo
+    echo -e " Example: vcommand -m web "
+    echo
+    echo -e "\toptions:"
+    echo
+    echo -e "\t-h | --help                       Print this Help."
+    echo -e "\t-m | --machine MACHINENAME       Name of the machine to send the command to."
+    echo -e "\t-n | --timeout N                  Set how long to wait before grabbing the output of the command."
+    echo -e "\t-v | --verbose                    Enables VERBOSE variable for adding debugging echo statements."
+    echo -e "\t-c | --command cmd                command to send to the machine. This should always be the"
+    echo -e "\t                                  last argument to vcommand"
+    echo
 }
 
 # from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
@@ -48,7 +61,7 @@ while (( "$#" )); do
   case "$1" in
     -h|--help)
       print_help
-      exit
+      exit 0
       ;;
     -v|--verbose)
       VERBOSE="TRUE"
@@ -93,7 +106,7 @@ eval set -- "$PARAMS"
 if [ -z ${MACHINE_NAME+x} ]; then
     echo "Machine name not given."
     print_help
-    exit
+    exit 1
 fi
 
 tmux_command $MACHINE_NAME $COMMAND_TIMEOUT $VERBOSE $PARAMS

@@ -77,6 +77,20 @@ This option has no effect if parallel startup is being used and is not impacted 
 the \fB\-p\fR option.
 
 .TP
+.PD 0
+.TP
+.B
+\-\-tmux\-attached
+Run each VM in a tmux session and start a terminal attached to this tmux session. This is the same as setting USE_TMUX=TRUE and TMUX_OPEN_TERMS=TRUE in netkit.conf
+
+.TP
+.PD 0
+.TP
+.B
+\-\-tmux\-detached
+Run each VM in a tmux session without opening any terminals. This is the same as setting USE_TMUX=TRUE and TMUX_OPEN_TERMS=FALSE in netkit.conf
+
+.TP
 .B
 \-l
 .PD 0

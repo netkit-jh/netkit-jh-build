@@ -254,6 +254,47 @@ still stop it by using either \fIvhalt\fR or \fIvcrash\fR (see \fBvhalt\fR,
 
 .TP
 .B
+USE_TMUX
+Run the vm inside a tmux session on the host this means you can then
+connect and disconnect from it when you want (using the vconnect
+command) and send commands to it with vcommand.
+
+.RS
+.TP
+.B
+TRUE
+Run VM in tmux session.
+
+.RS
+.TP
+.B
+FALSE
+Do not run VM in tmux session.
+
+.TP
+.B
+TMUX_OPEN_TERMS
+Open a terminal with the tmux session for the machine this will run
+vconnect in the background to attempt to connect. N.b. this has a
+timeout - if the tmux session fails to open this will eventually
+stop polling it. This option only takes effect when USE_TMUX is true.
+
+.RS
+.TP
+.B
+TRUE
+Attempt to open a terminal connected to the tmux session for the machine.
+
+.RS
+.TP
+.B
+FALSE
+No terminals are opened. You can connect to the machine manually
+with vconnect.
+
+
+.TP
+.B
 TERM_TYPE
 This parameter determines the terminal emulator application to be used for
 consoles attached to an \fBxterm\fR device. The application must be correctly

@@ -162,6 +162,12 @@ Other options are:
                         hubs are always started in background, regardless of
                         this option. This is the default when using --con0=this
                         or --con1=this.
+  --tmux-attached       Run each VM in tmux and start a terminal attached to the
+                        tmux session. This is the same as USE_TMUX=TRUE and
+                        TMUX_OPEN_TERMS=TRUE in netkit.conf
+  --tmux-detached       Run each VM in a tmux session without opening terminals.
+                        This is the same as USE_TMUX=TRUE and TMUX_OPEN_TERMS=FALSE
+                        in netkit.conf
   -h, --help            Show this help.
   -p, --print           Do not actually start anything. Just show which commands
                         would be executed.
@@ -744,6 +750,6 @@ fi
 
 run_command "$JUST_PRINT" "$KERNELCMD" "{ $WAKEUP_PORTHELPER $REMOVE_FS_COMMAND $KERNELCMD; cleanHubs $HUBLIST; } $REDIRECT_CONSOLE $BACKGROUND"
 
-if [ "$TMUX_OPEN_TERMS" = "TRUE" ]; then
+if [ "$TMUX_OPEN_TERMS" = "TRUE" ] && [ "$USE_TMUX" = "TRUE" ]; then
     vconnect -m "$VM_NAME" --terminal --interval 5 --retry-count 20 &> /dev/null &
 fi

@@ -21,13 +21,29 @@ open_terminal(){ # $1 = machine name
         kitty)              TERMCMD="kitty";;
         konsole)            TERMCMD="konsole --nofork -e";;
         konsole-tab)        TERMCMD="$NETKIT_HOME/bin/konsole-tabs.sh -e";;
-        *)                  TERMCMD="xterm -e";;
+        xterm)              TERMCMD="xterm -e";;
+        *)
+            echo "[vconnect]: terminal $TERM_TYPE not supported, defaulting to xterm."
+            TERMCMD="xterm -e";;
     esac
     nohup $TERMCMD tmux -L netkit attach -t "$1" &> /dev/null &
 }
 
 print_help(){
-    echo "HELP"
+    echo
+    echo -e " vconnect - connect to the tmux session of a netkit virtual machine."
+    echo
+    echo -e " Example: vconnect -m web --terminal --retry-count 3 --interval 5"
+    echo
+    echo -e "\toptions:"
+    echo
+    echo -e "\t-h | --help                       Print this Help."
+    echo -e "\t-l | --list                       List all running sessions on the tmux 'netkit' server."
+    echo -e "\t-t | --terminal                   Connect to the tmux session from a new terminal. The terminal opened is dependent on the TERM_TYPE set in netkit.conf."
+    echo -e "\t-m | --machine MACHINENEAME       Name of the machine to connect to."
+    echo -e "\t-r | --retry-count N              Number of times to attempt to connect to a tmux session."
+    echo -e "\t-n | --interval X                 Sleep duration between attempts to connect to a tmux session."
+    echo
 }
 
 # from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
@@ -39,8 +55,8 @@ while (( "$#" )); do
       exit
       ;;
     -l|--list)
-      tmux -L netkit list-sessions
-      exit
+      LIST_ONLY="TRUE"
+      shift
       ;;
     -t|--terminal)
       OPEN_TERM="TRUE"
@@ -87,6 +103,11 @@ if [ -z ${MACHINE_NAME+x} ]; then
 fi
 
 
+if [ "$LIST_ONLY" = "TRUE" ]; then
+  tmux -L netkit list-sessions
+  exit 0
+fi
+
 ATTEMPTS=1
 
 while [ $ATTEMPTS -le $RETRY_COUNT ]; do
@@ -97,7 +118,7 @@ while [ $ATTEMPTS -le $RETRY_COUNT ]; do
         echo "[vconnect]: tmux session does not exist for this machine. $ATMSG"
         if [ $ATTEMPTS -eq $RETRY_COUNT ]; then
             [ $RETRY_COUNT -gt 1 ] && echo "[vconnect]: too many attempts. exiting."
-            exit
+            exit 1
         fi
         sleep "$RETRY_INTERVAL"
     else

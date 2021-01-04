@@ -81,6 +81,12 @@ END_OF_HELP
 END_OF_HELP
    fi
    cat << END_OF_HELP
+  --tmux-attached     Run each VM in tmux and start a terminal attached to the
+                      tmux session. This is the same as USE_TMUX=TRUE and
+                      TMUX_OPEN_TERMS=TRUE in netkit.conf
+  --tmux-detached     Run each VM in a tmux session without opening terminals.
+                      This is the same as USE_TMUX=TRUE and TMUX_OPEN_TERMS=FALSE
+                      in netkit.conf
   -l, --list          Show a list of running virtual machines after starting
                       up the lab.
   -o, --pass=OPTION   Pass OPTION unaltered to vstart. This will affect all the
