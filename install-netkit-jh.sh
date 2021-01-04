@@ -22,7 +22,7 @@ cd "${DOWNLOAD_DIR}"
 
 # download netkit files
 # core, kernel and file system from Josh Hawking's updated work
-test ! -f release-${VERSION}.sha256 && wget -O release-${VERSION}.sha256 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/release.sha256" || echo "Found release-${VERSION}.sha256 in ${DOWNLOAD_DIR}, not downloading..."
+test ! -f release-${VERSION}.sha256 && wget -O release-${VERSION}.sha256 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/release-$VERSION.sha256" || echo "Found release-${VERSION}.sha256 in ${DOWNLOAD_DIR}, not downloading..."
 
 test ! -f netkit-core-${VERSION}.tar.bz2 && wget -O netkit-core-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-core-$VERSION.tar.bz2" || echo "Found netkit-core-${VERSION}.tar.bz2 in ${DOWNLOAD_DIR}, not downloading..."
 test ! -f netkit-fs-${VERSION}.tar.bz2 && wget -O netkit-fs-${VERSION}.tar.bz2 --show-progress "https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/netkit-fs-$VERSION.tar.bz2" || echo "Found netkit-fs-${VERSION}.tar.bz2 in ${DOWNLOAD_DIR}, not downloading..."
@@ -66,11 +66,12 @@ sudo apt-get update && sudo apt-get install xterm make net-tools wireshark
 source ~/.bashrc
 cd "$UNZIP_TARGET_DIR"
 
-./check_configuration.sh
-
+# ./check_configuration.sh
 # encourage user to set environment variables for the current bash terminal
 echo "Future terminals that you launch will automatically get the netkit settings."
 echo "To make the netkit settings available in this terminal, run the following command:"
 echo "source ~/.bashrc"
 
-echo -e "\033[1mRun ${UNZIP_TARGET_DIR}/setup_scripts/change_terminal.sh to change your terminal emulator (highly recommended\!)\033[0m"
+echo "Run source ~/.bashrc, or open a new terminal, and then run ${NETKIT_HOME}/setup_scripts/check_configuration.sh to ensure your Netkit installation works!"
+
+echo -e "\033[1mRun ${UNZIP_TARGET_DIR}/setup_scripts/change_terminal.sh to change your terminal emulator (highly recommended!)\033[0m"
