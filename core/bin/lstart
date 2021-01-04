@@ -187,6 +187,9 @@ parseCmdLine() {
          --tmux-detached)
             PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS --tmux-detached";;
             
+         --force-lab|-F)
+            FORCE_LAB=1;;
+
          --fast|-f)
             FASTMODE=1;;
          
