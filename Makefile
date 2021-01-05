@@ -4,16 +4,24 @@ CORE_DIR=core
 
 include Makefile.am
 
-default: build-kernel build-fs build-core file-hashes install-script
+DEFAULT_INSTALL_LOCATION="~/netkit-jh"
 
-.PHONY: build-fs
-build-fs: ${FS_ARCHIVE_FILE}
+default: build-kernel build-fs build-core
 
 .PHONY: build-kernel
-build-kernel: ${KERNEL_ARCHIVE_FILE}
+build-kernel: 
+	$(MAKE)	-C ${KERNEL_DIR}
+
+.PHONY: build-fs
+build-fs: 
+	$(MAKE)	-C ${FS_DIR}
 
 .PHONY: build-core
-build-core: ${CORE_ARCHIVE_FILE}
+build-core: 
+	$(MAKE)	-C ${CORE_DIR}
+
+.PHONY: archives
+archives: ${KERNEL_ARCHIVE_FILE} ${FS_ARCHIVE_FILE} ${CORE_ARCHIVE_FILE}
 
 .PHONY: file-hashes
 file-hashes: release-${NETKIT_BUILD_RELEASE}.sha256
@@ -21,14 +29,17 @@ file-hashes: release-${NETKIT_BUILD_RELEASE}.sha256
 .PHONY: install-script
 install-script: install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
 
+.PHONY: release
+release: archives file-hashes install-script
+
 ${KERNEL_ARCHIVE_FILE}:
-	$(MAKE)	-C ${KERNEL_DIR}
+	$(MAKE)	-C ${KERNEL_DIR} archive
 
 ${FS_ARCHIVE_FILE}:
-	$(MAKE) -C ${FS_DIR}
+	$(MAKE) -C ${FS_DIR} archive
 
 ${CORE_ARCHIVE_FILE}:
-	$(MAKE) -C ${CORE_DIR}
+	$(MAKE) -C ${CORE_DIR} archive
 
 release-${NETKIT_BUILD_RELEASE}.sha256:
 	sha256sum ${FS_ARCHIVE_FILE} ${KERNEL_ARCHIVE_FILE} ${CORE_ARCHIVE_FILE} > release-${NETKIT_BUILD_RELEASE}.sha256
@@ -42,8 +53,6 @@ clean:
 	$(MAKE) -C ${KERNEL_DIR} clean
 	$(MAKE) -C ${FS_DIR} clean
 	$(MAKE) -C ${CORE_DIR} clean
-	rm -f release-${NETKIT_BUILD_RELEASE}.sha256
-	rm -f install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
 
 .PHONY: mrproper
 mrproper: clean
@@ -52,17 +61,17 @@ mrproper: clean
 	$(MAKE) -C ${CORE_DIR} mrproper
 	rm -f release-${NETKIT_BUILD_RELEASE}.sha256
 	rm -f install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
-	
+
 .PHONY: install
-install: ${KERNEL_ARCHIVE_FILE} ${FS_ARCHIVE_FILE} ${CORE_ARCHIVE_FILE} file-hashes install-script
+install: ${KERNEL_ARCHIVE_FILE} ${FS_ARCHIVE_FILE} ${CORE_ARCHIVE_FILE}
 ifeq ($(shell id -u), 0)
 		@echo "Please run 'make install' without root privileges. You will be asked when appropiate to use root privileges."
 		exit 1
 endif
 
-	# Modify download directory for install script to be makefile directory
-	sed -i "s/DOWNLOAD_DIR=\".*\"/DOWNLOAD_DIR=\"\.\"/g" install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
+ifndef INSTALL_LOCATION
+	INSTALL_LOCATION=DEFAULT_INSTALL_LOCATION
+endif
 	
-	chmod +x install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
-	./install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
+	@echo "Install location: ${INSTALL_LOCATION}"
 	
