@@ -32,6 +32,12 @@ To create a new window, do [leader] followed by <c>. This will create a window t
 
 To move between windows you can use [leader] <n> to go to the next window, or [leader] <p> to go to the previous.
 
+## Detaching from a Tmux Session
+
+You may have attached to the machine's tmux session with `vconnect -m MACHINE` and now you want to disconnect. 
+To do this press [leader] followed by <d> - this will disconnect you from the session without closing it,
+so you can reconnect at any point while the machine is running.
+
 ## Capturing Output
 
 Note the following will save the active pane, so if you want to capture the machine log, make sure you are on the netkit pane!
