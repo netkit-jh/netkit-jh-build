@@ -2,10 +2,11 @@
 
 PARAMS=""
 COMMAND_TIMEOUT="1"
+VERBOSE="FALSE"
 
 tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
     session="$1"
-    pane="${session}.0"
+    target="${session}:netkit-vm.0"
     timeout="$2"
     verbose="$3"
     shift 3
@@ -16,26 +17,24 @@ tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
         exit 1
     fi
 
-    # Check bufferlen before command
-    tmux -L netkit set-buffer -b netkit-command-buffer ""
-    tmux -L netkit capture-pane -t "$pane" -b netkit-command-buffer -S -
-    bufferlen=$(tmux -L netkit show-buffer -b netkit-command-buffer | wc -l)
-    [ "$VERBOSE" = "TRUE" ] && echo "bufferlen (before command) = $bufferlen"
-
+    # Generate UUID to work out where the command starts
+    cmd_uuid=$(cat /proc/sys/kernel/random/uuid)
+    [ "$VERBOSE" = "TRUE" ] && echo "UUID for command = $cmd_uuid"
+    tmux -L netkit send-keys -t "$target" "echo $cmd_uuid" ENTER
+    sleep 0.5
+    
     ## RUN COMMAND ##
-    [ "$VERBOSE" = "TRUE" ] && echo "command: $cmd"
-    tmux -L netkit send-keys -t "$pane" "$cmd" ENTER
+    [ "$VERBOSE" = "TRUE" ] && echo -e "command: $cmd \n\n"
+    tmux -L netkit send-keys -t "$target" "$cmd" ENTER
 
     ## SLEEP ##
     sleep "$timeout"
 
-    tmux -L netkit capture-pane -t "$pane" -b netkit-command-buffer -S -
-    post_bufferlen=$(tmux -L netkit show-buffer -b netkit-command-buffer | wc -l)
-    [ "$VERBOSE" = "TRUE" ] && echo "bufferlen (after command) = $post_bufferlen"
-    outlen="$(($post_bufferlen-$bufferlen))"
-    [ "$VERBOSE" = "TRUE" ] && echo "Showing last $outlen lines."
-    tmux -L netkit show-buffer -b netkit-command-buffer | tail -n "$outlen" | head -n -1
-    tmux -L netkit delete-buffer -b netkit-command-buffer
+    # Get output buffer
+    tmux_buffer=$(tmux -L netkit capture-pane -t "$target" -S - -p)
+    [ "$VERBOSE" = "TRUE" ] && echo -e "buffer after command = $tmux_buffer \n\n"
+    
+    echo "$tmux_buffer" |  sed "1,/$cmd_uuid/d" - | head -n -1 | sed '1,2d' -
 }
 
 print_help(){
@@ -65,7 +64,7 @@ while (( "$#" )); do
       ;;
     -v|--verbose)
       VERBOSE="TRUE"
-      shift
+      shift 1
       ;;
     -n|--timeout)
       if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
@@ -87,6 +86,7 @@ while (( "$#" )); do
       ;;
     -c|--command)
       if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        shift
         PARAMS="$*"
         shift $#
       else

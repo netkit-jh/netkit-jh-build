@@ -96,16 +96,15 @@ while (( "$#" )); do
   esac
 done
 
+if [ "$LIST_ONLY" = "TRUE" ]; then
+  tmux -L netkit list-sessions
+  exit 0
+fi
+
 if [ -z ${MACHINE_NAME+x} ]; then
     echo "Machine name not given."
     print_help
     exit 1
-fi
-
-
-if [ "$LIST_ONLY" = "TRUE" ]; then
-  tmux -L netkit list-sessions
-  exit 0
 fi
 
 ATTEMPTS=1

@@ -329,7 +329,7 @@ parseCmdLine() {
             
          --tmux-detached)
             USE_TMUX=TRUE
-            TMUX_OPEN_TERMS=TRUE
+            TMUX_OPEN_TERMS=FALSE
             ;;
             
          -F|--foreground)

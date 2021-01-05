@@ -2,9 +2,15 @@
 unbind C-b
 set-option -g prefix C-a
 bind-key C-a send-prefix
+unbind m
+
+bind-key h new-window 'less $NETKIT_HOME/tools/tmuxhelp.md'
 
 set -g mouse on
 set -s escape-time 0
+
+set-hook -g session-created 'select-pane -m; rename-window netkit-vm; set -t 0 remain-on-exit on'
+set-hook -g -t 0 pane-died 'rename-session "#{session_name}-dead"'
 
 set -g status-left "#S    #{?window_zoomed_flag,🔍, }"
 set -g status-right "🧽 #(cat $NETKIT_HOME/netkit-version) : #(basename `pwd`) "
@@ -14,11 +20,9 @@ set -g status-left-length 200
 set -g status-right-length 200
 set -g message-command-style "bg=red"
 set -g message-style "bg=red"
-set -g remain-on-exit on
 
 bind-key r source-file $NETKIT_HOME/tools/tmux.conf \; display-message "Netkit tmux.conf reloaded"
 
-set-hook -g session-created 'select-pane -m'
 set-hook -g client-attached 'display-message "Connected to Netkit VM"'
 set -g focus-events on
 
@@ -30,3 +34,10 @@ bind '"' split-window -c "#{pane_current_path}"
 bind % split-window -h -c "#{pane_current_path}"
 bind-key -n Home send Escape "OH"
 bind-key -n End send Escape "OF"
+
+# Normal Session Capture
+unbind S
+unbind s # unbind session manage shortcut - we'll use s for save
+bind-key s capture-pane -b temp-capture-buffer -S - \; save-buffer -b temp-capture-buffer "#{session_name}.out" \; delete-buffer -b capture-buffer\; display-message "Saved current pane to #{session_name}.out"
+# Custom capture filename
+bind-key S command-prompt -I "#{session_name}.out" -p "Store current pane contents to file:" "capture-pane -b temp-capture-buffer -S -; save-buffer -b temp-capture-buffer %1; delete-buffer -b capture-buffer"
