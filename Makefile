@@ -1,10 +1,13 @@
+MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+MAKEFILE_DIR := $(realpath $(dir $(MAKEFILE_PATH)))
+
+include Makefile.am
+
 KERNEL_DIR=kernel
 FS_DIR=fs
 CORE_DIR=core
 
-include Makefile.am
-
-DEFAULT_INSTALL_LOCATION="~/netkit-jh"
+INSTALL_LOCATION ?= $(HOME)/netkit-jh
 
 default: build-kernel build-fs build-core
 
@@ -46,6 +49,7 @@ release-${NETKIT_BUILD_RELEASE}.sha256:
 
 install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh:
 	cp install-netkit-jh.sh install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
+	chmod +x install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
 	sed -i "s/VERSION=\"VERSION_NUMBER\"/VERSION=\"${NETKIT_BUILD_RELEASE}\"/g" install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
 	
 .PHONY: clean
@@ -63,15 +67,13 @@ mrproper: clean
 	rm -f install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
 
 .PHONY: install
-install: ${KERNEL_ARCHIVE_FILE} ${FS_ARCHIVE_FILE} ${CORE_ARCHIVE_FILE}
+install: ${KERNEL_ARCHIVE_FILE} ${FS_ARCHIVE_FILE} ${CORE_ARCHIVE_FILE} install-script
 ifeq ($(shell id -u), 0)
 		@echo "Please run 'make install' without root privileges. You will be asked when appropiate to use root privileges."
 		exit 1
 endif
-
-ifndef INSTALL_LOCATION
-	INSTALL_LOCATION=DEFAULT_INSTALL_LOCATION
-endif
 	
 	@echo "Install location: ${INSTALL_LOCATION}"
+	
+	./install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh --download-files=false --kernel-files=${MAKEFILE_DIR}/${KERNEL_DIR}/build/netkit-jh --core-files=${MAKEFILE_DIR}/${CORE_DIR}/build/netkit-jh --fs-files=${MAKEFILE_DIR}/${FS_DIR}/build/netkit-jh --install-packages=false --target-dir="$(INSTALL_LOCATION)"
 	
