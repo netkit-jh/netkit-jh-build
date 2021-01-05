@@ -38,6 +38,6 @@ bind-key -n End send Escape "OF"
 # Normal Session Capture
 unbind S
 unbind s # unbind session manage shortcut - we'll use s for save
-bind-key s capture-pane -b temp-capture-buffer -S - \; save-buffer -b temp-capture-buffer "#{session_name}.out" \; delete-buffer -b capture-buffer\; display-message "Saved current pane to #{session_name}.out"
+bind-key s capture-pane -b temp-capture-buffer -S - \; save-buffer -b temp-capture-buffer "/tmp/#(basename `pwd`)#{session_name}-#{window_name}-#{pane_index}.out" \; delete-buffer -b capture-buffer\; display-message "Saved current pane to /tmp/#(basename `pwd`)#{session_name}-#{window_name}-#{pane_index}.out"
 # Custom capture filename
-bind-key S command-prompt -I "#{session_name}.out" -p "Store current pane contents to file:" "capture-pane -b temp-capture-buffer -S -; save-buffer -b temp-capture-buffer %1; delete-buffer -b capture-buffer"
+bind-key S command-prompt -I "/tmp/#(basename `pwd`)#{session_name}-#{window_name}-#{pane_index}.out" -p "Store current pane contents to file:" "capture-pane -b temp-capture-buffer -S -; save-buffer -b temp-capture-buffer %1; delete-buffer -b capture-buffer"

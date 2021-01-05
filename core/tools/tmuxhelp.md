@@ -4,6 +4,12 @@
 
 The leader key is <ctrl>-<a>. This means if you wanted to create a new window to the right, which requires the key 'c', you would hit <ctrl> and <a> (at the same time) then <c>.
 
+## Help
+
+To open this help message in a tmux session, press [leader] followed by <h>. If you're reading this in a tmux session well done you did it :)
+
+To close this, just press <q>
+
 ## The Netkit VM Pane
 
 The Netkit VM will run under window 'netkit-vm' pane '0'. If you are not on this pane all commands will go to the host not the Netkit machine!! 
@@ -30,9 +36,9 @@ To move between windows you can use [leader] <n> to go to the next window, or [l
 
 Note the following will save the active pane, so if you want to capture the machine log, make sure you are on the netkit pane!
 
-To save output to the hostlab under MACHINENAME.out hit [leader] then <s> (lower case 's').
+To save output to /tmp hit [leader] then <s> (lower case 's').
 
-To save with a custom filename, use [leader] <S> (capital 'S')
+To save with a custom filename, use [leader] <S> (capital 'S').
 
 ## Netkit Machine Shutdown / Failure
 
