@@ -18,7 +18,7 @@ set-hook -g pane-died {
     if -F "#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}}" {
         run-shell "tmux -L netkit has-session -t '=#{session_name}-dead' && tmux kill-session -t '=#{session_name}-dead'; tmux -L netkit rename-session -t '=#{session_name}' '#{session_name}-dead'"
     } {
-        run-shell "tmux -L netkit kill-pane -t #{session_name}:#{window_name}.#{pane_index}"
+        run-shell "tmux -L netkit kill-pane -t=#{session_name}:#{window_name}.#{pane_index}"
     }
 }
 
