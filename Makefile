@@ -48,7 +48,7 @@ ${CORE_ARCHIVE_FILE}: | build
 	$(MAKE) -C ${CORE_DIR} archive
 
 build/release-${NETKIT_BUILD_RELEASE}.sha256:
-	sha256sum ${FS_ARCHIVE_FILE} ${KERNEL_ARCHIVE_FILE} ${CORE_ARCHIVE_FILE} > build/release-${NETKIT_BUILD_RELEASE}.sha256
+	cd build; sha256sum *.tar.bz2 > release-${NETKIT_BUILD_RELEASE}.sha256
 
 build/install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh:
 	cp install-netkit-jh.sh build/install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh
