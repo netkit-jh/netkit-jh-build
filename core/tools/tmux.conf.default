@@ -8,17 +8,21 @@ bind-key h new-window -n "tmux-netkit-help" 'less $NETKIT_HOME/tools/tmuxhelp.md
 set -g mouse on
 set -s escape-time 0
 
-set-hook -g session-created 'rename-window netkit-vm; set -t 0 remain-on-exit on; display-message "Starting #{session_name}"'
-set-hook -g -t 0 pane-died 'rename-session "#{session_name}-dead"'
+set-hook -g session-created 'rename-window netkit-vm; set remain-on-exit on; display-message "Starting #{session_name}"'
+
+# If pane 0 dies, kill any previous MACHINE-dead sessions, and rename this session
+# from MACHINE to MACHINE-dead
+## NEEDS FIXING, WAITING FOR REPLY FROM MAILING LIST GUY!!
+set-hook -g pane-died 'if -F "#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}}" "kill-session -t #{session_name}-dead; rename-session #{session_name}-dead" "kill-pane"'
 
 set -g status-left "#S #{?client_prefix,🦀 ,⌨  }    #{?window_zoomed_flag,🔍, }"
 set -g status-right "🧽 #(cat $NETKIT_HOME/netkit-version) : #(basename `pwd`) "
-set -g status-style "bg=#b666d2 fg=white"
+set -g status-style "bg=#8a32a9 fg=white"
 set -g pane-active-border-style fg=#c78add
 set -g status-left-length 200
 set -g status-right-length 200
-set -g message-command-style "bg=red"
-set -g message-style "bg=red"
+set -g message-command-style "bg=#ff3333"
+set -g message-style "bg=#ff3333"
 
 bind-key r source-file $NETKIT_HOME/tools/tmux.conf \; display-message "Netkit tmux.conf reloaded"
 
@@ -26,7 +30,7 @@ set-hook -g client-attached 'display-message "Connected to Netkit VM"'
 set -g focus-events on
 
 # Change status bar color if you move to host shell - so you dont get confused between netkit vm and host
-set-hook -g pane-focus-in 'if -F "#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}}" "set status-style bg=#c78add" "set status-style bg=blue"'
+set-hook -g pane-focus-in 'if -F "#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}}" "set status-style bg=#8a32a9" "set status-style bg=#0073e6"'
 
 bind c new-window -c "#{pane_current_path}"
 bind '"' split-window -c "#{pane_current_path}"
