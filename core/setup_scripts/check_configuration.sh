@@ -85,7 +85,7 @@ parseOptions() {
    done
 }
 
-if [ ! -d "bin" -o ! -d "fs" -o ! -d "kernel" -o ! -d "man" -o ! -d "check_configuration.d" ]; then
+if [ ! -d "../bin" -o ! -d "../fs" -o ! -d "../kernel" -o ! -d "../man" -o ! -d "check_configuration.d" ]; then
    echo "Netkit does not appear to be installed in \"$PWD\"."
    echo "Please run this script from inside the directory Netkit is installed in."
    echo
