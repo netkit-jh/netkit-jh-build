@@ -11,7 +11,7 @@ tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
     verbose="$3"
     shift 3
     cmd="$*"
-    tmux -L netkit has-session -t "$session" 2>/dev/null
+    tmux -L netkit has-session -t="$session" 2>/dev/null
     if [ $? != 0 ]; then
         echo "tmux session does not exist for this machine."
         exit 1
@@ -20,12 +20,12 @@ tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
     # Generate UUID to work out where the command starts
     cmd_uuid=$(cat /proc/sys/kernel/random/uuid)
     [ "$VERBOSE" = "TRUE" ] && echo "UUID for command = $cmd_uuid"
-    tmux -L netkit send-keys -t "$target" "echo $cmd_uuid" ENTER
+    tmux -L netkit send-keys -t="$target" "echo $cmd_uuid" ENTER
     sleep 0.5
     
     ## RUN COMMAND ##
     [ "$VERBOSE" = "TRUE" ] && echo -e "command: $cmd \n\n"
-    tmux -L netkit send-keys -t "$target" "$cmd" ENTER
+    tmux -L netkit send-keys -t="$target" "$cmd" ENTER
 
     ## SLEEP ##
     sleep "$timeout"
