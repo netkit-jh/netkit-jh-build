@@ -167,12 +167,12 @@ for RC_FILE in "${RC_FILES[@]}"; do
 	cp "${RC_FILE}" "${BAK_FILE}"
 
 	# Check whether the netkit variables header exists, if not, wipe all cases of netkit
-	if [ -z "$(grep "=== NETKIT VARIABLES ===" ${HOME}/.bashrc)" ]; then
+	if [ -z "$(grep "=== NETKIT VARIABLES ===" "${RC_FILE}")" ]; then
 		# strip out any lines containing the word "netkit" (case insensitive) from bashrc
-		grep -iv "netkit" "$BASHBAK" > "${HOME}/.bashrc"
+		grep -iv "netkit" "${BAK_FILE}" > "${RC_FILE}"
 	else
 		# Otherwise, just wipe between the headers
-		sed -i "/^#=== NETKIT VARIABLES ===/,/^#=== NETKIT VARIABLES END ===/d;" ${HOME}/.bashrc
+		sed -i "/^#=== NETKIT VARIABLES ===/,/^#=== NETKIT VARIABLES END ===/d;" ${RC_FILE}
 	fi
 
 	# use heredoc (with tab suppression using the <<- form) to append netkit additions to bashrc  
