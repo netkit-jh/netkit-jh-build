@@ -460,8 +460,8 @@ fi
 for VM in $VM_IDS; do
   if echo $1 | grep -qE "^[0-9]+$"; then
     [ -z "$BE_QUIET" ] && echo "[vcrash]: cannot check tmux session using pid.
-    You may want to kill any tmux session for the same
-    machine (including MACHINE-dead sessions)"
+    You may want to manuallykill any tmux session for the machine you are trying
+    to crash (including MACHINE-dead sessions)"
   else
     [ -z "$BE_QUIET" ] && echo "[vcrash]: Checking for $VM tmux session"
     tmux -L netkit has-session -t="$VM" 2>/dev/null
