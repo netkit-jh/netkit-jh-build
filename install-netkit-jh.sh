@@ -30,12 +30,12 @@ case $i in
     BACKUP_INSTALL_DIR="${i#*=}"
     shift # past argument=value
     ;;
-    --install-packages=*)
-    INSTALL_APT_PACKAGES="${i#*=}"
+    --no-packages)
+    INSTALL_APT_PACKAGES=false
     shift # past argument=value
     ;;
-    --download-files=*)
-    DOWNLOAD_FILES="${i#*=}"
+    --no-packages)
+    DOWNLOAD_FILES=false
     shift # past argument=value
     ;;
     --download-url=*)

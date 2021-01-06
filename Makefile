@@ -75,5 +75,5 @@ endif
 	
 	@echo "Install location: ${INSTALL_LOCATION}"
 	
-	./install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh --download-files=false --kernel-files=${MAKEFILE_DIR}/${KERNEL_DIR}/build/netkit-jh --core-files=${MAKEFILE_DIR}/${CORE_DIR}/build/netkit-jh --fs-files=${MAKEFILE_DIR}/${FS_DIR}/build/netkit-jh --install-packages=false --target-dir="$(INSTALL_LOCATION)"
+	./install-netkit-jh-${NETKIT_BUILD_RELEASE}.sh --no-download --no-packages --kernel-files=${MAKEFILE_DIR}/${KERNEL_DIR}/build/netkit-jh --core-files=${MAKEFILE_DIR}/${CORE_DIR}/build/netkit-jh --fs-files=${MAKEFILE_DIR}/${FS_DIR}/build/netkit-jh --target-dir="$(INSTALL_LOCATION)"
 	
