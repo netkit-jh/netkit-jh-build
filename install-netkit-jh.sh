@@ -155,20 +155,37 @@ else
 	tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2
 fi
 
-# back up existing bashrc file with date and time as part of filename
-BASHBAK="${HOME}/bashrc_$(date "+%F_%H-%M-%S").bak"
-cp "${HOME}/.bashrc" "$BASHBAK"
+RC_FILES=("${HOME}/.bashrc" "${HOME}/.zshrc")
+for RC_FILE in "${RC_FILES[@]}"; do
+	# Check whether this file exists
+	if [ ! -f ${RC_FILE} ]; then
+		continue
+	fi
+	
+	# Backup existing file with date and time as part of filename
+	BAK_FILE="${RC_FILE}_$(date "+%F_%H-%M-%S").bak"
+	cp "${RC_FILE}" "${BAK_FILE}"
 
-# strip out any lines containing the word "netkit" (case insensitive) from bashrc
-grep -iv "netkit" "$BASHBAK" > "${HOME}/.bashrc"
+	# Check whether the netkit variables header exists, if not, wipe all cases of netkit
+	if [ -z "$(grep "=== NETKIT VARIABLES ===" ${HOME}/.bashrc)" ]; then
+		# strip out any lines containing the word "netkit" (case insensitive) from bashrc
+		grep -iv "netkit" "$BASHBAK" > "${HOME}/.bashrc"
+	else
+		# Otherwise, just wipe between the headers
+		sed -i "/^#=== NETKIT VARIABLES ===/,/^#=== NETKIT VARIABLES END ===/d;" ${HOME}/.bashrc
+	fi
 
-# use heredoc (with tab suppression using the <<- form) to append netkit additions to bashrc  
-cat >> "${HOME}/.bashrc" <<-EOF
-	# additions for netkit
-	export NETKIT_HOME="${TARGET_INSTALL_DIR}"
-	export MANPATH="\$MANPATH:\$NETKIT_HOME/man"
-	export PATH="\$PATH:\$NETKIT_HOME/bin"
-EOF
+	# use heredoc (with tab suppression using the <<- form) to append netkit additions to bashrc  
+	cat >> "${RC_FILE}" <<-EOF
+	#=== NETKIT VARIABLES ===
+		# additions for netkit
+		export NETKIT_HOME="${TARGET_INSTALL_DIR}"
+		export MANPATH="\$MANPATH:\$NETKIT_HOME/man"
+		export PATH="\$PATH:\$NETKIT_HOME/bin"
+	#=== NETKIT VARIABLES END ===
+	EOF
+
+done
 
 # make (for lab.dep) and net-tools (for tap) needed on ubuntu 18.04
 if [ "${INSTALL_APT_PACKAGES}" = true ]; then
