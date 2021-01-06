@@ -2,7 +2,7 @@
 
 ## Leader Key
 
-The leader key is <ctrl>-<a>. This means if you wanted to create a new window to the right, which requires the key 'c', you would hit <ctrl> and <a> (at the same time) then <c>.
+The leader key is <ctrl>-<t>. This means if you wanted to create a new window to the right, which requires the key 'c', you would hit <ctrl> and <t> (at the same time) then <c>.
 
 ## Help
 

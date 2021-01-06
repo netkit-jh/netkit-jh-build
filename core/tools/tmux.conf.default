@@ -1,8 +1,7 @@
 # Set leader key to ctrl-a (as default is ctrl-b and netkit tmux sessions may be nested in host sessions)
 unbind C-b
-set-option -g prefix C-a
-bind-key C-a send-prefix
-unbind m
+set-option -g prefix C-t
+bind-key C-t send-prefix
 
 bind-key h new-window -n "tmux-netkit-help" 'less $NETKIT_HOME/tools/tmuxhelp.md'
 
