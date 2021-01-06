@@ -34,10 +34,9 @@ ${NETKIT_BUILD_DIR}: ${UML_TOOLS_BUILD_DIR}
   
 	# Copy relavant files into build directory
 	cp -r bin setup_scripts man netkit.conf README.mdown LICENSE.txt $(NETKIT_BUILD_DIR)
-  # Copy tools directory
+  	
+  	# Copy tools directory
 	cp -r tools/* $(TOOLS_DIR)
-	
-	cp -r bin setup_scripts man netkit.conf tools/Netkit-konsole.profile README.mdown LICENSE.txt $(NETKIT_BUILD_DIR)
 	
 	# Copy compiled UML tools in
 	mkdir  $(NETKIT_BUILD_DIR)$(UML_TOOLS_BIN_DIR)
