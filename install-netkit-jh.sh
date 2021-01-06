@@ -58,6 +58,27 @@ case $i in
     CORE_EXTRACTED_FILES="${i#*=}"
     shift # past argument=value
     ;;
+    -h|--help)
+    echo "Netkit-JH Installation script
+usage: install-netkit-jh-${VERSION}.sh [arguments]
+
+Available arguments:
+--target-dir            : Absolute path to a folder to install Netkit to.
+--backup-dir            : Absolute path to where the previous installation of Netkit should be moved to.
+--no-packages           : Do not download packages required to run Netkit from apt.
+--no-download           : Do not download kernel/fs/core files if they are not found inside download-dir.
+--download-url          : Specify the URL prefix to download the files from.
+--download-dir          : Path to where the files are downloaded to.
+--kernel-files          : Absolute path to where the kernel files have been extracted. This path should
+                          point to the netkit-jh folder within the extracted archive.
+--fs-files              : Absolute path to where the filesystem files have been extracted. This path should
+                          point to the netkit-jh folder within the extracted archive.
+--core-files            : Absolute path to where the core files have been extracted. This path should point
+                          to the netkit-jh folder within the extracted archive.
+
+"
+    exit 0
+    ;;
     *)
           # unknown option
     ;;
@@ -95,11 +116,6 @@ fi
 
 mkdir -p "${TARGET_INSTALL_DIR}"
 
-echo "test"
-echo "${KERNEL_EXTRACTED_FILES}"
-echo "${FS_EXTRACTED_FILES}"
-echo "${CORE_EXTRACTED_FILES}"
-
 # Check whether they've specified extracted files
 if [ -n "${KERNEL_EXTRACTED_FILES}" -a -n "${FS_EXTRACTED_FILES}" -a -n "${CORE_EXTRACTED_FILES}" ]; then
 	cp -r "${KERNEL_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
@@ -109,7 +125,7 @@ else
 	files_expected=("release-${VERSION}.sha256" "netkit-core-${VERSION}.tar.bz2" "netkit-fs-${VERSION}.tar.bz2" "netkit-kernel-${VERSION}.tar.bz2")
 	check_files_exist "${DOWNLOAD_DIR}" "${files_expected[@]}"
 	files_exist=$?
-	echo ${files_exist}
+	
 	if [ ${files_exist} -eq 0 ]; then
 		# If all expected files are found, we can continue
 		echo "Downloaded files found in ${DOWNLOAD_DIR}, continuing..."
