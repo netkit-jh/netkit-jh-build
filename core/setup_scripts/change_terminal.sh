@@ -43,6 +43,8 @@ while [ $successful = false ]; do
 			sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=alacritty/g" ${NETKIT_HOME}/netkit.conf
 			successful=true
 			terminal="Alacritty"
+			echo "
+If you get 'libEGL warning: DRI2: failed to authenticate' when running a machine, try running 'apt upgrade'. This is a harmless warning related to virtual machine graphical drivers and will not impact running the lab."
 		;;
 		3)
 			# Kitty is available on Ubuntu by default
