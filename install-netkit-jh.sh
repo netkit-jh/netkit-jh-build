@@ -99,7 +99,7 @@ check_files_exist()
 	
 	for FILE in "${FILES[@]}"; do
 		if [ ! -f "${DIRECTORY}/${FILE}" ]; then
-			echo "Cannot find file ${DIRECTORY}/${file}."
+			echo "Cannot find file ${DIRECTORY}/${FILE}."
 			FAILED=1
 		fi
 	done
