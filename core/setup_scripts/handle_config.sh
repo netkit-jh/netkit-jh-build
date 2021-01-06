@@ -27,7 +27,7 @@ CURRENT_VERSION=$(grep "CONFIG_VERSION" ${NEW_DIR}/netkit.conf | sed "s/CONFIG_V
 # Upgrade from v1 to v2
 # This upgrade can be used as a template for new upgrades.
 # - Ensures CONFIG_VERSION has been defined. Any config without CONFIG_VERSION is considered V1.
-if [ ${CURRENT_VERSION} -lt 2 ]; then
+if [ "${CURRENT_VERSION}" -lt 2 ]; then
 	echo "Upgrading Netkit configuration to V2."
 
 	# Here, we can do anything else we'd want to do, for example, appending new options.
@@ -37,4 +37,26 @@ if [ ${CURRENT_VERSION} -lt 2 ]; then
 	sed -i "s/CONFIG_VERSION=1/CONFIG_VERSION=2/g" ${NEW_DIR}/netkit.conf
 fi
 
+# Upgrade from v2 to v3
+# - Ensures TUTORIAL_OPTION has been defined.
+if [ "${CURRENT_VERSION}" -lt 3 ]; then
+    echo "Upgrading Netkit configuration to V3."
 
+    
+    echo "
+# TMUX Configuration
+USE_TMUX=FALSE                  # Run the vm inside a tmux session on the host
+                                # this means you can then connect and disconnect from it 
+                                # when you want (using the vconnect command) and send
+                                # commands to it with vcommand.
+TMUX_OPEN_TERMS=FALSE           # Open a terminal with the tmux session for the machine
+                                # this will run vconnect in the background to attempt to 
+                                # connect. N.b. this has a timeout - if the tmux session
+                                # fails to open this will eventually stop polling it.
+                                # This option only takes effect when USE_TMUX is true
+    " >> ${NEW_DIR}/netkit.conf
+
+    # Finally, update the version.
+    CURRENT_VERSION=3
+    sed -i "s/CONFIG_VERSION=2/CONFIG_VERSION=3/g" ${NEW_DIR}/netkit.conf
+fi

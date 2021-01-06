@@ -28,7 +28,27 @@ case "$TERM_TYPE" in
 	gnome)		 	gnome-terminal --window-with-profile=netkit -- /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
 	alacritty)	 	alacritty -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
 	kitty)        	kitty /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
-	*)             	xterm -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
+    xterm)         	xterm -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
+    tmux)
+        tmux -L netkit has-session -t "$VM_NAME" 2>/dev/null
+        if [ $? == 0 ]; then
+            read -r -p "[block-wrapper]: tmux session already exists for this machine. kill session? [y/N] " response
+            case "$response" in
+            [yY][eE][sS]|[yY]) 
+                tmux -L netkit -t kill-session "$VM_NAME"
+                ;;
+            *)
+                echo "[block-wrapper]: tmux session in use - not starting $VM_NAME"
+                exit
+                ;;
+            esac
+        fi
+        tmux -L netkit -f $NETKIT_HOME/tools/tmux.conf new -d -s $VM_NAME /bin/bash -c "echo \$$>$pidfile; $KERNELCMD"
+        ;;
+
+	*)
+                    echo "[block-wrapper]: terminal $TERM_TYPE not supported, defaulting to xterm."
+                    xterm -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
 esac
 
 # Wait until $pidfile has been written to

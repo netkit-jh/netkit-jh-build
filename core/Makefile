@@ -4,8 +4,10 @@ include ../Makefile.am
 UML_TOOLS_DIR=src
 UML_TOOLS_BUILD_DIR=$(BUILD_DIR)/uml_tools/
 UML_TOOLS_BIN_DIR=bin/uml_tools/
+
 BUILD_DIR=build
 NETKIT_BUILD_DIR=$(BUILD_DIR)/netkit-jh/
+TOOLS_DIR=$(NETKIT_BUILD_DIR)/tools
 
 .DEFAULT_GOAL := ${NETKIT_BUILD_DIR}
 
@@ -28,8 +30,13 @@ ${UML_TOOLS_BUILD_DIR}:
 
 ${NETKIT_BUILD_DIR}: ${UML_TOOLS_BUILD_DIR}
 	mkdir $(NETKIT_BUILD_DIR)
-	
+	mkdir -p $(TOOLS_DIR)
+  
 	# Copy relavant files into build directory
+	cp -r bin setup_scripts man netkit.conf README.mdown LICENSE.txt $(NETKIT_BUILD_DIR)
+  # Copy tools directory
+	cp -r tools/* $(TOOLS_DIR)
+	
 	cp -r bin setup_scripts man netkit.conf tools/Netkit-konsole.profile README.mdown LICENSE.txt $(NETKIT_BUILD_DIR)
 	
 	# Copy compiled UML tools in
