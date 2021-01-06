@@ -57,7 +57,7 @@ Available options are:
   -d DIRECTORY        Assume the lab is located inside DIRECTORY. By default,
                       the lab is assumed to be located in the current directory.
   -m, --map=FILE      Create a graphical link-level topology map of the lab and
-                      save it into FILE in PostScript format. This requires the
+                      save it into FILE in PNG format. This requires the
                       Graphviz library to be installed.
 
 Other standard options are:
