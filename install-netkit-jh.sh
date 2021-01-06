@@ -97,7 +97,7 @@ check_files_exist()
 	
 	FAILED=0
 	
-	for file in "${FILES[@]}"; do
+	for FILE in "${FILES[@]}"; do
 		if [ ! -f "${DIRECTORY}/${FILE}" ]; then
 			echo "Cannot find file ${DIRECTORY}/${file}."
 			FAILED=1
@@ -135,16 +135,19 @@ else
 			mkdir -p "${DOWNLOAD_DIR}"
 
 			wget -O "${DOWNLOAD_DIR}/release-${VERSION}.sha256" --show-progress "${DOWNLOAD_URL_PREFIX}/release-${VERSION}.sha256"
-			wget -O "${DOWNLOAD_DIR}/netkit-core-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-kernel-${VERSION}.tar.bz2"
+			wget -O "${DOWNLOAD_DIR}/netkit-core-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-core-${VERSION}.tar.bz2"
 			wget -O "${DOWNLOAD_DIR}/netkit-fs-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-fs-${VERSION}.tar.bz2"
-			wget -O "${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-core-${VERSION}.tar.bz2"
+			wget -O "${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-kernel-${VERSION}.tar.bz2"
 		else
 			echo "The files above were not found and downloading is disabled, exiting installation."
 			exit 1
 		fi
 	fi
 	
-	if ! sha256sum -c release-${VERSION}.sha256; then
+	(cd ${DOWNLOAD_DIR}; sha256sum -c release-${VERSION}.sha256)
+	FILES_INVALID=$?
+	
+	if [ ${FILES_INVALID} -eq 1 ]; then
 		echo "File checksums failed to verify, please delete the downloaded files and re-run this script." >&2
 		exit 1
 	fi
@@ -190,7 +193,7 @@ done
 # make (for lab.dep) and net-tools (for tap) needed on ubuntu 18.04
 if [ "${INSTALL_APT_PACKAGES}" = true ]; then
 	echo "Installing packages to run netkit..."
-	sudo apt-get update && sudo apt-get install xterm make net-tools wireshark
+	sudo apt-get update && sudo apt-get install xterm make net-tools
 fi
 
 # Restore config + handle updating config
