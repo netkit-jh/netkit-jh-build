@@ -27,10 +27,7 @@ set-hook -g client-attached 'display-message "Connected to Netkit VM"'
 set -g focus-events on
 
 # Change status bar color if you move to host shell - so you dont get confused between netkit vm and host
-#set-hook -g pane-focus-in 'if -F "#{==:#{pane_marked},1}" "set status-style bg=#c78add" "set status-style bg=blue"'
-#set -g status-style 'bg=#{?#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}},red,blue}'
-set-hook -g pane-focus-in 'set -g status-style "bg=#{?#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}},red,blue}"'
-#set-hook -g pane-focus-in 'display-message "bg=#{?#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}},red,blue}"'
+set-hook -g pane-focus-in 'if -F "#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}}" "set status-style bg=#c78add" "set status-style bg=blue"'
 
 bind c new-window -c "#{pane_current_path}"
 bind '"' split-window -c "#{pane_current_path}"
