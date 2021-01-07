@@ -735,7 +735,7 @@ fi
 ### it ever hangs when booting the virtual machine.
 WAKEUP_PORTHELPER=""
 if [ "$CON0_PORTHELPER" = "yes" ]; then
-   WAKEUP_PORTHELPER="{ sleep 5; $NETKIT_HOME/bin/uml_mconsole $VM_NAME help > /dev/null 2>&1; } &"
+   WAKEUP_PORTHELPER="{ sleep 5; uml_mconsole $VM_NAME help > /dev/null 2>&1; } &"
 fi
 
 ### Remove .disk file, if requested
