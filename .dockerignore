@@ -1,1 +1,5 @@
-*
+# Ignore by default
+**
+
+# Allow docker-start.sh
+!docker-start.sh
