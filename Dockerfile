@@ -21,4 +21,5 @@ WORKDIR /netkit-build
 # Make loop mounting work
 RUN mknod /dev/loop0 b 7 0
 
-CMD /bin/bash -c "mount -t proc proc /proc && make ${MAKE_ARGS}"
+COPY docker-start.sh /docker-start.sh
+CMD /bin/bash -c "/docker-start.sh"
