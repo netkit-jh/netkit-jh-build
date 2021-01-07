@@ -55,11 +55,11 @@ TMUX_OPEN_TERMS=FALSE           # Open a terminal with the tmux session for the 
                                 # connect. N.b. this has a timeout - if the tmux session
                                 # fails to open this will eventually stop polling it.
                                 # This option only takes effect when USE_TMUX is true
-CHECK_FOR_UPDATES=yes			# When running lstart, a request will be sent to
-								# Github to check for a new release of Netkit-JH.
-								# This check will only be made every
-								# UPDATE_CHECK_PERIOD days. 
-UPDATE_CHECK_PERIOD=5			# How long to wait between checking for new releases.
+CHECK_FOR_UPDATES=yes           # When running lstart, a request will be sent to
+                                # Github to check for a new release of Netkit-JH.
+                                # This check will only be made every
+                                # UPDATE_CHECK_PERIOD days. 
+UPDATE_CHECK_PERIOD=5           # How long to wait between checking for new releases.
     " >> ${NEW_DIR}/netkit.conf
 
 	sed -i "s/MCONSOLE_DIR=\".*\"/MCONSOLE_DIR=\"$HOME/.netkit/machines\"/g" ${NEW_DIR}/netkit.conf
