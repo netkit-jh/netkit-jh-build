@@ -193,7 +193,7 @@ done
 # make (for lab.dep) and net-tools (for tap) needed on ubuntu 18.04
 if [ "${INSTALL_APT_PACKAGES}" = true ]; then
 	echo "Installing packages to run netkit..."
-	sudo apt-get update && sudo apt-get install xterm make net-tools uml-utilities
+	sudo apt-get update && sudo apt-get install xterm make net-tools uml-utilities curl
 fi
 
 # Restore config + handle updating config
