@@ -367,7 +367,7 @@ update_available() {
 		fi
 		
 		latest_version=$(cat ${NETKIT_HOME}/.new-version)
-		current_version=$(sed "s/Netkit version //g" ~/netkit-jh/netkit-version)
+		current_version=$(sed "s/Netkit version //g" ${NETKIT_HOME}/netkit-version)
 		
 		if [ ${latest_version} != ${current_version} ]; then
 			echo "https://github.com/netkit-jh/netkit-jh-build/releases/${latest_version}"
