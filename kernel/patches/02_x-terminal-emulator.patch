@@ -1,0 +1,25 @@
+# Mattia Dongili <malattia@debian.org>
+# Matt Zimmermannn <mdz@debian.org>
+# Use Debian's x-terminal-emulator
+Index: linux-source-3.2/arch/um/drivers/xterm.c
+===================================================================
+--- linux-source-3.2.orig/arch/um/drivers/xterm.c	2013-01-04 07:21:26.429470247 +0900
++++ linux-source-3.2/arch/um/drivers/xterm.c	2013-01-04 07:21:30.921419619 +0900
+@@ -40,7 +40,7 @@
+ }
+ 
+ /* Only changed by xterm_setup, which is a setup */
+-static char *terminal_emulator = "xterm";
++static char *terminal_emulator = "x-terminal-emulator";
+ static char *title_switch = "-T";
+ static char *exec_switch = "-e";
+ 
+@@ -77,7 +77,7 @@
+ "    respectively.  The title switch must have the form '<switch> title',\n"
+ "    not '<switch>=title'.  Similarly, the exec switch must have the form\n"
+ "    '<switch> command arg1 arg2 ...'.\n"
+-"    The default values are 'xterm=xterm,-T,-e'.  Values for gnome-terminal\n"
++"    The default values are 'xterm=x-terminal-emulator,-T,-e'.  Values for gnome-terminal\n"
+ "    are 'xterm=gnome-terminal,-t,-x'.\n\n"
+ );
+ 

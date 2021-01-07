@@ -14,16 +14,17 @@ fi
 echo ""
 echo "Which terminal emulator would you like to use for Netkit machines?
 
-(1) xterm - reliable, stable but disgusting UI (default installation)
+(1) xterm - reliable, stable but ancient UI (default installation)
 (2) alacritty - lightweight, modern UI (recommended)
 (3) kitty -  another lightweight, modern UI
+(4) gnome-terminal - default terminal of Ubuntu 
 
 You will be asked to enter your password to install new repositories/packages where required.
 "
 successful=false
 
 while [ $successful = false ]; do
-	echo "Which terminal would you like to use (1/2/3)? "
+	echo "Which terminal would you like to use (1/2/3/4)? "
 	read terminal
 	
 	case $terminal in
@@ -42,6 +43,8 @@ while [ $successful = false ]; do
 			sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=alacritty/g" ${NETKIT_HOME}/netkit.conf
 			successful=true
 			terminal="Alacritty"
+			echo "
+If you get 'libEGL warning: DRI2: failed to authenticate' when running a machine, try running 'apt upgrade'. This is a harmless warning related to virtual machine graphical drivers and will not impact running the lab."
 		;;
 		3)
 			# Kitty is available on Ubuntu by default
@@ -49,6 +52,12 @@ while [ $successful = false ]; do
 			sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=kitty/g" ${NETKIT_HOME}/netkit.conf
 			successful=true
 			terminal="Kitty"
+		;;
+		4)
+			# gnome is pre installed
+			sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=gnome/g" ${NETKIT_HOME}/netkit.conf
+			successful=true
+			terminal="Gnome"
 		;;
 		*)
 			echo "Please pick one of the available options."

@@ -38,7 +38,7 @@ ConditionPathExists=/dev/tty0
 # the entered username.
 # The hardcoded tty0 on ExecStart is a netkit fix
 ExecStart=
-ExecStart=-/sbin/mingetty --noclear --noissue --autologin root tty0
+ExecStart=-/sbin/agetty --noclear --noissue --autologin root tty0
 Type=idle
 Restart=always
 RestartSec=0

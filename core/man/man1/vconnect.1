@@ -1,0 +1,108 @@
+.TH VCONNECT 1 "January 2021" "" Netkit-JH
+.SH NAME
+vconnect \- connect to the tmux session of a netkit virtual machine.
+.SH SYNOPSIS
+\fBvconnect\fR -m \fIMACHINE-NAME\fR --terminal --retry-count N --interval X
+
+This will connect you to the tmux session of machine with name MACHINE-NAME, opening a new terminal as defined by TERM_TYPE in netkit.conf. If the tmux session does not initially exist it will try N times to connect, waiting X seconds between each attempt. After this it will exit
+
+\" ########################################
+
+.SH DESCRIPTION
+The \fIvconnect\fR command connects you to the tmux session of a netkit virtual machine. You can connect either in your current shell, or in a new terminal.
+
+\" ########################################
+
+.SH OPTIONS
+
+.TP
+.B
+-h
+.PD 0
+.TP
+.B
+--help
+Print help message and exit. Other arguments will be ignored.
+
+.TP
+.B
+-l
+.PD 0
+.TP
+.B
+--list
+List all running sessions on the tmux 'netkit' server.
+
+.TP
+.B
+-t
+.PD 0
+.TP
+.B
+--terminal
+Connect to the tmux session from a new terminal. The terminal opened is dependent on the TERM_TYPE set in netkit.conf.
+
+.TP
+.B
+-m \fIMACHINENAME\fR
+.PD 0
+.TP
+.B
+--machine \fIMACHINENAME\fR
+Name of the netkit machine to connect to.
+
+.TP
+.B
+-r \fIN\fR
+.PD 0
+.TP
+.B
+--retry-count \fIN\fR
+If the first attempt to connect to the tmux session fails,
+retry N times.
+.TP
+.B
+
+-n \fIX\fR
+.PD 0
+.TP
+.B
+--interval \fIX\fR
+If the first attempt to connect to the tmux session fails,
+and retry-count is more than 1, sleep for X seconds between
+each attempt.
+
+
+\" ########################################
+
+.SH "ENVIRONMENT VARIABLES"
+
+All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
+name of the directory Netkit is installed in.
+
+Apart from this, \fIvconnect\fR supports no other environment variables.
+
+
+\" ########################################
+
+.SH "SEE ALSO"
+\fIvclean\fR(1),
+\fIvconf\fR(1),
+\fIvcrash\fR(1),
+\fIvhalt\fR(1),
+\fIvlist\fR(1),
+\fIvcommand\fR(1),
+\fIvstart\fR(1).
+
+
+\" ########################################
+
+.SH AUTHOR
+\fIvconnect\fR script: Billy Bromell
+.br
+This man page: Billy Bromell
+
+
+\" ########################################
+
+.so include/bugreport.man

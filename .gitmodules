@@ -1,3 +1,0 @@
-[submodule "kernel/build/user-mode-linux-5.6"]
-	path = kernel/build/user-mode-linux-5.6
-	url = https://github.com/TechSupportJosh/user-mode-linux-5.6/
