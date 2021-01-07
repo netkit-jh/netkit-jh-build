@@ -157,6 +157,11 @@ Other options are:
                         pair OPTION=VALUE. This option can be used multiple
                         times. Parameters will be passed to the kernel in the
                         same order in which they are provided.
+      --debug           Run the virtual machine under a gdb instance to report
+                        more messages than with --verbose, and for further
+                        debugging. The process requires a SIGINT delivery with
+                        kill -INT <pid> to start debugging (if the session
+                        booted successfully)
   -F, --foreground      Do not launch the virtual machine in background (the
                         latter being the default behavior). Note that virtual
                         hubs are always started in background, regardless of
@@ -192,8 +197,9 @@ INVALID_OPTION=0
 OPT_LIST="kernel:,mem:,model-fs:,filesystem:,con0:,con1:,exec:"
 OPT_LIST="${OPT_LIST},hostlab:,hostwd:,append:,foreground,help,hide-disk-file"
 OPT_LIST="${OPT_LIST},no-cow,print,verbose,no-hosthome"
-OPT_LIST="${OPT_LIST},quiet,version,test,xterm:"
+OPT_LIST="${OPT_LIST},quiet,debug, version,test,xterm:"
 OPT_LIST="${OPT_LIST},tmux-attached,tmux-detached"
+
 i=0
 while [ $i -lt $MAX_INTERFACES ]; do
    OPT_LIST="${OPT_LIST},eth$i:"
@@ -355,7 +361,10 @@ parseCmdLine() {
             JUST_PRINT=1;;
             
          --verbose|-v)
-            VERBOSE=1;;                  
+            VERBOSE=1;;  
+
+         --debug)
+            DEBUG=1;;                
          
          --xterm)
             if [ ! -z "$ASSIGNED_TERM_TYPE" ]; then
@@ -662,7 +671,11 @@ fi
 
 
 ##### Set verbosity parameter
-if [ -z "$VERBOSE" ]; then
+if [ ! -z "$DEBUG" ]; then
+   KERNELCMD="gdb --args $KERNELCMD"
+elif [ ! -z "$VERBOSE" ]; then
+   KERNELCMD="$KERNELCMD"
+else
    KERNELCMD="$KERNELCMD quiet"
 fi
 
