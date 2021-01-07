@@ -38,7 +38,8 @@ if [ "${CURRENT_VERSION}" -lt 2 ]; then
 fi
 
 # Upgrade from v2 to v3
-# - Ensures TUTORIAL_OPTION has been defined.
+# - Add TMUX options
+# - Sets mconsole dir to machines
 if [ "${CURRENT_VERSION}" -lt 3 ]; then
     echo "Upgrading Netkit configuration to V3."
 
@@ -56,6 +57,7 @@ TMUX_OPEN_TERMS=FALSE           # Open a terminal with the tmux session for the 
                                 # This option only takes effect when USE_TMUX is true
     " >> ${NEW_DIR}/netkit.conf
 
+	sed -i "s/MCONSOLE_DIR=\".*\"/MCONSOLE_DIR=\"$HOME/.netkit/machines\"/g" ${NEW_DIR}/netkit.conf
     # Finally, update the version.
     CURRENT_VERSION=3
     sed -i "s/CONFIG_VERSION=2/CONFIG_VERSION=3/g" ${NEW_DIR}/netkit.conf
