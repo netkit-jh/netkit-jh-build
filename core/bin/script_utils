@@ -53,6 +53,10 @@ export LANG=C
 : ${MAX_SIMULTANEOUS_VMS:=5}
 : ${GRACE_TIME:=0}
 : ${USE_SUDO:="yes"}
+: ${USE_TMUX:="FALSE"}
+: ${TMUX_OPEN_TERMS:="FALSE"}
+: ${CHECK_FOR_UPDATES:="yes"}
+: ${UPDATE_CHECK_PERIOD:=5}
 
 # Check whether some environment variables override default settings
 [ ! -z "$NETKIT_FILESYSTEM" ] && VM_MODEL_FS=$NETKIT_FILESYSTEM
