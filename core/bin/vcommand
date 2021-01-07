@@ -12,7 +12,7 @@ tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
     shift 3
     cmd="$*"
     tmux -L netkit has-session -t="$session" 2>/dev/null
-    if [ $? != 0 ]; then
+    if [ $? -ne 0 ]; then
         echo "tmux session does not exist for this machine."
         exit 1
     fi

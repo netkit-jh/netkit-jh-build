@@ -111,7 +111,7 @@ ATTEMPTS=1
 
 while [ $ATTEMPTS -le $RETRY_COUNT ]; do
     tmux -L netkit has-session -t="$MACHINE_NAME" 2>/dev/null
-    if [ $? != 0 ]; then
+    if [ $? -ne 0 ]; then
         ATMSG=""
         [ $RETRY_COUNT -gt 1 ] && ATMSG="(Attempt $ATTEMPTS)"
         echo "[vconnect]: tmux session does not exist for this machine. $ATMSG"
