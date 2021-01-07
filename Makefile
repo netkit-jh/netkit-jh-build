@@ -69,7 +69,7 @@ mrproper: clean
 	rm -rf build
 
 .PHONY: install
-install: ${KERNEL_ARCHIVE_FILE} ${FS_ARCHIVE_FILE} ${CORE_ARCHIVE_FILE} install-script
+install: install-script
 ifeq ($(shell id -u), 0)
 		@echo "Please run 'make install' without root privileges. You will be asked when appropiate to use root privileges."
 		exit 1
