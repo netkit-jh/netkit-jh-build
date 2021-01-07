@@ -1,0 +1,53 @@
+# Set leader key to ctrl-t (as default is ctrl-b and netkit tmux sessions may be nested in host sessions,
+# ctrl a is default for screen and we might use screen within the uml vm)
+unbind C-b
+set-option -g prefix C-t
+bind-key C-t send-prefix
+
+bind-key h new-window -n "tmux-netkit-help" 'less $NETKIT_HOME/tools/tmuxhelp.md'
+
+set -g mouse on
+set -s escape-time 0
+
+set-hook -g session-created 'rename-window netkit-vm; display-message "Starting #{session_name}"'
+
+# If pane 0 dies, kill any previous MACHINE-dead sessions, and rename this session
+# from MACHINE to MACHINE-dead
+set -g remain-on-exit on
+set-hook -g pane-died {
+    if -F "#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}}" {
+        run-shell "tmux -L netkit has-session -t '=#{session_name}-dead' && tmux kill-session -t '=#{session_name}-dead'; tmux -L netkit rename-session -t '=#{session_name}' '#{session_name}-dead'"
+    } {
+        run-shell "tmux -L netkit kill-pane -t=#{session_name}:#{window_name}.#{pane_index}"
+    }
+}
+
+set -g status-left "#S #{?client_prefix,🦀 ,⌨  }    #{?window_zoomed_flag,🔍, }"
+set -g status-right "🧽 #(cat $NETKIT_HOME/netkit-version) : #(basename `pwd`) "
+set -g status-style "bg=#8a32a9 fg=white"
+set -g pane-active-border-style fg=#c78add
+set -g status-left-length 200
+set -g status-right-length 200
+set -g message-command-style "bg=#ff3333"
+set -g message-style "bg=#ff3333"
+
+bind-key r source-file $NETKIT_HOME/tools/tmux.conf \; display-message "Netkit tmux.conf reloaded"
+
+set-hook -g client-attached 'display-message "Connected to Netkit VM"'
+set -g focus-events on
+
+# Change status bar color if you move to host shell - so you dont get confused between netkit vm and host
+set-hook -g pane-focus-in 'if -F "#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}}" "set status-style bg=#8a32a9" "set status-style bg=#0073e6"'
+
+bind c new-window -c "#{pane_current_path}"
+bind '"' split-window -c "#{pane_current_path}"
+bind % split-window -h -c "#{pane_current_path}"
+bind-key -n Home send Escape "OH"
+bind-key -n End send Escape "OF"
+
+# Normal Session Capture
+unbind S
+unbind s # unbind session manage shortcut - we'll use s for save
+bind-key s capture-pane -b temp-capture-buffer -S - \; save-buffer -b temp-capture-buffer "/tmp/#(basename `pwd`)#{session_name}-#{window_name}-#{pane_index}.out" \; delete-buffer -b capture-buffer\; display-message "Saved current pane to /tmp/#(basename `pwd`)#{session_name}-#{window_name}-#{pane_index}.out"
+# Custom capture filename
+bind-key S command-prompt -I "/tmp/#(basename `pwd`)#{session_name}-#{window_name}-#{pane_index}.out" -p "Store current pane contents to file:" "capture-pane -b temp-capture-buffer -S -; save-buffer -b temp-capture-buffer %1; delete-buffer -b capture-buffer"

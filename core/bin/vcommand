@@ -1,0 +1,112 @@
+#!/bin/bash
+
+PARAMS=""
+COMMAND_TIMEOUT="1"
+VERBOSE="FALSE"
+
+tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
+    session="$1"
+    target="${session}:netkit-vm.0"
+    timeout="$2"
+    verbose="$3"
+    shift 3
+    cmd="$*"
+    tmux -L netkit has-session -t="$session" 2>/dev/null
+    if [ $? != 0 ]; then
+        echo "tmux session does not exist for this machine."
+        exit 1
+    fi
+
+    # Generate UUID to work out where the command starts
+    cmd_uuid=$(cat /proc/sys/kernel/random/uuid)
+    [ "$VERBOSE" = "TRUE" ] && echo "UUID for command = $cmd_uuid"
+    tmux -L netkit send-keys -t="$target" "echo $cmd_uuid" ENTER
+    sleep 0.5
+    
+    ## RUN COMMAND ##
+    [ "$VERBOSE" = "TRUE" ] && echo -e "command: $cmd \n\n"
+    tmux -L netkit send-keys -t="$target" "$cmd" ENTER
+
+    ## SLEEP ##
+    sleep "$timeout"
+
+    # Get output buffer
+    tmux_buffer=$(tmux -L netkit capture-pane -t "$target" -S - -p)
+    [ "$VERBOSE" = "TRUE" ] && echo -e "buffer after command = $tmux_buffer \n\n"
+    
+    echo "$tmux_buffer" |  sed "1,/$cmd_uuid/d" - | head -n -1 | sed '1,2d' -
+}
+
+print_help(){
+    echo
+    echo -e " vcommand - send a command to a netkit virtual machine through its tmux session."
+    echo
+    echo -e " Example: vcommand -m web "
+    echo
+    echo -e "\toptions:"
+    echo
+    echo -e "\t-h | --help                       Print this Help."
+    echo -e "\t-m | --machine MACHINENAME       Name of the machine to send the command to."
+    echo -e "\t-n | --timeout N                  Set how long to wait before grabbing the output of the command."
+    echo -e "\t-v | --verbose                    Enables VERBOSE variable for adding debugging echo statements."
+    echo -e "\t-c | --command cmd                command to send to the machine. This should always be the"
+    echo -e "\t                                  last argument to vcommand"
+    echo
+}
+
+# from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
+
+while (( "$#" )); do
+  case "$1" in
+    -h|--help)
+      print_help
+      exit 0
+      ;;
+    -v|--verbose)
+      VERBOSE="TRUE"
+      shift 1
+      ;;
+    -n|--timeout)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        COMMAND_TIMEOUT=$2
+        shift 2
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    -m|--machine)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        MACHINE_NAME=$2
+        shift 2
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    -c|--command)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        shift
+        PARAMS="$*"
+        shift $#
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    *) # unsupported flags
+      echo "Error: Unsupported flag $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+eval set -- "$PARAMS"
+
+if [ -z ${MACHINE_NAME+x} ]; then
+    echo "Machine name not given."
+    print_help
+    exit 1
+fi
+
+tmux_command $MACHINE_NAME $COMMAND_TIMEOUT $VERBOSE $PARAMS

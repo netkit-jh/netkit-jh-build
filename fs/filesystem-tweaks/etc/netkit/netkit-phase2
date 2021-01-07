@@ -61,7 +61,7 @@ case "$1" in
       if [ -f /hostlab/shared.startup ]; then
          echo
          echo ">>> Running shared startup script..."
-         /bin/sh -c '. /hostlab/shared.startup'
+         sed "s/\r$//" /hostlab/shared.startup | /bin/sh
          echo ">>> End of shared startup script."
          echo
       fi
@@ -69,7 +69,7 @@ case "$1" in
       if [ -f /hostlab/$HOSTNAME.startup ]; then
          echo
          echo ">>> Running $HOSTNAME specific startup script..."
-         /bin/sh -c ". /hostlab/$HOSTNAME.startup"
+         sed "s/\r$//" /hostlab/$HOSTNAME.startup | /bin/sh
          echo ">>> End of $HOSTNAME specific startup script."
          echo
       fi
@@ -127,7 +127,7 @@ case "$1" in
       if [ -f /hostlab/$HOSTNAME.shutdown ]; then
          echo
          echo ">>> Running $HOSTNAME specific shutdown script..."
-         /bin/sh -c ". /hostlab/$HOSTNAME.shutdown"
+         sed "s/\r$//" /hostlab/$HOSTNAME.shutdown | /bin/sh
          echo ">>> End of $HOSTNAME specific shutdown script."
          echo
       fi
@@ -135,7 +135,7 @@ case "$1" in
       if [ -f /hostlab/shared.shutdown ]; then
          echo
          echo ">>> Running shared shutdown script..."
-         /bin/sh -c '. /hostlab/shared.shutdown'
+         sed "s/\r$//" /hostlab/shared.shutdown | /bin/sh
          echo ">>> End of shared shutdown script."
          echo
       fi

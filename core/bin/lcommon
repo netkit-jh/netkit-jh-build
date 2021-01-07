@@ -385,61 +385,90 @@ labStartParallel() {
 
 
 # This function creates a link-level topology map of the lab. Its argument is
-# the name of the PostScript file to save the map in.
+# the name of the PNG file to save the map in.
 labMap() {
-   GRAPH_GENERATOR=`which twopi`
+   GRAPH_GENERATOR=`which neato`
    if [ -z "$GRAPH_GENERATOR" ]; then
       echo 1>&2 "Error: the GraphViz library does not appear to be installed."
-      echo 1>&2 "Cannot create the topology map. Sorry..."
+      echo 1>&2 "Please install the GraphViz library."
       return 1
    fi
    
    cat "${LAB_DIRECTORY}/lab.conf" | awk -v vhostlist="$LABHOSTS" '
-      BEGIN {
-         print "strict graph Netkit_graph {"
-         print "   size=\"8.3,11.7\""
-         split(vhostlist, vm, " ")
-         # Create an array whose keys are virtual machine names
-         for (i in vm) {
-            vhosts[vm[i]]=1
+   BEGIN {
+      print "graph netkit_jh_graph {"
+      print "   overlap=\"prism\""
+      print "   overlap_scaling=\"-6.0\""
+      print "   resolution=400.0"
+      print "   splines=\"line\""
+
+      # Create array of hostnames
+      split(vhostlist, vm, " ")
+
+      # Create an array whose keys are virtual machine names
+      # vhosts = {"host1" : 1, "host2" : 1, "host3" : 1, ... }
+      for (i in vm) {
+         vhosts[vm[i]] = 1
+      }
+   }
+
+   # Matching an interface specification - "host[x]="
+   /^.+\[[0-9]+\]=/ {
+      lbracket_pos = match($0, "\\[")
+      rbracket_pos = match($0, "\\]")
+      equals_pos = match($0, "=")
+
+      # Get hostname, interface number, and collision domain name
+      machine_name = substr($0, 1, lbracket_pos - 1)
+      interface = substr($0, lbracket_pos + 1, rbracket_pos - lbracket_pos - 1)
+      collision_domain = substr($0, equals_pos + 1)
+
+      # Check if (hostname, interface number) pair has already appeared
+      if (interfaces[machine_name, interface] == 1) {
+         print "// Duplicate specification for interface eth" interface " on virtual machine " machine_name "."
+         print "// Only preserving the first specification."
+      } else {
+         collision_domains[collision_domain] = 1
+
+         # Only display hosts part of the lab
+         if (machine_name in vhosts) {
+            interfaces[machine_name,interface] = 1
+
+            # Create edge from host to collision domain
+            print "   \"" machine_name "\" -- \"" collision_domain \
+            "\" [taillabel =<<TABLE BGCOLOR=\"white\" BORDER=\"0\" CELLPADDING=\"1\" CELLSPACING=\"0\"><TR><TD>eth" \
+            interface "</TD></TR></TABLE>>, labeldistance = 1.5, labelfontsize = 8.0]"
          }
       }
-      /^.+\[[0-9]+\]=/ {
-         # This is an interface specification
-         bracket_pos=match($0, "\\[")
-         machine_name=substr($0, 1, bracket_pos-1)
-         collision_domain=substr($0,match($0, "=")+1)
-         interface=substr($0, bracket_pos+1, match($0, "\\]")-bracket_pos-1)
-         if (interfaces[machine_name,interface]==1) {
-            print "// Duplicate specification for interface eth" interface " on virtual machine " machine_name "."
-            print "// Only preserving the first specification."
-         }
-         else {
-            collision_domains[collision_domain]=1
-            if (machine_name in vhosts) {
-               # This host is part of the lab
-               interfaces[machine_name,interface]=1
-               print "   " machine_name " -- " collision_domain " [taillabel=\"" interface "\"]"
-            }
-         }
+   }
+
+   # Matching an option specification - "host[option]="
+   /^.+\[[^0-9].*\]=/ {
+      lbracket_pos = match($0, "\\[")
+      rbracket_pos = match($0, "\\]")
+      equals_pos = match($0, "=")
+
+      # Get hostname, option, and option value
+      machine_name = substr($0, 1, lbracket_pos - 1)
+      option_name=substr($0, lbracket_pos + 1, rbracket_pos - lbracket_pos - 1)
+      option_value = substr($0, equals_pos + 1)
+
+      # options = {"host1" : "opt3=val\nopt2=val\nopt1=val", "host2" : ... }
+      options[machine_name] = options[machine_name] option_name " = " option_value "<BR/>"
+   }
+
+   END {
+      for (host in vhosts) {
+         print "   \"" host "\" [shape = box, label=<" host "<FONT POINT-SIZE=\"10\"><BR/>" options[host] \
+         "</FONT>>, height = 0.5, width = 0.5]"
       }
-      /^.+\[[^0-9].*\]=/ {
-         # This is an option specification
-         bracket_pos=match($0, "\\[")
-         machine_name=substr($0, 1, bracket_pos-1)
-         option=substr($0,match($0, "=")+1)
-         option_name=substr($0, bracket_pos+1, match($0, "\\]")-bracket_pos-1)
-         options[machine_name] = option_name "=" option "\\n" options[machine_name]
+
+      for (cd in collision_domains) {
+         print "   \"" cd "\" [shape = plaintext, width = 0, height = 0, margin = \"0\"]"
       }
-      END {
-         for (i in vhosts) {
-            print "   " i " [label=\"" i "\\n" options[i] "\",height=0.5,width=0.5]"
-         }
-         for (i in collision_domains) {
-            print "   " i " [shape=diamond,height=0.5,width=0.5]"
-         }
-         print "}"
-      }' \
-   | $GRAPH_GENERATOR -Tps -o "$1" > /dev/null 2>&1
+
+      print "}"
+   }'\
+   | $GRAPH_GENERATOR -Tpng -o "$1" 2>&1
    return
 }

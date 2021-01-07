@@ -19,7 +19,7 @@
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
 # This script displays information about a lab without running it. Optionally,
-# it can create a PostScript file containing the level 2 topology of the lab.
+# it can create a PNG file containing the level 2 topology of the lab.
 
 SCRIPTNAME=`basename $0`
 
@@ -50,14 +50,14 @@ help() {
 
 This command displays information about a Netkit lab without running it.
 Displayed information includes the number of virtual machines that make up the
-lab. If asked to, the command can create a PostScript file containing a
-graphical map of the link-level topology of the lab.
+lab. If asked to, the command can create a PNG file containing a graphical map
+of the link-level topology of the lab.
 Available options are:
 
   -d DIRECTORY        Assume the lab is located inside DIRECTORY. By default,
                       the lab is assumed to be located in the current directory.
   -m, --map=FILE      Create a graphical link-level topology map of the lab and
-                      save it into FILE in PostScript format. This requires the
+                      save it into FILE in PNG format. This requires the
                       Graphviz library to be installed.
 
 Other standard options are:
