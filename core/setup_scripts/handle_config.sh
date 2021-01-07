@@ -62,9 +62,21 @@ CHECK_FOR_UPDATES=yes           # When running lstart, a request will be sent to
 UPDATE_CHECK_PERIOD=5           # How long to wait between checking for new releases.
     " >> ${NEW_DIR}/netkit.conf
 
-	sed -i "s/MCONSOLE_DIR=\".*\"/MCONSOLE_DIR=\"$HOME/.netkit/machines\"/g" ${NEW_DIR}/netkit.conf
+	sed -i "s|MCONSOLE_DIR=\".*\"|MCONSOLE_DIR=\"$HOME/.netkit/machines\"|g" ${NEW_DIR}/netkit.conf
 	
     # Finally, update the version.
     CURRENT_VERSION=3
     sed -i "s/CONFIG_VERSION=2/CONFIG_VERSION=3/g" ${NEW_DIR}/netkit.conf
+fi
+
+# Upgrade from v3 to v4
+# - Sets mconsole dir to machines again due to broken V3 configuration
+if [ "${CURRENT_VERSION}" -lt 4 ]; then
+    echo "Upgrading Netkit configuration to V4."
+
+	sed -i "s|MCONSOLE_DIR=\".*\"|MCONSOLE_DIR=\"$HOME/.netkit/machines\"|g" ${NEW_DIR}/netkit.conf
+	
+    # Finally, update the version.
+    CURRENT_VERSION=4
+    sed -i "s/CONFIG_VERSION=3/CONFIG_VERSION=4/g" ${NEW_DIR}/netkit.conf
 fi
