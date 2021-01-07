@@ -8,7 +8,7 @@ RETRY_COUNT=1
 RETRY_INTERVAL=5
 
 tmux_connect(){ # $1 = machine name
-    tmux -L netkit attach -t "$1"
+    tmux -L netkit attach -t="$1"
 }
 
 open_terminal(){ # $1 = machine name
@@ -26,7 +26,7 @@ open_terminal(){ # $1 = machine name
             echo "[vconnect]: terminal $TERM_TYPE not supported, defaulting to xterm."
             TERMCMD="xterm -e";;
     esac
-    nohup $TERMCMD tmux -L netkit attach -t "$1" &> /dev/null &
+    nohup $TERMCMD tmux -L netkit attach -t="$1" &> /dev/null &
 }
 
 print_help(){
@@ -110,7 +110,7 @@ fi
 ATTEMPTS=1
 
 while [ $ATTEMPTS -le $RETRY_COUNT ]; do
-    tmux -L netkit has-session -t "$MACHINE_NAME" 2>/dev/null
+    tmux -L netkit has-session -t="$MACHINE_NAME" 2>/dev/null
     if [ $? != 0 ]; then
         ATMSG=""
         [ $RETRY_COUNT -gt 1 ] && ATMSG="(Attempt $ATTEMPTS)"
