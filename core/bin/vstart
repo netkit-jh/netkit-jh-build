@@ -233,8 +233,18 @@ parseCmdLine() {
          --kernel|-k)
             shift; CURRENT_ARGUMENT="$1"
             checkSpaces "$CURRENT_ARGUMENT"
-            VM_KERNEL=`makeAbsolutePath $CURRENT_ARGUMENT`;;
-         
+            VM_KERNEL=`makeAbsolutePath $CURRENT_ARGUMENT`
+            # Check whether this kernel exists
+            if [ ! -e "${VM_KERNEL}" ]; then
+            	VM_KERNEL="${NETKIT_HOME}/kernel/${CURRENT_ARGUMENT}"
+            fi
+            if [ ! -e "${VM_KERNEL}" ]; then
+               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
+                       "Kernel specified does not exist: ${VM_KERNEL}"
+               exit 1
+            fi
+            ;;
+            
          --mem|-M)
             shift; CURRENT_ARGUMENT="$1"
             VM_MEMORY="$CURRENT_ARGUMENT"
@@ -257,8 +267,18 @@ parseCmdLine() {
                        "Model filesystem name is missing."
                exit 1
             fi
-            VM_MODEL_FS=`makeAbsolutePath $CURRENT_ARGUMENT`;;
-
+            VM_MODEL_FS=`makeAbsolutePath $CURRENT_ARGUMENT`
+            # Check whether this model FS exists
+            if [ ! -e "${VM_MODEL_FS}" ]; then
+            	VM_MODEL_FS="${NETKIT_HOME}/fs/${CURRENT_ARGUMENT}"
+            fi
+            if [ ! -e "${VM_MODEL_FS}" ]; then
+               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
+                       "Filesystem specified does not exist: ${VM_MODEL_FS}"
+               exit 1
+            fi
+            ;;
+            
          --filesystem|-f)
             shift; CURRENT_ARGUMENT="$1"
             checkSpaces "$CURRENT_ARGUMENT"
