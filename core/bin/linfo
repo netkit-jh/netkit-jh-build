@@ -42,16 +42,19 @@ CMDLINE="$0 $*"
 logWrite $0 $*
 
 
-# This function is used to print the lhalt usage
+# This function is used to print the linfo usage
 help() {
    echo
-   echo "Usage: $SCRIPTNAME [options]"
+   echo "Usage: $SCRIPTNAME [options] [all|[file]...]"
    cat << END_OF_HELP
 
 This command displays information about a Netkit lab without running it.
 Displayed information includes the number of virtual machines that make up the
 lab. If asked to, the command can create a PNG file containing a graphical map
 of the link-level topology of the lab.
+Multiple lab configurations can be specified by listing lab.conf files (including current directory)
+after all other options. The all argument will auto-detect other labs in the
+parent directory.
 Available options are:
 
   -d DIRECTORY        Assume the lab is located inside DIRECTORY. By default,
@@ -116,7 +119,13 @@ parseCmdLine() {
       esac
       shift
    done
-   
+
+   CONF_LIST="$1"
+   while [ ${#} -gt 0 ]
+   do
+      CONF_LIST="$CONF_LIST $2"
+      shift
+   done   
    if [ $# -gt 0 ]; then
       warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option: \"$1\"."
       exit 1
@@ -154,8 +163,8 @@ echo
 becho "====================== Lab information =========================="
 labWelcome
 echo
-buildAffectedVHostList
-becho "The lab is made up of `echo $LABHOSTS | awk '{print NF}'` virtual machines ($LABHOSTS)."
+buildAffectedVHostList $CONF_LIST
+becho "The lab is made up of `echo $HOSTLIST | awk '{print NF}'` virtual machines ($HOSTLIST)."
 if [ -f "$LAB_DIRECTORY/lab.dep" ]; then
    becho "The lab supports parallel startup."
 fi
@@ -165,7 +174,7 @@ if [ ! -z "$MAP_FILE" ]; then
       warning "$SCRIPTNAME" "$CMDLINE" "$0" "Unable to find file lab.conf: cannot create topology map."
       exit 1
    fi
-   if labMap "$MAP_FILE"; then
+   if labMap "$MAP_FILE" $CONF_LIST; then
       becho "Link-level topology map saved into $MAP_FILE."
    fi
 fi

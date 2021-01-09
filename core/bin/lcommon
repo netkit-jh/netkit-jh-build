@@ -51,9 +51,13 @@ becho() {
 # provided on the command line, then hosts appearing both in the command line
 # and in the lab will be reported inside VHOSTLIST. If no host list has been
 # passed on the command line, then VHOSTLIST will store the same information
-# as LABHOSTS.
+# as LABHOSTS. HOSTLIST is used by linfo to prevent unexpeted outcome with 
+# functions that rely on LABHOSTS
+
 buildAffectedVHostList() {
    LABHOSTS=""
+   HOSTLIST=""
+   CONFLIST="${LAB_DIRECTORY}/lab.conf"
    
    if [ ! -z "$machines" ]; then
       # Assume list of virtual machines is the one documented inside lab.conf
@@ -76,8 +80,36 @@ buildAffectedVHostList() {
          if [ -d "$LAB_DIRECTORY/$LAB_ITEM" -a "$LAB_ITEM" != "shared" \
             -a "$LAB_ITEM" != "_test" -a "$LAB_ITEM" != "CVS" ]; then
             LABHOSTS="$LABHOSTS $LAB_ITEM"
+            HOSTLIST="$HOSTLIST $LAB_ITEM"
          fi
       done
+
+      # Do the same for split labs
+      if [ "$1" = "all" ]; then
+         CONFLIST=""
+         HOSTLIST=""
+         for LAB_SUBDIRECTORY in ${LAB_DIRECTORY%?}*; do
+            CONFLIST="$CONFLIST $LAB_SUBDIRECTORY/lab.conf"
+            for LAB_ITEM in `ls "${LAB_SUBDIRECTORY}"`; do
+               if [ -d "$LAB_SUBDIRECTORY/$LAB_ITEM" -a "$LAB_ITEM" != "shared" \
+               -a "$LAB_ITEM" != "_test" -a "$LAB_ITEM" != "CVS" ]; then
+               HOSTLIST="$HOSTLIST $LAB_ITEM"
+               fi
+            done
+         done
+      elif [ $# -gt 0 ]; then
+         CONFLIST=""
+         HOSTLIST=""
+         for CONF_PATH in "$@"; do
+            CONFLIST="$CONFLIST $CONF_PATH"
+            for LAB_ITEM in `ls "${LAB_DIRECTORY}/${CONF_PATH%lab.conf}"`; do
+               if [ -d "$LAB_DIRECTORY/${CONF_PATH%lab.conf}/$LAB_ITEM" -a "$LAB_ITEM" != "shared" \
+                  -a "$LAB_ITEM" != "_test" -a "$LAB_ITEM" != "CVS" ]; then
+                  HOSTLIST="$HOSTLIST $LAB_ITEM"
+               fi
+            done
+         done
+      fi
    fi
    
    # Check that virtual machines passed by command line are in the scenario
@@ -387,14 +419,14 @@ labStartParallel() {
 # This function creates a link-level topology map of the lab. Its argument is
 # the name of the PNG file to save the map in.
 labMap() {
+   MAP_FILE="$1"
    GRAPH_GENERATOR=`which neato`
    if [ -z "$GRAPH_GENERATOR" ]; then
       echo 1>&2 "Error: the GraphViz library does not appear to be installed."
       echo 1>&2 "Please install the GraphViz library."
       return 1
    fi
-   
-   cat "${LAB_DIRECTORY}/lab.conf" | awk -v vhostlist="$LABHOSTS" '
+   cat $CONFLIST | awk -v vhostlist="$HOSTLIST" '
    BEGIN {
       print "graph netkit_jh_graph {"
       print "   overlap=\"prism\""
@@ -469,6 +501,6 @@ labMap() {
 
       print "}"
    }'\
-   | $GRAPH_GENERATOR -Tpng -o "$1" 2>&1
+   | $GRAPH_GENERATOR -Tpng -o "$MAP_FILE" 2>&1
    return
 }
