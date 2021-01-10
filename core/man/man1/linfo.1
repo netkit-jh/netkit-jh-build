@@ -2,7 +2,7 @@
 .SH NAME
 linfo \- show information about a netkit lab
 .SH SYNOPSIS
-\fBlinfo\fR [options] [all|[file]...]
+\fBlinfo\fR [options]
 
 
 \" ########################################
@@ -29,8 +29,9 @@ The following options are supported by \fIlinfo\fR:
 \-d \fIDIRECTORY\fR
 Assume the Netkit lab that is located inside \fIDIRECTORY\fR. If no \fB\-d\fR
 option is provided, \fIlhalt\fR assumes that the lab is located in the
-current directory. The path to the lab directory (being that the current
-directory or one provided by \fB\-d\fR) must never contain spaces.
+current directory. The path to the lab directory (or lab.conf) (being that the current
+directory or one provided by \fB\-d\fR) must never contain spaces. Multiple directories can
+be specified by multiple \fB\-d\fR flags
 
 .TP
 .B
@@ -42,6 +43,18 @@ directory or one provided by \fB\-d\fR) must never contain spaces.
 Save a graphical link-level topology map of the lab in PNG format inside \fIFILE\fR.
 This option requires the Graphviz library to be properly installed on your
 system in order to work.
+
+.TP
+.B
+\-a
+.PD 0
+.TP
+.B
+\-\-auto
+Finds sibling folders which all share the same prefix as the
+current directory bar the final character. E.g. running in lab3a
+will find all directories starting with lab3* (lab3a,lab3b,lab3c,etc...)
+can be paired with multiple -d to specify additional folders.
 
 .PP
 The following standard options are also supported.
