@@ -80,7 +80,7 @@ buildAffectedVHostList() {
          fi
       done
    fi
-
+ 
    # Check that virtual machines passed by command line are in the scenario
    ORIGINAL_VHOSTLIST=$VHOSTLIST
    VHOSTLIST=""
@@ -395,7 +395,7 @@ labMap() {
       echo 1>&2 "Please install the GraphViz library."
       return 1
    fi
-   cat $LAB_DIRECTORIES | awk -v vhostlist="$HOSTLIST" '
+   cat $CONFLIST | awk -v vhostlist="$HOSTLIST" '
    BEGIN {
       print "graph netkit_jh_graph {"
       print "   overlap=\"prism\""

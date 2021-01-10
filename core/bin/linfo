@@ -98,15 +98,11 @@ parseCmdLine() {
       
          -d)
             shift; CURRENT_ARGUMENT="$1"
-            if [ "$CURRENT_ARGUMENT" = "all" ]; then
-            LAB_DIRECTORIES="$CURRENT_ARGUMENT"
-            else
-            LAB_DIRECTORIES="$LAB_DIRECTORIES `makeAbsolutePath "${CURRENT_ARGUMENT%"/lab.conf"}"/lab.conf""`"
-            fi;;
+            LAB_DIRECTORIES="$LAB_DIRECTORIES `makeAbsolutePath "${CURRENT_ARGUMENT}"`";;
             
          --auto|-a)
             for dir in `ls -d ${PWD%?}*/`; do
-               LAB_DIRECTORIES="$LAB_DIRECTORIES ${dir}lab.conf"
+               LAB_DIRECTORIES="$LAB_DIRECTORIES ${dir}"
             done;;
          
          --help|-h)
@@ -144,10 +140,10 @@ fi
 
 # If no lab directory has been given, assume current directory
 LAB_DIRECTORIES=${LAB_DIRECTORIES:-${PWD}}
+
 . "$NETKIT_HOME/bin/lcommon"
 
 for LAB_DIRECTORY in $LAB_DIRECTORIES; do
-   LAB_DIRECTORY=${LAB_DIRECTORY%"/lab.conf"}
    # Check that the lab directory exists
    if [ ! -d "$LAB_DIRECTORY" ]; then
       warning "$SCRIPTNAME" "$CMDLINE" "$0" "Lab directory ($LAB_DIRECTORY) does not exist."
@@ -160,28 +156,40 @@ for LAB_DIRECTORY in $LAB_DIRECTORIES; do
                "Invalid lab directory: \"$LAB_DIRECTORY\" (path contains spaces)."
       exit 1
    fi
+   if [ -f "${LAB_DIRECTORY}/lab.dep" ]; then
+      becho "The lab part `basename $LAB_DIRECTORY` supports parallel startup."
+   fi
    VHOSTLIST=""
    buildAffectedVHostList $LAB_DIRECTORY
    HOSTLIST="$HOSTLIST $LABHOSTS"
-
 done
+LAB_DIRECTORY="$LAB_DIRECTORIES"
 HOSTLIST=`echo "${HOSTLIST}" | tr ' ' '\n' | sort -u | tr '\n' ' '` # Removes duplicates
 # Print some information about the lab
 echo
 becho "====================== Lab information =========================="
 labWelcome
-
 becho "The lab is made up of `echo $HOSTLIST | awk '{print NF}'` virtual machines ($HOSTLIST)."
-if [ -f "${PWD}/lab.dep" ]; then
-   becho "The lab supports parallel startup."
-fi
+for LAB_DIRECTORY in $LAB_DIRECTORIES; do
+   if [ -f "$LAB_DIRECTORY/lab.dep" ]; then
+      becho "The lab `basename $LAB_DIRECTORY` supports parallel startup."
+   fi
+done
 
 if [ ! -z "$MAP_FILE" ]; then
-   if [ ! -f "${PWD}/lab.conf" ]; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" "Unable to find file lab.conf: cannot create topology map."
+   for LAB_DIRECTORY in $LAB_DIRECTORIES; do
+      if [ ! -f "${LAB_DIRECTORY%/}/lab.conf" ]; then
+         echo yee
+         warning "$SCRIPTNAME" "$CMDLINE" "$0" "Unable to find file ${LAB_DIRECTORY}/lab.conf: Skipping"
+         continue
+      fi
+      CONFLIST="$CONFLIST ${LAB_DIRECTORY%/}/lab.conf"
+   done
+   if [ "$CONFLIST" = "" ]; then
+      warning "$SCRIPTNAME" "$CMDLINE" "$0" "No valid lab.confs found: cannot create topology map."
       exit 1
    fi
-   if labMap "$MAP_FILE" $LAB_DIRECTORIES; then
+   if labMap "$MAP_FILE" $CONFLIST; then
       becho "Link-level topology map saved into $MAP_FILE."
    fi
 fi
