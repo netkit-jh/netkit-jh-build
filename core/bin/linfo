@@ -156,9 +156,6 @@ for LAB_DIRECTORY in $LAB_DIRECTORIES; do
                "Invalid lab directory: \"$LAB_DIRECTORY\" (path contains spaces)."
       exit 1
    fi
-   if [ -f "${LAB_DIRECTORY}/lab.dep" ]; then
-      becho "The lab part `basename $LAB_DIRECTORY` supports parallel startup."
-   fi
    VHOSTLIST=""
    buildAffectedVHostList $LAB_DIRECTORY
    HOSTLIST="$HOSTLIST $LABHOSTS"
