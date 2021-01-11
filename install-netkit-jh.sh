@@ -12,6 +12,15 @@ DOWNLOAD_FILES=true
 DOWNLOAD_DIR="/tmp"
 DOWNLOAD_URL_PREFIX="https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/"
 
+# Environment variables required for Netkit-JH to run
+NK_ENV_VARS="
+#=== NETKIT VARIABLES ===
+# additions for netkit
+export NETKIT_HOME=\"${TARGET_INSTALL_DIR}\"
+export MANPATH=\"\$MANPATH:\$NETKIT_HOME/man\"
+export PATH=\"\$PATH:\$NETKIT_HOME/bin\"
+#=== NETKIT VARIABLES END ==="
+
 # If desired, you can specify a directory where the files have already been 
 # extracted (primarily for development purposes)
 KERNEL_EXTRACTED_FILES=""
@@ -178,15 +187,11 @@ for RC_FILE in "${RC_FILES[@]}"; do
 		sed -i "/^#=== NETKIT VARIABLES ===/,/^#=== NETKIT VARIABLES END ===/d;" ${RC_FILE}
 	fi
 
-	# use heredoc (with tab suppression using the <<- form) to append netkit additions to bashrc  
-	cat >> "${RC_FILE}" <<-EOF
-	#=== NETKIT VARIABLES ===
-		# additions for netkit
-		export NETKIT_HOME="${TARGET_INSTALL_DIR}"
-		export MANPATH="\$MANPATH:\$NETKIT_HOME/man"
-		export PATH="\$PATH:\$NETKIT_HOME/bin"
-	#=== NETKIT VARIABLES END ===
-	EOF
+	# Append Netkit additions to bashrc  
+	echo "$NK_ENV_VARS" >> "${RC_FILE}"
+
+	# Set the environment variables so ./check_configuration.sh can be ran
+	source "${RC_FILE}"
 
 done
 
@@ -201,22 +206,21 @@ if [ "${PREVIOUS_INSTALL_FOUND}" = true ]; then
 	echo ""
 	echo "Restoring configuration from previous installation."
 	${TARGET_INSTALL_DIR}/setup_scripts/handle_config.sh "${BACKUP_INSTALL_DIR}" "${TARGET_INSTALL_DIR}"
-fi 
+fi
 
-# check netkit install now works
-# TODO: Get this to work... Netkit installs fine, but the check-configurator script doesn't read the environment variables properly so thinks something is wrong
-source ~/.bashrc
-cd "${TARGET_INSTALL_DIR}"
+echo "Netkit-JH should now be installed. Checking configuration..."
 
-# ./check_configuration.sh
-# encourage user to set environment variables for the current bash terminal
-echo "" 
-echo "Future terminals that you launch will automatically get the netkit settings."
-echo "To make the netkit settings available in this terminal, run the following command:"
-echo "source ~/.bashrc"
+# Ubuntu (and similar) distributions prevent .bashrc from running in a
+# non-interactive shell. So here we can just evaluate the environment variables
+# export commands
+eval "$NK_ENV_VARS"
 
+cd "${TARGET_INSTALL_DIR}/setup_scripts"
+./check_configuration.sh || exit 1
+
+# Encourage user to set environment variables for the current terminal
 echo ""
-echo "Run source ~/.bashrc, or open a new terminal, and then run ${NETKIT_HOME}/setup_scripts/check_configuration.sh to ensure your Netkit installation works!"
+echo "To use Netkit-JH now, open a new terminal window or run source ~/.bashrc (or .zshrc if using Zsh)"
 
 echo ""
 echo -e "\033[1mRun ${TARGET_INSTALL_DIR}/setup_scripts/change_terminal.sh to change your terminal emulator (highly recommended!)\033[0m"
