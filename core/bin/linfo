@@ -193,7 +193,7 @@ if [ ! -z "$MAP_FILE" ]; then
       fi
       CONFLIST="$CONFLIST ${LAB_DIRECTORY%/}/lab.conf"
    done
-   if [ "$CONFLIST" = "" ]; then
+   if [ -z "$CONFLIST" ]; then
       warning "$SCRIPTNAME" "$CMDLINE" "$0" "No valid lab.confs found: cannot create topology map."
       exit 1
    fi
