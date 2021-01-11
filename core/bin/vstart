@@ -167,6 +167,12 @@ Other options are:
                         hubs are always started in background, regardless of
                         this option. This is the default when using --con0=this
                         or --con1=this.
+  --tmux-attached       Run each VM in tmux and start a terminal attached to the
+                        tmux session. This is the same as USE_TMUX=TRUE and
+                        TMUX_OPEN_TERMS=TRUE in netkit.conf
+  --tmux-detached       Run each VM in a tmux session without opening terminals.
+                        This is the same as USE_TMUX=TRUE and TMUX_OPEN_TERMS=FALSE
+                        in netkit.conf
   -h, --help            Show this help.
   -p, --print           Do not actually start anything. Just show which commands
                         would be executed.
@@ -191,7 +197,9 @@ INVALID_OPTION=0
 OPT_LIST="kernel:,mem:,model-fs:,filesystem:,con0:,con1:,exec:"
 OPT_LIST="${OPT_LIST},hostlab:,hostwd:,append:,foreground,help,hide-disk-file"
 OPT_LIST="${OPT_LIST},no-cow,print,verbose,no-hosthome"
-OPT_LIST="${OPT_LIST},quiet,debug,version,test,xterm:"
+OPT_LIST="${OPT_LIST},quiet,debug, version,test,xterm:"
+OPT_LIST="${OPT_LIST},tmux-attached,tmux-detached"
+
 i=0
 while [ $i -lt $MAX_INTERFACES ]; do
    OPT_LIST="${OPT_LIST},eth$i:"
@@ -319,6 +327,16 @@ parseCmdLine() {
             shift; CURRENT_ARGUMENT="$1"
             checkSpaces "$CURRENT_ARGUMENT"
             KERNEL_APPEND="$KERNEL_APPEND $CURRENT_ARGUMENT";;
+
+         --tmux-attached)
+            USE_TMUX=TRUE
+            TMUX_OPEN_TERMS=TRUE
+            ;;
+            
+         --tmux-detached)
+            USE_TMUX=TRUE
+            TMUX_OPEN_TERMS=FALSE
+            ;;
             
          -F|--foreground)
             RUN_IN_FOREGROUND=1;;
@@ -709,6 +727,9 @@ fi
 
 [ -z "$BE_QUIET" ] && echo
 
+#### Start the kernel command in a tmux session
+[ "$USE_TMUX" = "TRUE" ] && TERM_TYPE="tmux"
+
 # Add our blocking script to the execution order
 KERNELCMD="$NETKIT_HOME/bin/block-wrapper $TERM_TYPE $VM_NAME $KERNELCMD"
 	
@@ -727,7 +748,7 @@ fi
 ### it ever hangs when booting the virtual machine.
 WAKEUP_PORTHELPER=""
 if [ "$CON0_PORTHELPER" = "yes" ]; then
-   WAKEUP_PORTHELPER="{ sleep 5; $NETKIT_HOME/bin/uml_mconsole $VM_NAME help > /dev/null 2>&1; } &"
+   WAKEUP_PORTHELPER="{ sleep 5; uml_mconsole $VM_NAME help > /dev/null 2>&1; } &"
 fi
 
 ### Remove .disk file, if requested
@@ -741,3 +762,7 @@ if [ "$VM_CON0" = "none" ]; then
 fi
 
 run_command "$JUST_PRINT" "$KERNELCMD" "{ $WAKEUP_PORTHELPER $REMOVE_FS_COMMAND $KERNELCMD; cleanHubs $HUBLIST; } $REDIRECT_CONSOLE $BACKGROUND"
+
+if [ "$TMUX_OPEN_TERMS" = "TRUE" ] && [ "$USE_TMUX" = "TRUE" ]; then
+    vconnect -m "$VM_NAME" --terminal --interval 5 --retry-count 20 &> /dev/null &
+fi

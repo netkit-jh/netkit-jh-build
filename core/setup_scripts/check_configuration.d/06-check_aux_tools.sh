@@ -40,7 +40,7 @@ TEMP_PATH=":$PATH"
 PATH_TO_BE_USED=":"
 
 SYSTEM_COMMANDS="awk basename date dirname find getopt grep head id kill ls lsof ps readlink wc"
-NETKIT_UTILITIES="port-helper tunctl uml_mconsole uml_switch"
+NETKIT_UTILITIES="tunctl uml_mconsole uml_switch"
 
 for CURRENT_COMMAND in $SYSTEM_COMMANDS $NETKIT_UTILITIES; do
    printf "\t%-13s: " $CURRENT_COMMAND
@@ -90,6 +90,15 @@ for CURRENT_COMMAND in $SYSTEM_COMMANDS $NETKIT_UTILITIES; do
       OK=0
    fi
 done
+
+# Check for port-helper in lib path
+printf "\t%-13s: " "port-helper"
+if [ ! -f "/usr/lib/uml/port-helper" ] && [ ! -f "/usr/lib64/uml/port-helper" ]; then
+	echo "error: cannot find port-helper in /usr/lib/uml or /usr/lib64/uml/"
+	OK=0
+else
+	echo -n "ok"
+fi
 
 if [ $OK = 0 ]; then
    echo "failed!"

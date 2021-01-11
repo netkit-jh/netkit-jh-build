@@ -48,7 +48,7 @@ if [ -z "$NETKIT_HOME" ]; then
    echo
    check_failure
 else
-   if [ "$NETKIT_HOME" != "$PWD" -a "$NETKIT_HOME" != "${PWD}/" ]; then
+   if [ "$NETKIT_HOME" != "$(dirname $PWD)" -a "$NETKIT_HOME" != "$(dirname $PWD)/" ]; then
       echo "failed!"
       echo
       echo "*** Error: the environment variable NETKIT_HOME currently points at the"

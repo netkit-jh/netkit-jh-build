@@ -445,13 +445,37 @@ else
    for VM in $VM_IDS; do
       # Check whether the current machine exists
       unset FASTFIND
-      findVM $VM
-      
+      findVM $VM      
       if [ ! -z "$VM_PROCESSES" ]; then
          printConciseVMinfo
          if [ -z "$TEST_MODE" ]; then
             killBySignaling
          fi
       fi
+
    done
 fi
+
+# Kill Tmux Sessions
+for VM in $VM_IDS; do
+  if echo $1 | grep -qE "^[0-9]+$"; then
+    [ -z "$BE_QUIET" ] && echo "[vcrash]: cannot check tmux session using pid.
+    You may want to manuallykill any tmux session for the machine you are trying
+    to crash (including MACHINE-dead sessions)"
+  else
+    [ -z "$BE_QUIET" ] && echo "[vcrash]: Checking for $VM tmux session"
+    tmux -L netkit has-session -t="$VM" 2>/dev/null
+    if [ $? -eq 0 ]; then
+       [ -z "$BE_QUIET" ] && echo "[vcrash]: Killing tmux session $VM"
+       tmux -L netkit kill-session -t="$VM"
+       exit 1
+    fi
+    [ -z "$BE_QUIET" ] && echo "[vcrash]: Checking for ${VM}-dead tmux session"
+    tmux -L netkit has-session -t="${VM}-dead" 2>/dev/null
+    if [ $? -eq 0 ]; then
+       [ -z "$BE_QUIET" ] && echo "[vcrash]: Killing tmux session ${VM}-dead"
+       tmux -L netkit kill-session -t="${VM}-dead"
+       exit 1
+    fi
+  fi
+done

@@ -1,0 +1,6 @@
+NAME=Machine Entropy
+DESCRIPTION=Simple lab with a single machine verifying entropy counts are at sufficient levels after the login prompt has been reached.
+LAB_FOLDER=entropy
+LAB_TIMEOUT=90
+FILES=entropy_successful
+FILES_TIMEOUT=30

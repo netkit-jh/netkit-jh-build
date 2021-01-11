@@ -1,0 +1,3 @@
+ifup eth0
+
+systemctl start netkit-validation.service

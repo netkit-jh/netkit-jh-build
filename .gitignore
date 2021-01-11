@@ -1,7 +1,7 @@
 fs/build/
 kernel/build/
+kernel/last-uml-kernel-config
 core/build/
 fs/cache/
-*.tar.bz2
-release-*.sha256
-install-netkit-jh-*.sh
+build/
+tests/test_results.txt

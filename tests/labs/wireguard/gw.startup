@@ -1,0 +1,4 @@
+ifup eth0
+ifup eth1
+
+wg-quick up wg0

@@ -1,0 +1,107 @@
+.TH VCOMMAND 1 "January 2021" "" Netkit-JH
+.SH NAME
+vcommand \- send a command to a netkit virtual machine through its tmux session.
+.SH SYNOPSIS
+\fBvcommand\fR -m \fIMACHINE-NAME\fR --timeout 10 --command ping -c1 127.0.0.1
+
+
+\" ########################################
+
+.SH DESCRIPTION
+
+\fIvcommand\fR will use the tmux send-keys command to type the command into the tmux session for the machine. It will then wait for the time specified by timeout, then read any new text that has appeared in the tmux session, and print this.
+
+.br
+Note that there is only one shell instance in tmux, so sending multiple commands at once / sending commands while the tmux session is being actively used may result in undesirable behaviour. vcommand gives you access to the input and output of the machines tty, and not an instance of a shell to execute commands in.
+
+\" ########################################
+
+.SH OPTIONS
+
+.TP
+.B
+-h
+.PD 0
+.TP
+.B
+--help
+Print help message and exit. Other arguments will be ignored.
+
+.TP
+.B
+-v
+.PD 0
+.TP
+.B
+--verbose
+Set the VERBOSE variable to TRUE so it can be used for adding debugging echo statements in the vcommand script.
+
+.TP
+.B
+-m \fIMACHINENAME\fR
+.PD 0
+.TP
+.B
+--machine \fIMACHINENAME\fR
+Name of the netkit machine to send the command to.
+
+.TP
+.B
+-n \fIN\fR
+.PD 0
+.TP
+.B
+--timeout \fIN\fR
+Wait N seconds after entering the command to the tmux before grabbing any new output from the tmux session.
+
+The default value for this is 1 second.
+
+.br
+As we don't have an interactive shell we don't know when a command has finished executing. Therefore we have to choose how long we are going to wait before grabbing any new output.
+
+.TP
+.B
+
+-c \fICOMMAND\fR
+.PD 0
+.TP
+.B
+--command \fICOMMAND\fR
+Command to send to the tmux session. This should always be
+the last argument given to vcommand. Anything that follows this will be taken as one string and sent to the tmux session.
+
+
+
+\" ########################################
+
+.SH "ENVIRONMENT VARIABLES"
+
+All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
+name of the directory Netkit is installed in.
+
+Apart from this, \fIvcommand\fR supports no other environment variables.
+
+
+\" ########################################
+
+.SH "SEE ALSO"
+\fIvclean\fR(1),
+\fIvconf\fR(1),
+\fIvcrash\fR(1),
+\fIvhalt\fR(1),
+\fIvlist\fR(1),
+\fIvconnect\fR(1),
+\fIvstart\fR(1).
+
+
+\" ########################################
+
+.SH AUTHOR
+\fIvcommand\fR script: Billy Bromell
+.br
+This man page: Billy Bromell
+
+
+\" ########################################
+
+.so include/bugreport.man

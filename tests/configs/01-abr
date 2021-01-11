@@ -1,0 +1,6 @@
+NAME=ABR Lab
+DESCRIPTION=Simple lab with two machines joined by a router.
+LAB_FOLDER=abr
+LAB_TIMEOUT=90
+FILES=ping_successful_a,ping_successful_b
+FILES_TIMEOUT=90
