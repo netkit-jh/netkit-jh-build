@@ -220,7 +220,7 @@ cd "${TARGET_INSTALL_DIR}/setup_scripts"
 
 # Encourage user to set environment variables for the current terminal
 echo ""
-echo "To use Netkit-JH now, open a new terminal window or run source ~/.bashrc"
+echo "To use Netkit-JH now, open a new terminal window or run source ~/.bashrc (or .zshrc if using Zsh)"
 
 echo ""
 echo -e "\033[1mRun ${TARGET_INSTALL_DIR}/setup_scripts/change_terminal.sh to change your terminal emulator (highly recommended!)\033[0m"
