@@ -26,6 +26,9 @@
 FIXMODE=0
 ISSUE_WARNING=0
 
+# Get the assumed Netkit install directory
+CHECK_NETKIT_HOME=$(dirname "$PWD")
+
 # force language to avoid localization errors
 export LANG=C
 
@@ -85,8 +88,19 @@ parseOptions() {
    done
 }
 
-if [ ! -d "../bin" -o ! -d "../fs" -o ! -d "../kernel" -o ! -d "../man" -o ! -d "check_configuration.d" ]; then
-   echo "Netkit does not appear to be installed in \"$PWD\"."
+if [ "$(basename "$PWD")" != "setup_scripts" ]; then
+   echo "Please run this script from inside the setup_scripts subdirectory of the Netkit"
+   echo "install directory."
+   echo
+   exit 1
+fi
+
+if [ ! -d "${CHECK_NETKIT_HOME}/bin" \
+     -o ! -d "${CHECK_NETKIT_HOME}/fs" \
+     -o ! -d "${CHECK_NETKIT_HOME}/kernel" \
+     -o ! -d "${CHECK_NETKIT_HOME}/man" \
+     -o ! -d "check_configuration.d" ]; then
+   echo "Netkit does not appear to be installed in \"$CHECK_NETKIT_HOME\"."
    echo "Please run this script from inside the directory Netkit is installed in."
    echo
    exit 1

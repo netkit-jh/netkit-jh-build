@@ -32,12 +32,12 @@
 
 check_message "Checking path correctness... "
 
-if echo "${PWD}" | grep -q " "; then
+if echo "$CHECK_NETKIT_HOME" | grep -q " "; then
    echo "failed!"
    echo
    echo "*** Error: Netkit appears to be installed inside a directory whose path"
    echo "contains spaces:"
-   echo "\"$PWD\""
+   echo "\"$CHECK_NETKIT_HOME\""
    echo "Please move it to a different directory and try again."
    echo
    check_failure

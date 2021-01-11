@@ -38,30 +38,30 @@ if [ -z "$NETKIT_HOME" ]; then
    echo "*** Error: the environment variable NETKIT_HOME is not set. You should"
    echo "set it to the following value:"
    echo
-   echo $PWD
+   echo $CHECK_NETKIT_HOME
    echo
    echo "You can use one of the following commands, depending on the shell you"
    echo "are using:"
    echo
-   echo "(for bash) export NETKIT_HOME=$PWD"
-   echo "(for csh)  setenv NETKIT_HOME $PWD"
+   echo "(for bash) export NETKIT_HOME=$CHECK_NETKIT_HOME"
+   echo "(for csh)  setenv NETKIT_HOME $CHECK_NETKIT_HOME"
    echo
    check_failure
 else
-   if [ "$NETKIT_HOME" != "$(dirname $PWD)" -a "$NETKIT_HOME" != "$(dirname $PWD)/" ]; then
+   if [ "$NETKIT_HOME" != "$CHECK_NETKIT_HOME" -a "$NETKIT_HOME" != "$CHECK_NETKIT_HOME/" ]; then
       echo "failed!"
       echo
       echo "*** Error: the environment variable NETKIT_HOME currently points at the"
       echo "wrong directory:"
       echo
       echo "(current value) $NETKIT_HOME"
-      echo "(should be)     $PWD"
+      echo "(should be)     $CHECK_NETKIT_HOME"
       echo
       echo "In order to fix this, you can use one of the following commands, depending"
       echo "on the shell you are using:"
       echo
-      echo "(for bash) export NETKIT_HOME=$PWD"
-      echo "(for csh)  setenv NETKIT_HOME $PWD"
+      echo "(for bash) export NETKIT_HOME=$CHECK_NETKIT_HOME"
+      echo "(for csh)  setenv NETKIT_HOME $CHECK_NETKIT_HOME"
       echo
       check_failure
    else
