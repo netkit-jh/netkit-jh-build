@@ -52,9 +52,9 @@ This command displays information about a Netkit lab without running it.
 Displayed information includes the number of virtual machines that make up the
 lab. If asked to, the command can create a PNG file containing a graphical map
 of the link-level topology of the lab.
-Multiple lab configurations can be specified by listing lab.conf files (current required)
-using the -d option. A -d is needed per directory. The -a option will 
-auto-detect other labs with in the parent directory.
+Multiple lab directories can be specified by using the -d option. (current required)
+A -d is needed per directory. The -a option will auto-detect other labs within
+the parent directory.
 
 Available options are:
 
