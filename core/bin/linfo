@@ -176,7 +176,6 @@ done
 if [ ! -z "$MAP_FILE" ]; then
    for LAB_DIRECTORY in $LAB_DIRECTORIES; do
       if [ ! -f "${LAB_DIRECTORY%/}/lab.conf" ]; then
-         echo yee
          warning "$SCRIPTNAME" "$CMDLINE" "$0" "Unable to find file ${LAB_DIRECTORY}/lab.conf: Skipping"
          continue
       fi
