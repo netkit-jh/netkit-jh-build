@@ -206,7 +206,6 @@ fi
 # check netkit install now works
 # TODO: Get this to work... Netkit installs fine, but the check-configurator script doesn't read the environment variables properly so thinks something is wrong
 source ~/.bashrc
-cd "${TARGET_INSTALL_DIR}"
 
 # ./check_configuration.sh
 # encourage user to set environment variables for the current bash terminal
@@ -216,7 +215,7 @@ echo "To make the netkit settings available in this terminal, run the following 
 echo "source ~/.bashrc"
 
 echo ""
-echo "Run source ~/.bashrc, or open a new terminal, and then run ${NETKIT_HOME}/setup_scripts/check_configuration.sh to ensure your Netkit installation works!"
+echo "Run source ~/.bashrc, or open a new terminal, and then run cd ${TARGET_INSTALL_DIR}/setup_scripts && check_configuration.sh to ensure your Netkit installation works!"
 
 echo ""
 echo -e "\033[1mRun ${TARGET_INSTALL_DIR}/setup_scripts/change_terminal.sh to change your terminal emulator (highly recommended!)\033[0m"
