@@ -97,7 +97,8 @@ while (( "$#" )); do
 done
 
 if [ "$LIST_ONLY" = "TRUE" ]; then
-  tmux -L netkit list-sessions
+  tmux -L netkit list-sessions 2> /dev/null || \
+      echo -e "\nNo tmux sessions running for Netkit machines.\n"
   exit 0
 fi
 

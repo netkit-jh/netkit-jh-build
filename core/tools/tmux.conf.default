@@ -51,3 +51,6 @@ unbind s # unbind session manage shortcut - we'll use s for save
 bind-key s capture-pane -b temp-capture-buffer -S - \; save-buffer -b temp-capture-buffer "/tmp/#(basename `pwd`)#{session_name}-#{window_name}-#{pane_index}.out" \; delete-buffer -b capture-buffer\; display-message "Saved current pane to /tmp/#(basename `pwd`)#{session_name}-#{window_name}-#{pane_index}.out"
 # Custom capture filename
 bind-key S command-prompt -I "/tmp/#(basename `pwd`)#{session_name}-#{window_name}-#{pane_index}.out" -p "Store current pane contents to file:" "capture-pane -b temp-capture-buffer -S -; save-buffer -b temp-capture-buffer %1; delete-buffer -b capture-buffer"
+
+# Source user's custom tmux config if available
+if-shell "test -f $NETKIT_HOME/tools/tmux.conf.custom" "$NETKIT_HOME/tools/tmux.conf.custom"
