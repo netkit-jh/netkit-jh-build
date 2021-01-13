@@ -4,6 +4,7 @@ bind9
 cron
 dbus
 dnsmasq
+exim4
 freeradius
 ipsec
 lvm2
