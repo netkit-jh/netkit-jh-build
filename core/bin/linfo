@@ -145,11 +145,11 @@ LAB_DIRECTORIES=${LAB_DIRECTORIES:-${PWD}}
 
 for LAB_DIRECTORY in $LAB_DIRECTORIES; do
    . "$NETKIT_HOME/bin/lcommon"
-   LAB_VERSIONS="$LAB_VERSIONS \"$LAB_VERSION\""
-   LAB_AUTHORS="$LAB_AUTHORS \"$LAB_AUTHOR\""
-   LAB_EMAILS="$LAB_EMAILS \"$LAB_EMAIL\""
-   LAB_WEBS="$LAB_WEBS \"$LAB_WEB\""
-   LAB_DESCRIPTIONS="$LAB_DESCRIPTIONS \"$LAB_DESCRIPTION\""
+   LAB_VERSIONS="$LAB_VERSIONS  \"$LAB_VERSION\""
+   LAB_AUTHORS="$LAB_AUTHORS  \"$LAB_AUTHOR\""
+   LAB_EMAILS="$LAB_EMAILS  \"$LAB_EMAIL\""
+   LAB_WEBS="$LAB_WEBS  \"$LAB_WEB\""
+   LAB_DESCRIPTIONS="$LAB_DESCRIPTIONS  \"$LAB_DESCRIPTION\""
    # Check that the lab directory exists
    if [ ! -d "$LAB_DIRECTORY" ]; then
       warning "$SCRIPTNAME" "$CMDLINE" "$0" "Lab directory ($LAB_DIRECTORY) does not exist."
@@ -167,12 +167,13 @@ for LAB_DIRECTORY in $LAB_DIRECTORIES; do
    HOSTLIST="$HOSTLIST $LABHOSTS"
 done
 
-LAB_DIRECTORY=$LAB_DIRECTORIES
-LAB_VERSION=$LAB_VERSIONS
-LAB_AUTHOR=$LAB_AUTHORS
-LAB_EMAIL=$LAB_EMAILS
-LAB_WEB=$LAB_WEBS
-LAB_DESCRIPTION=$LAB_DESCRIPTIONS
+# Makes each list unique
+LAB_DIRECTORY=`echo "${LAB_DIRECTORIES}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g' | sed 's/ $//'` # Remove leading whitespace
+LAB_VERSION=`echo "${LAB_VERSIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
+LAB_AUTHOR=`echo "${LAB_AUTHORS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
+LAB_EMAIL=`echo "${LAB_EMAILS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
+LAB_WEB=`echo "${LAB_WEBS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
+LAB_DESCRIPTION=`echo "${LAB_DESCRIPTIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'` 
 HOSTLIST=`echo "${HOSTLIST}" | tr ' ' '\n' | sort -u | tr '\n' ' '` # Removes duplicates
 # Print some information about the lab
 echo
@@ -181,7 +182,7 @@ labWelcome
 becho "The lab is made up of `echo $HOSTLIST | awk '{print NF}'` virtual machines ($HOSTLIST)."
 for LAB_DIRECTORY in $LAB_DIRECTORIES; do
    if [ -f "$LAB_DIRECTORY/lab.dep" ]; then
-      becho "The lab `basename $LAB_DIRECTORY` supports parallel startup."
+      becho "The lab part `basename $LAB_DIRECTORY` supports parallel startup."
    fi
 done
 

@@ -106,7 +106,12 @@ labWelcome() {
    [ -z "$LAB_WEB" ] && LAB_WEB="${COLOR_NORMAL}<unknown>"
    [ -z "$LAB_DESCRIPTION" ] && LAB_DESCRIPTION="${COLOR_NORMAL}<unknown>"
 
-   echo "${COLOR_BOLD}Lab director(y/ies)${COLOR_NORMAL}: ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
+   echo "${LAB_DIRECTORY}" | grep -qc " "
+   if [ $? -eq 0 ]; then
+         echo "${COLOR_BOLD}Lab directories${COLOR_NORMAL}: ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
+   else
+         echo "${COLOR_BOLD}Lab directory${COLOR_NORMAL}: ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
+   fi
    echo "${COLOR_BOLD}Version(s)${COLOR_NORMAL}:       ${COLOR_HIGHLIGHT}${LAB_VERSION}${COLOR_NORMAL}"
    echo "${COLOR_BOLD}Author(s)${COLOR_NORMAL}:        ${COLOR_HIGHLIGHT}${LAB_AUTHOR}${COLOR_NORMAL}"
    echo "${COLOR_BOLD}Email(s)${COLOR_NORMAL}:         ${COLOR_HIGHLIGHT}${LAB_EMAIL}${COLOR_NORMAL}"
