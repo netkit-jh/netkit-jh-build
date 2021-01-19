@@ -52,6 +52,7 @@ becho() {
 # and in the lab will be reported inside VHOSTLIST. If no host list has been
 # passed on the command line, then VHOSTLIST will store the same information
 # as LABHOSTS.
+
 buildAffectedVHostList() {
    LABHOSTS=""
    
@@ -79,7 +80,7 @@ buildAffectedVHostList() {
          fi
       done
    fi
-   
+ 
    # Check that virtual machines passed by command line are in the scenario
    ORIGINAL_VHOSTLIST=$VHOSTLIST
    VHOSTLIST=""
@@ -105,12 +106,17 @@ labWelcome() {
    [ -z "$LAB_WEB" ] && LAB_WEB="${COLOR_NORMAL}<unknown>"
    [ -z "$LAB_DESCRIPTION" ] && LAB_DESCRIPTION="${COLOR_NORMAL}<unknown>"
 
-   echo "${COLOR_BOLD}Lab directory${COLOR_NORMAL}: ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Version${COLOR_NORMAL}:       ${COLOR_HIGHLIGHT}${LAB_VERSION}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Author${COLOR_NORMAL}:        ${COLOR_HIGHLIGHT}${LAB_AUTHOR}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Email${COLOR_NORMAL}:         ${COLOR_HIGHLIGHT}${LAB_EMAIL}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Web${COLOR_NORMAL}:           ${COLOR_HIGHLIGHT}${LAB_WEB}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Description${COLOR_NORMAL}:"
+   echo "${LAB_DIRECTORY}" | grep -qc " "
+   if [ $? -eq 0 ]; then
+         echo "${COLOR_BOLD}Lab directories${COLOR_NORMAL}: ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
+   else
+         echo "${COLOR_BOLD}Lab directory${COLOR_NORMAL}: ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
+   fi
+   echo "${COLOR_BOLD}Version(s)${COLOR_NORMAL}:       ${COLOR_HIGHLIGHT}${LAB_VERSION}${COLOR_NORMAL}"
+   echo "${COLOR_BOLD}Author(s)${COLOR_NORMAL}:        ${COLOR_HIGHLIGHT}${LAB_AUTHOR}${COLOR_NORMAL}"
+   echo "${COLOR_BOLD}Email(s)${COLOR_NORMAL}:         ${COLOR_HIGHLIGHT}${LAB_EMAIL}${COLOR_NORMAL}"
+   echo "${COLOR_BOLD}Web(s)${COLOR_NORMAL}:           ${COLOR_HIGHLIGHT}${LAB_WEB}${COLOR_NORMAL}"
+   echo "${COLOR_BOLD}Description(s)${COLOR_NORMAL}:"
    echo "${COLOR_HIGHLIGHT}${LAB_DESCRIPTION}${COLOR_NORMAL}"
 }
 
@@ -387,14 +393,14 @@ labStartParallel() {
 # This function creates a link-level topology map of the lab. Its argument is
 # the name of the PNG file to save the map in.
 labMap() {
+   MAP_FILE="$1"
    GRAPH_GENERATOR=`which neato`
    if [ -z "$GRAPH_GENERATOR" ]; then
       echo 1>&2 "Error: the GraphViz library does not appear to be installed."
       echo 1>&2 "Please install the GraphViz library."
       return 1
    fi
-   
-   cat "${LAB_DIRECTORY}/lab.conf" | awk -v vhostlist="$LABHOSTS" '
+   cat $CONFLIST | awk -v vhostlist="$HOSTLIST" '
    BEGIN {
       print "graph netkit_jh_graph {"
       print "   overlap=\"prism\""
@@ -469,6 +475,6 @@ labMap() {
 
       print "}"
    }'\
-   | $GRAPH_GENERATOR -Tpng -o "$1" 2>&1
+   | $GRAPH_GENERATOR -Tpng -o "$MAP_FILE" 2>&1
    return
 }

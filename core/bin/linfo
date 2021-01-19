@@ -42,7 +42,7 @@ CMDLINE="$0 $*"
 logWrite $0 $*
 
 
-# This function is used to print the lhalt usage
+# This function is used to print the linfo usage
 help() {
    echo
    echo "Usage: $SCRIPTNAME [options]"
@@ -52,14 +52,22 @@ This command displays information about a Netkit lab without running it.
 Displayed information includes the number of virtual machines that make up the
 lab. If asked to, the command can create a PNG file containing a graphical map
 of the link-level topology of the lab.
+Multiple lab directories can be specified by using the -d option. (current required)
+A -d is needed per directory. The -a option will auto-detect other labs within
+the parent directory.
+
 Available options are:
 
-  -d DIRECTORY        Assume the lab is located inside DIRECTORY. By default,
-                      the lab is assumed to be located in the current directory.
-  -m, --map=FILE      Create a graphical link-level topology map of the lab and
-                      save it into FILE in PNG format. This requires the
-                      Graphviz library to be installed.
-
+  -d DIRECTORY       Assume the lab is located inside DIRECTORY. By default,
+                     the lab is assumed to be located in the current directory.
+  -m, --map=FILE     Create a graphical link-level topology map of the lab and
+                     save it into FILE in PNG format. This requires the
+                     Graphviz library to be installed.
+  -a, --auto         Finds sibling folders which all share the same prefix as the
+                     current directory bar the final character. E.g. running in lab3a
+                     will find all directories starting with lab3* (lab3a,lab3b,lab3c,etc...)
+                     can be paired with multiple -d to specify additional folders.
+ 
 Other standard options are:
 
   -h, --help          Show this help.
@@ -71,8 +79,8 @@ END_OF_HELP
 
 # Get command line options
 INVALID_OPTION=0
-OPT_LIST="help,version,map:"
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "hd:m:" "$@"`
+OPT_LIST="auto,help,version,map:"
+CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "ahd:m:" "$@"`
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -85,17 +93,17 @@ VERBOSE=1
 # Parse command line options
 parseCmdLine() {
    while [ $# -gt 0 ]; do
-		CURRENT_ARGUMENT="$1"
+      CURRENT_ARGUMENT="$1"
       case "$CURRENT_ARGUMENT" in
       
          -d)
             shift; CURRENT_ARGUMENT="$1"
-            if [ ! -z "$LAB_DIRECTORY" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                  "Multiple directory specifications: where can I find the lab?"
-               exit 1
-            fi
-            LAB_DIRECTORY=`makeAbsolutePath "$CURRENT_ARGUMENT"`;;
+            LAB_DIRECTORIES="$LAB_DIRECTORIES `makeAbsolutePath "${CURRENT_ARGUMENT}"`";;
+            
+         --auto|-a)
+            for dir in `ls -d ${PWD%?}*/`; do
+               LAB_DIRECTORIES="$LAB_DIRECTORIES ${dir}"
+            done;;
          
          --help|-h)
             help
@@ -116,14 +124,13 @@ parseCmdLine() {
       esac
       shift
    done
-   
+
    if [ $# -gt 0 ]; then
       warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option: \"$1\"."
       exit 1
    fi
 }
 eval parseCmdLine $CMDLINE_OPTIONS
-
 
 # Check whether user gave some strange options
 if [ $INVALID_OPTION -eq 1 ]; then
@@ -132,40 +139,66 @@ if [ $INVALID_OPTION -eq 1 ]; then
 fi
 
 # If no lab directory has been given, assume current directory
-LAB_DIRECTORY=${LAB_DIRECTORY:-${PWD}}
+LAB_DIRECTORIES=${LAB_DIRECTORIES:-${PWD}}
+
 . "$NETKIT_HOME/bin/lcommon"
 
-# Check that the lab directory exists
-if [ ! -d "$LAB_DIRECTORY" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Lab directory ($LAB_DIRECTORY) does not exist."
-   exit 1
-fi
+for LAB_DIRECTORY in $LAB_DIRECTORIES; do
+   . "$NETKIT_HOME/bin/lcommon"
+   LAB_VERSIONS="$LAB_VERSIONS  \"$LAB_VERSION\""
+   LAB_AUTHORS="$LAB_AUTHORS  \"$LAB_AUTHOR\""
+   LAB_EMAILS="$LAB_EMAILS  \"$LAB_EMAIL\""
+   LAB_WEBS="$LAB_WEBS  \"$LAB_WEB\""
+   LAB_DESCRIPTIONS="$LAB_DESCRIPTIONS  \"$LAB_DESCRIPTION\""
+   # Check that the lab directory exists
+   if [ ! -d "$LAB_DIRECTORY" ]; then
+      warning "$SCRIPTNAME" "$CMDLINE" "$0" "Lab directory ($LAB_DIRECTORY) does not exist."
+      exit 1
+   fi
 
-# Check whether path to the lab directory contains spaces
-if containsRegexp LAB_DIRECTORY " "; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-            "Invalid lab directory: \"$LAB_DIRECTORY\" (path contains spaces)."
-   exit 1
-fi
+   # Check whether path to the lab directory contains spaces
+   if containsRegexp LAB_DIRECTORY " "; then
+      warning "$SCRIPTNAME" "$CMDLINE" "$0" \
+               "Invalid lab directory: \"$LAB_DIRECTORY\" (path contains spaces)."
+      exit 1
+   fi
+   VHOSTLIST=""
+   buildAffectedVHostList $LAB_DIRECTORY
+   HOSTLIST="$HOSTLIST $LABHOSTS"
+done
 
-
+# Makes each list unique
+LAB_DIRECTORY=`echo "${LAB_DIRECTORIES}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g' | sed 's/ $//'` # Remove leading whitespace
+LAB_VERSION=`echo "${LAB_VERSIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
+LAB_AUTHOR=`echo "${LAB_AUTHORS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
+LAB_EMAIL=`echo "${LAB_EMAILS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
+LAB_WEB=`echo "${LAB_WEBS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
+LAB_DESCRIPTION=`echo "${LAB_DESCRIPTIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'` 
+HOSTLIST=`echo "${HOSTLIST}" | tr ' ' '\n' | sort -u | tr '\n' ' '` # Removes duplicates
 # Print some information about the lab
 echo
 becho "====================== Lab information =========================="
 labWelcome
-echo
-buildAffectedVHostList
-becho "The lab is made up of `echo $LABHOSTS | awk '{print NF}'` virtual machines ($LABHOSTS)."
-if [ -f "$LAB_DIRECTORY/lab.dep" ]; then
-   becho "The lab supports parallel startup."
-fi
+becho "The lab is made up of `echo $HOSTLIST | awk '{print NF}'` virtual machines ($HOSTLIST)."
+for LAB_DIRECTORY in $LAB_DIRECTORIES; do
+   if [ -f "$LAB_DIRECTORY/lab.dep" ]; then
+      becho "The lab part `basename $LAB_DIRECTORY` supports parallel startup."
+   fi
+done
 
 if [ ! -z "$MAP_FILE" ]; then
-   if [ ! -f "$LAB_DIRECTORY/lab.conf" ]; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" "Unable to find file lab.conf: cannot create topology map."
+   for LAB_DIRECTORY in $LAB_DIRECTORIES; do
+      if [ ! -f "${LAB_DIRECTORY%/}/lab.conf" ]; then
+         warning "$SCRIPTNAME" "$CMDLINE" "$0" "Unable to find file ${LAB_DIRECTORY}/lab.conf: Skipping"
+         continue
+      fi
+      CONFLIST="$CONFLIST ${LAB_DIRECTORY%/}/lab.conf"
+   done
+   if [ -z "$CONFLIST" ]; then
+      warning "$SCRIPTNAME" "$CMDLINE" "$0" "No valid lab.confs found: cannot create topology map."
       exit 1
    fi
-   if labMap "$MAP_FILE"; then
+   if labMap "$MAP_FILE" $CONFLIST; then
       becho "Link-level topology map saved into $MAP_FILE."
    fi
 fi
