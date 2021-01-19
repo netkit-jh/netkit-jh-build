@@ -375,7 +375,7 @@ parseCmdLine() {
             shift; CURRENT_ARGUMENT="$1"
             checkSpaces "$CURRENT_ARGUMENT"
             case "$CURRENT_ARGUMENT" in
-               konsole|konsole-tab|gnome|xterm|alacritty|kitty)
+               konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl)
                   ASSIGNED_TERM_TYPE=1
                   TERM_TYPE=$CURRENT_ARGUMENT;;
                *)
@@ -458,6 +458,9 @@ if [ $VM_CON0 = "xterm" -o $VM_CON1 = "xterm" ]; then
    [ $TERMINAL_APPLICATION = "gnome" ] && TERMINAL_APPLICATION=gnome-terminal
    [ $TERMINAL_APPLICATION = "alacritty" ] && TERMINAL_APPLICATION=alacritty
    [ $TERMINAL_APPLICATION = "kitty" ] && TERMINAL_APPLICATION=kitty
+   [ $TERMINAL_APPLICATION = "wsl" ] && TERMINAL_APPLICATION="wsl.exe"
+   # Checks that we're on wsl by looking for the wsl executable which is
+   # exposed as a local command on wsl 2 systems.
    if ! which $TERMINAL_APPLICATION > /dev/null 2>&1; then
       warning "$SCRIPTNAME" "$CMDLINE" "$0" \
                "Terminal emulator \"$TERMINAL_APPLICATION\" appears not to be available. Please install it or use --xterm."
