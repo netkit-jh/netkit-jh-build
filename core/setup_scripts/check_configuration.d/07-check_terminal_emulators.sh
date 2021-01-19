@@ -40,7 +40,7 @@ PATH_TO_BE_USED=":"
 
 XTERM_WARNING=0
 
-TERMINAL_EMULATORS="xterm konsole gnome-terminal alacritty kitty"
+TERMINAL_EMULATORS="xterm konsole gnome-terminal alacritty kitty wsl.exe"
 
 for CURRENT_COMMAND in $TERMINAL_EMULATORS; do
    printf "\t%-15s: " $CURRENT_COMMAND

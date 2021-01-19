@@ -29,6 +29,7 @@ case "$TERM_TYPE" in
 	alacritty)	 	alacritty -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
 	kitty)        	kitty /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
     xterm)         	xterm -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
+    wsl)            powershell.exe -Command "start wsl -ArgumentList @('--','echo', '\$$>$pidfile;', '$KERNELCMD')";;
     tmux)
         tmux -L netkit has-session -t "$VM_NAME" 2>/dev/null
         if [ $? == 0 ]; then
