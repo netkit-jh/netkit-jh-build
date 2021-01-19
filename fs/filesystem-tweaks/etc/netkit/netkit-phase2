@@ -85,7 +85,7 @@ case "$1" in
          # Read lab configuration file, if present
          if [ -r "/hostlab/lab.conf" ]; then
             # Filter out unuseful (and potentially invalid) lab.conf contents.
-            eval `grep -E "(LAB_VERSION)|(LAB_AUTHOR)|(LAB_EMAIL)|(LAB_WEB)|(LAB_DESCRIPTION)" /hostlab/lab.conf`
+            eval `grep -E "(LAB_VERSION)|(LAB_AUTHOR)|(LAB_EMAIL)|(LAB_WEB)|(LAB_DESCRIPTION)" /hostlab/lab.conf | sed -r 's/LAB_([A-Z]+)=([^\"])/LAB_\1=\"\2/; /LAB_([A-Z]+)=/ s/([^\"])[ ]*$/\1\"/'`
          fi
 
          : ${LAB_VERSION:="<none>"}
