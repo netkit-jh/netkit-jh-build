@@ -138,7 +138,8 @@ END_OF_HELP
                                        tabs of the same window
                           alacritty    use the lightweight Alacritty terminal
                           kitty        use the lightweight Kitty terminal
-                          xterm        use the standard xterm                          
+                          xterm        use the standard xterm
+                          wsl          use Windows Conhost (only available on wsl hosts)
                           
 
 If you want to set up a lab, you are probably interested in the following

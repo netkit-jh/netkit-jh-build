@@ -18,13 +18,14 @@ echo "Which terminal emulator would you like to use for Netkit machines?
 (2) alacritty - lightweight, modern UI (recommended)
 (3) kitty -  another lightweight, modern UI
 (4) gnome-terminal - default terminal of Ubuntu 
+(5) wsl - wsl compatiblity through windows conhost (recommended for wsl hosts)
 
 You will be asked to enter your password to install new repositories/packages where required.
 "
 successful=false
 
 while [ $successful = false ]; do
-	echo "Which terminal would you like to use (1/2/3/4)? "
+	echo "Which terminal would you like to use (1/2/3/4/5)? "
 	read terminal
 	
 	case $terminal in
@@ -58,6 +59,16 @@ If you get 'libEGL warning: DRI2: failed to authenticate' when running a machine
 			sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=gnome/g" ${NETKIT_HOME}/netkit.conf
 			successful=true
 			terminal="Gnome"
+		;;
+		5)
+			# check if we're on a wsl host
+			if which wsl.exe > /dev/null; then
+				sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=wsl/g" ${NETKIT_HOME}/netkit.conf
+				successful=true
+				terminal="Windows Conhost"
+			else
+				echo "WSL not detected on this host."
+			fi
 		;;
 		*)
 			echo "Please pick one of the available options."

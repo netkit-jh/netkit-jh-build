@@ -22,6 +22,10 @@ open_terminal(){ # $1 = machine name
         konsole)            TERMCMD="konsole --nofork -e";;
         konsole-tab)        TERMCMD="$NETKIT_HOME/bin/konsole-tabs.sh -e";;
         xterm)              TERMCMD="xterm -e";;
+        wsl)
+            powershell.exe -Command "start wsl -ArgumentList @('--', 'tmux', '-L', 'netkit', 'attach', '-t="$1"')"
+            exit
+            ;;
         *)
             echo "[vconnect]: terminal $TERM_TYPE not supported, defaulting to xterm."
             TERMCMD="xterm -e";;
