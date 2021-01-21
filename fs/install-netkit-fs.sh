@@ -56,6 +56,9 @@ done
 # Add random-seed entropy
 dd if=/dev/urandom of=$MOUNT_DIRECTORY/var/lib/systemd/random-seed bs=2048 count=1
 
+# Set root to use no password
+chroot $MOUNT_DIRECTORY passwd -d root
+
 # Save debconf-package-selections
 chroot $MOUNT_DIRECTORY debconf-get-selections > $WORK_DIRECTORY/build/debconf-package-selections.last
 
