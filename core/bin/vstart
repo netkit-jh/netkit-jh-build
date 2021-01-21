@@ -735,8 +735,10 @@ fi
 [ "$USE_TMUX" = "TRUE" ] && TERM_TYPE="tmux"
 
 # Add our blocking script to the execution order
-KERNELCMD="$NETKIT_HOME/bin/block-wrapper $TERM_TYPE $VM_NAME $KERNELCMD"
-	
+if [ $VM_CON0 = "xterm" -o "$USE_TMUX" = "TRUE" ]; then
+    KERNELCMD="$NETKIT_HOME/bin/block-wrapper $TERM_TYPE $VM_NAME $KERNELCMD"
+fi
+
 ##### Actually start network hubs
 eval runHubs $HUBLIST
 
