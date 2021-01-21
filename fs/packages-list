@@ -71,6 +71,7 @@ squid
 ssl-cert
 ssldump
 strace
+sudo
 systemd
 systemd-sysv
 tcpd
