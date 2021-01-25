@@ -734,6 +734,10 @@ fi
 #### Start the kernel command in a tmux session
 [ "$USE_TMUX" = "TRUE" ] && TERM_TYPE="tmux"
 
+if [ "$VM_CON0" = "this" ] & [ "$USE_TMUX" = "TRUE" ]; then
+    echo "Using tmux with con0=this is currently unsupported."
+fi
+
 # Add our blocking script to the execution order
 if [ "$VM_CON0" = "xterm" -o "$VM_CON0" = "this_noporthelper" -o "$USE_TMUX" = "TRUE" ]; then
     KERNELCMD="$NETKIT_HOME/bin/block-wrapper $TERM_TYPE $VM_NAME $KERNELCMD"
