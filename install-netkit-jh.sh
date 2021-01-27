@@ -1,7 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Download and install netkit-jh in home directory
 # Modified from Peter Norris' original install script
+
+#
+# Users experiencing issues during the installation process
+# should be able to report back with the exact command that
+# has failed.
+#
+set -e
 
 # Default variables
 VERSION="VERSION_NUMBER"
