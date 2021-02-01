@@ -9,8 +9,6 @@ MOUNT_DIRECTORY="$3"
 # Forth argument is the kernel module directory which should be copied
 KERNEL_MODULES="$4"
 
-whoami
-
 # Load debconf-package-selections
 cat $WORK_DIRECTORY/debconf-package-selections | chroot $MOUNT_DIRECTORY debconf-set-selections
 
@@ -58,6 +56,9 @@ dd if=/dev/urandom of=$MOUNT_DIRECTORY/var/lib/systemd/random-seed bs=2048 count
 
 # Set root to use no password
 chroot $MOUNT_DIRECTORY passwd -d root
+
+# Update SSH keys in /etc/ssh to remove builder's hostname
+sed -i "s/$(whoami)@$(hostname)/root@netkit/g" $MOUNT_DIRECTORY/etc/ssh/*.pub
 
 # Save debconf-package-selections
 chroot $MOUNT_DIRECTORY debconf-get-selections > $WORK_DIRECTORY/build/debconf-package-selections.last
