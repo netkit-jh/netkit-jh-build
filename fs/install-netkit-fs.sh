@@ -65,3 +65,6 @@ chroot $MOUNT_DIRECTORY debconf-get-selections > $WORK_DIRECTORY/build/debconf-p
 
 # Empty caches
 chroot $MOUNT_DIRECTORY apt clean
+
+# Delete bootstrap log
+rm -f $MOUNT_DIRECTORY/var/log/bootstrap.log
