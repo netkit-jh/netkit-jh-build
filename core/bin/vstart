@@ -331,12 +331,12 @@ parseCmdLine() {
 
          --tmux-attached)
             VM_CON0="tmux"
-            TMUX_OPEN_TERMS=TRUE
+            TMUX_OPEN_TERMS=yes
             ;;
             
          --tmux-detached)
             VM_CON0="tmux"
-            TMUX_OPEN_TERMS=FALSE
+            TMUX_OPEN_TERMS=no
             ;;
             
          -F|--foreground)
@@ -776,6 +776,6 @@ fi
 
 run_command "$JUST_PRINT" "$KERNELCMD" "{ $WAKEUP_PORTHELPER $REMOVE_FS_COMMAND $KERNELCMD; cleanHubs $HUBLIST; } $REDIRECT_CONSOLE $BACKGROUND"
 
-if [ "$TMUX_OPEN_TERMS" = "TRUE" ] && [ "$VM_CON0" = "tmux" ]; then
+if [ "$TMUX_OPEN_TERMS" = "yes" ] && [ "$VM_CON0" = "tmux" ]; then
     vconnect -m "$VM_NAME" --terminal --interval 5 --retry-count 20 &> /dev/null &
 fi
