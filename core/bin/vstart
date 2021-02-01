@@ -169,10 +169,10 @@ Other options are:
                         this option. This is the default when using --con0=this
                         or --con1=this.
   --tmux-attached       Run each VM in tmux and start a terminal attached to the
-                        tmux session. This is the same as USE_TMUX=TRUE and
-                        TMUX_OPEN_TERMS=TRUE in netkit.conf
+                        tmux session. This is the same as VM_CON0=tmux and
+                        TMUX_OPEN_TERMS=yes in netkit.conf
   --tmux-detached       Run each VM in a tmux session without opening terminals.
-                        This is the same as USE_TMUX=TRUE and TMUX_OPEN_TERMS=FALSE
+                        This is the same as VM_CON0=tmux and TMUX_OPEN_TERMS=no
                         in netkit.conf
   -h, --help            Show this help.
   -p, --print           Do not actually start anything. Just show which commands
@@ -451,7 +451,7 @@ if containsRegexp PWD " "; then
 fi
 
 # Check whether the requested terminal emulator application exists
-if [ $VM_CON0 = "xterm" -o $VM_CON1 = "xterm" ]; then
+if [ "$VM_CON0" = "xterm" -o "$VM_CON1" = "xterm" ] || [ "$VM_CON0" = "tmux" -a "$TMUX_OPEN_TERMS" = "yes" ]; then
    # Look for user specified terminal application or, if none has been specified,
    # search for the standard xterm.
    TERMINAL_APPLICATION=${TERM_TYPE:-xterm}
@@ -736,6 +736,7 @@ if [ "$VM_CON0" = "xterm" -o "$VM_CON0" = "this_noporthelper"]; then
     KERNELCMD="$NETKIT_HOME/bin/block-wrapper $TERM_TYPE $VM_NAME $KERNELCMD"
 fi
 
+# Set up tmux
 if [ "$VM_CON0" = "tmux" ]; then
    if ! which tmux > /dev/null 2>&1; then
       warning "$SCRIPTNAME" "$CMDLINE" "$0" \
