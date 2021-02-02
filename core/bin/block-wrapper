@@ -31,12 +31,12 @@ case "$TERM_TYPE" in
     xterm)         	xterm -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
     wsl)            powershell.exe -Command "start wsl -ArgumentList @('--','echo', '\$$>$pidfile;', '$KERNELCMD')";;
     tmux)
-        tmux -L netkit has-session -t "$VM_NAME" 2>/dev/null
+        tmux -L netkit has-session -t="$VM_NAME" 2>/dev/null
         if [ $? == 0 ]; then
-            read -r -p "tmux session already exists for this machine. kill session? [y/N] " response
+            read -r -p "tmux session already exists for machine $VM_NAME. kill session? [y/N] " response
             case "$response" in
             [yY][eE][sS]|[yY]) 
-                tmux -L netkit -t kill-session "$VM_NAME"
+                tmux -L netkit kill-session -t="$VM_NAME"
                 ;;
             *)
                 echo "tmux session in use - not starting $VM_NAME"
