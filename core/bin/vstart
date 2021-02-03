@@ -140,6 +140,7 @@ END_OF_HELP
                           kitty        use the lightweight Kitty terminal
                           xterm        use the standard xterm
                           wsl          use Windows Conhost (only available on wsl hosts)
+                          wt           use Windows Terminal (only available on wsl hosts with Windows Terminal installed)
                           
 
 If you want to set up a lab, you are probably interested in the following
@@ -376,7 +377,7 @@ parseCmdLine() {
             shift; CURRENT_ARGUMENT="$1"
             checkSpaces "$CURRENT_ARGUMENT"
             case "$CURRENT_ARGUMENT" in
-               konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl)
+               konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl|wt)
                   ASSIGNED_TERM_TYPE=1
                   TERM_TYPE=$CURRENT_ARGUMENT;;
                *)
@@ -460,6 +461,7 @@ if [ $VM_CON0 = "xterm" -o $VM_CON1 = "xterm" ]; then
    [ $TERMINAL_APPLICATION = "alacritty" ] && TERMINAL_APPLICATION=alacritty
    [ $TERMINAL_APPLICATION = "kitty" ] && TERMINAL_APPLICATION=kitty
    [ $TERMINAL_APPLICATION = "wsl" ] && TERMINAL_APPLICATION="wsl.exe"
+   [ $TERMINAL_APPLICATION = "wt" ] && TERMINAL_APPLICATION="wt.exe"
    # Checks that we're on wsl by looking for the wsl executable which is
    # exposed as a local command on wsl 2 systems.
    if ! which $TERMINAL_APPLICATION > /dev/null 2>&1; then

@@ -26,6 +26,10 @@ open_terminal(){ # $1 = machine name
             powershell.exe -Command "start wsl -ArgumentList @('--', 'tmux', '-L', 'netkit', 'attach', '-t="$1"')"
             exit
             ;;
+        wt)
+            powershell.exe -Command "wt.exe -p netkit wsl.exe -- tmux -L netkit attach -t="$1""
+            exit
+            ;;
         *)
             echo "[vconnect]: terminal $TERM_TYPE not supported, defaulting to xterm."
             TERMCMD="xterm -e";;
