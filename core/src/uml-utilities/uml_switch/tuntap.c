@@ -35,7 +35,7 @@ int open_tap(char *dev)
     close(fd);
     return(-1);
   }
-  err = setup_port(fd, send_tap, NULL, 0);
+  err = setup_port(fd, send_tap, NULL, 0, 0);
   if(err) return(err);
   return(fd);
 }
