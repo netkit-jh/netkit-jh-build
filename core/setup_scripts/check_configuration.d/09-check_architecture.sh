@@ -38,6 +38,7 @@ if ! $NETKIT_HOME/kernel/netkit-kernel --help >/dev/null 2>&1; then
    echo "failed!"
    echo
    echo "*** Error: Your system appears not to be able to run the linux kernel."
+   echo "Ensure your Linux system has glibc version 2.28 or higher by running 'ldd --version'"
    echo
    check_failure
 fi
