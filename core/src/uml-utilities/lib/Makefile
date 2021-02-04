@@ -1,6 +1,6 @@
-LIB = libuml.a
 OBJS = rights.o
-CFLAGS = -g -Wall
+LIB = libuml.a
+CFLAGS ?= -g -Wall
 
 all : $(LIB)
 
@@ -9,5 +9,3 @@ $(LIB) : $(OBJS)
 
 clean :
 	rm -f $(LIB) $(OBJS)
-
-install :

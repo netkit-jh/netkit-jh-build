@@ -1,5 +1,5 @@
-OBJS = tunctl.o
-BIN = tunctl
+OBJS = uml_dump.o
+BIN = uml_dump
 CFLAGS ?= -g -Wall
 
 all : $(BIN)
