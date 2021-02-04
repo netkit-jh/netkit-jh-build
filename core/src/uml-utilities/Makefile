@@ -1,6 +1,6 @@
 TUNCTL = $(shell [ -e /usr/include/linux/if_tun.h ] && echo tunctl)
 
-SUBDIRS = lib mconsole $(TUNCTL) uml_dump uml_switch
+SUBDIRS = lib uml_mconsole $(TUNCTL) uml_dump uml_switch
 
 CFLAGS = -g -Wall
 export CFLAGS
