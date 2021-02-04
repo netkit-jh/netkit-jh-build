@@ -1,3 +1,11 @@
+Adam, 2020 -
+	Removed files and utilities unecessary for the operation of Netkit-JH:
+ CVS, gdb, gdbbot, honeypot, humfsify, jail, jailtest, moo, port-helper,
+uml_net, umlfs, umlgdb, watchdog, and uml_util.spec.in.
+	Replace uml_switch's files with Jeff Dike's versions for uml_dump.
+	uml_dump was added.
+
+
 BB -
 	shebangs added where needed
 	fixed the command line handling in honeypot.pl
