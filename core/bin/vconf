@@ -314,8 +314,8 @@ invokeMconsole() {
             print "INTERFACE=" $1
          }'`
       eval "$EVAL_THIS"
-      run_command "$JUST_PRINT" "uml_mconsole $VMINFO_NAME $ACTION" \
-         "uml_mconsole $VMINFO_NAME $ACTION 2>&1 | \
+      run_command "$JUST_PRINT" "$NETKIT_HOME/bin/uml_mconsole $VMINFO_NAME $ACTION" \
+         "$NETKIT_HOME/bin/uml_mconsole $VMINFO_NAME $ACTION 2>&1 | \
           awk '/^ERR/ {gsub(\"^ERR *\", \"\"); print \"Failed to '$ACTION_DESC' interface: \" \$0}' 2>&1"
       shift
    done

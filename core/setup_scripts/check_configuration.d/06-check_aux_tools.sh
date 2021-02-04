@@ -40,7 +40,7 @@ TEMP_PATH=":$PATH"
 PATH_TO_BE_USED=":"
 
 SYSTEM_COMMANDS="awk basename date dirname find getopt grep head id kill ls lsof ps readlink wc"
-NETKIT_UTILITIES="tunctl uml_mconsole uml_switch"
+NETKIT_UTILITIES="$NETKIT_HOME/bin/tunctl $NETKIT_HOME/bin/uml_mconsole $NETKIT_HOME/bin/uml_switch"
 
 for CURRENT_COMMAND in $SYSTEM_COMMANDS $NETKIT_UTILITIES; do
    printf "\t%-13s: " $CURRENT_COMMAND
