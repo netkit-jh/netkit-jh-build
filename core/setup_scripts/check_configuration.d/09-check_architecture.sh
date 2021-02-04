@@ -42,7 +42,7 @@ if ! $NETKIT_HOME/kernel/netkit-kernel --help >/dev/null 2>&1; then
    check_failure
 fi
 
-uml_switch --help >/dev/null 2>&1
+$NETKIT_HOME/bin/uml_switch --help >/dev/null 2>&1
 RETVAL=$?
 
 if [ $RETVAL -ne 1 ]
