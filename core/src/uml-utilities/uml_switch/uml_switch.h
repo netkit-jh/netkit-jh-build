@@ -1,9 +1,12 @@
+/* Copyright 2008 Jeff Dike & Kartoch
+ * Licensed under the GPL
+ */
+
 #ifndef __UML_SWITCH_H__
 #define __UML_SWITCH_H__
 
 #include <stdint.h>
-
-#include <sys.h/un.h>
+#include <sys/un.h>
 
 #include "switch.h"
 

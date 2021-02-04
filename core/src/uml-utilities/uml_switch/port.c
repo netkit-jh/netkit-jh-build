@@ -8,25 +8,6 @@
 #include "hash.h"
 #include "port.h"
 
-struct packet {
-  struct {
-    unsigned char dest[ETH_ALEN];
-    unsigned char src[ETH_ALEN];
-    unsigned char proto[2];
-  } header;
-  unsigned char data[1500];
-};
-
-struct port {
-  struct port *next;
-  struct port *prev;
-  int control;
-  void *data;
-  int data_len;
-  unsigned char src[ETH_ALEN];
-  void (*sender)(int fd, void *packet, int len, void *data);
-};
-
 static struct port *head = NULL;
 
 #define IS_BROADCAST(addr) ((addr[0] & 1) == 1)
@@ -107,7 +88,15 @@ static void send_dst(struct port *port, struct packet *packet, int len,
       (*p->sender)(p->control, packet, len, p->data);
     }
   }
-  else (*target->sender)(target->control, packet, len, target->data);
+  else {
+    /* looking for dump port */
+    for(p = head; p != NULL; p = p->next){
+      if(p == port) continue;
+      if(p->dump) 
+        (*p->sender)(p->control, packet, len, p->data);
+    }
+    (*target->sender)(target->control, packet, len, target->data);
+  }
 }
 
 static void handle_data(int fd, int hub, struct packet *packet, int len, 
@@ -149,7 +138,7 @@ void handle_tap_data(int fd, int hub)
 }
 
 int setup_port(int fd, void (*sender)(int fd, void *packet, int len, 
-				      void *data), void *data, int data_len)
+				      void *data), void *data, int data_len, int dump)
 {
   struct port *port;
 
@@ -165,6 +154,7 @@ int setup_port(int fd, void (*sender)(int fd, void *packet, int len,
   port->data = data;
   port->data_len = data_len;
   port->sender = sender;
+  port->dump = dump;
   head = port;
   printf("New connection\n");
   return(0);
@@ -216,7 +206,7 @@ void handle_sock_data(int fd, int hub)
   handle_data(fd, hub, &packet, len, &data, match_sock);
 }
 
-int setup_sock_port(int fd, struct sockaddr_un *name, int data_fd)
+int setup_sock_port(int fd, struct sockaddr_un *name, int data_fd, int dump)
 {
   struct sock_data *data;
 
@@ -227,7 +217,7 @@ int setup_sock_port(int fd, struct sockaddr_un *name, int data_fd)
   }
   *data = ((struct sock_data) { fd : 	data_fd,
 				sock :	*name });
-  return(setup_port(fd, send_sock, data, sizeof(*data)));
+  return(setup_port(fd, send_sock, data, sizeof(*data), dump));
 }
 
 static void service_port(struct port *port)
