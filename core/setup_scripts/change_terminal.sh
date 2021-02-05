@@ -18,7 +18,8 @@ echo "Which terminal emulator would you like to use for Netkit machines?
 (2) alacritty - lightweight, modern UI (recommended)
 (3) kitty -  another lightweight, modern UI
 (4) gnome-terminal - default terminal of Ubuntu 
-(5) wsl - wsl compatiblity through windows conhost (recommended for wsl hosts)
+(5) wsl - wsl compatiblity through windows conhost
+(6) wt - wsl compatability through windows terminal (recommended for wsl hosts)
 
 You will be asked to enter your password to install new repositories/packages where required.
 "
@@ -67,7 +68,23 @@ If you get 'libEGL warning: DRI2: failed to authenticate' when running a machine
 				successful=true
 				terminal="Windows Conhost"
 			else
-				echo "WSL not detected on this host."
+				echo "You are not on a wsl host."
+			fi
+		;;
+		6)
+			# check if we're on a wsl host
+			if which wsl.exe > /dev/null; then
+				# check if windows terminal is present on the Windows host
+				if which wt.exe > /dev/null; then
+					sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=wt/g" ${NETKIT_HOME}/netkit.conf
+					successful=true
+					terminal="Windows Terminal"
+				else
+					echo "Windows Terminal was not detected on your Windows Host"
+					echo "Please install it by following the instructions at"
+					echo "https://docs.microsoft.com/en-us/windows/terminal/get-started"
+			else
+				echo "You are not on a wsl host."
 			fi
 		;;
 		*)
