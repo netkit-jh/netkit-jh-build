@@ -333,7 +333,7 @@ killBySignaling() {
 # or not. Here it is assumed that VMINFO variables have been populated
 # by a previous call to either getVMinfoByName or getVMinfoByPID.
 vmconsoleHalt() {
-   uml_mconsole "$VMINFO_MCONSOLE" halt > /dev/null 2>&1 &
+   $NETKIT_HOME/bin/uml_mconsole "$VMINFO_MCONSOLE" halt > /dev/null 2>&1 &
    MCONSOLE_PID=$!
    # Check whether the mconsole process is hanging forever
    i=0

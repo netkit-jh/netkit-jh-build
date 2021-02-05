@@ -178,7 +178,7 @@ for VM in $VM_IDS; do
          echo 1>&2 "$SCRIPTNAME: no virtual machine having PID $VM exists."
       else
          [ -z "$BE_QUIET" ] && echo -n "Halting virtual machine \"$VMINFO_NAME\" (PID $VMINFO_PID) owned by $VMINFO_USER [                    ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
-         uml_mconsole "$VMINFO_MCONSOLE" cad > /dev/null 2>&1
+         $NETKIT_HOME/bin/uml_mconsole "$VMINFO_MCONSOLE" cad > /dev/null 2>&1
          if [ -z "$BE_QUIET" ]; then
             ATTEMPTS=1;
             while getVMinfoByPID "$VM"; do
@@ -208,7 +208,7 @@ for VM in $VM_IDS; do
          fi
       else
          [ -z "$BE_QUIET" ] && echo -n "Halting virtual machine \"$VMINFO_NAME\" (PID $VMINFO_PID) owned by $VMINFO_USER [                    ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
-         uml_mconsole "$VMINFO_MCONSOLE" cad > /dev/null 2>&1
+         $NETKIT_HOME/bin/uml_mconsole "$VMINFO_MCONSOLE" cad > /dev/null 2>&1
          if [ -z "$BE_QUIET" ]; then
             ATTEMPTS=1
             while getVMinfoByName "$USER" "$VM"; do

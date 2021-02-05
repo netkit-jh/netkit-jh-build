@@ -6,7 +6,6 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <linux/if_tun.h>
-#include "switch.h"
 #include "port.h"
 
 static void send_tap(int fd, void *packet, int len, void *unused)
@@ -36,7 +35,7 @@ int open_tap(char *dev)
     close(fd);
     return(-1);
   }
-  err = setup_port(fd, send_tap, NULL, 0,0);
+  err = setup_port(fd, send_tap, NULL, 0, 0);
   if(err) return(err);
   return(fd);
 }

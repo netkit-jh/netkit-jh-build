@@ -58,11 +58,11 @@ case $ACTION in
       echo "done."
       
       echo -n "Bringing down tunnel (if any)...\t"
-      tunctl -d $TAP_DEVICE > /dev/null 2>&1
+      $NETKIT_HOME/bin/tunctl -d $TAP_DEVICE > /dev/null 2>&1
       echo "done."
       
       echo -n "Setting up tunnel...\t\t\t"
-      tunctl -u $USER_NAME -t $TAP_DEVICE > /dev/null && echo "done." || exit 1
+      $NETKIT_HOME/bin/tunctl -u $USER_NAME -t $TAP_DEVICE > /dev/null && echo "done." || exit 1
       
       echo -n "Bringing up $TAP_DEVICE...\t\t"
       ifconfig $TAP_DEVICE $TAP_ADDRESS up && echo "done." || exit 1
@@ -105,7 +105,7 @@ case $ACTION in
          echo -n "\t$INTERFACE...\t\t\t"
          ifconfig $INTERFACE down > /dev/null 2>&1 && echo "done." || exit 1
          echo -n "\t$INTERFACE tunnel...\t\t"
-         tunctl -d $INTERFACE > /dev/null 2>&1 && echo "done." || exit 1
+         $NETKIT_HOME/bin/tunctl -d $INTERFACE > /dev/null 2>&1 && echo "done." || exit 1
       done
       echo "Done."
       

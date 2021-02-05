@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <sys/poll.h>
 #include <sys/time.h>
 #include <unistd.h>
