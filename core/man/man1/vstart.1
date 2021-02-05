@@ -304,6 +304,12 @@ until the first connection is established. Notice that, if the connection is clo
 while the virtual machine is still running, it won't be possible to access the console
 by telnetting again to \fItcp\-port\fR. In such a case, the virtual machine
 can still be halted by using one of the commands \fBvhalt\fR or \fBvcrash\fR.
+
+.TP
+.B
+tmux
+Start the VM within a tmux session.
+
 .TP
 .B
 none
@@ -451,14 +457,14 @@ Regardless of this option, virtual hubs are always started in background.
 .TP
 .B
 \-\-tmux\-attached
-Run each VM in a tmux session and start a terminal attached to this tmux session. This is the same as setting USE_TMUX=TRUE and TMUX_OPEN_TERMS=TRUE in netkit.conf
+Run each VM in a tmux session and start a terminal attached to this tmux session. This is the same as setting VM_CON0=tmux and TMUX_OPEN_TERMS=yes in netkit.conf
 
 .TP
 .PD 0
 .TP
 .B
 \-\-tmux\-detached
-Run each VM in a tmux session without opening any terminals. This is the same as setting USE_TMUX=TRUE and TMUX_OPEN_TERMS=FALSE in netkit.conf
+Run each VM in a tmux session without opening any terminals. This is the same as setting VM_CON0=tmux and TMUX_OPEN_TERMS=no in netkit.conf
 
 .TP
 .B

@@ -8,7 +8,9 @@
 #include <stdint.h>
 #include <sys/un.h>
 
-enum request_type { 
+#include "switch.h"
+
+enum request_type {
   REQ_NEW_CONTROL,
   REQ_NEW_DUMP
 };
@@ -63,5 +65,3 @@ union request {
 };
 
 #endif
-
-

@@ -80,3 +80,25 @@ if [ "${CURRENT_VERSION}" -lt 4 ]; then
     CURRENT_VERSION=4
     sed -i "s/CONFIG_VERSION=3/CONFIG_VERSION=4/g" ${NEW_DIR}/netkit.conf
 fi
+
+# Upgrade from v4 to v5
+# - Sets mconsole dir to machines again due to broken V3 configuration
+if [ "${CURRENT_VERSION}" -lt 5 ]; then
+    echo "Upgrading Netkit configuration to V5."
+
+    # Add tmux to the list of valid options for VM_CON0
+    sed -i '/^\s*\# none, xterm, this, pty, port:port_number/ s/$/, tmux/' ${NEW_DIR}/netkit.conf
+
+    # Remove USE_TMUX section as con0 is now used to handle tmux
+    sed -i ':a;N;$!ba;s/USE_TMUX=FALSE.*commands to it with vcommand.//g' ${NEW_DIR}/netkit.conf
+
+    # Update TMUX_OPEN_TERMS to yes/no instead of TRUE/FALSE
+    sed -i 's/^TMUX_OPEN_TERMS=FALSE/TMUX_OPEN_TERMS=no   /g' ${NEW_DIR}/netkit.conf
+
+    # Update comment for TMUX_OPEN_TERMS to reflect change from USE_TMUX to VM_CON0
+    sed -i 's/# This option only takes effect when USE_TMUX is true/# This option only takes effect when VM_CON0=tmux/g' ${NEW_DIR}/netkit.conf
+	
+    # Finally, update the version.
+    CURRENT_VERSION=4
+    sed -i "s/CONFIG_VERSION=3/CONFIG_VERSION=4/g" ${NEW_DIR}/netkit.conf
+fi

@@ -170,10 +170,10 @@ Other options are:
                         this option. This is the default when using --con0=this
                         or --con1=this.
   --tmux-attached       Run each VM in tmux and start a terminal attached to the
-                        tmux session. This is the same as USE_TMUX=TRUE and
-                        TMUX_OPEN_TERMS=TRUE in netkit.conf
+                        tmux session. This is the same as VM_CON0=tmux and
+                        TMUX_OPEN_TERMS=yes in netkit.conf
   --tmux-detached       Run each VM in a tmux session without opening terminals.
-                        This is the same as USE_TMUX=TRUE and TMUX_OPEN_TERMS=FALSE
+                        This is the same as VM_CON0=tmux and TMUX_OPEN_TERMS=no
                         in netkit.conf
   -h, --help            Show this help.
   -p, --print           Do not actually start anything. Just show which commands
@@ -331,13 +331,13 @@ parseCmdLine() {
             KERNEL_APPEND="$KERNEL_APPEND $CURRENT_ARGUMENT";;
 
          --tmux-attached)
-            USE_TMUX=TRUE
-            TMUX_OPEN_TERMS=TRUE
+            VM_CON0="tmux"
+            TMUX_OPEN_TERMS=yes
             ;;
             
          --tmux-detached)
-            USE_TMUX=TRUE
-            TMUX_OPEN_TERMS=FALSE
+            VM_CON0="tmux"
+            TMUX_OPEN_TERMS=no
             ;;
             
          -F|--foreground)
@@ -452,7 +452,7 @@ if containsRegexp PWD " "; then
 fi
 
 # Check whether the requested terminal emulator application exists
-if [ $VM_CON0 = "xterm" -o $VM_CON1 = "xterm" ]; then
+if [ "$VM_CON0" = "xterm" -o "$VM_CON1" = "xterm" ] || [ "$VM_CON0" = "tmux" -a "$TMUX_OPEN_TERMS" = "yes" ]; then
    # Look for user specified terminal application or, if none has been specified,
    # search for the standard xterm.
    TERMINAL_APPLICATION=${TERM_TYPE:-xterm}
@@ -733,16 +733,19 @@ fi
 
 [ -z "$BE_QUIET" ] && echo
 
-#### Start the kernel command in a tmux session
-[ "$USE_TMUX" = "TRUE" ] && TERM_TYPE="tmux"
-
-if [ "$VM_CON0" = "this" ] & [ "$USE_TMUX" = "TRUE" ]; then
-    echo "Using tmux with con0=this is currently unsupported."
+# Add our blocking script to the execution order
+if [ "$VM_CON0" = "xterm" -o "$VM_CON0" = "this_noporthelper" ]; then
+    KERNELCMD="$NETKIT_HOME/bin/block-wrapper $TERM_TYPE $VM_NAME $KERNELCMD"
 fi
 
-# Add our blocking script to the execution order
-if [ "$VM_CON0" = "xterm" -o "$VM_CON0" = "this_noporthelper" -o "$USE_TMUX" = "TRUE" ]; then
-    KERNELCMD="$NETKIT_HOME/bin/block-wrapper $TERM_TYPE $VM_NAME $KERNELCMD"
+# Set up tmux
+if [ "$VM_CON0" = "tmux" ]; then
+   if ! which tmux > /dev/null 2>&1; then
+      warning "$SCRIPTNAME" "$CMDLINE" "$0" \
+               "tmux appears not to be installed. Exiting."
+      exit 1
+   fi
+    KERNELCMD="$NETKIT_HOME/bin/block-wrapper tmux $VM_NAME $KERNELCMD"
 fi
 
 ##### Actually start network hubs
@@ -760,7 +763,7 @@ fi
 ### it ever hangs when booting the virtual machine.
 WAKEUP_PORTHELPER=""
 if [ "$CON0_PORTHELPER" = "yes" ]; then
-   WAKEUP_PORTHELPER="{ sleep 5; uml_mconsole $VM_NAME help > /dev/null 2>&1; } &"
+   WAKEUP_PORTHELPER="{ sleep 5; $NETKIT_HOME/bin/uml_mconsole $VM_NAME help > /dev/null 2>&1; } &"
 fi
 
 ### Remove .disk file, if requested
@@ -775,6 +778,6 @@ fi
 
 run_command "$JUST_PRINT" "$KERNELCMD" "{ $WAKEUP_PORTHELPER $REMOVE_FS_COMMAND $KERNELCMD; cleanHubs $HUBLIST; } $REDIRECT_CONSOLE $BACKGROUND"
 
-if [ "$TMUX_OPEN_TERMS" = "TRUE" ] && [ "$USE_TMUX" = "TRUE" ]; then
+if [ "$TMUX_OPEN_TERMS" = "yes" ] && [ "$VM_CON0" = "tmux" ]; then
     vconnect -m "$VM_NAME" --terminal --interval 5 --retry-count 20 &> /dev/null &
 fi
