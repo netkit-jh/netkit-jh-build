@@ -174,9 +174,7 @@ else
 	tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2
 fi
 
-BASHRC="${HOME}/.bashrc"
-ZSHRC="${HOME}/.zshrc"
-RC_FILES=("$BASHRC" "$ZSHRC")
+RC_FILES=("${HOME}/.bashrc" "${HOME}/.zshrc")
 
 for RC_FILE in "${RC_FILES[@]}"; do
 	# Check whether this file exists
