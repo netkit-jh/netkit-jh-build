@@ -1,1 +1,24 @@
-Netkit-JH documentation can be found at https://netkit-jh.github.io/
+# Netkit-JH
+Documentation can be found at https://netkit-jh.github.io/
+
+## Download and install
+Get the latest release script from https://github.com/netkit-jh/netkit-jh-build/releases. Download and install with:
+```bash
+chmod +x install-netkit-jh-x.x.x.sh
+./install-netkit-jh-x.x.x.sh
+```
+
+## Building from source
+Clone the repository and build with Make:
+```bash
+git clone https://github.com/netkit-jh/netkit-jh-build.git
+cd netkit-jh-build
+sudo make
+```
+or build with Docker:
+```bash
+git clone https://github.com/netkit-jh/netkit-jh-build.git
+docker pull netkitjh/netkit-builder-deb
+docker run --privileged --rm -v $(pwd):/netkit-build -it netkitjh/netkit-builder-deb
+```
+Install with `make install`.
