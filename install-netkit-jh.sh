@@ -174,7 +174,10 @@ else
 	tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2
 fi
 
-RC_FILES=("${HOME}/.bashrc" "${HOME}/.zshrc")
+BASHRC="${HOME}/.bashrc"
+ZSHRC="${HOME}/.zshrc"
+RC_FILES=("$BASHRC" "$ZSHRC")
+
 for RC_FILE in "${RC_FILES[@]}"; do
 	# Check whether this file exists
 	if [ ! -f ${RC_FILE} ]; then
@@ -196,10 +199,6 @@ for RC_FILE in "${RC_FILES[@]}"; do
 
 	# Append Netkit additions to bashrc  
 	echo "$NK_ENV_VARS" >> "${RC_FILE}"
-
-	# Set the environment variables so ./check_configuration.sh can be ran
-	source "${RC_FILE}"
-
 done
 
 # make (for lab.dep) and net-tools (for tap) needed on ubuntu 18.04
