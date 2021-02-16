@@ -11,7 +11,6 @@ lvm2
 lxc
 lxcfs
 lxc-net
-mrd6
 openbsd-inetd
 openvpn
 proftpd

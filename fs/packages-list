@@ -41,7 +41,6 @@ lynx
 mdns-scan
 mime-support
 minicom
-mrd6
 mtr-tiny
 ndisc6
 # netcat6
@@ -98,4 +97,3 @@ stunnel4
 ncat
 # smcroute -- removed because of smcroute conflict
 # pimd -- removed because of pimd conflict
-rng-tools

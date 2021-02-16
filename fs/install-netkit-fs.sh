@@ -51,9 +51,6 @@ for SERVICE in `cat $WORK_DIRECTORY/disabled-services`; do
 	chroot $MOUNT_DIRECTORY systemctl disable ${SERVICE}
 done
 
-# Add random-seed entropy
-dd if=/dev/urandom of=$MOUNT_DIRECTORY/var/lib/systemd/random-seed bs=2048 count=1
-
 # Set root to use no password
 chroot $MOUNT_DIRECTORY passwd -d root
 
