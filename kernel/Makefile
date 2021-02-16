@@ -4,8 +4,8 @@ MAKEFILE_DIR := $(realpath $(dir $(MAKEFILE_PATH)))
 include ../Makefile.am
 
 # Kernel parameters
-KERNEL_VERSION=5.10.4
-KERNEL_URL=https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.10.4.tar.xz
+KERNEL_VERSION=5.11
+KERNEL_URL=https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.11.tar.xz
 KERNEL_ARCHIVE_NAME=$$(echo "${KERNEL_URL}" | sed 's:.*/::')
 KERNEL_FILE_EXTENSION=$$(echo "${KERNEL_ARCHIVE_NAME}" | sed 's:.*\.::')
 
