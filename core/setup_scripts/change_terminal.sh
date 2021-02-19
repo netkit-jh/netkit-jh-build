@@ -26,7 +26,7 @@ You will be asked to enter your password to install new repositories/packages wh
 successful=false
 
 while [ $successful = false ]; do
-	echo "Which terminal would you like to use (1/2/3/4/5)? "
+	echo "Which terminal would you like to use (1/2/3/4/5/6)? "
 	read terminal
 	
 	case $terminal in
