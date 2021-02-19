@@ -26,7 +26,7 @@ You will be asked to enter your password to install new repositories/packages wh
 successful=false
 
 while [ $successful = false ]; do
-	echo "Which terminal would you like to use (1/2/3/4/5)? "
+	echo "Which terminal would you like to use (1/2/3/4/5/6)? "
 	read terminal
 	
 	case $terminal in
@@ -83,6 +83,7 @@ If you get 'libEGL warning: DRI2: failed to authenticate' when running a machine
 					echo "Windows Terminal was not detected on your Windows Host"
 					echo "Please install it by following the instructions at"
 					echo "https://docs.microsoft.com/en-us/windows/terminal/get-started"
+				fi
 			else
 				echo "You are not on a wsl host."
 			fi
