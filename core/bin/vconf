@@ -56,7 +56,7 @@ Configuration can be performed via the following options:
 
       --ethN=DOMAIN     Equip virtual machine with a network interface ethN,
 END_OF_HELP
-   echo "                        where N is a number between 0 and $[$MAX_INTERFACES-1]. DOMAIN is the name"
+   echo "                        where N is a number between 0 and $(($MAX_INTERFACES-1)). DOMAIN is the name"
    cat << END_OF_HELP
                         of the collision domain the interface should be
                         connected to. Using an empty DOMAIN name (e.g., \`eth0=')
