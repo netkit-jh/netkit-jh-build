@@ -8,6 +8,7 @@ avahi-utils
 bash-completion
 bind9
 bind9-host
+bird
 bridge-utils 
 bzip2
 console-common

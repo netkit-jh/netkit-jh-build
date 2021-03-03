@@ -15,6 +15,7 @@ cat $WORK_DIRECTORY/debconf-package-selections | chroot $MOUNT_DIRECTORY debconf
 # Install packages in packages-list
 PACKAGES_LIST=`cat $WORK_DIRECTORY/packages-list | grep -v '#'`
 
+chroot $MOUNT_DIRECTORY add-apt-repository ppa:cz.nic-labs/bird  # for Bird Internet routing daemon
 chroot $MOUNT_DIRECTORY apt update
 chroot $MOUNT_DIRECTORY apt install --assume-yes ${PACKAGES_LIST}
 
