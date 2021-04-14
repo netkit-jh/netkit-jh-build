@@ -387,7 +387,7 @@ psList() {
 # machine status. If the machine is found to exist, returned value is 0.
 # Otherwise, 1 is returned.
 getVMinfoByName() {
-   VM_PS_ENTRY=`psList | grep -w "^$1 .*umid=$2" | grep -v "grep -w" | head -n 1`
+   VM_PS_ENTRY=`psList | grep -E "^$1[[:blank:]].*umid=$2[[:space:]]" | head -n 1`
    if [ -z "$VM_PS_ENTRY" ]; then
       # Virtual machine does not exist
       return 1
