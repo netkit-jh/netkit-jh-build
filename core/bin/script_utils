@@ -140,7 +140,7 @@ showVersion() {
    
    # Netkit version information
    echo -n "Netkit version:            "
-   NETKIT_VERSION=`cat "$NETKIT_HOME/netkit-version" 2>&1 | grep "Netkit version" `
+   NETKIT_VERSION=$(cat "$NETKIT_HOME/netkit-version" 2>&1 | grep "Netkit version" )
    if [ $? = 0 ]; then
       NETKIT_VERSION="${NETKIT_VERSION##Netkit version }"
       if echo "$NETKIT_VERSION" | grep -Eq "([0-9]+[\.\-])+[0-9]+[a-zA-Z]*$"; then
@@ -359,8 +359,8 @@ cleanHubs() {
       fi
       
       if someOneUses $FULL_HUB_NAME; then
-         SWITCH_PROCESS=`ps -wwwwwweo pid,command --sort=pid | grep "uml_switch.*$FULL_HUB_NAME" | grep -v "grep uml_switch" | awk '{print $1}' | head -n 1`
-         if [ `lsof -p $SWITCH_PROCESS 2>/dev/null | grep -c $FULL_HUB_NAME` -le 1 ]; then
+         SWITCH_PROCESS=$(ps -wwwwwweo pid,command --sort=pid | grep "uml_switch.*$(grepEscape "$FULL_HUB_NAME")" | grep -v "grep uml_switch" | awk '{print $1}' | head -n 1)
+         if [" $(lsof -p "$SWITCH_PROCESS" 2>/dev/null | grep -c "$(grepEscape "$FULL_HUB_NAME")")" -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
             kill $SWITCH_PROCESS > /dev/null 2>&1 && rm -f $FULL_HUB_NAME
          fi
@@ -387,7 +387,7 @@ psList() {
 # machine status. If the machine is found to exist, returned value is 0.
 # Otherwise, 1 is returned.
 getVMinfoByName() {
-   VM_PS_ENTRY=`psList | grep -E "^$1[[:blank:]].*umid=$2[[:space:]]" | head -n 1`
+   VM_PS_ENTRY=$(psList | grep -E "^$(grepEscape "$1")[[:blank:]].*umid=$(grepEscape "$2")[[:space:]]" | head -n 1)
    if [ -z "$VM_PS_ENTRY" ]; then
       # Virtual machine does not exist
       return 1
@@ -665,4 +665,16 @@ showVMList() {
             }
          }
       '
+}
+
+
+# Escapes a variable for use in a grep expression.
+grepEscape() {
+  sed -r 's/[][\.^$*\]/\\&/g' <<< "$1"
+}
+
+
+# Escapes a variable for use in a grep -E expression.
+egrepEscape() {
+  sed -r 's/[][\.^$()*+?|{}\]/\\&/g' <<< "$1"
 }

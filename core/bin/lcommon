@@ -36,7 +36,7 @@ if [ -f "${LAB_DIRECTORY}/lab.conf" ]; then
    # are not supported by some shells. They will be handled
    # separately later on.
 
-   LAB_VARIABLE_ASSIGNMENTS="`grep -E '(^[ ]*LAB_[A-Z]+=(([^ ]*[ ]*$)|(.*)))|(^[ ]*machines=((.*)|(\\\".*\\\"[ ]*$)))' ${LAB_DIRECTORY}/lab.conf | sed -r 's/machines=([^\"])/machines=\"\1/; /machines=/ s/([^\"])[ ]*$/\1\"/' | sed -r 's/LAB_([A-Z]+)=([^\"])/LAB_\1=\"\2/; /LAB_([A-Z]+)=/ s/([^\"])[ ]*$/\1\"/'`"
+   LAB_VARIABLE_ASSIGNMENTS=$(grep -E '^[ \t]*(LAB_[A-Z]+|machines)=' "$LAB_DIRECTORY/lab.conf" | sed -r 's/^[ \t]*(LAB_[A-Z]+|machines)=\"?([^\"]*)\"?[ \t]*$/\1=\"\2\"/')
    eval "$LAB_VARIABLE_ASSIGNMENTS"
 fi
 
@@ -215,7 +215,7 @@ startSingleVM() {
    if [ -e "$LAB_DIRECTORY/lab.conf" ]; then
       # Check for duplicate settings (e.g., duplicate interface declarations)
       # and/or parameters with spaces.
-      grep "^[ \t]*$VM\[.*\] *=" ${LAB_DIRECTORY}/lab.conf | awk -v VM="$VM" -v FS="=" '
+      grep -E "^[ \t]*$(egrepEscape "$VM")\[.*\] *=" "$LAB_DIRECTORY/lab.conf" | awk -v VM="$VM" -v FS="=" '
          {
             parameter_name=$1
             value=substr($0,length(parameter_name)+2)
@@ -255,7 +255,7 @@ startSingleVM() {
                }
             }
          }' 1>&2
-      VSTART_OPTIONS=`grep "^[ \t]*$VM\[.*\] *=" ${LAB_DIRECTORY}/lab.conf | awk -v FS="=" '
+      VSTART_OPTIONS=$(grep -E "^[ \t]*$(egrepEscape "$VM")\[.*\] *=" "$LAB_DIRECTORY/lab.conf" | awk -v FS="=" '
          {
             parameter_name=$1
             value=substr($0,length(parameter_name)+2)
@@ -289,7 +289,7 @@ startSingleVM() {
                   printf "%s ",parameter
                assigned_parameters[parameter_name]=1
             }
-         }'`
+         }')
    fi
       
    # Add host lab and working directory

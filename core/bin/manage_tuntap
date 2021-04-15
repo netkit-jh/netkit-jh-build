@@ -74,11 +74,11 @@ case $ACTION in
       echo 1 > /proc/sys/net/ipv4/ip_forward && echo "done." || exit 1
       
       if which iptables > /dev/null 2>&1; then
-         if ! iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
+         if ! iptables -t nat -C POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE 2>/dev/null; then
             echo -n "Enabling masquerading...\t\t"
             iptables -t nat -A POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE && echo "done." || exit 1
          fi
-         if ! iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
+         if ! iptables -C FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT 2>/dev/null; then
             echo -n "Opening firewall for tunnel...\t\t"
             iptables -I FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT && echo "done." || exit 1
          fi
@@ -87,11 +87,11 @@ case $ACTION in
 
    stop)
       if which iptables > /dev/null 2>&1; then
-         if iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
+         if iptables -C FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT 2>/dev/null; then
             echo -n "Closing firewall...\t\t\t\t"
             iptables -D FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT && echo "done." || exit 1
          fi
-         if iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
+         if iptables -t nat -C POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE 2>/dev/null; then
             echo -n "Disabling masquerading...\t\t\t"
             iptables -t nat -D POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE && echo "done." || exit 1
          fi

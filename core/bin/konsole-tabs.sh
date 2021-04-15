@@ -54,7 +54,7 @@ done
 # Netkit dedicated Konsole. A DBUS reference is returned inside variable NETKIT_KONSOLE
 findNetkitKonsole() {
    NETKIT_KONSOLE=""
-   for i in `qdbus | grep konsole`; do
+   for i in $(qdbus | grep konsole); do
       if qdbus $i /MainApplication Get com.trolltech.Qt.QCoreApplication applicationName | grep -q netkit-konsole; then
          NETKIT_KONSOLE=$i
          CURRENT_SESSION=`qdbus $NETKIT_KONSOLE /Konsole currentSession`
@@ -164,7 +164,7 @@ if [ ! -z "$TERM_TITLE" ]; then
    VM_CONSOLE_NUMBER=${VM_CONSOLE_NUMBER% (*)}
    VM_TITLE="${VM_NAME} (con${VM_CONSOLE_NUMBER})"
 else
-   VM_TITLE=`echo $EXECUTE_COMMAND | sed -r 's/^.*umid=([^ ]+).*$/\1/'`
+   VM_TITLE=$(echo "$EXECUTE_COMMAND" | sed -r 's/^.*umid=([^ ]+).*$/\1/')
 fi
 
 qdbus $NETKIT_KONSOLE /Sessions/$SESSION setTitle 1 "${VM_TITLE}" >/dev/null
