@@ -360,7 +360,7 @@ cleanHubs() {
       
       if someOneUses $FULL_HUB_NAME; then
          SWITCH_PROCESS=$(ps -wwwwwweo pid,command --sort=pid | grep "uml_switch.*$(grepEscape "$FULL_HUB_NAME")" | grep -v "grep uml_switch" | awk '{print $1}' | head -n 1)
-         if [" $(lsof -p "$SWITCH_PROCESS" 2>/dev/null | grep -c "$(grepEscape "$FULL_HUB_NAME")")" -le 1 ]; then
+         if [ "$(lsof -p "$SWITCH_PROCESS" 2>/dev/null | grep -c "$(grepEscape "$FULL_HUB_NAME")")" -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
             kill $SWITCH_PROCESS > /dev/null 2>&1 && rm -f $FULL_HUB_NAME
          fi
