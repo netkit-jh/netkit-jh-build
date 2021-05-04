@@ -85,6 +85,7 @@ tftp
 tftpd
 tshark
 traceroute
+ucarp
 vim
 vlan
 xl2tpd
