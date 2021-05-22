@@ -38,7 +38,7 @@
 case "$1" in
    start) 
 
-MODULES=`cat /proc/cmdline | awk -v FS== -v RS=' ' '{if ($1=="modules") {print $2}}'`
+MODULES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' '{if ($1=="modules") {print $2}}')
 
 if [ -n "$MODULES" ]; then
    MODULES="$MODULES"/lib/uml/modules
@@ -55,7 +55,7 @@ fi
 
 ;;
     stop)
-      KERNEL_VERSION=`uname -r`
+      KERNEL_VERSION=$(uname -r)
       if [ -f /lib/modules/$KERNEL_VERSION/modules.dep ]; then
          echo "Unmounting /lib/modules..."
          umount /lib/modules

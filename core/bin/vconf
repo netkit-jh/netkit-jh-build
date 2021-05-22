@@ -25,7 +25,7 @@
 # using an empty collision domain name for an interface. Yet, this feature
 # is currently hidden by a check on the presence of a valid collision domain name.
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
@@ -59,7 +59,7 @@ END_OF_HELP
    echo "                        where N is a number between 0 and $(($MAX_INTERFACES-1)). DOMAIN is the name"
    cat << END_OF_HELP
                         of the collision domain the interface should be
-                        connected to. Using an empty DOMAIN name (e.g., \`eth0=')
+                        connected to. Using an empty DOMAIN name (e.g., 'eth0=')
                         results in detaching the interface from a running
                         virtual machine. The special name "tap" is reserved: when
                         connecting an interface to the "tap" domain, an external
@@ -121,7 +121,7 @@ while [ $i -lt $MAX_INTERFACES ]; do
    OPT_LIST="${OPT_LIST},eth$i:"
 	i=$(($i + 1))
 done
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "hpqvu:" "$@"`
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hpqvu:" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -236,12 +236,12 @@ setupInterfaces() {
       fi
       if containsRegexp HUB_NAME "tap,"; then
          # This is an Internet connected (i.e., "tap") collision domain
-         CHECK_TAP=`echo $HUB_NAME | awk -v FS="," \
+         CHECK_TAP=$(echo $HUB_NAME | awk -v FS="," \
             '
                {
                   if (NF!=3 ||
-                      !match($2,"^[0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+$") ||
-                      !match($3,"^[0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+$"))
+                      !match($2,"^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$") ||
+                      !match($3,"^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$"))
                      print 0
                   else {
                      print "HUB_NAME=tap"
@@ -249,7 +249,7 @@ setupInterfaces() {
                      print "GUEST_ADDRESS=" $3
                   }
                }
-            '`
+            ')
          if [ "x$CHECK_TAP" = "x0" ]; then
             echo 1>&2
             warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid tap collision domain specification: \"$1\"."
@@ -301,7 +301,7 @@ setupInterfaces() {
 invokeMconsole() {
    local ACTION EVAL_THIS INTERFACE
    while [ $# -gt 0 ]; do
-      EVAL_THIS=`echo $1 | awk -v FS="=" \
+      EVAL_THIS=$(echo $1 | awk -v FS="=" \
          '{
             if (NF==1) {
                print "ACTION=\"remove " $0 "\""
@@ -312,7 +312,7 @@ invokeMconsole() {
                print "ACTION_DESC=\"add\""
             }
             print "INTERFACE=" $1
-         }'`
+         }')
       eval "$EVAL_THIS"
       run_command "$JUST_PRINT" "$NETKIT_HOME/bin/uml_mconsole $VMINFO_NAME $ACTION" \
          "$NETKIT_HOME/bin/uml_mconsole $VMINFO_NAME $ACTION 2>&1 | \

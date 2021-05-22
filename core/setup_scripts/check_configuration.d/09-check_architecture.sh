@@ -32,7 +32,7 @@
 
 check_message "Checking whether executables can run... "
 
-ARCH=`uname -m`
+ARCH=$(uname -m)
 
 if ! $NETKIT_HOME/kernel/netkit-kernel --help >/dev/null 2>&1; then
    echo "failed!"

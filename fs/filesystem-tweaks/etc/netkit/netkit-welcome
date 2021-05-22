@@ -30,10 +30,10 @@
 #     You should have received a copy of the GNU General Public License along
 #     with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-HOSTNAME=`cat /proc/cmdline | awk -v FS== -v RS=" " '($1=="name") {print $2}'`
-NETKIT_FILESYSTEM_VERSION=`awk '/filesystem version/ {print $NF}' /etc/netkit-filesystem-version`
-NETKIT_KERNEL_VERSION=`uname -r | cut -d '-' -f 4-`
-KERNEL_VERSION=`uname -r | cut -d '-' -f 1`
+HOSTNAME=$(cat /proc/cmdline | awk -v FS== -v RS=" " '($1=="name") {print $2}')
+NETKIT_FILESYSTEM_VERSION=$(awk '/filesystem version/ {print $NF}' /etc/netkit-filesystem-version)
+NETKIT_KERNEL_VERSION=$(uname -r | cut -d '-' -f 4-)
+KERNEL_VERSION=$(uname -r | cut -d '-' -f 1)
 : ${NETKIT_FILESYSTEM_VERSION:="<unknown>"}
 : ${NETKIT_KERNEL_VERSION:="<unknown>"}
 : ${KERNEL_VERSION:="<unknown>"}

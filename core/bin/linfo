@@ -21,7 +21,7 @@
 # This script displays information about a lab without running it. Optionally,
 # it can create a PNG file containing the level 2 topology of the lab.
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
@@ -80,7 +80,7 @@ END_OF_HELP
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="auto,help,version,map:"
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "ahd:m:" "$@"`
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "ahd:m:" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -98,10 +98,10 @@ parseCmdLine() {
       
          -d)
             shift; CURRENT_ARGUMENT="$1"
-            LAB_DIRECTORIES="$LAB_DIRECTORIES `makeAbsolutePath "${CURRENT_ARGUMENT}"`";;
+            LAB_DIRECTORIES="$LAB_DIRECTORIES $(makeAbsolutePath "${CURRENT_ARGUMENT}")";;
             
          --auto|-a)
-            for dir in `ls -d ${PWD%?}*/`; do
+            for dir in $(ls -d ${PWD%?}*/); do
                LAB_DIRECTORIES="$LAB_DIRECTORIES ${dir}"
             done;;
          
@@ -168,21 +168,21 @@ for LAB_DIRECTORY in $LAB_DIRECTORIES; do
 done
 
 # Makes each list unique
-LAB_DIRECTORY=`echo "${LAB_DIRECTORIES}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g' | sed 's/ $//'` # Remove leading whitespace
-LAB_VERSION=`echo "${LAB_VERSIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
-LAB_AUTHOR=`echo "${LAB_AUTHORS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
-LAB_EMAIL=`echo "${LAB_EMAILS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
-LAB_WEB=`echo "${LAB_WEBS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'`
-LAB_DESCRIPTION=`echo "${LAB_DESCRIPTIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g'` 
-HOSTLIST=`echo "${HOSTLIST}" | tr ' ' '\n' | sort -u | tr '\n' ' '` # Removes duplicates
+LAB_DIRECTORY=$(echo "${LAB_DIRECTORIES}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g' | sed 's/ $//') # Remove leading whitespace
+LAB_VERSION=$(echo "${LAB_VERSIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
+LAB_AUTHOR=$(echo "${LAB_AUTHORS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
+LAB_EMAIL=$(echo "${LAB_EMAILS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
+LAB_WEB=$(echo "${LAB_WEBS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
+LAB_DESCRIPTION=$(echo "${LAB_DESCRIPTIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
+HOSTLIST=$(echo "${HOSTLIST}" | tr ' ' '\n' | sort -u | tr '\n' ' ') # Removes duplicates
 # Print some information about the lab
 echo
 becho "====================== Lab information =========================="
 labWelcome
-becho "The lab is made up of `echo $HOSTLIST | awk '{print NF}'` virtual machines ($HOSTLIST)."
+becho "The lab is made up of $(echo $HOSTLIST | awk '{print NF}') virtual machines ($HOSTLIST)."
 for LAB_DIRECTORY in $LAB_DIRECTORIES; do
    if [ -f "$LAB_DIRECTORY/lab.dep" ]; then
-      becho "The lab part `basename $LAB_DIRECTORY` supports parallel startup."
+      becho "The lab part $(basename $LAB_DIRECTORY) supports parallel startup."
    fi
 done
 
