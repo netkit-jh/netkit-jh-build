@@ -105,7 +105,7 @@ are attached to.
 .B
 Hostfs at
 directory of the host filesystem that is made available inside the virtual machine
-under `/hosthome'.
+under '/hosthome'.
 .PD 0
 .TP
 .B
@@ -117,14 +117,14 @@ during the boot phase.
 .B
 Hostlab at
 directory of the host filesystem that is made available in the virtual machine
-under `/hostlab'. This directory stores information about the configuration of
+under '/hostlab'. This directory stores information about the configuration of
 a laboratory.
 .PD 0
 .TP
 .B
 Host WD at
 directory of the host filesystem that is made available in the virtual machine
-under `/hostwd'. This directory stores some temporary files for a laboratory.
+under '/hostwd'. This directory stores some temporary files for a laboratory.
 .PD 0
 .TP
 .B
@@ -172,7 +172,7 @@ specific virtual machines.
 .TP
 .B
 --user=\fIUSERNAME\fR
-Only show virtual machines owned by \fIUSERNAME\fR. The special user name `\fB\-\fR'
+Only show virtual machines owned by \fIUSERNAME\fR. The special user name '\fB\-\fR'
 is reserved and can be used to show virtual machines owned by all users.
 .br
 By default, only virtual machines started by the current user (i.e., the one who
@@ -183,11 +183,11 @@ requested. By providing a \fIUSERNAME\fR, you can only ask information about
 virtual machines owned by \fIUSERNAME\fR.
 
 Consider that different users may start virtual machines having the same name.
-Hence, special care must be taken when \fIUSERNAME\fR is `\fB\-\fR' and you are
+Hence, special care must be taken when \fIUSERNAME\fR is '\fB\-\fR' and you are
 requesting detailed information about a virtual machine by providing its name.
 In this case, information about only one virtual machine are reported, even if
 several virtual machines with the same name exist. In particular, \fIvlist\fR
-considers the first machine with a matching name in the list returned by `vlist --user=-'.
+considers the first machine with a matching name in the list returned by 'vlist --user=-'.
 
 .PP
 The following generic options are also supported.
@@ -205,7 +205,7 @@ Show usage information.
 .B
 --version
 Print information about the installed Netkit release and the host kernel version
-and exit. If ``\fI<unavailable>\fR'' is printed instead of a version number,
+and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
 then the corresponding information could not be retrieved (for example because
 a non-standard Netkit kernel or filesystem is being used).
 
@@ -240,7 +240,7 @@ Total consumed memory:    82404 KB (you),    82404 KB (all users).
 
 
 The following example shows detailed information about a specific virtual machine,
-which you can get by typing `vlist pc1'.
+which you can get by typing 'vlist pc1'.
 
 .RS 3
 .nf

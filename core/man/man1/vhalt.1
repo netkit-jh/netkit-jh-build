@@ -10,7 +10,7 @@ vhalt \- shutdown a running netkit virtual machine
 .SH DESCRIPTION
 
 The \fIvhalt\fR command can be used to gracefully shutdown running virtual machines.
-Using \fIvhalt\fR has exactly the same effect as issuing the `halt' command
+Using \fIvhalt\fR has exactly the same effect as issuing the 'halt' command
 inside the virtual machine.
 
 \fIMACHINE\-ID\fR is either the name or the PID of a virtual machine.
@@ -60,15 +60,15 @@ By using this option, only machines started by \fIUSERNAME\fR can be halted. Thi
 option is useful, for example, if you want to halt someone else's machines (this
 requires administrative privileges). By default \fIvhalt\fR only considers
 virtual machines owned by the current user (the one who launched the \fIvhalt\fR
-command). The special \fIUSERNAME\fR `\fB-\fR' is
+command). The special \fIUSERNAME\fR '\fB-\fR' is
 reserved and can be used to kill virtual machines regardless of their owner.
 
 Special care must be taken if you choose to pass virtual machine names to \fIvhalt\fR
-and the `\fB\-\-user\fR=\fB-\fR' option is being used. If two (or more)
+and the '\fB\-\-user\fR=\fB-\fR' option is being used. If two (or more)
 different users are running virtual machines having the same \fIname\fR, then only the
 one returned by
 .nh
-`vlist --user=- \fIname\fR'
+'vlist --user=- \fIname\fR'
 .hy
 is halted.
 
@@ -88,7 +88,7 @@ Show usage information.
 .B
 --version
 Print information about the installed Netkit release and the host kernel version
-and exit. If ``\fI<unavailable>\fR'' is printed instead of a version number,
+and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
 then the corresponding information could not be retrieved (for example because
 a non-standard Netkit kernel or filesystem is being used).
 

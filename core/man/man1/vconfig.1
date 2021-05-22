@@ -10,7 +10,7 @@ vconf \- attach network interfaces to running netkit virtual machines
 .SH DESCRIPTION
 
 The \fIvconf\fR command can be used to attach network interfaces to running
-virtual machines ``on the fly''. The affected machine is identified by a \fBMACHINE\-ID\fR,
+virtual machines "on the fly". The affected machine is identified by a \fBMACHINE\-ID\fR,
 which is either the PID or the name of a running virtual machine.
 
 One or more interfaces can be attached or detached on a running virtual machine
@@ -24,7 +24,7 @@ The syntax for this option is exactly the same as for the corresponding option o
 \fIDOMAIN\fR, in which case the network interface \fBethN\fR will be no longer
 available on the virtual machine.
 .br
-Please read the \fBvstart\fR documentation before using this option to setup ``\fBtap\fR'' collision domains.
+Please read the \fBvstart\fR documentation before using this option to setup "\fBtap\fR" collision domains.
 
 Attaching an already existing interface to a virtual machine causes an error.
 
@@ -72,22 +72,22 @@ This option tells \fIvconf\fR to only work on virtual machines owned by \fIUSERN
 By default, \fIvconf\fR only allows to attach interfaces to virtual machines
 started by the current user (i.e., the one who launched \fIvconf\fR). By using
 this option it is possible to attach interfaces to someone else's virtual machines
-(this requires administrative privileges). The special user name `\fB\-\fR' is
+(this requires administrative privileges). The special user name '\fB\-\fR' is
 reserved and allows to consider all virtual machines, regardless of their owner.
 
 Consider that different users may be running virtual machines having the same
-name. Hence, using the `\fB\-\-user\fR=\fB-\fR' option when \fIMACHINE\-ID\fR
+name. Hence, using the '\fB\-\-user\fR=\fB-\fR' option when \fIMACHINE\-ID\fR
 is a virtual machine name may arise ambiguities. In such a case, \fIvconf\fR
 only works on the virtual machine reported by issuing the command
 .nh
-`vlist -u - \fIMACHINE\-ID\fR'.
+'vlist -u - \fIMACHINE\-ID\fR'.
 .hy
 
 .TP
 .B
 --version
 Print information about the installed Netkit release and the host kernel version
-and exit. If ``\fI<unavailable>\fR'' is printed instead of a version number,
+and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
 then the corresponding information could not be retrieved (for example because
 a non-standard Netkit kernel or filesystem is being used).
 
@@ -109,7 +109,7 @@ shut down. In order to do this, you should use the \fBvclean\fR command with the
 option \fB\-H\fR (see \fBvclean\fR(1)).
 
 An important difference with respect to attaching interfaces with \fIvstart\fR (see
-\fBvstart\fR(1)) is that, when using ``\fBtap\fR'' collision domains, the
+\fBvstart\fR(1)) is that, when using "\fBtap\fR" collision domains, the
 configuration of the virtual machine is not automatically updated. In particular,
 assume that interface eth0 has been set up using \fIvconf\fR with the following option:
 
@@ -135,7 +135,7 @@ as \fITAP\-ADDRESS\fR). Nevertheless, it is a good rule to be coherent with the
 \fIGUEST\-ADDRESS\fR provided on the \fIvconf\fR command line.
 
 .IP 2) 3
-A default route must be configured to point to the host side of the ``\fBtap\fR''
+A default route must be configured to point to the host side of the "\fBtap\fR"
 interface. This can be achieved by issuing the following command:
 
 .nf
@@ -145,10 +145,10 @@ route add default gw \fITAP\-ADDRESS\fR dev eth0
 .PP
 Once this is done, the interface is ready for use.
 
-Please make sure you run `vclean -H' (see \fBvclean\fR(1)) when a ``\fBtap\fR''
+Please make sure you run 'vclean -H' (see \fBvclean\fR(1)) when a "\fBtap\fR"
 collision domain is no more used. Not doing so may result in the impossibility
-to correctly configure new ``\fBtap\fR'' collision domains. For example, this
-may prevent from correctly setting the \fITAP\-ADDRESS\fR for a new ``\fBtap\fR''
+to correctly configure new "\fBtap\fR" collision domains. For example, this
+may prevent from correctly setting the \fITAP\-ADDRESS\fR for a new "\fBtap\fR"
 domain.
 
 

@@ -59,7 +59,7 @@ machines having the same name).
 HUB_SOCKET_DIR
 This is the directory in which temporary socket files used by the virtual hubs are placed.
 Different users can share the same directory. Thus, setting this parameter to
-a standard temporary directory like ``/tmp/uml'' is allowed.
+a standard temporary directory like "/tmp/uml" is allowed.
 
 \fISuggested value\fR: $HOME/.netkit/hubs
 .br
@@ -73,7 +73,7 @@ pattern. This parameter allows to configure the prefix that should be used in
 the name of every socket file. This is useful, for example, in order to ease
 recognizing these special files.
 .br
-This parameter must not contain underscores (`\fB_\fR') or commas (`\fB,\fR').
+This parameter must not contain underscores ('\fB_\fR') or commas ('\fB,\fR').
 
 \fISuggested value\fR: vhub
 .br
@@ -85,8 +85,8 @@ HUB_SOCKET_EXTENSION
 Similarly to \fBHUB_SOCKET_PREFIX\fR, it is also possible to configure the standard
 extension to be used for socket file names.
 .br
-This parameter must not contain underscores (`\fB_\fR') or commas (`\fB,\fR'),
-and must always start with a dot (`\fB.\fR').
+This parameter must not contain underscores ('\fB_\fR') or commas ('\fB,\fR'),
+and must always start with a dot ('\fB.\fR').
 
 \fISuggested value\fR: .cnct
 .br
@@ -158,7 +158,7 @@ memory and emulated memory.
 .br
 This parameter allows adjusting the skew so that proper values are returned by
 commands showing memory statistics (e.g., \fIvlist\fR on the host machine \(en
-see \fBvlist\fR(1) \(en and `free -m' inside the virtual machine). The skew
+see \fBvlist\fR(1) \(en and 'free -m' inside the virtual machine). The skew
 is expressed in MB units.
 
 \fISuggested value\fR: 4
@@ -434,7 +434,7 @@ labs with more than 4 machines).
 .SH "SETTING UP NETKIT FOR USE WITH SUDO"
 
 From time to time, Netkit requires administrative privileges on the host machine
-to set up particular configurations (e.g., ``\fBtap\fR'' interfaces). Netkit can
+to set up particular configurations (e.g., "\fBtap\fR" interfaces). Netkit can
 exploit either the \fBsu\fR(1) or the \fBsudo\fR(8) command in order to do this.
 This behaviour can be configured by changing the value of the \fBUSE_SUDO\fR
 parameter. Depending on this choice, Netkit will ask for a different password:
@@ -481,8 +481,8 @@ Once you have opened the file, you need to append the following line at the end:
 .fi
 
 where \fIUSERNAME\fR is the name of the affected Netkit user, ALL means that
-this setting will work on all machines (read as: ``no matter what the name of
-the machine you are setting this on is, the setting will work''), NOPASSWD means
+this setting will work on all machines (read as: "no matter what the name of
+the machine you are setting this on is, the setting will work"), NOPASSWD means
 that the following commands can be executed with an arbitrary user ID (including
 root's), and /bin/sh is the name of the command.
 

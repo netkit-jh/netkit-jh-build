@@ -47,34 +47,34 @@ This file is a list of \fImachine\fR[\fIarg\fR]=\fIvalue\fR assignments, where
 If \fIarg\fR is an
 integer value, then \fIvalue\fR is the name of the collision domain to which
 interface \fBeth\fIarg\fR of machine \fImachine\fR must be connected (note that
-the name of the collision domain must not contain spaces (` '), underscores (`\fB_\fR'),
-commas (`\fB,\fR'), and dots (`\fB.\fR'), unless it is a ``\fBtap\fR'' collision
-domain - see \fBvstart\fR(1) for more information). For example, ``pc1[0]=CD1'' means that
+the name of the collision domain must not contain spaces (' '), underscores ('\fB_\fR'),
+commas ('\fB,\fR'), and dots ('\fB.\fR'), unless it is a "\fBtap\fR" collision
+domain - see \fBvstart\fR(1) for more information). For example, "pc1[0]=CD1" means that
 interface \fBeth0\fR of virtual machine \fBpc1\fR will be connected to collision
 domain \fBCD1\fR.
 .br
 The range of permitted network interfaces is configured inside the file
 \fInetkit.conf\fR (see \fBnetkit.conf\fR(5))
 .br
-The special collision domain name ``\fBtap\fR'' is reserved, and can be used to
+The special collision domain name "\fBtap\fR" is reserved, and can be used to
 connect a network interface to an external network (e.g., the Internet). See
-\fBvstart\fR(1) for more information about ``\fBtap\fR'' collision domains.
+\fBvstart\fR(1) for more information about "\fBtap\fR" collision domains.
 
 .IP \(en 2
 If \fIarg\fR is an option name, then \fImachine\fR will be launched with option
 \fIarg\fR set to value \fIvalue\fR. \fIarg\fR can be the name of any \fBvstart\fR
 option, being it short (e.g., \fB\-L\fR) or long (e.g., \fB\-\-mem\fR), without
-the leading dashes (`\fB\-\fR'). If the option requires an argument, it can be
+the leading dashes ('\fB\-\fR'). If the option requires an argument, it can be
 passed by providing a \fIvalue\fR. For those options that do not require an
 argument (e.g., \fB\-H\fR), \fIvalue\fR must be omitted.
 .br
-For example, ``pc1[mem]=64'' specifies that virtual machine \fBpc1\fR will be
-equipped with 64 MB of emulated memory, and ``pc1[D]='' tells \fBvstart\fR to hide
+For example, "pc1[mem]=64" specifies that virtual machine \fBpc1\fR will be
+equipped with 64 MB of emulated memory, and "pc1[D]=" tells \fBvstart\fR to hide
 the .disk file for virtual machine \fBpc1\fR.
 
 .PP
 
-The special assignment ``machines=\fImachine\-list\fR'' can be used to explicitly
+The special assignment "machines=\fImachine\-list\fR" can be used to explicitly
 define the set of virtual machines that are part of the lab. This also allows to start
 a virtual machine even if the corresponding subdirectory does not exist.
 \fImachine\-list\fR is a space separated list of virtual machine names.
@@ -97,7 +97,7 @@ LAB_WEB=\fIstring\fR (useful web reources related to the lab)
 
 A line that does not match the above syntax is supposed to be a comment and is
 ignored by \fIlstart\fR. However, in order to establish a uniform convention,
-comment lines should always start with a hash character (`\fB#\fR').
+comment lines should always start with a hash character ('\fB#\fR').
 .RE
 
 .TP
@@ -131,7 +131,7 @@ of virtual machines that can be started simultaneously can be set by using the
 \fB\-p\fR option of \fIlstart\fR or by configuring the value MAX_SIMULTANEOUS_VMS
 inside \fInetkit.conf\fR (see \fBnetkit.conf\fR(5)).
 
-Lines starting with a hash character (`\fB#\fR') are assumed to be comments and
+Lines starting with a hash character ('\fB#\fR') are assumed to be comments and
 simply ignored.
 
 .TP
@@ -143,9 +143,9 @@ started, whose name will be the same as the one of the subdirectory.
 Optionally, this subdirectory may contain files that you wish to make available
 (i.e., copy) inside the virtual machine filesystem. You can also put a full hierarchy of
 directories here. When organizing files inside \fIlab\-path\fR/\fImachine\fR/,
-think of it as if it were the root (`\fB/\fR') directory of the virtual machine.
-For example, a file `\fIlab\-path\fR/\fImachine\fR/foo' will be copied into
-`/foo' inside virtual machine \fImachine\fR.
+think of it as if it were the root ('\fB/\fR') directory of the virtual machine.
+For example, a file '\fIlab\-path\fR/\fImachine\fR/foo' will be copied into
+'/foo' inside virtual machine \fImachine\fR.
 
 In case of conflicts, files inside this subdirectory overwrite those
 inside \fIlab\-path\fR/shared/.
@@ -179,7 +179,7 @@ invoke it inside \fI\fImachine\fR.shutdown\fR.
 \fIlab\-path\fR/shared/ 
 This subdirectory may contain files and directories that you want to make available (i.e., copy)
 inside every virtual machine filesystem. Files should be organized so that
-\fIlab\-path\fR/shared/ corresponds to the root (`\fB/\fR') directory of the
+\fIlab\-path\fR/shared/ corresponds to the root ('\fB/\fR') directory of the
 virtual machines.
 
 In case of conflicts, files inside this subdirectory are overwritten by those
@@ -224,7 +224,7 @@ Virtual machines are usually launched in arbitrary order. However, there are
 several ways of influencing the order in which they are started up.
 
 .IP \(en 2
-The first way is to insert a ``machines=\fImachine\-list\fR'' assignment
+The first way is to insert a "machines=\fImachine\-list\fR" assignment
 inside \fIlab.conf\fR. If such an assignment exists, \fIlstart\fR launches
 virtual machines in the same order in which they appear in the \fImachine\-list\fR.
 
@@ -246,7 +246,7 @@ information passed by command line arguments.
 .SH EXAMPLES
 
 The following one is a simple example of a Netkit lab, stored inside the
-directory `/home/foo/lab'.
+directory '/home/foo/lab'.
 
 The directory contents are the following:
 
@@ -307,9 +307,9 @@ are collision domains:
 The lab is extremely simple: there are no automatically configured network
 interfaces or services. There is only a simple configuration file for the BGP
 routing daemon (bgpd) that is automatically deployed inside virtual machine
-\fBrouter\fR under `/etc/zebra/bgpd.conf'.
+\fBrouter\fR under '/etc/zebra/bgpd.conf'.
 
-Assuming the current directory is `/home/foo', it is now possible to launch the
+Assuming the current directory is '/home/foo', it is now possible to launch the
 lab by issuing the command:
 
 .RS 3
@@ -323,9 +323,9 @@ Because of the contents of the lab.dep file, \fBrouter\fR and \fBpc1\fR will be
 started simultaneously, while \fBpc2\fR will only be launched after they have
 completed their boot phase.
 
-Notice that, even if there exists a subdirectory `/home/foo/lab/pc3/', the
+Notice that, even if there exists a subdirectory '/home/foo/lab/pc3/', the
 corresponding machine is not actually started. This happens because lab.conf
-contains an entry (the `machines=' assignment) stating that \fBpc3\fR does
+contains an entry (the 'machines=' assignment) stating that \fBpc3\fR does
 not belong to the lab.
 
 

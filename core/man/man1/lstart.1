@@ -13,7 +13,7 @@ lstart \- start a netkit lab
 
 In order to ease setting up complex network experiences with Netkit it is possible
 to completely describe them into special configuration files, so that the experience
-can later be started with a single command as if it were a virtual network ``laboratory''.
+can later be started with a single command as if it were a virtual network "laboratory".
 
 The \fIlstart\fR command can be used to achieve this purpose. In particular, it starts
 a set of virtual machines that are part of a Netkit lab and configures them
@@ -39,7 +39,7 @@ directory or one provided by \fB\-d\fR) must never contain spaces.
 
 Note that, in order to avoid starting undesired virtual machines, \fIlstart\fR
 checks whether the current directory (or the directory specified with \fB\-d\fR)
-contains at least a ``lab.conf'' or a ``lab.dep'' file, and refuses to start the
+contains at least a "lab.conf" or a "lab.dep" file, and refuses to start the
 lab if none of these file exists. See option \fB\-F\fR below for disabling this
 behavior.
 
@@ -53,8 +53,8 @@ behavior.
 As a native behaviour, Netkit starts a virtual machine for each directory that it
 finds in a designed path, by default the current directory. In order to prevent
 the user from accidentally starting random virtual machines from a directory that
-does not contain a lab, lstart requires the presence of at least a ``lab.conf''
-or a ``lab.dep'' file in the affected directory. If these files are not required
+does not contain a lab, lstart requires the presence of at least a "lab.conf"
+or a "lab.dep" file in the affected directory. If these files are not required
 for your setting, and you still want to launch your lab without creating either
 one, you can use option \fB\-F\fR or
 .nh
@@ -116,16 +116,16 @@ advised not to use \fB\-l\fR (or \fB\-\-list\fR) together with \fB\-f\fR (or
 allows to pass an \fIOPTION\fR unaltered to every invocation of \fBvstart\fR.
 This means that all the virtual machines of the lab will be launched with option \fIOPTION\fR.
 \fIOPTION\fR should be specified exactly as it would be on the \fBvstart\fR command
-line, but always make sure that space characters are quoted (e.g., `-fdummy.disk'
-or `--append=debug' are ok, `-M 32' should be written as either `-M32' or `"-M 32"').
+line, but always make sure that space characters are quoted (e.g., '-fdummy.disk'
+or '--append=debug' are ok, '-M 32' should be written as either '-M32' or '"-M 32"').
 
 .TP
 .B
 \-p[\fIVALUE\fR\fB]\fR
 Parallel startup is a special startup mode that allows to simultaneously boot
-several virtual machines. It is automatically enabled whenever a `lab.dep' file
+several virtual machines. It is automatically enabled whenever a 'lab.dep' file
 is found to exist inside the lab directory. This option forces parallel startup,
-even if the `lab.dep' file does not exist. In order to limit the load on your
+even if the 'lab.dep' file does not exist. In order to limit the load on your
 host, this option also allows to set a maximum number of virtual machines that
 at any time instant can be simultaneously booting.
 \fIVALUE\fR must be a positive integer. A \fIVALUE\fR of 0 corresponds
@@ -147,7 +147,7 @@ installed on your system.
 .TP
 .B
 \-\-sequential
-Disable parallel startup, even if a `lab.dep' file is found to exist in the lab
+Disable parallel startup, even if a 'lab.dep' file is found to exist in the lab
 directory. This option is useful when you just want to launch specific virtual
 machines. In fact, if you just provide their \fIMACHINE\-NAME\fRs on the command
 line, \fIlstart\fR would still attempt to satisfy the dependencies, and this
@@ -195,7 +195,7 @@ Show details about virtual machines while starting them.
 .B
 --version
 Print information about the installed Netkit release and the host kernel version
-and exit. If ``\fI<unavailable>\fR'' is printed instead of a version number,
+and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
 then the corresponding information could not be retrieved (for example because
 a non-standard Netkit kernel or filesystem is being used).
 
@@ -213,7 +213,7 @@ command is executed from) as well as inside the lab directory. Such files are:
 These files are created by \fIlstart\fR and are used to synchronize virtual
 machines when they are started. These files are automatically deleted when all the
 machines in the lab have properly started up. Yet, sometimes (e.g., when a virtual
-machine crashes in the boot phase) there may be `.ready' files left in the
+machine crashes in the boot phase) there may be '.ready' files left in the
 current directory even after the lab has been stopped. In this case you have to launch
 \fBlclean\fR (see \fBlclean\fR(1)) to get rid of them before the lab can be
 restarted.

@@ -33,7 +33,7 @@ If invoked with no arguments, \fIlclean\fR removes temporary files for all the
 virtual machines that make up the lab (i.e., \fImachine\-name\fR is replaced
 by the name of each virtual machine). It is also possible to provide a list
 of \fIMACHINE\-NAME\fRs, in which case \fIlclean\fR just removes temporary
-files for those virtual machines (as well as the `readyfor.test' file).
+files for those virtual machines (as well as the 'readyfor.test' file).
 
 Removing virtual machines COW filesystems (.disk files) implies that virtual
 machines contents are reverted to their original state when the lab is restarted.
@@ -81,7 +81,7 @@ Show which files are being deleted.
 .B
 \-\-version
 Print information about the installed Netkit release and the host kernel version
-and exit. If ``\fI<unavailable>\fR'' is printed instead of a version number,
+and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
 then the corresponding information could not be retrieved (for example because
 a non-standard Netkit kernel or filesystem is being used).
 
@@ -104,7 +104,7 @@ Apart from this, \fIlclean\fR supports no other environment variables.
 Despite the fact that the two command names sound similar, \fIlclean\fR has
 nothing to do with \fBvclean\fR(1). While \fIlclean\fR is a tool to get rid of
 temporary files inside a Netkit lab directory (i.e., it works on the host
-filesystem), \fBvclean\fR(1) is the Netkit ``panic button'', which allows to
+filesystem), \fBvclean\fR(1) is the Netkit "panic button", which allows to
 kill hanging processes and to restore settings that may have been altered by
 Netkit during past executions (firewall settings, configurations set up for tap
 interfaces, etc.).
