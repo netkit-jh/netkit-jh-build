@@ -43,6 +43,12 @@ chroot $MOUNT_DIRECTORY systemctl enable netkit-startup-phase1.service
 chroot $MOUNT_DIRECTORY systemctl enable netkit-startup-phase2.service
 chroot $MOUNT_DIRECTORY systemctl enable netkit-shutdown.service
 
+# Sort out ttys and auto-logon
+ln -s $MOUNT_DIRECTORY/lib/systemd/system/getty@.service $MOUNT_DIRECTORY/etc/systemd/system/getty.target.wants/getty@tty0.service
+for i in {2..6}; do
+  chroot $MOUNT_DIRECTORY systemctl mask getty@tty${i}.service
+done
+
 # Required for mounting kernel modules at runtime
 #chroot $MOUNT_DIRECTORY systemctl enable netkit-mount.service
 #chroot $MOUNT_DIRECTORY systemctl enable netkit-unmount.service
