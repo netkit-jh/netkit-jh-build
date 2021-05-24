@@ -259,7 +259,7 @@ startInetHub() {
    local HUB_COMMAND COMPLETE_COMMAND TAP_DEVICE TUNTAP_COMMAND PRESERVE_ENV
    TAP_DEVICE="nk_tap_$USER"
    HUB_COMMAND="$NETKIT_HOME/bin/uml_switch -tap $TAP_DEVICE -hub -unix $1 </dev/null 2>&1"
-   COMPLETE_COMMAND="${HUB_COMMAND} | awk -v SWITCHNAME=$1 -v USER=$USERID -v CURRENTDATE=\"$(date +\"%Y/%m/%d %H:%M:%S\")\" \
+   COMPLETE_COMMAND="${HUB_COMMAND} | awk -v SWITCHNAME=$1 -v USER=$USERID -v CURRENTDATE=\"$(date +"%Y/%m/%d %H:%M:%S")\" \
                '{printf \"%s %15s %25s %s\n\", CURRENTDATE, USER, SWITCHNAME, \$0}' > ${HUB_LOG} &"
    if [ ! -S "$1" ] || ! someOneUses "$1"; then
       # Either socket does not exist yet or it is still unused
@@ -319,7 +319,7 @@ runHubs() {
    local HUB_NAME BASE_HUB_NAME ACTUAL_HUB_NAME TAP_ADDRESS GUEST_ADDRESS
    while [ $# -gt 0 ]; do
       HUB_NAME="$1"
-      BASE_HUB_NAME="$(varReplace HUB_NAME \".*_\" \"\")"
+      BASE_HUB_NAME="$(varReplace HUB_NAME ".*_" "")"
       if [ "${BASE_HUB_NAME#tap${HUB_SOCKET_EXTENSION},}" != "$BASE_HUB_NAME" ]; then
          # This is an Internet connected hub
          ACTUAL_HUB_NAME=$(echo $1 | awk -v FS="," '{print $1}')
@@ -342,7 +342,7 @@ cleanHubs() {
    local FULL_HUB_NAME BASE_HUB_NAME
    while [ $# -gt 0 ]; do
       FULL_HUB_NAME=$1
-      BASE_HUB_NAME="$(varReplace FULL_HUB_NAME \".*_\" \"\")"
+      BASE_HUB_NAME="$(varReplace FULL_HUB_NAME ".*_" "")"
       if [ "${BASE_HUB_NAME#tap${HUB_SOCKET_EXTENSION},}" != "$BASE_HUB_NAME" ]; then
          # This is an Internet connected hub
          FULL_HUB_NAME=$(echo $FULL_HUB_NAME | awk -v FS="," '{print $1}')
