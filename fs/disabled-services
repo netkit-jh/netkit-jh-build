@@ -26,5 +26,4 @@ isc-dhcp-relay
 isc-dhcp-relay6
 systemd-timesyncd
 stunnel4
-ucarp
 xl2tpd
