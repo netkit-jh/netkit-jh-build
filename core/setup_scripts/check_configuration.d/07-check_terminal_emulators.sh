@@ -45,7 +45,7 @@ TERMINAL_EMULATORS="xterm konsole gnome-terminal alacritty kitty wsl.exe wt.exe 
 for CURRENT_COMMAND in $TERMINAL_EMULATORS; do
    printf "\t%-15s: " $CURRENT_COMMAND
    
-   COMMAND_DIR=`which $CURRENT_COMMAND 2>/dev/null`
+   COMMAND_DIR=$(which $CURRENT_COMMAND 2>/dev/null)
    ADD_TO_PATH=0
    
    # If the requested executable has not been found in the PATH,
@@ -54,7 +54,7 @@ for CURRENT_COMMAND in $TERMINAL_EMULATORS; do
       if [ "$CURRENT_COMMAND" = "xterm" ]; then
          XTERM_WARNING=1
       fi
-      COMMAND_DIR=`whereis -b $CURRENT_COMMAND`
+      COMMAND_DIR=$(whereis -b $CURRENT_COMMAND)
       # Clean up the output of whereis
       COMMAND_DIR=${COMMAND_DIR##*$CURRENT_COMMAND:}
       COMMAND_DIR=${COMMAND_DIR##* }

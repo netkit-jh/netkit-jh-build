@@ -21,7 +21,7 @@
 # This script can be used to clean up a directory that contains a Netkit lab.
 # All temporary files are removed, including .disk files.
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
@@ -91,7 +91,7 @@ checkSpaces() {
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="help,version,verbose"
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "hd:v" "$@"`
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hd:v" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -110,7 +110,7 @@ parseCmdLine() {
                   "Multiple directory specifications: where can I find the lab?"
                exit 1
             fi
-            LAB_DIRECTORY=`makeAbsolutePath "$CURRENT_ARGUMENT"`;;
+            LAB_DIRECTORY=$(makeAbsolutePath "$CURRENT_ARGUMENT");;
          
          --help|-h)
             help

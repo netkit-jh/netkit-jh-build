@@ -23,7 +23,7 @@
 # their power cord. This script is also useful if you want to kill a hanging
 # virtual machine.
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
@@ -107,7 +107,7 @@ END_OF_HELP
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="help,quiet,kill,user:,version,force,remove-fs,root,test"
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "hqkru:" "$@"`
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hqkru:" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -261,7 +261,7 @@ findVM() {
          echo 1>&2 "$SCRIPTNAME: no virtual machine having PID $1 exists."
          continue
       fi
-      [ -z "$FASTFIND" ] && VM_PROCESSES=`getVMPIDsByPID "$1"`
+      [ -z "$FASTFIND" ] && VM_PROCESSES=$(getVMPIDsByPID "$1")
    else
       # This is a virtual machine name
       if ! getVMinfoByName "$USER" "$1"; then
@@ -273,7 +273,7 @@ findVM() {
          fi
          continue
       fi
-      [ -z "$FASTFIND" ] && VM_PROCESSES=`getVMPIDsByName "$USER" "$1"`
+      [ -z "$FASTFIND" ] && VM_PROCESSES=$(getVMPIDsByName "$USER" "$1")
    fi
 }
 
@@ -413,7 +413,7 @@ printConciseVMinfo() {
 
 if [ ! -z "$FORCE_MODE" ]; then
    # Simple --force mode: user gave both PID and name for the virtual machine
-   VM_PROCESSES=`getVMPIDsByPID "$VM_PID"`
+   VM_PROCESSES=$(getVMPIDsByPID "$VM_PID")
    if [ ! -z "$VM_PROCESSES" ]; then
       if [ -z "$BE_QUIET" ]; then
          echo

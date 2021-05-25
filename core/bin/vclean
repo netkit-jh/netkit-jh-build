@@ -21,7 +21,7 @@
 # This is the Netkit vclean script, which can be used to remove unused virtual
 # hubs, hanging UML kernels and configured tunnels.
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
@@ -99,7 +99,7 @@ END_OF_HELP
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="clean-all,kill-machines,remove-hubs,remove-tunnels,user:,help,quiet,quick,test,version"
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "HKTu:hq" "$@"`
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "HKTu:hq" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -206,7 +206,7 @@ fi
 # TERM signal and, if some process still survives, it is sent the KILL signal. If
 # in quiet mode, processes are simply KILLed.
 killProcesses() {
-   PROCESSES=`eval $1`
+   PROCESSES=$(eval $1)
    if [ -z "$PROCESSES" ]; then
       # There are no processes to be killed
       [ -z "$BE_QUIET" ] && echo "   None is currently running."
@@ -224,13 +224,13 @@ killProcesses() {
       kill -TERM $PROCESSES > /dev/null 2>&1
       kill -TERM $PROCESSES > /dev/null 2>&1
       sleep 1
-      PROCESSES=`eval $1`
+      PROCESSES=$(eval $1)
       if [ ! -z "$PROCESSES" ]; then
          echo -n "killing harder... "
          kill -KILL $PROCESSES > /dev/null 2>&1
          kill -CONT $PROCESSES > /dev/null 2>&1
          sleep 1
-         PROCESSES=`eval $1`
+         PROCESSES=$(eval $1)
          if [ ! -z "$PROCESSES" ]; then
             echo "failed!"
          else
@@ -257,7 +257,7 @@ killHubs() {
       HUB_PID=$1
       shift
       HUB_NAME=$1
-      if [ `lsof -p $HUB_PID 2>/dev/null | grep -c $HUB_NAME` -le 1 ]; then
+      if [ $(lsof -p $HUB_PID 2>/dev/null | grep -c $HUB_NAME) -le 1 ]; then
          # No more virtual machines are using the hub connected to this socket
          FOUND_UNUSED_HUB=1
          [ -z "$BE_QUIET" ] && echo -n "   $HUB_NAME (PID $HUB_PID)"
@@ -290,8 +290,8 @@ fi
 if [ ! -z "$REMOVE_UNUSED_HUBS" ]; then
    # Just remove unused switches
    [ -z "$BE_QUIET" ] && echo "Killing unusued virtual hubs owned by $USER_STRING:"
-   HUB_PIDS_NAMES=`ps -wwwwwweo user=ENSURE_USER_NAME_COLUMN_IS_VERY_WIDE,pid,command | grep -w "$USER" | grep "uml_switch .*-unix" | \
-                   grep -v grep | awk '{print $2 " " $NF}'`
+   HUB_PIDS_NAMES=$(ps -wwwwwweo user=ENSURE_USER_NAME_COLUMN_IS_VERY_WIDE,pid,command | grep -w "$USER" | grep "uml_switch .*-unix" | \
+                   grep -v grep | awk '{print $2 " " $NF}')
    killHubs $HUB_PIDS_NAMES
 fi
 

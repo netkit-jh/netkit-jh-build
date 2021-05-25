@@ -13,7 +13,7 @@ KERNEL_MODULES="$4"
 cat $WORK_DIRECTORY/debconf-package-selections | chroot $MOUNT_DIRECTORY debconf-set-selections
 
 # Install packages in packages-list
-PACKAGES_LIST=`cat $WORK_DIRECTORY/packages-list | grep -v '#'`
+PACKAGES_LIST=$(cat $WORK_DIRECTORY/packages-list | grep -v '#')
 
 chroot $MOUNT_DIRECTORY add-apt-repository ppa:cz.nic-labs/bird  # for Bird Internet routing daemon
 chroot $MOUNT_DIRECTORY apt update
@@ -57,7 +57,7 @@ done
 #chroot $MOUNT_DIRECTORY systemctl enable netkit-unmount.service
 
 # Disable system services not required
-for SERVICE in `cat $WORK_DIRECTORY/disabled-services`; do
+for SERVICE in $(cat $WORK_DIRECTORY/disabled-services); do
 	chroot $MOUNT_DIRECTORY systemctl disable ${SERVICE}
 done
 

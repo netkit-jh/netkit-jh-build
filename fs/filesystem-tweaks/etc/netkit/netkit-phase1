@@ -55,7 +55,7 @@ case "$1" in
       echo
       echo "${DELIMITER_TEXT}--- Starting Netkit phase 1 init script ---${NORMAL_TEXT}"
 
-      ASSIGN_VARIABLES=`cat /proc/cmdline | awk -v FS== -v RS=' ' \
+      ASSIGN_VARIABLES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' \
          '
             ($1=="name") {print "HOSTNAME=" $2}
             ($1=="hosthome") {print "HOSTHOME=" $2}
@@ -63,19 +63,19 @@ case "$1" in
             ($1=="title") {print "TITLE=" $2}
             ($1=="def_route") {print "DEFAULT_ROUTE=" $2}
             ($1=="ubd0") {print "FILESYSTEM=" $2}
-         '`
+         ')
 
       eval "$ASSIGN_VARIABLES"
-      COW=`echo $FILESYSTEM|awk -v FS=, '{print $2}'`
+      COW=$(echo $FILESYSTEM|awk -v FS=, '{print $2}')
 
-      AUTOCONF_INTERFACES=`cat /proc/cmdline | awk -v FS== -v RS=' ' \
+      AUTOCONF_INTERFACES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' \
          '(match($1,"autoconf_eth[0-9]+")) {
                gsub("autoconf_","",$1)
                gsub("\n","",$2)
                print "echo \"Bringing up interface " $1 " (" $2 ")...\""
                print "ifconfig " $1 " " $2 " up"
             }
-         '`
+         ')
 
       export HOSTNAME
 
@@ -107,7 +107,7 @@ case "$1" in
          echo "Running 'resolvconf -u' to generate /etc/resolv.conf"
          resolvconf -u
 
-         if [ "`echo /hostlab/shared/*`" != "/hostlab/shared/*" ]; then
+         if [ "$(echo /hostlab/shared/*)" != "/hostlab/shared/*" ]; then
             echo "Copying shared files from /hostlab/shared/..."
             # tar all the files inside the directory instead of just the
             # directory itself, in order to properly cope with virtual
@@ -117,7 +117,7 @@ case "$1" in
             sed -r 's/^[^/]+\/[^/]+\//\//' | xargs -d "\n" stat --format="%a-%n" | { while IFS='-' read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} "${FILE}"; done; }
          fi
 
-         if [ "`echo /hostlab/$HOSTNAME/*`" != "/hostlab/$HOSTNAME/*" ]; then
+         if [ "$(echo /hostlab/$HOSTNAME/*)" != "/hostlab/$HOSTNAME/*" ]; then
             echo "Copying $HOSTNAME specific files from /hostlab/$HOSTNAME/..."
             tar --exclude=CVS --exclude=.svn -C / -c hostlab/$HOSTNAME/* | tar -o -h -C / --strip 2 -xv | sed -r 's/^[^/]+\/[^/]+\//\//' | xargs -d "\n" stat --format="%a-%n" | { while IFS='-' read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} "${FILE}"; done; }
          fi

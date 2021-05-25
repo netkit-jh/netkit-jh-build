@@ -21,7 +21,7 @@
 # This is the Netkit vhalt script, which is used to gracefully shut down a
 # virtual machine.
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
@@ -76,7 +76,7 @@ END_OF_HELP
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="help,quick,quiet,user:,version,remove-fs"
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "hqru:" "$@"`
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hqru:" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi

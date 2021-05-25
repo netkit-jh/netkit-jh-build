@@ -21,7 +21,7 @@
 # This script can be used to crash a Netkit lab. It also takes care of removing
 # .disk files, so that the lab can be cleanly restarted.
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
@@ -101,7 +101,7 @@ END_OF_HELP
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="help,version,kill,keep-fs,list,quick,quiet"
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "hd:Fklq" "$@"`
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hd:Fklq" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -124,7 +124,7 @@ parseCmdLine() {
                   "Multiple directory specifications: where can I find the lab?"
                exit 1
             fi
-            LAB_DIRECTORY=`makeAbsolutePath "$CURRENT_ARGUMENT"`;;
+            LAB_DIRECTORY=$(makeAbsolutePath "$CURRENT_ARGUMENT");;
          
          --help|-h)
             help

@@ -19,7 +19,7 @@
 
 # This is the Netkit vdump script, which is used to start uml_dump
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 VERSION="2.6"
 
 if [ -z "$NETKIT_HOME" ]; then
@@ -53,7 +53,7 @@ END_OF_HELP
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="help,version"
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "hnu:" "$@"`
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hnu:" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi

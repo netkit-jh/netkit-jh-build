@@ -16,7 +16,7 @@ DIR=$1
 
 if [ -z "$DIR" ]
 then
-    DIR=`pwd`
+    DIR=$(pwd)
 fi
 
 cd $DIR
@@ -27,13 +27,13 @@ then
   exit
 fi
 
-CUR=`pwd`
+CUR=$(pwd)
 
 # FIXME: we should import computer names from lab.conf instead of using 'find' tool.
 # See http://dev.iu7.bmstu.ru/trac/netp_09_labs/ticket/65
 COMPS=$(find * -prune -type d )
 SESSIONS=()
-PID=`pidof -s konsole`
+PID=$(pidof -s konsole)
 
 declare -A NAMES
 for C in $COMPS

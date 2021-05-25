@@ -100,7 +100,7 @@ checkSpaces() {
 
 # This function converts a relative path to an absolute path, if needed
 makeAbsolutePath() {
-   ARGUMENT=`echo "$1" | awk '{gsub("^ *",""); print}'`
+   ARGUMENT=$(echo "$1" | awk '{gsub("^ *",""); print}')
    if containsRegexp ARGUMENT '^/' || containsRegexp ARGUMENT '^~' || containsRegexp ARGUMENT '^\$'; then
       # This is an absolute path
       eval echo $ARGUMENT
@@ -128,7 +128,7 @@ containsRegexp() {
 logWrite() {
    [ -z "$LOGFILENAME" ] && return
    if [ ! -e "$LOGFILENAME" -o -w "$LOGFILENAME" ]; then
-      echo `date +"%Y/%m/%d %H:%M:%S"` `id -nu` $* >> "$LOGFILENAME"
+      echo $(date +"%Y/%m/%d %H:%M:%S") $(id -nu) $* >> "$LOGFILENAME"
    fi
 }
 
@@ -140,7 +140,7 @@ showVersion() {
    
    # Netkit version information
    echo -n "Netkit version:            "
-   NETKIT_VERSION=`cat "$NETKIT_HOME/netkit-version" 2>&1 | grep "Netkit version" `
+   NETKIT_VERSION=$(cat "$NETKIT_HOME/netkit-version" 2>&1 | grep "Netkit version")
    if [ $? = 0 ]; then
       NETKIT_VERSION="${NETKIT_VERSION##Netkit version }"
       if echo "$NETKIT_VERSION" | grep -Eq "([0-9]+[\.\-])+[0-9]+[a-zA-Z]*$"; then
@@ -156,18 +156,18 @@ showVersion() {
    # Netkit kernel version information
    echo -n "Netkit kernel version:     "
    KERNEL_FILE_NAME=""
-   [ -f "$VM_KERNEL" ] && KERNEL_FILE_NAME=`basename "$VM_KERNEL"`
-   [ -L "$VM_KERNEL" ] && { KERNEL_FILE_NAME=`readlink "$VM_KERNEL"`;
-                            KERNEL_FILE_NAME=`basename "$KERNEL_FILE_NAME"`; }
+   [ -f "$VM_KERNEL" ] && KERNEL_FILE_NAME=$(basename "$VM_KERNEL")
+   [ -L "$VM_KERNEL" ] && { KERNEL_FILE_NAME=$(readlink "$VM_KERNEL");
+                            KERNEL_FILE_NAME=$(basename "$KERNEL_FILE_NAME"); }
    NETKIT_KERNEL_VERSION="${KERNEL_FILE_NAME##netkit-kernel-}"
    echo "${NETKIT_KERNEL_VERSION}"
    
    # Netkit filesystem version information
    echo -n "Netkit filesystem version: "
    NETKIT_FILESYSTEM_NAME=""
-   [ -f "$VM_MODEL_FS" ] && NETKIT_FILESYSTEM_NAME=`basename "$VM_MODEL_FS"`
-   [ -L "$VM_MODEL_FS" ] && { NETKIT_FILESYSTEM_NAME=`readlink "$VM_MODEL_FS"`;
-                              NETKIT_FILESYSTEM_NAME=`basename "$NETKIT_FILESYSTEM_NAME"`; }
+   [ -f "$VM_MODEL_FS" ] && NETKIT_FILESYSTEM_NAME=$(basename "$VM_MODEL_FS")
+   [ -L "$VM_MODEL_FS" ] && { NETKIT_FILESYSTEM_NAME=$(readlink "$VM_MODEL_FS");
+                              NETKIT_FILESYSTEM_NAME=$(basename "$NETKIT_FILESYSTEM_NAME"); }
    NETKIT_FILESYSTEM_VERSION="${NETKIT_FILESYSTEM_NAME##netkit-fs-}"
    echo "${NETKIT_FILESYSTEM_VERSION}"
    
@@ -212,7 +212,7 @@ ensureDir $HUB_SOCKET_DIR
 # Ensure mconsole dir exists
 ensureDir $MCONSOLE_DIR
 
-USERID=`id -un`
+USERID=$(id -un)
 
 
 
@@ -259,7 +259,7 @@ startInetHub() {
    local HUB_COMMAND COMPLETE_COMMAND TAP_DEVICE TUNTAP_COMMAND PRESERVE_ENV
    TAP_DEVICE="nk_tap_$USER"
    HUB_COMMAND="$NETKIT_HOME/bin/uml_switch -tap $TAP_DEVICE -hub -unix $1 </dev/null 2>&1"
-   COMPLETE_COMMAND="${HUB_COMMAND} | awk -v SWITCHNAME=$1 -v USER=$USERID -v CURRENTDATE=\"`date +\"%Y/%m/%d %H:%M:%S\"`\" \
+   COMPLETE_COMMAND="${HUB_COMMAND} | awk -v SWITCHNAME=$1 -v USER=$USERID -v CURRENTDATE=\"$(date +"%Y/%m/%d %H:%M:%S")\" \
                '{printf \"%s %15s %25s %s\n\", CURRENTDATE, USER, SWITCHNAME, \$0}' > ${HUB_LOG} &"
    if [ ! -S "$1" ] || ! someOneUses "$1"; then
       # Either socket does not exist yet or it is still unused
@@ -298,7 +298,7 @@ startInetHub() {
 startHub() {
    local HUB_COMMAND COMPLETE_COMMAND
    HUB_COMMAND="$NETKIT_HOME/bin/uml_switch -hub -unix $1 </dev/null 2>&1"
-   COMPLETE_COMMAND="${HUB_COMMAND} | awk -v SWITCHNAME=$1 -v USER=$USERID -v CURRENTDATE=\"`date +\"%Y/%m/%d %H:%M:%S\"`\" \
+   COMPLETE_COMMAND="${HUB_COMMAND} | awk -v SWITCHNAME=$1 -v USER=$USERID -v CURRENTDATE=\"$(date +"%Y/%m/%d %H:%M:%S")\" \
                 '{printf \"%s %15s %25s %s\n\", CURRENTDATE, USER, SWITCHNAME, \$0}' > ${HUB_LOG} &"
    if [ ! -S "$1" ]; then
       run_command "$JUST_PRINT" "$HUB_COMMAND" "$COMPLETE_COMMAND"
@@ -319,12 +319,12 @@ runHubs() {
    local HUB_NAME BASE_HUB_NAME ACTUAL_HUB_NAME TAP_ADDRESS GUEST_ADDRESS
    while [ $# -gt 0 ]; do
       HUB_NAME="$1"
-      BASE_HUB_NAME="`varReplace HUB_NAME \".*_\" \"\"`"
+      BASE_HUB_NAME="$(varReplace HUB_NAME ".*_" "")"
       if [ "${BASE_HUB_NAME#tap${HUB_SOCKET_EXTENSION},}" != "$BASE_HUB_NAME" ]; then
          # This is an Internet connected hub
-         ACTUAL_HUB_NAME=`echo $1 | awk -v FS="," '{print $1}'`
-         TAP_ADDRESS=`echo $1 | awk -v FS="," '{print $(NF-1)}'`
-         GUEST_ADDRESS=`echo $1 | awk -v FS="," '{print $NF}'`
+         ACTUAL_HUB_NAME=$(echo $1 | awk -v FS="," '{print $1}')
+         TAP_ADDRESS=$(echo $1 | awk -v FS="," '{print $(NF-1)}')
+         GUEST_ADDRESS=$(echo $1 | awk -v FS="," '{print $NF}')
          startInetHub "$ACTUAL_HUB_NAME" "$TAP_ADDRESS" "$GUEST_ADDRESS"
       else
          # This is a normal hub
@@ -342,10 +342,10 @@ cleanHubs() {
    local FULL_HUB_NAME BASE_HUB_NAME
    while [ $# -gt 0 ]; do
       FULL_HUB_NAME=$1
-      BASE_HUB_NAME="`varReplace FULL_HUB_NAME \".*_\" \"\"`"
+      BASE_HUB_NAME="$(varReplace FULL_HUB_NAME ".*_" "")"
       if [ "${BASE_HUB_NAME#tap${HUB_SOCKET_EXTENSION},}" != "$BASE_HUB_NAME" ]; then
          # This is an Internet connected hub
-         FULL_HUB_NAME=`echo $FULL_HUB_NAME | awk -v FS="," '{print $1}'`
+         FULL_HUB_NAME=$(echo $FULL_HUB_NAME | awk -v FS="," '{print $1}')
       fi
       
       # Avoid attempting to kill hubs for which the socket file does not exist
@@ -359,8 +359,8 @@ cleanHubs() {
       fi
       
       if someOneUses $FULL_HUB_NAME; then
-         SWITCH_PROCESS=`ps -wwwwwweo pid,command --sort=pid | grep "uml_switch.*$FULL_HUB_NAME" | grep -v "grep uml_switch" | awk '{print $1}' | head -n 1`
-         if [ `lsof -p $SWITCH_PROCESS 2>/dev/null | grep -c $FULL_HUB_NAME` -le 1 ]; then
+         SWITCH_PROCESS=$(ps -wwwwwweo pid,command --sort=pid | grep "uml_switch.*$FULL_HUB_NAME" | grep -v "grep uml_switch" | awk '{print $1}' | head -n 1)
+         if [ $(lsof -p $SWITCH_PROCESS 2>/dev/null | grep -c $FULL_HUB_NAME) -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
             kill $SWITCH_PROCESS > /dev/null 2>&1 && rm -f $FULL_HUB_NAME
          fi
@@ -387,7 +387,7 @@ psList() {
 # machine status. If the machine is found to exist, returned value is 0.
 # Otherwise, 1 is returned.
 getVMinfoByName() {
-   VM_PS_ENTRY=`psList | grep -E "^$1[[:blank:]].*umid=$2[[:space:]]" | head -n 1`
+   VM_PS_ENTRY=$(psList | grep -E "^$1[[:blank:]].*umid=$2[[:space:]]" | head -n 1)
    if [ -z "$VM_PS_ENTRY" ]; then
       # Virtual machine does not exist
       return 1
@@ -402,7 +402,7 @@ getVMinfoByName() {
 # the machine status. If the machine is found to exist, returned value is 0.
 # Otherwise, 1 is returned.
 getVMinfoByPID() {
-   VM_PS_ENTRY=`psList | awk -v pid=$1 \
+   VM_PS_ENTRY=$(psList | awk -v pid=$1 \
       '
          BEGIN {
             vm_process = 0
@@ -415,7 +415,7 @@ getVMinfoByPID() {
             machines[vm_id] = 1
          }
          (vm_process==pid) {print}
-      ' | head -n 1`
+      ' | head -n 1)
    if [ -z "$VM_PS_ENTRY" ]; then
       # Virtual machine does not exist
       return 1
@@ -434,7 +434,7 @@ getVMinfo() {
    unset VMINFO_APPENDED VMINFO_USER VMINFO_PID VMINFO_SIZE
    unset VMINFO_NAME VMINFO_TERMTITLE VMINFO_HOSTHOME VMINFO_MCONSOLE VMINFO_KERNEL_MODULES
    
-   ASSIGN_VARS=`echo "$1" | awk -v FS="=" -v RS=" +" -v memory_skew=$VM_MEMORY_SKEW \
+   ASSIGN_VARS=$(echo "$1" | awk -v FS="=" -v RS=" +" -v memory_skew=$VM_MEMORY_SKEW \
       '
          BEGIN {
             vminfo_eth_interfaces = ""
@@ -536,7 +536,7 @@ getVMinfo() {
             print "VMINFO_APPENDED=\"" vminfo_appended "\""
             print "VMINFO_ETH_INTERFACES=\"" vminfo_eth_interfaces "\""
          }
-      '`
+      ')
    eval "$ASSIGN_VARS"
    
    # Mconsole handle
