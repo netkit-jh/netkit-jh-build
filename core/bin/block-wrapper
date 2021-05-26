@@ -16,21 +16,31 @@ TERM_TYPE="$1"
 shift;
 VM_NAME="$1"
 shift;
-KERNELCMD="$@"
+KERNELCMD="$*"
 
+
+# The PID of the current terminal process is stored in a temporary file. This
+# is so the program's state can be monitored later on for termination.
 pidfile=$(mktemp)
 
-# Here, we run the specific command depending on term_type
-# Note that most importantly, the pid of the current terminal is inputted into $pidfile
+sh_cmd="echo \$\$ > $pidfile; $KERNELCMD"
+
+# PowerShell and cmd.exe requires escaping any semicolon in the Bash command to
+# prevent unwanted interpretation.
+# As an added quirk, the WSL invocation method does not require this escaping
+# (presumably due to how the start command arguments are processed.)
+ps_cmd="echo \$\$ > $pidfile\\; $KERNELCMD"
+
+
 case "$TERM_TYPE" in
-	konsole)       	konsole --nofork --title $VM_NAME -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
-	konsole-tab)   	$NETKIT_HOME/bin/konsole-tabs.sh -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
-	gnome)		 	gnome-terminal --window-with-profile=netkit -- /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
-	alacritty)	 	alacritty -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
-	kitty)        	kitty /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
-    xterm)         	xterm -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
-    wsl)            powershell.exe -Command "start wsl -ArgumentList @('--','echo', '\$$>$pidfile;', '$KERNELCMD')";;
-    wt)             powershell.exe -Command "wt.exe -p netkit wsl.exe /bin/bash -c 'echo \$$ > $pidfile && $KERNELCMD'";;
+	konsole)       	konsole --nofork --title "$VM_NAME"                                     -e /bin/sh -c "$sh_cmd";;
+	konsole-tab)   	"$NETKIT_HOME/bin/konsole-tabs.sh"                                      -e /bin/sh -c "$sh_cmd";;
+	gnome)		 	gnome-terminal --title "$VM_NAME"                                       -- /bin/sh -c "$sh_cmd";;
+	alacritty)	 	alacritty                                                               -e /bin/sh -c "$sh_cmd";;
+	kitty)        	kitty --title "$VM_NAME"                                                   /bin/sh -c "$sh_cmd";;
+    xterm)         	xterm -xrm 'XTerm*allowTitleOps: false' -T "$VM_NAME"                   -e /bin/sh -c "$sh_cmd";;
+    wsl)            cmd.exe /c start wsl.exe                                                   /bin/sh -c "$sh_cmd";;
+    wt)             cmd.exe /c wt.exe --suppressApplicationTitle --title "$VM_NAME" wsl.exe    /bin/sh -c "$ps_cmd";;
     tmux)
         tmux -L netkit has-session -t="$VM_NAME" 2>/dev/null
         if [ $? == 0 ]; then
@@ -53,6 +63,7 @@ case "$TERM_TYPE" in
                     xterm -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
 esac
 
+
 # Wait until $pidfile has been written to
 until [ -s $pidfile ] 
     do sleep 1s
@@ -65,4 +76,3 @@ rm $pidfile
 while ps -p $terminalpid > /dev/null 2>&1; do
 	sleep 1s
 done
-# Finish script, stop blocking
