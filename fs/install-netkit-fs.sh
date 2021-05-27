@@ -58,7 +58,7 @@ done
 
 # Disable system services not required
 for SERVICE in $(cat $WORK_DIRECTORY/disabled-services); do
-	chroot $MOUNT_DIRECTORY systemctl disable ${SERVICE}
+  chroot $MOUNT_DIRECTORY systemctl disable ${SERVICE}
 done
 
 # Set root to use no password

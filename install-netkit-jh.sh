@@ -107,109 +107,109 @@ PREVIOUS_INSTALL_FOUND=false # Was a previous installation found and backed up?
 # Takes in a directory and array of file names and returns 0 if all were found, else 1 if any of them weren't failed
 check_files_exist() 
 {
-	DIRECTORY="$1"
-	shift;
-	FILES=("$@")
-	
-	FAILED=0
-	
-	for FILE in "${FILES[@]}"; do
-		if [ ! -f "${DIRECTORY}/${FILE}" ]; then
-			echo "Cannot find file ${DIRECTORY}/${FILE}."
-			FAILED=1
-		fi
-	done
-	
-	return ${FAILED}
+    DIRECTORY="$1"
+    shift;
+    FILES=("$@")
+    
+    FAILED=0
+    
+    for FILE in "${FILES[@]}"; do
+        if [ ! -f "${DIRECTORY}/${FILE}" ]; then
+            echo "Cannot find file ${DIRECTORY}/${FILE}."
+            FAILED=1
+        fi
+    done
+    
+    return ${FAILED}
 }
 
 # Rename target dir if already exists
 if [ -d "${TARGET_INSTALL_DIR}" ] ; then
-	echo "${TARGET_INSTALL_DIR} already exists. Renaming it to ${BACKUP_INSTALL_DIR} so contents are not disturbed."
-	mv "${TARGET_INSTALL_DIR}" "${BACKUP_INSTALL_DIR}"
-	PREVIOUS_INSTALL_FOUND=true
+    echo "${TARGET_INSTALL_DIR} already exists. Renaming it to ${BACKUP_INSTALL_DIR} so contents are not disturbed."
+    mv "${TARGET_INSTALL_DIR}" "${BACKUP_INSTALL_DIR}"
+    PREVIOUS_INSTALL_FOUND=true
 fi
 
 mkdir -p "${TARGET_INSTALL_DIR}"
 
 # Check whether they've specified extracted files
 if [ -n "${KERNEL_EXTRACTED_FILES}" -a -n "${FS_EXTRACTED_FILES}" -a -n "${CORE_EXTRACTED_FILES}" ]; then
-	cp -r "${KERNEL_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
-	cp -r "${FS_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
-	cp -r "${CORE_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
+    cp -r "${KERNEL_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
+    cp -r "${FS_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
+    cp -r "${CORE_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
 else
-	files_expected=("release-${VERSION}.sha256" "netkit-core-${VERSION}.tar.bz2" "netkit-fs-${VERSION}.tar.bz2" "netkit-kernel-${VERSION}.tar.bz2")
-	check_files_exist "${DOWNLOAD_DIR}" "${files_expected[@]}"
-	files_exist=$?
-	
-	if [ ${files_exist} -eq 0 ]; then
-		# If all expected files are found, we can continue
-		echo "Downloaded files found in ${DOWNLOAD_DIR}, continuing..."
-	else
-		# Otherwise, we can download the files
-		if [ "${DOWNLOAD_FILES}" = "true" ]; then
-			mkdir -p "${DOWNLOAD_DIR}"
+    files_expected=("release-${VERSION}.sha256" "netkit-core-${VERSION}.tar.bz2" "netkit-fs-${VERSION}.tar.bz2" "netkit-kernel-${VERSION}.tar.bz2")
+    check_files_exist "${DOWNLOAD_DIR}" "${files_expected[@]}"
+    files_exist=$?
+    
+    if [ ${files_exist} -eq 0 ]; then
+        # If all expected files are found, we can continue
+        echo "Downloaded files found in ${DOWNLOAD_DIR}, continuing..."
+    else
+        # Otherwise, we can download the files
+        if [ "${DOWNLOAD_FILES}" = "true" ]; then
+            mkdir -p "${DOWNLOAD_DIR}"
 
-			wget -O "${DOWNLOAD_DIR}/release-${VERSION}.sha256" --show-progress "${DOWNLOAD_URL_PREFIX}/release-${VERSION}.sha256"
-			wget -O "${DOWNLOAD_DIR}/netkit-core-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-core-${VERSION}.tar.bz2"
-			wget -O "${DOWNLOAD_DIR}/netkit-fs-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-fs-${VERSION}.tar.bz2"
-			wget -O "${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-kernel-${VERSION}.tar.bz2"
-		else
-			echo "The files above were not found and downloading is disabled, exiting installation."
-			exit 1
-		fi
-	fi
-	
-	(cd ${DOWNLOAD_DIR}; sha256sum -c release-${VERSION}.sha256)
-	FILES_INVALID=$?
-	
-	if [ ${FILES_INVALID} -eq 1 ]; then
-		echo "File checksums failed to verify, please delete the downloaded files and re-run this script." >&2
-		exit 1
-	fi
-	
-	# strip-components removes the netkit-jh directory
-	tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-core-${VERSION}.tar.bz2
-	tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-fs-${VERSION}.tar.bz2
-	tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2
+            wget -O "${DOWNLOAD_DIR}/release-${VERSION}.sha256" --show-progress "${DOWNLOAD_URL_PREFIX}/release-${VERSION}.sha256"
+            wget -O "${DOWNLOAD_DIR}/netkit-core-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-core-${VERSION}.tar.bz2"
+            wget -O "${DOWNLOAD_DIR}/netkit-fs-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-fs-${VERSION}.tar.bz2"
+            wget -O "${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-kernel-${VERSION}.tar.bz2"
+        else
+            echo "The files above were not found and downloading is disabled, exiting installation."
+            exit 1
+        fi
+    fi
+    
+    (cd ${DOWNLOAD_DIR}; sha256sum -c release-${VERSION}.sha256)
+    FILES_INVALID=$?
+    
+    if [ ${FILES_INVALID} -eq 1 ]; then
+        echo "File checksums failed to verify, please delete the downloaded files and re-run this script." >&2
+        exit 1
+    fi
+    
+    # strip-components removes the netkit-jh directory
+    tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-core-${VERSION}.tar.bz2
+    tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-fs-${VERSION}.tar.bz2
+    tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2
 fi
 
 RC_FILES=("${HOME}/.bashrc" "${HOME}/.zshrc")
 
 for RC_FILE in "${RC_FILES[@]}"; do
-	# Check whether this file exists
-	if [ ! -f ${RC_FILE} ]; then
-		continue
-	fi
-	
-	# Backup existing file with date and time as part of filename
-	BAK_FILE="${RC_FILE}_$(date "+%F_%H-%M-%S").bak"
-	cp "${RC_FILE}" "${BAK_FILE}"
+    # Check whether this file exists
+    if [ ! -f ${RC_FILE} ]; then
+        continue
+    fi
+    
+    # Backup existing file with date and time as part of filename
+    BAK_FILE="${RC_FILE}_$(date "+%F_%H-%M-%S").bak"
+    cp "${RC_FILE}" "${BAK_FILE}"
 
-	# Check whether the netkit variables header exists, if not, wipe all cases of netkit
-	if [ -z "$(grep "=== NETKIT VARIABLES ===" "${RC_FILE}")" ]; then
-		# strip out any lines containing the word "netkit" (case insensitive) from bashrc
-		grep -iv "netkit" "${BAK_FILE}" > "${RC_FILE}"
-	else
-		# Otherwise, just wipe between the headers
-		sed -i "/^#=== NETKIT VARIABLES ===/,/^#=== NETKIT VARIABLES END ===/d;" ${RC_FILE}
-	fi
+    # Check whether the netkit variables header exists, if not, wipe all cases of netkit
+    if [ -z "$(grep "=== NETKIT VARIABLES ===" "${RC_FILE}")" ]; then
+        # strip out any lines containing the word "netkit" (case insensitive) from bashrc
+        grep -iv "netkit" "${BAK_FILE}" > "${RC_FILE}"
+    else
+        # Otherwise, just wipe between the headers
+        sed -i "/^#=== NETKIT VARIABLES ===/,/^#=== NETKIT VARIABLES END ===/d;" ${RC_FILE}
+    fi
 
-	# Append Netkit additions to bashrc  
-	echo "$NK_ENV_VARS" >> "${RC_FILE}"
+    # Append Netkit additions to bashrc  
+    echo "$NK_ENV_VARS" >> "${RC_FILE}"
 done
 
 # make (for lab.dep) and net-tools (for tap) needed on ubuntu 18.04
 if [ "${INSTALL_APT_PACKAGES}" = true ]; then
-	echo "Installing packages to run netkit..."
-	sudo apt-get update && sudo apt-get install xterm make net-tools curl
+    echo "Installing packages to run netkit..."
+    sudo apt-get update && sudo apt-get install xterm make net-tools curl
 fi
 
 # Restore config + handle updating config
 if [ "${PREVIOUS_INSTALL_FOUND}" = true ]; then
-	echo ""
-	echo "Restoring configuration from previous installation."
-	${TARGET_INSTALL_DIR}/setup_scripts/handle_config.sh "${BACKUP_INSTALL_DIR}" "${TARGET_INSTALL_DIR}"
+    echo ""
+    echo "Restoring configuration from previous installation."
+    ${TARGET_INSTALL_DIR}/setup_scripts/handle_config.sh "${BACKUP_INSTALL_DIR}" "${TARGET_INSTALL_DIR}"
 fi
 
 echo "Netkit-JH should now be installed. Checking configuration..."

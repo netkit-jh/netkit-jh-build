@@ -68,8 +68,8 @@ export LANG=C
 
 # Use the correct syntax for echo, depending on the shell being used
 if type source > /dev/null 2>&1; then
-	# We are using bash
-	alias echo="echo -e"
+   # We are using bash
+   alias echo="echo -e"
 fi
 
 
@@ -78,18 +78,18 @@ fi
 # not its value!), the regular expression to be searched for, and the
 # replacement string.
 varReplace() {
-	local VARIABLE_NAME REGEXP REPLACE_STRING VARIABLE_VALUE
-	VARIABLE_NAME="$1"
-	REGEXP="$2"
-	REPLACE_STRING="$3"
-	eval VARIABLE_VALUE='$'"${VARIABLE_NAME}"
-	echo "${VARIABLE_VALUE}" | awk "{gsub(/${REGEXP}/, \"${REPLACE_STRING}\"); print}"
+   local VARIABLE_NAME REGEXP REPLACE_STRING VARIABLE_VALUE
+   VARIABLE_NAME="$1"
+   REGEXP="$2"
+   REPLACE_STRING="$3"
+   eval VARIABLE_VALUE='$'"${VARIABLE_NAME}"
+   echo "${VARIABLE_VALUE}" | awk "{gsub(/${REGEXP}/, \"${REPLACE_STRING}\"); print}"
 }
 
 
 # This function checks whether its argument contains spaces
 checkSpaces() {
-	STRING="$1"
+   STRING="$1"
    if containsRegexp STRING " "; then
       warning "$SCRIPTNAME" "$CMDLINE" "$0" \
               "Argument \"$STRING\" contains spaces. They are not allowed."
@@ -115,12 +115,12 @@ makeAbsolutePath() {
 # the name of the environment variable (the *name*, not its value!) and the
 # regular expression to be searched for.
 containsRegexp() {
-	local VARIABLE_NAME VARIABLE_VALUE REGEXP
-	VARIABLE_NAME="$1"
-	REGEXP="$2"
-	eval VARIABLE_VALUE='$'"${VARIABLE_NAME}"
-	echo "$VARIABLE_VALUE" | grep -q "$REGEXP" >/dev/null
-	return $?
+   local VARIABLE_NAME VARIABLE_VALUE REGEXP
+   VARIABLE_NAME="$1"
+   REGEXP="$2"
+   eval VARIABLE_VALUE='$'"${VARIABLE_NAME}"
+   echo "$VARIABLE_VALUE" | grep -q "$REGEXP" >/dev/null
+   return $?
 }
 
 

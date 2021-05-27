@@ -6,5 +6,5 @@ required_bits=128
 sleep 10
 
 if [ "${required_bits}" -lt "$(cat /proc/sys/kernel/random/entropy_avail)" ]; then
-	touch /hostlab/entropy_successful
+    touch /hostlab/entropy_successful
 fi

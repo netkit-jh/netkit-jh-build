@@ -345,8 +345,8 @@ labStart() {
       done
    fi
    
-	# The readyfor.test file should not be created if we have been invoked
-	# with the --makefile option (=launch a single machine and exit).
+   # The readyfor.test file should not be created if we have been invoked
+   # with the --makefile option (=launch a single machine and exit).
    [ ! -z "$TESTMODE" -a -z "$MAKEFILE" ] && : > "$LAB_DIRECTORY/readyfor.test"
 }
 

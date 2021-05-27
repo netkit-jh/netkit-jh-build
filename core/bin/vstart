@@ -205,7 +205,7 @@ OPT_LIST="${OPT_LIST},tmux-attached,tmux-detached"
 i=0
 while [ $i -lt $MAX_INTERFACES ]; do
    OPT_LIST="${OPT_LIST},eth$i:"
-	i=$(($i + 1))
+   i=$(($i + 1))
 done
 CMDLINE_OPTIONS=$(getopt 2>&1 -ql "$OPT_LIST" -- "k:M:m:f:e:l:w:FhHLWpqvD" "$@")
 if [ $? -gt 0 ]; then
@@ -687,7 +687,7 @@ fi
 
 ##### Bypass port helper, if required (only allowed for the primary terminal)
 if [ $VM_CON0 = "xterm" -a "$CON0_PORTHELPER" != "yes" ]; then
-   	VM_CON0="this_noporthelper"
+      VM_CON0="this_noporthelper"
 fi
 
 ##### Attach terminals

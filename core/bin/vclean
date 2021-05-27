@@ -111,9 +111,9 @@ USER=$USERID
 
 # Parse command line options
 parseCmdLine() {
-	local CURRENT_ARGUMENT
+   local CURRENT_ARGUMENT
    while [ $# -gt 0 ]; do
-		CURRENT_ARGUMENT="$1"
+      CURRENT_ARGUMENT="$1"
       case "$CURRENT_ARGUMENT" in
       
          --clean-all)

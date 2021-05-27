@@ -100,7 +100,7 @@ fi
 # Parse command line options
 parseCmdLine() {
    while [ $# -gt 0 ]; do
-		CURRENT_ARGUMENT="$1"
+      CURRENT_ARGUMENT="$1"
       case "$CURRENT_ARGUMENT" in
       
          -d)

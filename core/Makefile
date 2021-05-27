@@ -42,14 +42,14 @@ $(SUBDIR_BINS):
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir; \
 	done
-	
+
 ${NETKIT_BUILD_DIR}: $(COPY_FILES) $(SUBDIR_BINS)
 	mkdir -p $(TOOLS_DIR)
   
 	# Copy relavant files into build directory
 	cp -r $(COPY_FILES) $(NETKIT_BUILD_DIR)
-  	
-  	# Copy tools directory
+
+	# Copy tools directory
 	cp -r tools/* $(TOOLS_DIR)
 
 	# Move UML Utilities (we don't want to copy because it dirties core/bin)
@@ -61,13 +61,12 @@ ${NETKIT_BUILD_DIR}: $(COPY_FILES) $(SUBDIR_BINS)
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean; \
 	done
-	
+
 	# Create symlinks
 	(cd $(NETKIT_BUILD_DIR)/bin && ln -sf lstart lrestart; ln -sf lstart ltest && cd -)
-	
+
 	# Update version
 	echo "Netkit version $(NETKIT_BUILD_RELEASE)" > $(NETKIT_BUILD_DIR)/netkit-version
-	
+
 ../${CORE_ARCHIVE_FILE}: ${NETKIT_BUILD_DIR}
 	tar -C $(BUILD_DIR) --owner=0 --group=0 -cjf ../$(CORE_ARCHIVE_FILE) netkit-jh
-
