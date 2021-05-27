@@ -22,7 +22,7 @@
 # It performs several tests to verify that your system meets fundamental
 # requirements
 
-: ${NETKIT_HOME:=$VLAB_HOME}
+: "${NETKIT_HOME:=$VLAB_HOME}"
 FIXMODE=0
 ISSUE_WARNING=0
 
