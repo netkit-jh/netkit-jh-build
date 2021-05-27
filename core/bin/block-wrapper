@@ -33,14 +33,14 @@ ps_cmd="echo \$\$ > $pidfile\\; $KERNELCMD"
 
 
 case "$TERM_TYPE" in
-	konsole)       	konsole --nofork --title "$VM_NAME"                                     -e /bin/sh -c "$sh_cmd";;
-	konsole-tab)   	"$NETKIT_HOME/bin/konsole-tabs.sh"                                      -e /bin/sh -c "$sh_cmd";;
-	gnome)		 	gnome-terminal --title "$VM_NAME"                                       -- /bin/sh -c "$sh_cmd";;
-	alacritty)	 	alacritty                                                               -e /bin/sh -c "$sh_cmd";;
-	kitty)        	kitty --title "$VM_NAME"                                                   /bin/sh -c "$sh_cmd";;
-    xterm)         	xterm -xrm 'XTerm*allowTitleOps: false' -T "$VM_NAME"                   -e /bin/sh -c "$sh_cmd";;
-    wsl)            cmd.exe /c start wsl.exe                                                   /bin/sh -c "$sh_cmd";;
-    wt)             cmd.exe /c wt.exe --suppressApplicationTitle --title "$VM_NAME" wsl.exe    /bin/sh -c "$ps_cmd";;
+    konsole)      konsole --nofork --title "$VM_NAME"                                     -e /bin/sh -c "$sh_cmd";;
+    konsole-tab)  "$NETKIT_HOME/bin/konsole-tabs.sh"                                      -e /bin/sh -c "$sh_cmd";;
+    gnome)        gnome-terminal --title "$VM_NAME"                                       -- /bin/sh -c "$sh_cmd";;
+    alacritty)    alacritty                                                               -e /bin/sh -c "$sh_cmd";;
+    kitty)        kitty --title "$VM_NAME"                                                   /bin/sh -c "$sh_cmd";;
+    xterm)        xterm -xrm 'XTerm*allowTitleOps: false' -T "$VM_NAME"                   -e /bin/sh -c "$sh_cmd";;
+    wsl)          cmd.exe /c start wsl.exe                                                   /bin/sh -c "$sh_cmd";;
+    wt)           cmd.exe /c wt.exe --suppressApplicationTitle --title "$VM_NAME" wsl.exe    /bin/sh -c "$ps_cmd";;
     tmux)
         tmux -L netkit has-session -t="$VM_NAME" 2>/dev/null
         if [ $? == 0 ]; then
@@ -58,7 +58,7 @@ case "$TERM_TYPE" in
         tmux -L netkit -f $NETKIT_HOME/tools/tmux.conf new -d -s $VM_NAME /bin/bash -c "echo \$$>$pidfile; $KERNELCMD"
         ;;
 
-	*)
+    *)
                     echo "Terminal $TERM_TYPE not supported, defaulting to xterm."
                     xterm -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
 esac
@@ -74,5 +74,5 @@ rm $pidfile
 
 # Wait until this process is dead
 while ps -p $terminalpid > /dev/null 2>&1; do
-	sleep 1s
+    sleep 1s
 done
