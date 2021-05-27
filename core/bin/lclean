@@ -34,14 +34,16 @@ fi
 
 CMDLINE="$0 $*"
 
+# shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
 
 # Write to the vcommands log
-logWrite $0 $*
+logWrite "$0 $*"
 
 
 # This function is used to print the lclean usage
+# Usage: help 
 help() {
    echo
    echo "Usage: $SCRIPTNAME [options] [MACHINE-NAME] ..."
@@ -74,16 +76,6 @@ invalid (i.e., it does not correspond to a virtual machine of the lab), it will
 simply be skipped.
 
 END_OF_HELP
-}
-
-
-# This function checks whether its argument contains spaces
-checkSpaces() {
-   if echo "$1" | grep -q " "; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-              "Argument \"$1\" contains spaces. They are not allowed."
-      exit 1
-   fi
 }
 
 
