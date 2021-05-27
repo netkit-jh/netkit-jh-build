@@ -21,7 +21,7 @@
 # This is the Netkit vclean script, which can be used to remove unused virtual
 # hubs, hanging UML kernels and configured tunnels.
 
-SCRIPTNAME=$(basename $0)
+SCRIPTNAME=$(basename "$0")
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}

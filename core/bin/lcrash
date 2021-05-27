@@ -21,7 +21,7 @@
 # This script can be used to crash a Netkit lab. It also takes care of removing
 # .disk files, so that the lab can be cleanly restarted.
 
-SCRIPTNAME=$(basename $0)
+SCRIPTNAME=$(basename "$0")
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}

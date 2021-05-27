@@ -23,7 +23,7 @@
 # their power cord. This script is also useful if you want to kill a hanging
 # virtual machine.
 
-SCRIPTNAME=$(basename $0)
+SCRIPTNAME=$(basename "$0")
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}

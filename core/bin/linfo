@@ -21,7 +21,7 @@
 # This script displays information about a lab without running it. Optionally,
 # it can create a PNG file containing the level 2 topology of the lab.
 
-SCRIPTNAME=$(basename $0)
+SCRIPTNAME=$(basename "$0")
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}

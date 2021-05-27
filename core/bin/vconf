@@ -25,7 +25,7 @@
 # using an empty collision domain name for an interface. Yet, this feature
 # is currently hidden by a check on the presence of a valid collision domain name.
 
-SCRIPTNAME=$(basename $0)
+SCRIPTNAME=$(basename "$0")
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}

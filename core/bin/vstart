@@ -21,7 +21,7 @@
 # This is the Netkit vstart script, which is used to start virtual machines with
 # given parameters.
 
-SCRIPTNAME=$(basename $0)
+SCRIPTNAME=$(basename "$0")
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
