@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #     Copyright 2002-2009 Stefano Pettini, Fabio Ricci, Massimo Rimondini
 #     Computer Networks Research Group, Roma Tre University.
@@ -42,12 +42,12 @@ CMDLINE="$0 $*"
 logWrite "$0 $*"
 
 
-# This function is used to print the lclean usage
+# This function is used to print the lclean help dialog
 # Usage: help 
 help() {
-   echo
-   echo "Usage: $SCRIPTNAME [options] [MACHINE-NAME] ..."
+   echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
    cat << END_OF_HELP
+Clean a Netkit lab directory of temporary files and machine file systems.
 
 This command can be used to clean up a directory containing a Netkit lab. It
 takes care of removing any temporary files, that is, '.ready' files, '.log'
@@ -74,96 +74,96 @@ line, then only those files generated for the matching virtual machines are
 deleted, as well as the 'readyfor.test' file. If any of the MACHINE-NAMEs is
 invalid (i.e., it does not correspond to a virtual machine of the lab), it will
 simply be skipped.
-
 END_OF_HELP
 }
 
 
-# Get command line options
-INVALID_OPTION=0
-OPT_LIST="help,version,verbose"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hd:v" "$@")
-if [ $? -gt 0 ]; then
-   INVALID_OPTION=1
-fi
-
-
-# Parse command line options
-parseCmdLine() {
-   while [ $# -gt 0 ]; do
-      CURRENT_ARGUMENT="$1"
-      case "$CURRENT_ARGUMENT" in
-      
-         -d)
-            shift; CURRENT_ARGUMENT="$1"
-            if [ ! -z "$LAB_DIRECTORY" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                  "Multiple directory specifications: where can I find the lab?"
-               exit 1
-            fi
-            LAB_DIRECTORY=$(makeAbsolutePath "$CURRENT_ARGUMENT");;
-         
-         --help|-h)
-            help
-            exit;;
-            
-         --verbose|-v)
-            VERBOSE=1;;
-         
-         --version)
-            showVersion
-            exit 0;;
-            
-         --)
-            shift
-            break;;
-      esac
-      shift
-   done
-   
-   while [ $# -gt 0 ]; do
-      checkSpaces "$1"
-      VHOSTLIST="$VHOSTLIST $1"
-      shift
-   done
+# Output lclean's usage to stderr
+# Usage: usage
+usage() {
+   echo 1>&2 "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
+   echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
 }
-eval parseCmdLine $CMDLINE_OPTIONS
 
 
-# Check whether user gave some strange options
-if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
+# Get command line options
+LONG_OPTS="help,version,verbose"
+SHORT_OPTS="d:hv"
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage
    exit 1
 fi
 
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
+
+while true; do
+   case "$1" in
+      -d)
+         OPT_ARG="$2"
+         shift
+
+         if [ -n "$LAB_DIRECTORY" ]; then
+            echo 1>&2 "$SCRIPTNAME: Multiple directory specifications"
+            usage
+            exit 1
+         fi
+
+         LAB_DIRECTORY=$(makeAbsolutePath "$OPT_ARG")
+         ;;
+      -h|--help)
+         help
+         exit 0
+         ;;
+      -v|--verbose)
+         VERBOSE=1
+         ;;
+      --version)
+         showVersion
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage
+         exit 1
+         ;;
+   esac
+
+   shift
+done
+
+# Non-option arguments are machine names
+VHOSTLIST=( "$@" )
+
+for host in "${VHOSTLIST[@]}"; do
+   checkSpaces "$host"
+done
+
+
 # If no lab directory has been given, assume current directory
-LAB_DIRECTORY=${LAB_DIRECTORY:-${PWD}}
-. "$NETKIT_HOME/bin/lcommon"
+LAB_DIRECTORY=${LAB_DIRECTORY:-$PWD}
 
 # Check that the lab directory exists
 if [ ! -d "$LAB_DIRECTORY" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Lab directory ($LAB_DIRECTORY) does not exist."
+   echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Directory does not exist"
    exit 1
 fi
 
-# Check whether path to the lab directory contains spaces
-if containsRegexp LAB_DIRECTORY " "; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-            "Invalid lab directory: \"$LAB_DIRECTORY\" (path contains spaces)."
-   exit 1
-fi
+# shellcheck source=./lcommon
+. "$NETKIT_HOME/bin/lcommon"
 
-
-# Print some information about the lab
-echo
-becho "====================== Cleaning up lab =========================="
-labWelcome
-becho "================================================================="
+# Print lab information
+bold_print "====================== Cleaning up lab =========================="
+lab_welcome
+bold_print "================================================================="
 
 # Clean up the lab directory
-labClean
-echo
-becho "Cleaning completed."
-becho "================================================================="
-
-echo
+lab_clean
+bold_print "Cleaning completed."
+bold_print "================================================================="
