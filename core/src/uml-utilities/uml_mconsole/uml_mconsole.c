@@ -84,8 +84,16 @@ static int do_switch(char *dir, char *file, char *name)
 static int switch_common(char *name)
 {
 	char file[MAXPATHLEN + 1], dir[MAXPATHLEN + 1], tmp[MAXPATHLEN + 1];
-	char *home;
+	char *mconsole_dir, *home;
 	int try_file = 1;
+
+  /* Netkit-JH patch - allows selection of custom mconsole dir */
+  if((mconsole_dir = getenv("MCONSOLE_DIR")) != NULL){
+    snprintf(file, sizeof(file), "%s/%s/mconsole", mconsole_dir, name);
+    if(!do_switch(dir, file, name)) 
+        return 0;
+    try_file = 0;
+  }
 
 	if((home = getenv("HOME")) != NULL){
 		snprintf(dir, sizeof(dir), "%s/.uml", home);
