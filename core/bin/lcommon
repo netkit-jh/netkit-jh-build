@@ -24,6 +24,17 @@
 # by Stefano Pettini <spettini@users.sourceforge.net>, Fabio Ricci, and Massimo
 # Rimondini
 
+# Regular expression for a Debian-approved (and RFC-compliant) hostname
+# label. This expression can be substituted directly into most Linux utility
+# commands, such as egrep (grep -E).
+#
+# Debian standard for hostname 'labels' (hostname(7) man page):
+#   - May consist of A-Z, a-z, 0-9, and - (hyphen)
+#   - Cannot start or end with a - (hyphen)
+#   - Are case-insensitive
+#   - Can be 1 to 63 characters long
+hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,62}[a-zA-Z0-9])"
+
 # ANSI color escape sequences
 COLOR_HIGHLIGHT='\033[34;1m'
 COLOR_NORMAL='\033[0m'
@@ -40,78 +51,137 @@ if [ -f "${LAB_DIRECTORY}/lab.conf" ]; then
    eval "$LAB_VARIABLE_ASSIGNMENTS"
 fi
 
-# This function prints a message with a highlighted color, in a way similar to
-# the echo command.
-becho() {
-   echo "$COLOR_BOLD"$@"$COLOR_NORMAL"
+
+###############################################################################
+# Print a string with bold formatting.
+# Usage:
+#   bold_print $1
+# Globals:
+#   r- COLOR_BOLD
+#   r- COLOR_NORMAL
+# Arguments:
+#   $1 - string to print
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+bold_print() {
+   printf "%b%s%b\n" "$COLOR_BOLD" "$1" "$COLOR_NORMAL"
 }
 
-# This function builds a list of virtual machines that make up the current lab.
-# The list is returned inside variable LABHOSTS. If a list of hosts has been
-# provided on the command line, then hosts appearing both in the command line
-# and in the lab will be reported inside VHOSTLIST. If no host list has been
-# passed on the command line, then VHOSTLIST will store the same information
-# as LABHOSTS.
 
-buildAffectedVHostList() {
-   LABHOSTS=""
-   
-   if [ ! -z "$machines" ]; then
+###############################################################################
+# Check if an array contains a string.
+# Usage:
+#   array_contains QUERY ARRAY
+# Globals:
+#   None
+# Arguments:
+#   $1 - string to search for
+#   $2 - word-expanded array to search
+# Returns:
+#   0 if array contains query, non-zero if not
+# Example:
+#   bar=( a b c )
+#   if array_contains "a" "${bar[@]}"; then echo "Found!"; fi
+###############################################################################
+array_contains() {
+   query=$1
+   shift
+
+   array=( "$@" )
+
+   for item in "${array[@]}"; do
+      [ "$query" = "$item" ] && return 0
+   done
+
+   return 1
+}
+
+
+###############################################################################
+# Set VHOSTLIST to a list of machines in the lab taken from lab.conf or the
+# directory listing. If VHOSTLIST is already set (such as by the user on the
+# command line), machines not present in the lab are removed from the array.
+# Usage:
+#   build_vhostlist
+# Globals:
+#   rw VHOSTLIST
+#   -w machines
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+build_vhostlist() {
+   if [ -n "$machines" ]; then
       # Assume list of virtual machines is the one documented inside lab.conf
-      LABHOSTS="$machines"
+      lab_hosts=( "$machines" )
    else
-      # Check for virtual machines that contain spaces in their name
-      if ls "${LAB_DIRECTORY}" | grep -q " "; then
-         # Consider that the output of grep cannot be stored in an environment
-         # variable because that would replace end-of-line characters with
-         # spaces, which would impair the ability to recognize directory names
-         # with spaces.
-         ls "${LAB_DIRECTORY}" | grep " " | awk '
-            {print "Error: virtual machine \"" $0 "\" contains a space in its name."}
-            ' 1>&2
-         exit 1
-      fi
-
       # Build list of virtual machines that are part of the lab
-      for LAB_ITEM in $(ls "${LAB_DIRECTORY}"); do
-         if [ -d "$LAB_DIRECTORY/$LAB_ITEM" -a "$LAB_ITEM" != "shared" \
-            -a "$LAB_ITEM" != "_test" -a "$LAB_ITEM" != "CVS" ]; then
-            LABHOSTS="$LABHOSTS $LAB_ITEM"
+      for LAB_ITEM in "${LAB_DIRECTORY}"/*/; do
+         dir=$(basename "$LAB_ITEM")
+
+         # Handle error if no directories exist (the for loop will still run
+         # once). Also avoid the shared and _test directories (if exist).
+         if [ ! -e "$LAB_ITEM" ] || [ "$dir" = "shared" ] || [ "$dir" = "_test" ]; then
+            continue
          fi
+
+         lab_hosts+=( "$LAB_ITEM" )
       done
    fi
- 
-   # Check that virtual machines passed by command line are in the scenario
-   ORIGINAL_VHOSTLIST=$VHOSTLIST
-   VHOSTLIST=""
-   if [ ! -z "$ORIGINAL_VHOSTLIST" ]; then
-      for CURRENT_HOST in $ORIGINAL_VHOSTLIST; do
-         if echo $LABHOSTS | grep -qw $CURRENT_HOST; then
-            VHOSTLIST="$VHOSTLIST $CURRENT_HOST"
+
+   # Check that virtual machines passed by command line are in the lab
+   if [ -n "$VHOSTLIST" ]; then
+      ORIGINAL_VHOSTLIST=$VHOSTLIST
+      unset VHOSTLIST
+
+      for host in $ORIGINAL_VHOSTLIST; do
+         if array_contains "$host" "${lab_hosts[@]}"; then
+            VHOSTLIST+=( "$host" )
          else
-            echo 1>&2 "Warning: virtual machine \"${CURRENT_HOST}\" is not part of the lab in directory \"${LAB_DIRECTORY}\"."
+            echo 1>&2 "Warning: '${CURRENT_HOST}' is not part of the lab in '${LAB_DIRECTORY}'"
          fi
       done
    else
-      VHOSTLIST=$LABHOSTS
+      VHOSTLIST=( "${lab_hosts[@]}" )
    fi
 }
 
 
-# This function prints out some information about the lab.
-labWelcome() {
-   [ -z "$LAB_VERSION" ] && LAB_VERSION="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_AUTHOR" ] && LAB_AUTHOR="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_EMAIL" ] && LAB_EMAIL="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_WEB" ] && LAB_WEB="${COLOR_NORMAL}<unknown>"
+###############################################################################
+# Print out information about the lab.
+# Usage:
+#   lab_welcome
+# Globals:
+#   rw LAB_VERSION
+#   rw LAB_AUTHOR
+#   rw LAB_EMAIL
+#   rw LAB_WEB
+#   rw LAB_DESCRIPTION
+#   r- LAB_DIRECTORY
+#   r- COLOR_NORMAL
+#   r- COLOR_BOLD
+#   r- COLOR_HIGHLIGHT
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+lab_welcome() {
+   [ -z "$LAB_VERSION" ] &&     LAB_VERSION="${COLOR_NORMAL}<unknown>"
+   [ -z "$LAB_AUTHOR" ] &&      LAB_AUTHOR="${COLOR_NORMAL}<unknown>"
+   [ -z "$LAB_EMAIL" ] &&       LAB_EMAIL="${COLOR_NORMAL}<unknown>"
+   [ -z "$LAB_WEB" ] &&         LAB_WEB="${COLOR_NORMAL}<unknown>"
    [ -z "$LAB_DESCRIPTION" ] && LAB_DESCRIPTION="${COLOR_NORMAL}<unknown>"
 
-   echo "${LAB_DIRECTORY}" | grep -qc " "
-   if [ $? -eq 0 ]; then
-         echo "${COLOR_BOLD}Lab directories${COLOR_NORMAL}: ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
-   else
-         echo "${COLOR_BOLD}Lab directory${COLOR_NORMAL}: ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
-   fi
+   echo "${COLOR_BOLD}Lab directory${COLOR_NORMAL}:    ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
    echo "${COLOR_BOLD}Version(s)${COLOR_NORMAL}:       ${COLOR_HIGHLIGHT}${LAB_VERSION}${COLOR_NORMAL}"
    echo "${COLOR_BOLD}Author(s)${COLOR_NORMAL}:        ${COLOR_HIGHLIGHT}${LAB_AUTHOR}${COLOR_NORMAL}"
    echo "${COLOR_BOLD}Email(s)${COLOR_NORMAL}:         ${COLOR_HIGHLIGHT}${LAB_EMAIL}${COLOR_NORMAL}"
@@ -121,64 +191,37 @@ labWelcome() {
 }
 
 
-# This function prints a message and attempts to remove a file passed as argument
-removeLabFolder() {
-   if [ -e "$1" ]; then
-      rm -rf "$1" > /dev/null 2>&1
-      [ ! -z "$VERBOSE" ] && echo "   Removed:   $(basename $1)"
-   else
-      [ ! -z "$VERBOSE" ] && echo "   Not found: $(basename $1)"
+###############################################################################
+# Remove temporary files from the lab directory and .netkit.
+# Usage:
+#   lab_clean
+# Globals:
+#   rw VHOSTLIST
+#   r- LAB_DIRECTORY
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+lab_clean() {
+   # If the user didn't specify host list on the command line
+   if [ ${#VHOSTLIST[@]} -eq 0 ]; then
+      build_vhostlist
    fi
-}
 
-# This function prints a message and attempts to remove a folder passed as argument
-removeLabFile() {
-   if [ -e "$1" ]; then
-      rm -f "$1" > /dev/null 2>&1
-      [ ! -z "$VERBOSE" ] && echo "   Removed:   $(basename $1)"
-   else
-      [ ! -z "$VERBOSE" ] && echo "   Not found: $(basename $1)"
-   fi
-}
+   bold_print "Cleaning up lab inside '$LAB_DIRECTORY'..."
 
-# This function removes temporary files inside the lab directory
-labClean() {
-   local CURRENT_FILE
-   buildAffectedVHostList
-   
-   becho "Cleaning up lab inside \"${LAB_DIRECTORY}\"..."
-   for VM in $VHOSTLIST; do
-      # Remove files from the lab directory. Note that dash does
-      # not support brace expansion
-      removeLabFolder ${MCONSOLE_DIR}/${VM}
-      removeLabFile ${LAB_DIRECTORY}/${VM}.ready
-      removeLabFile ${LAB_DIRECTORY}/${VM}.disk
-      removeLabFile ${LAB_DIRECTORY}/${VM}.log
-      removeLabFile ${LAB_DIRECTORY}/${VM}.testdone
+   [ -n "$VERBOSE" ] && rm_verbose="--verbose"
+
+   for host in "${VHOSTLIST[@]}"; do
+      # Remove files from the lab directory
+      rm "$rm_verbose" -r "${MCONSOLE_DIR:?}/$host"
+      rm "$rm_verbose" "$LAB_DIRECTORY/$host."{"ready","disk","log","testdone"}
    done
-   
-   removeLabFile ${LAB_DIRECTORY}/readyfor.test
-}
 
-
-# This function gracefully shuts down virtual machines of a Netkit lab
-labHalt() {
-   local VHALT_OPTIONS
-
-   buildAffectedVHostList
-
-   VHALT_OPTIONS=""
-   [ -z "$VERBOSE" ] && VHALT_OPTIONS="$VHALT_OPTIONS -q"
-   [ ! -z "$REMOVE_FILESYSTEM" ] && VHALT_OPTIONS="$VHALT_OPTIONS -r"
-   
-   for VM in $VHOSTLIST; do
-      [ -z "$VERBOSE" ] && becho "Halting \"$VM\"... "
-      vhalt $VHALT_OPTIONS $VM && \
-         rm -f "${LAB_DIRECTORY}/${VM}.ready" > /dev/null 2>&1
-   done
-   
-   becho "Removing readyfor.test..."
-   rm -f "${LAB_DIRECTORY}/readyfor.test" > /dev/null 2>&1
+   rm "$rm_verbose" "$LAB_DIRECTORY/readyfor.test"
 }
 
 
@@ -186,20 +229,20 @@ labHalt() {
 labCrash() {
    local VCRASH_OPTIONS
 
-   buildAffectedVHostList
+   build_vhostlist
    
    VCRASH_OPTIONS=""
    [ -z "$VERBOSE" ] && VCRASH_OPTIONS="$VCRASH_OPTIONS -q"
    [ -z "$KEEP_FILESYSTEM" ] && VCRASH_OPTIONS="$VCRASH_OPTIONS -r"
    [ ! -z "$KILL_MODE" ] && VCRASH_OPTIONS="$VCRASH_OPTIONS -k"
    
-   for VM in $VHOSTLIST; do      
-      [ -z "$VERBOSE" ] && becho "Crashing \"$VM\"... "
+   for VM in "${VHOSTLIST[@]}"; do      
+      [ -z "$VERBOSE" ] && bold_print "Crashing \"$VM\"... "
       vcrash $VCRASH_OPTIONS $VM && \
          rm -f "${LAB_DIRECTORY}/${VM}.ready" > /dev/null 2>&1
    done
    
-   becho "Removing readyfor.test..."
+   bold_print "Removing readyfor.test..."
    rm -f "${LAB_DIRECTORY}/readyfor.test" > /dev/null 2>&1
 }
 
@@ -305,9 +348,9 @@ startSingleVM() {
    [ -e "${LAB_DIRECTORY}/$VM.ready" ] && rm -f S{LAB_DIRECTORY}/$VM.ready > /dev/null 2>&1
 
    if [ -z "$VERBOSE" ]; then
-      becho "Starting \"$VM\"..."
+      bold_print "Starting \"$VM\"..."
    else
-      becho "Starting \"$VM\" with options \"$BASE_VSTART_OPTIONS $VSTART_OPTIONS\"... "
+      bold_print "Starting \"$VM\" with options \"$BASE_VSTART_OPTIONS $VSTART_OPTIONS\"... "
    fi
    if ! vstart $BASE_VSTART_OPTIONS $VSTART_OPTIONS $VM; then
       echo "Error while starting virtual machine \"$VM\"."
@@ -331,18 +374,18 @@ startSingleVM() {
 
 # This function starts up a Netkit lab
 labStart() {
-   buildAffectedVHostList
+   build_vhostlist
 
    BASE_VSTART_OPTIONS=""
    [ -z "$VERBOSE" ] && BASE_VSTART_OPTIONS="-q"
    BASE_VSTART_OPTIONS="$BASE_VSTART_OPTIONS $PASSTHROUGH_OPTIONS"
    
-   if [ -z "$VHOSTLIST" ]; then
-      echo 1>&2 "Warning: there are no virtual machines to be started."
-   else
-      for VM in $VHOSTLIST; do
+   if [ "${#VHOSTLIST[@]}" -gt 0 ]; then
+      for VM in "${VHOSTLIST[@]}"; do
          startSingleVM $VM
       done
+   else
+      echo 1>&2 "Warning: there are no virtual machines to be started."
    fi
    
    # The readyfor.test file should not be created if we have been invoked
@@ -354,9 +397,9 @@ labStart() {
 # This function starts a Netkit lab while (optionally) using a dependency file.
 # The 'make' utility is required in order to make this work.
 labStartParallel() {
-   buildAffectedVHostList
+   build_vhostlist
    
-   if [ -z "$VHOSTLIST" ]; then
+   if [ "${#VHOSTLIST[@]}" -eq 0 ]; then
       echo 1>&2 "Warning: there are no virtual machines to be started."
       return
    fi
@@ -384,7 +427,7 @@ labStartParallel() {
       echo "dummy-prerequisite-to-force-remaking:"
       echo '\t'"# Dummy line. Unuseful, yet necessary"
    } | { cat; [ -f "$LAB_DIRECTORY/lab.dep" ] && cat "$LAB_DIRECTORY/lab.dep"; } | \
-   make -irsC $LAB_DIRECTORY -f - $VHOSTLIST -j $MAX_SIMULTANEOUS_VMS
+   make -irsC $LAB_DIRECTORY -f - "${VHOSTLIST[@]}" -j $MAX_SIMULTANEOUS_VMS
 
    [ ! -z "$TESTMODE" ] && : > "$LAB_DIRECTORY/readyfor.test"
 }
@@ -400,7 +443,9 @@ labMap() {
       echo 1>&2 "Please install the GraphViz library."
       return 1
    fi
-   cat $CONFLIST | awk -v vhostlist="$HOSTLIST" '
+
+   # TODO: Fix how VHOSTLIST is handled
+   cat $CONFLIST | awk -v vhostlist="${VHOSTLIST[*]}" '
    BEGIN {
       print "graph netkit_jh_graph {"
       print "   overlap=\"prism\""
