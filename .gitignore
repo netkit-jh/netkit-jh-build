@@ -1,7 +1,24 @@
+# Build artifacts
 fs/build/
 kernel/build/
 kernel/last-uml-kernel-config
 core/build/
 fs/cache/
 build/
+
+# Testing artifacts
 tests/test_results.txt
+ping_successful_*
+entropy_successful
+*.pcap
+packet_capture_successful
+
+# Lab artifacts
+*.disk
+*.log
+*.ready
+*.testdone
+readyfor.test
+
+# Development artifacts
+.vscode/
