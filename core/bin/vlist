@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #     Copyright 2002-2009 Maurizio Patrignani, Maurizio Pizzonia, Fabio Ricci,
 #     Massimo Rimondini - Computer Networks Research Group, Roma Tre University.
@@ -23,9 +23,6 @@
 
 SCRIPTNAME=$(basename "$0")
 
-# The following line has been introduced to ensure backward compatibility
-: "${NETKIT_HOME:=$VLAB_HOME}"
-
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
    echo 1>&2 "please set it as described in the Netkit documentation and try"
@@ -35,18 +32,20 @@ fi
 
 CMDLINE="$0 $*"
 
+# shellcheck source=./lcommon
+. "$NETKIT_HOME/bin/lcommon"
+# shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
-logWrite $0 $*
+logWrite "$0 $*"
 
 
 # This function is used to print the vlist usage
 help() {
    echo
-   echo "Usage: $SCRIPTNAME [options] [MACHINE-ID...]"
+   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
    cat << END_OF_HELP
-
 This script can be used to produce a list of running virtual machines. You can
 use the following options to select the output contents:
 
@@ -64,84 +63,80 @@ about specific running virtual machines. MACHINE-ID is either a virtual machine
 name or its PID. If a virtual machine name is passed as argument, and the option
 --user=- is being used, then information about the first machine with a matching
 name in the output of 'vlist --user=-' are reported.
-
 END_OF_HELP
 }
 
 
-# Get command line options
-INVALID_OPTION=0
-OPT_LIST="help,no-header,user:,version"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hnu:" "$@")
-if [ $? -gt 0 ]; then
-   INVALID_OPTION=1
-fi
-
-
-USER=$USERID
-
-# Parse command line options
-parseCmdLine() {
-   while [ $# -gt 0 ]; do
-      CURRENT_ARGUMENT="$1"
-      case "$CURRENT_ARGUMENT" in
-      
-         --help|-h)
-            help
-            exit;;
-            
-         --no-header|-n)
-            NO_HEADER=1;;
-         
-         --user|-u)
-            shift; CURRENT_ARGUMENT="$1"
-            if [ "x$CURRENT_ARGUMENT" = "x" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Expecting username."
-               exit 1
-            fi
-            checkSpaces "$CURRENT_ARGUMENT"
-            if [ "$CURRENT_ARGUMENT" = "-" ]; then
-               USER=""
-            else
-               USER=$CURRENT_ARGUMENT
-            fi;;
-         
-         --version)
-            showVersion
-            exit 0;;
-            
-         --)
-            shift
-            break;;
-            
-      esac
-      shift
-   done
-   
-   # Parse virtual machine name   
-   while [ $# != 0 ]; do
-      checkSpaces "$1"
-      VM_IDS="$VM_IDS $1"
-      shift
-   done
-
+# Output vlist's usage to stderr
+# Usage: usage
+usage() {
+   echo 1>&2 "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
+   echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
 }
-eval parseCmdLine $CMDLINE_OPTIONS
 
 
-# Check whether user gave some strange options
-if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
+# USERID is set in script_utils
+USER="$USERID"
+
+
+# Get command line options
+LONG_OPTS="help,no-header,user:,version"
+SHORT_OPTS="hnu:"
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage
    exit 1
 fi
+
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
+
+while true; do
+   case "$1" in
+      --help|-h)
+         help
+         exit 0
+         ;;
+      --no-header|-n)
+         NO_HEADER=1
+         ;;
+      --user|-u)
+         USER="$2"
+         [ "$USER" = "-" ] && unset USER
+         shift
+         ;;
+      --version)
+         showVersion
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage
+         exit 1
+         ;;
+   esac
+
+   shift
+done
+
+# Non-option arguments are machine names
+VHOSTLIST=( "$@" )
+
+for host in "${VHOSTLIST[@]}"; do
+   checkSpaces "$host"
+done
+
 
 # Check whether -u - is being used together with a virtual machine ID
-if [ -z "$USER" -a ! -z "$VM_IDS" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Please provide a specific user name."
+if [ -z "$USER" ] && [ -n "$VM_IDS" ]; then
+   echo 1>&2 "$SCRIPTNAME: When giving VM names, a specific user ID must be provided"
    exit 1
 fi
-
 
 
 # Actually display list of virtual machines
@@ -149,7 +144,116 @@ if [ -z "$VM_IDS" ]; then
    showVMList "$NO_HEADER" "$USER"
 fi
 
+[ -n "$USER" ] && pgrep_euid="--euid"
 
+# Iterate over the PIDs of running Netkit instances
+for pid in $(pgrep "$pgrep_euid" "$USER" --full "^$NETKIT_HOME/kernel/netkit-kernel"); do
+   # The process hierarchy looks like this:
+   #
+   #    PID  PGID  Process
+   #     ?    ?     vstart
+   #                    \
+   #     x    x           - netkit-kernel
+   #                           |
+   #     a    x                +--- netkit-kernel
+   #     b    x                +--- netkit-kernel
+   #     c    x                +--- netkit-kernel
+   #     ...  ...              +--- ...
+   #
+   #    (PID = process ID, PGID = process group ID)
+   #
+   # The main (parent) netkit-kernel process is the group leader of the
+   # netkit-kernel child processes, because its PID == PGID.
+   # The children are all part of this group.
+   #
+   # For vlist we only care about the parent kernel process, so we skip over
+   # PIDs that are not group leaders.
+
+   # Get the process group ID (PGID)
+   pgid=$(ps --no-headers --format pgid --pid "$pid")
+
+   # Ignore if not a process leader
+   [ "$pgid" -ne "$pid" ] && continue
+
+   # Effective user ID of the process (full username if not too long)
+   owner=$(ps --no-headers --format euser --pid "$pid")
+
+   # Total virtual memory usage of the process
+   memory_usage=$(ps --no-headers --format vsize --pid "$pid")
+
+   # Full command used to invoke the process.
+   # Why not parse the output of ps? Whitespace in the program name or
+   # arguments is impossible to deal with. /proc/$pid/cmdline stores argv with
+   # null-byte field separators, which is the only character that cannot be
+   # present in a Linux filepath.
+   # This will still break if a newline is present in the command, but if a
+   # user is doing that then they are just asking for an error somewhere down
+   # the line to be honest.
+   full_command=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
+
+   first_iteration=true
+
+   while IFS="" read -r argument; do
+      if $first_iteration; then
+         program=$argument
+         first_iteration=false
+         continue
+      fi
+
+      # As per the manual, UML options are key=value pairs.
+      # ${argument#*=} removes the key= prefix from argument (the single #
+      # permits usage of further equals signs in the argument).
+      case "$argument" in
+         umid=*)     umid="${argument#*=}";;
+         mem=*)      mem="${argument#*=}";; # TODO: adjust by skew
+         uml_dir=*)  uml_dir="${argument#*=}";;
+         udb0=*)
+            value="${argument#*=}"
+
+            # udb0=disk,fs
+            disk="${value%%,*}"
+            fs="${value#*,}"
+            ;;
+         con0=* )
+            value="${argument#*=}"
+            case "$value" in
+               xterm)      con0="$value";;
+               fd:0,fd:1)  con0="this";;
+               pty)        con0="$value";;
+               port:*)     con0="$value";;
+               null)       con0="none";;
+            esac
+            ;;
+         con1=*)
+            value="${argument#*=}"
+            case "$value" in
+               xterm)      con1="$value";;
+               fd:0,fd:1)  con1="this";;
+               pty)        con1="$value";;
+               port:*)     con1="$value";;
+               null)       con1="none";;
+            esac
+            ;;
+         eth[0-9]+=*)
+            key="${argument%%=*}"
+            value="${argument#*=}"
+
+            n="${key#eth}"
+
+            # Array of collision domains indexed by the interface number
+            interfaces[$n]="$value"
+            ;;
+         exec=*)     exec="${argument#*=}";;
+         hostlab=*)  hostlab="${argument#*=}";;
+         hostwd=*)   hostwd="${argument#*=}";;
+         hosthome=*) hosthome="${argument#*=}";;
+         modules=*)  modules="${argument#*=}";;
+         *)          other="$other $argument"
+      esac
+   done <<< "$full_command"
+
+   
+done
 
 
 # This function prints complete information about a virtual machine
