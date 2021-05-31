@@ -23,9 +23,6 @@
 
 SCRIPTNAME=$(basename "$0")
 
-# The following line has been introduced to ensure backward compatibility
-: "${NETKIT_HOME:=$VLAB_HOME}"
-
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
    echo 1>&2 "please set it as described in the Netkit documentation and try"
@@ -39,15 +36,14 @@ CMDLINE="$0 $*"
 
 
 # Write to the vcommands log
-logWrite $0 $*
+logWrite "$0 $*"
 
 
 # This function is used to print the lcrash usage
 help() {
    echo
-   echo "Usage: $SCRIPTNAME [options] [MACHINE-NAME] ..."
+   echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
    cat << END_OF_HELP
-
 This command crashes the virtual machines of a Netkit lab. Crashing corresponds
 to hardly unplugging their power cord, which is very fast but at the same time
 may cause filesystem inconsistencies inside virtual machines. Depending on the
@@ -93,7 +89,6 @@ If one or more MACHINE-NAMEs are passed on the command line, then only those
 machines will be crashed (and their filesystems deleted, if asked to). If any
 of the MACHINE-NAMEs is invalid (i.e., it does not correspond to a virtual
 machine of the lab), it will simply be skipped.
-
 END_OF_HELP
 }
 
@@ -169,7 +164,7 @@ if [ $INVALID_OPTION -eq 1 ]; then
 fi
 
 # If no lab directory has been given, assume current directory
-LAB_DIRECTORY=${LAB_DIRECTORY:-${PWD}}
+LAB_DIRECTORY=${LAB_DIRECTORY:-$PWD}
 . "$NETKIT_HOME/bin/lcommon"
 
 # Check that the lab directory exists
@@ -186,17 +181,17 @@ if containsRegexp LAB_DIRECTORY " "; then
 fi
 
 
-# Print some information about the lab
+# Print lab information
 echo
-becho "======================== Crashing lab ==========================="
-labWelcome
-becho "================================================================="
+bold_print "======================== Crashing lab ==========================="
+lab_welcome
+bold_print "================================================================="
 
 # Crash virtual machines
 labCrash
 echo
-becho "Lab has been crashed."
-becho "================================================================="
+bold_print "Lab has been crashed."
+bold_print "================================================================="
 
 # Show a list of running virtual machines, if asked to
 if [ ! -z "$LISTVM" ]; then
