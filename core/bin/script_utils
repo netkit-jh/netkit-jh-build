@@ -91,7 +91,7 @@ varReplace() {
 checkSpaces() {
    STRING="$1"
    if containsRegexp STRING " "; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" \
+      warning "$SCRIPTNAME" "$0" \
               "Argument \"$STRING\" contains spaces. They are not allowed."
       exit 1
    fi
@@ -616,9 +616,9 @@ showVMList() {
    ps -wwwwwweo uname=ENSURE_USER_NAME_COLUMN_IS_VERY_WIDE,pid,vsize,command --sort=pid | grep "^.*umid=" | grep -v "awk -v no_header" | grep -v "grep \^\.\*" | \
       awk \
          -v no_header="$1" \
-         -v hub_socket_prefix=$HUB_SOCKET_PREFIX \
-         -v userid=$USERID \
-         -v hub_socket_extension=$HUB_SOCKET_EXTENSION \
+         -v hub_socket_prefix="$HUB_SOCKET_PREFIX" \
+         -v userid="$USERID" \
+         -v hub_socket_extension="$HUB_SOCKET_EXTENSION" \
          -v user_filter="$2" \
       '
          BEGIN {
