@@ -26,4 +26,4 @@
 +if [ -f "$LAB_DIRECTORY/lab.dep" -a ! -z "$BE_SEQUENTIAL" ] || [ ! -z "$FORCE_PARALLEL_MODE" ]; then
     # Use parallel startup
     if [ -z "$SCRIPTMODE" ]; then
-       becho "You chose to use parallel startup."
+       bold_print "You chose to use parallel startup."

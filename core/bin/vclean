@@ -23,9 +23,6 @@
 
 SCRIPTNAME=$(basename "$0")
 
-# The following line has been introduced to ensure backward compatibility
-: "${NETKIT_HOME:=$VLAB_HOME}"
-
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
    echo 1>&2 "please set it as described in the Netkit documentation and try"
@@ -38,7 +35,7 @@ CMDLINE="$0 $*"
 . "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
-logWrite $0 $*
+logWrite "$0 $*"
 
 
 # This function is used to print the vclean usage
@@ -46,7 +43,6 @@ help() {
    echo
    echo "Usage: $SCRIPTNAME [options]"
    cat << END_OF_HELP
-
 This script can be used to perform the following cleanup operations:
 - kill processes associated to unused (or all) virtual hubs;
 - kill running virtual machines;

@@ -23,9 +23,6 @@
 
 SCRIPTNAME=$(basename "$0")
 
-# The following line has been introduced to ensure backward compatibility
-: "${NETKIT_HOME:=$VLAB_HOME}"
-
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
    echo 1>&2 "please set it as described in the Netkit documentation and try"
@@ -38,7 +35,7 @@ CMDLINE="$0 $*"
 . "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
-logWrite $0 $*
+logWrite "$0 $*"
 
 
 # This function is used to print the vstart usage
@@ -46,7 +43,6 @@ help() {
    echo
    echo "Usage: $SCRIPTNAME [options] MACHINE-NAME"
    cat << END_OF_HELP
-
 This script can be used to start a virtual machine named MACHINE-NAME with a
 given configuration. You can use the following options to adjust the virtual
 machine parameters:
@@ -90,7 +86,6 @@ END_OF_HELP
 END_OF_HELP
    echo "                        Allowed amounts span from $MIN_MEM MB to $MAX_MEM MB, defaulting to $VM_MEMORY MB."
    cat << END_OF_HELP
-
 Filesystem settings can be tuned by using the following options:
    
   -H, --no-hosthome         Do not mount host filesystem inside the virtual machine.
@@ -189,7 +184,6 @@ the command line arguments. They are also prohibited inside path names,
 including the path to the current directory at the time vstart is invoked.
 This means that vstart cannot be launched when the path to the current directory
 contains spaces.
-
 END_OF_HELP
 }
 

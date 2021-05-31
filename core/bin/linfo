@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #     Copyright 2002-2009 Stefano Pettini, Fabio Ricci, Massimo Rimondini
 #     Computer Networks Research Group, Roma Tre University.
@@ -23,9 +23,6 @@
 
 SCRIPTNAME=$(basename "$0")
 
-# The following line has been introduced to ensure backward compatibility
-: "${NETKIT_HOME:=$VLAB_HOME}"
-
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
    echo 1>&2 "please set it as described in the Netkit documentation and try"
@@ -39,7 +36,7 @@ CMDLINE="$0 $*"
 
 
 # Write to the vcommands log
-logWrite $0 $*
+logWrite "$0 $*"
 
 
 # This function is used to print the linfo usage
@@ -47,7 +44,6 @@ help() {
    echo
    echo "Usage: $SCRIPTNAME [options]"
    cat << END_OF_HELP
-
 This command displays information about a Netkit lab without running it.
 Displayed information includes the number of virtual machines that make up the
 lab. If asked to, the command can create a PNG file containing a graphical map
@@ -72,7 +68,6 @@ Other standard options are:
 
   -h, --help          Show this help.
       --version       Print version information and exit.
-
 END_OF_HELP
 }
 
@@ -162,11 +157,12 @@ for LAB_DIRECTORY in $LAB_DIRECTORIES; do
                "Invalid lab directory: \"$LAB_DIRECTORY\" (path contains spaces)."
       exit 1
    fi
-   VHOSTLIST=""
-   buildAffectedVHostList $LAB_DIRECTORY
-   HOSTLIST="$HOSTLIST $LABHOSTS"
+
+   build_vhostlist
+   
 done
 
+# TODO: VHOSTLIST array probably breaks this
 # Makes each list unique
 LAB_DIRECTORY=$(echo "${LAB_DIRECTORIES}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g' | sed 's/ $//') # Remove leading whitespace
 LAB_VERSION=$(echo "${LAB_VERSIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
@@ -174,15 +170,15 @@ LAB_AUTHOR=$(echo "${LAB_AUTHORS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | s
 LAB_EMAIL=$(echo "${LAB_EMAILS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
 LAB_WEB=$(echo "${LAB_WEBS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
 LAB_DESCRIPTION=$(echo "${LAB_DESCRIPTIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
-HOSTLIST=$(echo "${HOSTLIST}" | tr ' ' '\n' | sort -u | tr '\n' ' ') # Removes duplicates
-# Print some information about the lab
+HOSTLIST=$(echo "${VHOSTLIST[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ') # Removes duplicates
+# Print lab information
 echo
-becho "====================== Lab information =========================="
-labWelcome
-becho "The lab is made up of $(echo $HOSTLIST | awk '{print NF}') virtual machines ($HOSTLIST)."
+bold_print "====================== Lab information =========================="
+lab_welcome
+bold_print "The lab is made up of $(echo $HOSTLIST | awk '{print NF}') virtual machines ($HOSTLIST)."
 for LAB_DIRECTORY in $LAB_DIRECTORIES; do
    if [ -f "$LAB_DIRECTORY/lab.dep" ]; then
-      becho "The lab part $(basename $LAB_DIRECTORY) supports parallel startup."
+      bold_print "The lab part $(basename $LAB_DIRECTORY) supports parallel startup."
    fi
 done
 
@@ -199,9 +195,9 @@ if [ ! -z "$MAP_FILE" ]; then
       exit 1
    fi
    if labMap "$MAP_FILE" $CONFLIST; then
-      becho "Link-level topology map saved into $MAP_FILE."
+      bold_print "Link-level topology map saved into $MAP_FILE."
    fi
 fi
-becho "================================================================="
+bold_print "================================================================="
 
 echo

@@ -21,9 +21,6 @@
 # Part of the completion routines is significantly inspired to the scripts in
 # the bash-completion package.
 
-# The following line has been introduced to ensure backward compatibility
-: "${NETKIT_HOME:=$VLAB_HOME}"
-
 if [[ -z "$NETKIT_HOME" ]]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
    echo 1>&2 "please set it as described in the Netkit documentation and try"

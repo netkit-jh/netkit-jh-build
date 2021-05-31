@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #     Copyright 2002-2009 Stefano Pettini, Fabio Ricci, Massimo Rimondini
 #     Computer Networks Research Group, Roma Tre University.
@@ -22,9 +22,6 @@
 
 SCRIPTNAME=$(basename "$0")
 
-# The following line has been introduced to ensure backward compatibility
-: "${NETKIT_HOME:=$VLAB_HOME}"
-
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
    echo 1>&2 "please set it as described in the Netkit documentation and try"
@@ -38,7 +35,7 @@ CMDLINE="$0 $*"
 
 
 # Write to the vcommands log
-logWrite $0 $*
+logWrite "$0 $*"
 
 # Used later on to return the status of the lab test
 EXIT_VALUE=0
@@ -46,7 +43,7 @@ EXIT_VALUE=0
 # This function is used to print the lstart/ltest usage
 help() {
    echo
-   echo "Usage: $SCRIPTNAME [options] [MACHINE-NAME] ..."
+   echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
    echo
    if [ "$SCRIPTNAME" = "ltest" ]; then
       echo "This command can be used to test a Netkit lab. Depending on the command line"
@@ -57,7 +54,6 @@ help() {
 arguments, it is possible to start up the whole lab or just some of the
 virtual machines that compose it.
 Available options are:
-
 END_OF_HELP
    if [ "$SCRIPTNAME" = "ltest" ]; then
       echo "  -d DIRECTORY        Assume the lab to be tested is located inside DIRECTORY."
@@ -106,7 +102,6 @@ END_OF_HELP
   -w, --wait=SECONDS  Wait the specified amount of time before launching the
                       next virtual machine. Of course, this is only useful when
                       using either parallel startup or the -f option.
-
 END_OF_HELP
 if [ "$SCRIPTNAME" = "ltest" ]; then
    cat << END_OF_HELP
@@ -125,7 +120,6 @@ ltest-specific options follow:
                       By default, for each virtual machine ltest verifies only
                       the user-defined test if one is available in the
                       signature, or only the built-in test otherwise.
-
 END_OF_HELP
 fi
    cat << END_OF_HELP
@@ -142,13 +136,11 @@ By default, all the virtual machines of the lab are started. If one or more
 MACHINE-NAMEs are passed on the command line, then only those machines will be
 actually started. If any of the MACHINE-NAMEs is invalid (i.e., it does not
 correspond to a virtual machine of the lab), it will simply be skipped.
-
 END_OF_HELP
 if [ "$SCRIPTNAME" = "ltest" ]; then
    cat << END_OF_HELP
 The return value of ltest is zero (=good) if and only if the test completed
 successfully or a new test signature has been produced.
-
 END_OF_HELP
 fi
 }
@@ -275,10 +267,11 @@ parseCmdLine() {
       shift
    done
    
-   while [ $# -gt 0 ]; do
-      checkSpaces "$1"
-      VHOSTLIST="$VHOSTLIST $1"
-      shift
+   # Non-option arguments are machine names
+   VHOSTLIST=( "$@" )
+
+   for host in "${VHOSTLIST[@]}"; do
+      checkSpaces "$host"
    done
 }
 eval parseCmdLine $CMDLINE_OPTIONS
@@ -291,7 +284,7 @@ if [ $INVALID_OPTION -eq 1 ]; then
 fi
 
 # If no lab directory has been given, assume current directory
-LAB_DIRECTORY=${LAB_DIRECTORY:-${PWD}}
+LAB_DIRECTORY=${LAB_DIRECTORY:-$PWD}
 
 # Check that the lab directory exists
 if [ ! -d "$LAB_DIRECTORY" ]; then
@@ -379,15 +372,15 @@ update_available() {
 # Get ready to start the lab
 UPDATE_AVAILABLE="$(update_available)"
 
-# Print some information about the lab
+# Print lab information
 [ -z "$SCRIPTMODE" ] && echo
-[ -z "$TESTMODE" ] && becho "======================== Starting lab ==========================="
-[ ! -z "$TESTMODE" -a -z "$SCRIPTMODE" ] && becho "======================== Testing lab ============================"
-[ -z "$SCRIPTMODE" ] && labWelcome
+[ -z "$TESTMODE" ] && bold_print "======================== Starting lab ==========================="
+[ ! -z "$TESTMODE" -a -z "$SCRIPTMODE" ] && bold_print "======================== Testing lab ============================"
+[ -z "$SCRIPTMODE" ] && lab_welcome
 [ -z "$SCRIPTMODE" ] && echo
-[ -z "$SCRIPTMODE" ] && becho "Having issues starting the lab? Run 'lclean' before running 'lstart'."
-[ -z "$SCRIPTMODE" ] && [ -n "${UPDATE_AVAILABLE}" ] && becho "Update available for Netkit-JH - download at ${UPDATE_AVAILABLE}"
-[ -z "$SCRIPTMODE" ] && becho "================================================================="
+[ -z "$SCRIPTMODE" ] && bold_print "Having issues starting the lab? Run 'lclean' before running 'lstart'."
+[ -z "$SCRIPTMODE" ] && [ -n "${UPDATE_AVAILABLE}" ] && bold_print "Update available for Netkit-JH - download at ${UPDATE_AVAILABLE}"
+[ -z "$SCRIPTMODE" ] && bold_print "================================================================="
 
 
 if [ ! -z "$TESTMODE" ]; then
@@ -400,7 +393,7 @@ if [ ! -z "$TESTMODE" ]; then
    : ${NETKIT_CON1:=none}
    
    # Clean up the lab directory before starting
-   labClean >/dev/null 2>&1
+   lab_clean >/dev/null 2>&1
 fi
 
 [ ! -z "$SCRIPTMODE" ] && echo -n "Starting lab... "
@@ -409,7 +402,7 @@ fi
 if [ -f "$LAB_DIRECTORY/lab.dep" -a -z "$BE_SEQUENTIAL" ] || [ ! -z "$FORCE_PARALLEL_MODE" ]; then
    # Use parallel startup
    if [ -z "$SCRIPTMODE" ]; then
-      becho "You chose to use parallel startup."
+      bold_print "You chose to use parallel startup."
       labStartParallel
    else
       labStartParallel >/dev/null 2>&1
@@ -434,27 +427,27 @@ COLOR_NORMAL='\033[0m'
 
 if [ -z "$SCRIPTMODE" ]; then
    echo
-   becho "The lab has been started."
-   becho "================================================================="
+   bold_print "The lab has been started."
+   bold_print "================================================================="
 else
    echo -n "Testing... "
 fi
 
 if [ ! -z "$TESTMODE" ]; then
    # Wait for the test to finish
-   MACHINES_COUNT=$(echo $VHOSTLIST | wc -w)
+   MACHINES_COUNT=${#VHOSTLIST[@]}
    while [ $(ls ${LAB_DIRECTORY}/*.testdone 2>/dev/null | wc -l) -lt "$MACHINES_COUNT" ]; do
       sleep 1
    done
 
    # Test finished: now crash the lab
    if [ -z "$SCRIPTMODE" ]; then
-      becho "Stopping lab..."
+      bold_print "Stopping lab..."
    else
       echo -n "Stopping lab... "
    fi
    labCrash >/dev/null 2>&1
-   labClean >/dev/null 2>&1
+   lab_clean >/dev/null 2>&1
 
    # Check whether we need to build a test signature or to verify
    # the test outcome
@@ -463,7 +456,7 @@ if [ ! -z "$TESTMODE" ]; then
       rm -fr "$LAB_DIRECTORY/_test/signature" >/dev/null 2>&1
       mv "$LAB_DIRECTORY/_test/results" "$LAB_DIRECTORY/_test/signature"
       if [ -z "$SCRIPTMODE" ]; then
-         becho "Test signature created."
+         bold_print "Test signature created."
       else
          echo "test completed.\t\t[ ${COLOR_YELLOW}SIGN${COLOR_NORMAL} ]"
       fi
@@ -482,7 +475,7 @@ if [ ! -z "$TESTMODE" ]; then
          *)
             # VERIFY has not been set
             EXIT_VALUE=0
-            for CURRENT_VHOST in $VHOSTLIST; do
+            for CURRENT_VHOST in "${VHOSTLIST[@]}"; do
                if [ -f "$LAB_DIRECTORY/_test/signature/$CURRENT_VHOST.user" ]; then
                   diff -qEbB "$LAB_DIRECTORY/_test/signature/$CURRENT_VHOST.user" --to-file "$LAB_DIRECTORY/_test/results" >/dev/null 2>&1
                   EXIT_VALUE=$(($EXIT_VALUE + $?))
@@ -496,9 +489,9 @@ if [ ! -z "$TESTMODE" ]; then
       esac
       if [ -z "$SCRIPTMODE" ]; then
          if [ "$EXIT_VALUE" -eq 0 ]; then
-            becho "Test succeeded."
+            bold_print "Test succeeded."
          else
-            becho "Test FAILED!"
+            bold_print "Test FAILED!"
          fi
       else
          if [ "$EXIT_VALUE" -eq 0 ]; then

@@ -33,14 +33,13 @@ CMDLINE="$0 $*"
 . "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
-logWrite $0 $*
+logWrite "$0 $*"
 
 
 # This function is used to print the vlist usage
 help() {
    echo "Usage: $SCRIPTNAME [options] domain"
    cat << END_OF_HELP
-
 This command can be used to connect to an uml_switch and print packets in pcap format to standard output.
 
 This command also supports the following standard options:

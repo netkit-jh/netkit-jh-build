@@ -25,9 +25,6 @@
 
 SCRIPTNAME=$(basename "$0")
 
-# The following line has been introduced to ensure backward compatibility
-: "${NETKIT_HOME:=$VLAB_HOME}"
-
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
    echo 1>&2 "please set it as described in the Netkit documentation and try"
@@ -40,7 +37,7 @@ CMDLINE="$0 $*"
 . "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
-logWrite $0 $*
+logWrite "$0 $*"
 
 
 # This function is used to print the vcrash usage
@@ -48,7 +45,6 @@ help() {
    echo
    echo "Usage: $SCRIPTNAME [options] MACHINE-ID..."
    cat << END_OF_HELP
-
 This script kills running virtual machines without halting them. This roughly
 corresponds to disconnecting their power plug. MACHINE-ID is either the name or
 the PID of a virtual machine. Available options are:
@@ -98,7 +94,6 @@ provided for backward compatibility.
                       the virtual machine and the second one is its name.
                       Option --remove-fs does not work when using this switch.
       --root          A synonym for --user=-.
-
 END_OF_HELP
 }
 
