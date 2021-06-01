@@ -66,13 +66,6 @@ export LANG=C
 [ ! -z "$NETKIT_TERM" ] && TERM_TYPE=$NETKIT_TERM
 
 
-# Use the correct syntax for echo, depending on the shell being used
-if type source > /dev/null 2>&1; then
-   # We are using bash
-   alias echo="echo -e"
-fi
-
-
 # This function implements on-the-fly replacement of substrings on environment
 # variables. Arguments are: the name of the environment variable (the *name*,
 # not its value!), the regular expression to be searched for, and the
