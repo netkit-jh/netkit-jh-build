@@ -35,7 +35,7 @@ CMDLINE="$0 $*"
 
 
 # Write to the vcommands log
-logWrite "$0 $*"
+log_write "$0 $*"
 
 # Used later on to return the status of the lab test
 EXIT_VALUE=0

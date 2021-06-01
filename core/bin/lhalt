@@ -36,7 +36,7 @@ CMDLINE="$0 $*"
 
 
 # Write to the vcommands log
-logWrite "$0 $*"
+log_write "$0 $*"
 
 
 # This function is used to print the lhalt usage

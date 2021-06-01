@@ -125,7 +125,7 @@ containsRegexp() {
 
 
 # This function writes Netkit commands to the command log
-logWrite() {
+log_write() {
    [ -z "$LOGFILENAME" ] && return
    if [ ! -e "$LOGFILENAME" -o -w "$LOGFILENAME" ]; then
       echo $(date +"%Y/%m/%d %H:%M:%S") $(id -nu) $* >> "$LOGFILENAME"
