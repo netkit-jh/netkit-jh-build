@@ -6,6 +6,10 @@ core/build/
 fs/cache/
 build/
 
+# UML Utilities build artifacts
+*.o
+*.a
+
 # Testing artifacts
 tests/test_results.txt
 ping_successful_*
