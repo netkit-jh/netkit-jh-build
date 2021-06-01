@@ -124,12 +124,22 @@ containsRegexp() {
 }
 
 
-# This function writes Netkit commands to the command log
+###############################################################################
+# Write commands to the Netkit-JH log file.
+# Usage:
+#   log_write ...
+# Globals:
+#   r- LOGFILENAME
+# Arguments:
+#  ... Log message
+# Returns:
+#   echo returns 0 on success, non-zero on failure (if file is not writable,
+#   cannot be created, or the filename is not specified).
+# Example:
+#   None
+###############################################################################
 log_write() {
-   [ -z "$LOGFILENAME" ] && return
-   if [ ! -e "$LOGFILENAME" -o -w "$LOGFILENAME" ]; then
-      echo $(date +"%Y/%m/%d %H:%M:%S") $(id -nu) $* >> "$LOGFILENAME"
-   fi
+   echo "$(date +"%Y/%m/%d %H:%M:%S") $(id -nu) $*" 2> /dev/null >> "$LOGFILENAME"
 }
 
 
