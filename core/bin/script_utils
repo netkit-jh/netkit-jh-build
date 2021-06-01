@@ -232,9 +232,9 @@ run_command() {
    else
       SHOW_COMMAND="$2"
    fi
-   if [ "x$1" = "x1" ]; then
+
+   if [ "$1" = "1" ]; then
       [ -z "$BE_QUIET" ] && echo "Not running ==> $SHOW_COMMAND"
-      # Report that everything went ok
       return 0
    else
       [ -z "$BE_QUIET" ] && echo "Running ==> $SHOW_COMMAND"
