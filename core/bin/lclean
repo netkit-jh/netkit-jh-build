@@ -64,9 +64,9 @@ This command also supports the following standard options:
       --version       Print version information and exit.
 
 The cleaning process involves temporary files generated for any of the virtual
-machines of the lab. If one or more MACHINE-NAMEs are passed on the command
+machines of the lab. If one or more MACHINEs are passed on the command
 line, then only those files generated for the matching virtual machines are
-deleted, as well as the 'readyfor.test' file. If any of the MACHINE-NAMEs is
+deleted, as well as the 'readyfor.test' file. If any of the VM names are
 invalid (i.e., it does not correspond to a virtual machine of the lab), it will
 simply be skipped.
 END_OF_HELP
@@ -76,7 +76,7 @@ END_OF_HELP
 # Output lclean's usage to stderr
 # Usage: usage
 usage() {
-   echo 1>&2 "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
+   echo 1>&2 "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
    echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
 }
 
