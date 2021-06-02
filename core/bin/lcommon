@@ -345,7 +345,7 @@ startSingleVM() {
    [ ! -z "$TESTMODE" ] && VSTART_OPTIONS="$VSTART_OPTIONS --test"
    
    # Remove .ready file, if existing
-   [ -e "${LAB_DIRECTORY}/$VM.ready" ] && rm -f S{LAB_DIRECTORY}/$VM.ready > /dev/null 2>&1
+   [ -e "${LAB_DIRECTORY}/$VM.ready" ] && rm -f "${LAB_DIRECTORY}/$VM.ready" > /dev/null 2>&1
 
    if [ -z "$VERBOSE" ]; then
       bold_print "Starting \"$VM\"..."
