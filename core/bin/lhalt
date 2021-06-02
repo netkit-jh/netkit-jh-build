@@ -189,7 +189,7 @@ build_vhostlist
 
 for host in "${VHOSTLIST[@]}"; do
    [ -z "$VERBOSE" ] && bold_print "Halting '$host'... "
-   vhalt "$lhalt_quiet" "$lhalt_rm_fs" "$host" && rm -f "$LAB_DIRECTORY/$host.ready"
+   vhalt "${lhalt_quiet:+"$lhalt_quiet"}" "${lhalt_rm_fs:+"$lhalt_rm_fs"}" "$host" && rm -f "$LAB_DIRECTORY/$host.ready"
 done
 
 bold_print "Removing readyfor.test..."

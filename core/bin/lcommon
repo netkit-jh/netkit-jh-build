@@ -217,11 +217,11 @@ lab_clean() {
 
    for host in "${VHOSTLIST[@]}"; do
       # Remove files from the lab directory
-      rm "$rm_verbose" -r "${MCONSOLE_DIR:?}/$host"
-      rm "$rm_verbose" "$LAB_DIRECTORY/$host."{"ready","disk","log","testdone"}
+      rm "${rm_verbose:+"$rm_verbose"}" -r "${MCONSOLE_DIR:?}/$host"
+      rm "${rm_verbose:+"$rm_verbose"}" "$LAB_DIRECTORY/$host."{"ready","disk","log","testdone"}
    done
 
-   rm "$rm_verbose" "$LAB_DIRECTORY/readyfor.test"
+   rm "${rm_verbose:+"$rm_verbose"}" "$LAB_DIRECTORY/readyfor.test"
 }
 
 
