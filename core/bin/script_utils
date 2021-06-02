@@ -376,7 +376,6 @@ cleanHubs() {
 }
 
 
-
 # This function just outputs a process list in a format that is suitable for
 # processing by the following functions.
 psList() {
@@ -396,7 +395,91 @@ getVMinfoByName() {
       return 1
    fi
    getVMinfo "$VM_PS_ENTRY"
-   return 0   
+   return 0
+}
+
+
+###############################################################################
+# Check if machine, by name, is online.
+# Usage:
+#   get_machine_state USER MACHINE
+# Globals:
+#   r- NETKIT_HOME
+# Arguments:
+#   $1 - owner of the machine; pass an empty string for all users
+#   $2 - machine name
+# Returns:
+#   Returns 0 if online, non-zero if not.
+# Example:
+#   None
+###############################################################################
+get_machine_state() {
+   user=$1
+   name=$2
+   get_vm_pid_by_name "$user" "$name" > /dev/null
+}
+
+
+###############################################################################
+# Get the process ID of a machine by its name and, optionally, owner.
+# Usage:
+#   get_vm_pid_by_name USER MACHINE
+# Globals:
+#   r- NETKIT_HOME
+# Arguments:
+#   $1 - owner of the machine; pass an empty string for all users
+#   $2 - machine name
+# Returns:
+#   Prints the PID to stdout. Returns 0 on success, non-zero on failure.
+# Example:
+#   None
+###############################################################################
+get_vm_pid_by_name() {
+   user=$1
+   name=$2
+
+   [ -n "$user" ] && pgrep_euid="--euid"
+
+   # Quick filter for pgrep. It is not 100% accurate, returning multiple
+   # instances if there is a machine called "foo" and "foo bar". We hence do
+   # further processing - this filter just removes processes which definitely
+   # are not matches.
+   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel.*[[:blank:]]umid=${name}(\$|[[:blank:]].+)"
+
+   # For documentation on the PID hierarchy and command parsing, consult vlist
+   for pid in $(pgrep ${pgrep_euid:+"$pgrep_euid"} ${user:+"$user"} --full "$full_command_regex"); do
+      # Get the process group ID (PGID)
+      pgid=$(ps --no-headers --format pgid --pid "$pid")
+
+      # Ignore if not a process leader
+      [ "$pgid" -ne "$pid" ] && continue
+
+      # Full command used to invoke the process
+      full_command=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
+
+      first_iteration=true
+
+      while IFS="" read -r argument; do
+         # Skip program name
+         if $first_iteration; then
+            first_iteration=false
+            continue
+         fi
+
+         if [[ "$argument" =~ ^umid=.*$ ]]; then
+            umid="${argument#*=}"
+
+            if [ "$umid" = "$name" ]; then
+               echo "$pid"
+               return 0
+            else
+               break
+            fi
+         fi
+      done <<< "$full_command"
+   done
+
+   return 1
 }
 
 
