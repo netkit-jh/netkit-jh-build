@@ -446,7 +446,28 @@ get_vm_pid_by_name() {
    # are not matches.
    full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel.*[[:blank:]]umid=${name}(\$|[[:blank:]].+)"
 
-   # For documentation on the PID hierarchy and command parsing, consult vlist
+   # The process hierarchy looks like this:
+   #
+   #    PID  PGID  Process
+   #     ?    ?     vstart
+   #                    \
+   #     x    x           - netkit-kernel
+   #                           |
+   #     a    x                +--- netkit-kernel
+   #     b    x                +--- netkit-kernel
+   #     c    x                +--- netkit-kernel
+   #     ...  ...              +--- ...
+   #
+   #    (PID = process ID, PGID = process group ID)
+   #
+   # The main (parent) netkit-kernel process is the group leader of the
+   # netkit-kernel child processes, because its PID == PGID.
+   # The children are all part of this group.
+   #
+   # We only care about the parent kernel process, so we skip over PIDs that
+   # are not group leaders.
+
+   # Iterate over the PIDs of running Netkit instances with name matches.
    for pid in $(pgrep ${pgrep_euid:+"$pgrep_euid"} ${user:+"$user"} --full "$full_command_regex"); do
       # Get the process group ID (PGID)
       pgid=$(ps --no-headers --format pgid --pid "$pid")
@@ -458,7 +479,6 @@ get_vm_pid_by_name() {
       full_command=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
 
       first_iteration=true
-
       while IFS="" read -r argument; do
          # Skip program name
          if $first_iteration; then
@@ -467,7 +487,7 @@ get_vm_pid_by_name() {
          fi
 
          if [[ "$argument" =~ ^umid=.*$ ]]; then
-            umid="${argument#*=}"
+            umid=${argument#*=}
 
             if [ "$umid" = "$name" ]; then
                echo "$pid"
@@ -689,66 +709,6 @@ getVMPIDsByPID() {
          }
          (match($0,"port-helper") && $NF==vm_xterm_socket) {
             if (!match($0,"xterm ")) print $2
-         }
-      '
-}
-
-
-
-# This function prints a list of running virtual machines. It takes as argument
-# the name (NOT the uid) of a user whose virtual machines to display. If a null
-# argument is passed, machines for all users are displayed instead.
-showVMList() {
-   ps -wwwwwweo uname=ENSURE_USER_NAME_COLUMN_IS_VERY_WIDE,pid,vsize,command --sort=pid | grep "^.*umid=" | grep -v "awk -v no_header" | grep -v "grep \^\.\*" | \
-      awk \
-         -v no_header="$1" \
-         -v hub_socket_prefix="$HUB_SOCKET_PREFIX" \
-         -v userid="$USERID" \
-         -v hub_socket_extension="$HUB_SOCKET_EXTENSION" \
-         -v user_filter="$2" \
-      '
-         BEGIN {
-            if (no_header == "")
-               print "USER             VHOST               PID       SIZE  INTERFACES"
-            user_mem=0
-            tot_mem=0
-         }
-         {
-            match($0,"umid=[^ ]*")
-            current_machine = substr($0,RSTART+5,RLENGTH-5)
-            current_user = $1
-            if (machines[current_user,current_machine]!=1) {
-               tot_mem += $3
-               tot_machines++
-               if (userid == current_user) {
-                  user_mem += $3
-                  user_machines++
-               }
-               if (user_filter == "" || user_filter == current_user) {
-                  printf "%-15s  %-15s  %6i  %9i  ",
-                     $1, current_machine, $2, $3
-                  firstentry=1
-                  for (i=4; i<=NF; i++) {
-                     if (match($i,"^eth[0-9]+") > 0) {
-                        device = substr($i, RSTART, RLENGTH)
-                        match($i, ".*/" hub_socket_prefix "_[^_]+_[^_]+" hub_socket_extension)
-                        hub_param_count = split(substr($i,RSTART,RLENGTH), hub_parameters, "[_.]")
-                        hub = hub_parameters[hub_param_count-1]
-                        if (firstentry!=1) printf ", "
-                        printf "%s @ %s", device, hub
-                        firstentry=0
-                     }
-                  }
-                  printf "\n"
-               }
-            }
-            machines[current_user,current_machine]=1
-         }
-         END {
-            if (no_header == "") {
-               printf "\nTotal virtual machines: %7i    (you),  %7i    (all users).\n", user_machines, tot_machines
-               printf "Total consumed memory: %8i KB (you), %8i KB (all users).\n", user_mem, tot_mem
-            }
          }
       '
 }
