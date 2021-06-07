@@ -21,7 +21,7 @@
 # This is the Netkit vlist script, which is used to list running virtual machines
 # and/or ask for details about a given machine.
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
@@ -63,7 +63,7 @@ By passing one or more MACHINE-IDs it is possible to get detailed information
 about specific running virtual machines. MACHINE-ID is either a virtual machine 
 name or its PID. If a virtual machine name is passed as argument, and the option
 --user=- is being used, then information about the first machine with a matching
-name in the output of \`vlist --user=-' are reported.
+name in the output of 'vlist --user=-' are reported.
 
 END_OF_HELP
 }
@@ -72,7 +72,7 @@ END_OF_HELP
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="help,no-header,user:,version"
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "hnu:" "$@"`
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hnu:" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi

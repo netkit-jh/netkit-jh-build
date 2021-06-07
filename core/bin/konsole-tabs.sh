@@ -57,7 +57,7 @@ findNetkitKonsole() {
    for i in $(qdbus | grep konsole); do
       if qdbus $i /MainApplication Get com.trolltech.Qt.QCoreApplication applicationName | grep -q netkit-konsole; then
          NETKIT_KONSOLE=$i
-         CURRENT_SESSION=`qdbus $NETKIT_KONSOLE /Konsole currentSession`
+         CURRENT_SESSION=$(qdbus $NETKIT_KONSOLE /Konsole currentSession)
          break
       fi
    done   
@@ -142,7 +142,7 @@ while [ -z "$NETKIT_KONSOLE" ]; do
 done
 
 if [ $START_NEW_SESSION = 1 ]; then
-   SESSION=`qdbus $NETKIT_KONSOLE /Konsole newSession`
+   SESSION=$(qdbus $NETKIT_KONSOLE /Konsole newSession)
 else
    SESSION=$CURRENT_SESSION
 fi

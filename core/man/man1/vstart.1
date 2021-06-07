@@ -62,12 +62,12 @@ Interface \fBeth\fIN\fR will be attached to a (virtual) collision domain whose n
 is \fIDOMAIN\fR. A collision domain can be seen as a sort of virtual hub. Thus,
 attaching interfaces of different virtual machines to the same
 collision domain allows them to exchange network traffic. \fIDOMAIN\fR must not
-contain underscores (`\fB_\fR'), commas (`\fB,\fR') and dots (`\fB.\fR'), unless
-a ``\fBtap\fR'' collision domain is being configured (see below).
+contain underscores ('\fB_\fR'), commas ('\fB,\fR') and dots ('\fB.\fR'), unless
+a "\fBtap\fR" collision domain is being configured (see below).
 
-The special domain name ``\fBtap\fR'' is reserved. When attaching an interface
-to a ``\fBtap\fR'' domain, an external (i.e., real) network can be reached
-through this interface. A ``\fBtap\fR'' collision domain must be declared with
+The special domain name "\fBtap\fR" is reserved. When attaching an interface
+to a "\fBtap\fR" domain, an external (i.e., real) network can be reached
+through this interface. A "\fBtap\fR" collision domain must be declared with
 the following syntax:
 
 .nf
@@ -79,38 +79,38 @@ and \fIGUEST\-ADDRESS\fR is the IP address of the interface inside the virtual
 machine (guest side). \fITAP\-ADDRESS\fR and \fIGUEST\-ADDRESS\fR must be on
 the same (sub)network and, most important, this network must \fInot\fR already
 exist on your host network (otherwise routing would be messed up). Interfaces
-connected to a ``\fBtap\fR'' collision domain are automatically configured and
+connected to a "\fBtap\fR" collision domain are automatically configured and
 brought up inside virtual machines.
 
-There can be at most one ``\fBtap\fR'' collision domain for each user. Hence,
-if different virtual machines are configured for using ``\fBtap\fR'' connected
+There can be at most one "\fBtap\fR" collision domain for each user. Hence,
+if different virtual machines are configured for using "\fBtap\fR" connected
 interfaces, they also are on the same collision domain. \fITAP\-ADDRESS\fR is
-mandatory, but is only taken into account when a ``\fBtap\fR'' collision domain
+mandatory, but is only taken into account when a "\fBtap\fR" collision domain
 is first used (i.e., this is the first interface the current user ever connected
-to a ``\fBtap\fR'' collision domain). Otherwise, it simply ignored.
+to a "\fBtap\fR" collision domain). Otherwise, it simply ignored.
 
 .B
-*** IMPORTANT NOTES ABOUT USING ``tap'' COLLISION DOMAINS ***
+*** IMPORTANT NOTES ABOUT USING "tap" COLLISION DOMAINS ***
 .RS
 .IP \(en 2
-Configuring ``\fBtap\fR'' domains for the first time requires administrative
+Configuring "\fBtap\fR" domains for the first time requires administrative
 (root) privileges. The \fIvstart\fR script will take care of asking you for the
 root password if needed. For more information about how Netkit gains root
 privileges, see \fBUSE_SUDO\fR and \fBSETTING UP NETKIT FOR USE WITH SUDO\fR in
 the man page of \fBnetkit.conf\fR(5). The following operations are performed
 when working as root:
 
-1) The `/dev/net/tun' device is created (if it does not exist).
+1) The '/dev/net/tun' device is created (if it does not exist).
 .br
-2) Permissions for the `/dev/net/tun' device are set to 666 (read/write for all users).
+2) Permissions for the '/dev/net/tun' device are set to 666 (read/write for all users).
 .br
-3) Any existing network device named `nk_tap_\fIUSERNAME\fR' is brought down and
+3) Any existing network device named 'nk_tap_\fIUSERNAME\fR' is brought down and
 removed (\fIUSERNAME\fR is the name of the current user).
 .br
-4) A tap network device named `nk_tap_\fIUSERNAME\fR' is created and configured to
+4) A tap network device named 'nk_tap_\fIUSERNAME\fR' is created and configured to
 have IP address \fITAP\-ADDRESS\fR.
 .br
-5) Kernel based IP forwarding is enabled via the `/proc/sys/net/ipv4/ip_forward'
+5) Kernel based IP forwarding is enabled via the '/proc/sys/net/ipv4/ip_forward'
 special file.
 .br
 6) If the iptables firewall is found, packet forwarding for data coming from the
@@ -129,7 +129,7 @@ All these configuration settings can be easily removed by using the \fBvclean\fR
 command (see \fBvclean\fR(1)).
 
 .IP \(en 2
-Using ``\fBtap\fR'' domains requires some host-side configurations. These
+Using "\fBtap\fR" domains requires some host-side configurations. These
 configurations are not automatically removed after halting virtual machines.
 The \fBvclean\fR command must be used for this purpose (see \fBvclean\fR(1)).
 .RE
@@ -145,7 +145,7 @@ The \fBvclean\fR command must be used for this purpose (see \fBvclean\fR(1)).
 --no-hosthome
 By default, the home directory of the current user is made available for
 reading/writing inside the virtual machine under the special directory
-`/hosthome'. This option disables this behaviour, thus not making the host
+'/hosthome'. This option disables this behaviour, thus not making the host
 filesystem accessible from inside the virtual machine.
 
 .TP
@@ -183,9 +183,9 @@ is stored in an external file instead of overwriting the model filesystem.
 .br
 By default, every virtual machine has its own \fICOW file\fR. Such file is
 created in the current directory as soon as the virtual machine is first started. Its
-name is the same as the name of the virtual machine plus the suffix ``.disk''.
-For example, assuming the current directory is `/home/foo/', starting a new
-virtual machine named ``pc1'' automatically creates the file `/home/foo/pc1.disk'.
+name is the same as the name of the virtual machine plus the suffix ".disk".
+For example, assuming the current directory is '/home/foo/', starting a new
+virtual machine named "pc1" automatically creates the file '/home/foo/pc1.disk'.
 .br
 By passing a \fIFILESYSTEM\fR name it is possible to use a different COW file.
 If \fIFILESYSTEM\fR is not found, a new file with this name is created. Otherwise,
@@ -198,7 +198,7 @@ used). This allows to preserve filesystem contents across reboots of the virtual
 machine.
 
 .PP
-Both \fIMODEL\-FILESYSTEM\fR and \fIFILESYSTEM\fR must not contain commas (`\fB,\fR')
+Both \fIMODEL\-FILESYSTEM\fR and \fIFILESYSTEM\fR must not contain commas ('\fB,\fR')
 in their names.
 
 Options \fB\-f\fR and \fB\-\-filesystem\fR cannot be used in conjunction with
@@ -252,7 +252,7 @@ you know what you are doing!
 .TP
 .B
 --hide-disk-file
-By using this option, the ``.disk'' file of virtual machines is no longer created
+By using this option, the ".disk" file of virtual machines is no longer created
 (actually, it is deleted soon after it is created). This is useful if you do not
 want to scatter temporary disk images around your filesystem. Using this option
 does not compromise in any way the operation of virtual machines, except, of
@@ -294,7 +294,7 @@ be used for both the primary and the secondary console at the same time.
 .B
 pty
 Attach console to a pseudo-terminal. You can later reach it by connecting a
-terminal emulator to the corresponding tty (for example, `screen /dev/ttyp0').
+terminal emulator to the corresponding tty (for example, 'screen /dev/ttyp0').
 .TP
 .B
 port:\fItcp\-port\fR
@@ -423,7 +423,7 @@ option \fB\-H\fR or
 \fB\-\-no\-hosthome\fR
 .hy
 is being used. In particular, \fIDIRECTORY\fR is made available for reading/writing
-under the `/hostlab' or `/hostwd' directory in the virtual machine
+under the '/hostlab' or '/hostwd' directory in the virtual machine
 (depending on the option being used).
 
 .SS Other options
@@ -431,7 +431,7 @@ under the `/hostlab' or `/hostwd' directory in the virtual machine
 .B
 --append=\fIPARAMETER\fR
 Append additional kernel command line parameters when running the virtual machine
-kernel. \fIPARAMETER\fR can be the name of a kernel option (e.g., ``quiet'') or
+kernel. \fIPARAMETER\fR can be the name of a kernel option (e.g., "quiet") or
 a pair \fIPARAMETER\fR=\fIVALUE\fR. Documentation about supported parameters can
 be found inside the kernel source tree (which you can download at http://www.kernel.org).
 
@@ -512,7 +512,7 @@ This option enables verbose kernel messages during the virtual machine boot phas
 .B
 --version
 Print information about the installed Netkit release and the host kernel version
-and exit. If ``\fI<unavailable>\fR'' is printed instead of a version number,
+and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
 then the corresponding information could not be retrieved (for example because
 a non-standard Netkit kernel or filesystem is being used).
 
@@ -610,7 +610,7 @@ file (see \fBnetkit.conf\fR(5)).
 .nf
 vstart pc1
 .fi
-Start a new virtual machine named \fBpc1\fR. The `pc1.disk' file is
+Start a new virtual machine named \fBpc1\fR. The 'pc1.disk' file is
 also created in the current directory.
 
 .TP
@@ -620,12 +620,12 @@ vstart mypc1 -k /home/foo/kernel/uml\-kernel -M 128 -m /home/foo/filesystems/mod
 .fi
 Start a new virtual machine named \fBmypc1\fR. The machine will run using kernel
 .nh
-`\fB/home/foo/kernel/uml\-kernel\fR',
+'\fB/home/foo/kernel/uml\-kernel\fR',
 .hy
 will be equipped with \fB128\fR MB of RAM and its
 filesystem contents upon first boot will be those of the model file
 .nh
-`\fB/home/foo/filesystems/model\-fs\fR'.
+'\fB/home/foo/filesystems/model\-fs\fR'.
 .hy
 
 .TP
@@ -665,7 +665,7 @@ Instead of actually starting a virtual machine, show which commands would be
 executed for running one named \fBtest\fR, with two network interfaces attached
 to collision domains \fBA\fR and \fBB\fR and using filesystem
 .nh
-`\fB/home/foo/myFilesystem\fR'.
+'\fB/home/foo/myFilesystem\fR'.
 .hy
 
 .TP

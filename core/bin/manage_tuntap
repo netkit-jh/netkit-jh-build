@@ -101,7 +101,7 @@ case $ACTION in
       echo 0 > /proc/sys/net/ipv4/ip_forward && echo "done." || exit 1
       
       echo "Bringing down tap devices and tunnels:"
-      for INTERFACE in `cat /proc/net/dev | awk -v FS=":" '/nk_tap_/ {print $1}'`; do
+      for INTERFACE in $(cat /proc/net/dev | awk -v FS=":" '/nk_tap_/ {print $1}'); do
          echo -n "\t$INTERFACE...\t\t\t"
          ifconfig $INTERFACE down > /dev/null 2>&1 && echo "done." || exit 1
          echo -n "\t$INTERFACE tunnel...\t\t"

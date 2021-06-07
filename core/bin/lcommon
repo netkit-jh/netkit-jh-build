@@ -73,7 +73,7 @@ buildAffectedVHostList() {
       fi
 
       # Build list of virtual machines that are part of the lab
-      for LAB_ITEM in `ls "${LAB_DIRECTORY}"`; do
+      for LAB_ITEM in $(ls "${LAB_DIRECTORY}"); do
          if [ -d "$LAB_DIRECTORY/$LAB_ITEM" -a "$LAB_ITEM" != "shared" \
             -a "$LAB_ITEM" != "_test" -a "$LAB_ITEM" != "CVS" ]; then
             LABHOSTS="$LABHOSTS $LAB_ITEM"
@@ -125,9 +125,9 @@ labWelcome() {
 removeLabFolder() {
    if [ -e "$1" ]; then
       rm -rf "$1" > /dev/null 2>&1
-      [ ! -z "$VERBOSE" ] && echo "   Removed:   `basename $1`"
+      [ ! -z "$VERBOSE" ] && echo "   Removed:   $(basename $1)"
    else
-      [ ! -z "$VERBOSE" ] && echo "   Not found: `basename $1`"
+      [ ! -z "$VERBOSE" ] && echo "   Not found: $(basename $1)"
    fi
 }
 
@@ -135,9 +135,9 @@ removeLabFolder() {
 removeLabFile() {
    if [ -e "$1" ]; then
       rm -f "$1" > /dev/null 2>&1
-      [ ! -z "$VERBOSE" ] && echo "   Removed:   `basename $1`"
+      [ ! -z "$VERBOSE" ] && echo "   Removed:   $(basename $1)"
    else
-      [ ! -z "$VERBOSE" ] && echo "   Not found: `basename $1`"
+      [ ! -z "$VERBOSE" ] && echo "   Not found: $(basename $1)"
    fi
 }
 
@@ -352,7 +352,7 @@ labStart() {
 
 
 # This function starts a Netkit lab while (optionally) using a dependency file.
-# The `make' utility is required in order to make this work.
+# The 'make' utility is required in order to make this work.
 labStartParallel() {
    buildAffectedVHostList
    
@@ -394,7 +394,7 @@ labStartParallel() {
 # the name of the PNG file to save the map in.
 labMap() {
    MAP_FILE="$1"
-   GRAPH_GENERATOR=`which neato`
+   GRAPH_GENERATOR=$(which neato)
    if [ -z "$GRAPH_GENERATOR" ]; then
       echo 1>&2 "Error: the GraphViz library does not appear to be installed."
       echo 1>&2 "Please install the GraphViz library."

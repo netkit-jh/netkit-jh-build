@@ -20,7 +20,7 @@
 
 # This script can be used to start a Netkit lab or a subportion of it.
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
@@ -135,7 +135,7 @@ Other standard options are:
   -v, --verbose       Show details about virtual machines while starting them.
       --version       Print version information and exit.
 
-Notice: using parallel startup requires the \`make' utility to be properly
+Notice: using parallel startup requires the 'make' utility to be properly
 installed.
 
 By default, all the virtual machines of the lab are started. If one or more
@@ -168,7 +168,7 @@ if [ "$SCRIPTNAME" != "ltest" ]; then
    OPT_LIST="${OPT_LIST},fast"
    SHORTOPT_LIST="${SHORTOPT_LIST}f"
 fi
-CMDLINE_OPTIONS=`getopt -ql "$OPT_LIST" -- "$SHORTOPT_LIST" "$@"`
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "$SHORTOPT_LIST" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -186,7 +186,7 @@ parseCmdLine() {
                   "Multiple directory specifications: where can I find the lab?"
                exit 1
             fi
-            LAB_DIRECTORY=`makeAbsolutePath "$CURRENT_ARGUMENT"`;;
+            LAB_DIRECTORY=$(makeAbsolutePath "$CURRENT_ARGUMENT");;
          
          --tmux-attached)
             PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS --tmux-attached";;

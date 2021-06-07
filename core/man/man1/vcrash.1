@@ -97,16 +97,16 @@ This option limits the range of action of \fIvcrash\fR to machines owned by user
 useful, for example, if you need to crash someone else's machines (which requires
 administrative privileges). By default, \fIvcrash\fR only operates on virtual
 machines owned by the current user (the one who issued the \fIvcrash\fR command).
-The special user name `\fB\-\fR' is reserved, and can be used to crash machines
+The special user name '\fB\-\fR' is reserved, and can be used to crash machines
 regardless of their owner.
 
 Consider that different users may be running virtual machines having the same
-name. Hence, special care must be taken when using the `\fB\-\-user=-\fR'
+name. Hence, special care must be taken when using the '\fB\-\-user=-\fR'
 option and one or more \fIMACHINE\-ID\fRs are virtual machine names. In this
 case, if two (or more) users are running virtual machines having the same \fIname\fR,
 then only the one returned by
 .nh
-`vlist --user=- \fIname\fR'
+'vlist --user=- \fIname\fR'
 .hy
 is halted.
                       
@@ -127,7 +127,7 @@ Show usage information.
 .B
 --version
 Print information about the installed Netkit release and the host kernel version
-and exit. If ``\fI<unavailable>\fR'' is printed instead of a version number,
+and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
 then the corresponding information could not be retrieved (for example because
 a non-standard Netkit kernel or filesystem is being used).
 

@@ -40,13 +40,13 @@ INFO_FIELD=$'\e[34;1m'
 
 # Variables from the kernel command line (used by both start and stop,
 # namely $HOSTNAME - we don't trust what happens to $HOSTNAME within system)
-ASSIGN_VARIABLES=`cat /proc/cmdline | awk -v FS== -v RS=' ' \
+ASSIGN_VARIABLES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' \
     '
                     ($1=="name") {print "HOSTNAME=" $2}
                     ($1=="hostlab") {print "HOSTLAB=" $2}
                     ($1=="exec") {print "COMMAND=" $2}
                     ($1=="test") {print "TEST=" $1}
-                    '`
+                    ')
 eval "$ASSIGN_VARIABLES"
 
 # these may be used by scripts that we call
@@ -85,7 +85,7 @@ case "$1" in
          # Read lab configuration file, if present
          if [ -r "/hostlab/lab.conf" ]; then
             # Filter out unuseful (and potentially invalid) lab.conf contents.
-            eval `grep -E "(LAB_VERSION)|(LAB_AUTHOR)|(LAB_EMAIL)|(LAB_WEB)|(LAB_DESCRIPTION)" /hostlab/lab.conf | sed -r 's/LAB_([A-Z]+)=([^\"])/LAB_\1=\"\2/; /LAB_([A-Z]+)=/ s/([^\"])[ ]*$/\1\"/'`
+            eval $(grep -E "(LAB_VERSION)|(LAB_AUTHOR)|(LAB_EMAIL)|(LAB_WEB)|(LAB_DESCRIPTION)" /hostlab/lab.conf | sed -r 's/LAB_([A-Z]+)=([^\"])/LAB_\1=\"\2/; /LAB_([A-Z]+)=/ s/([^\"])[ ]*$/\1\"/')
          fi
 
          : ${LAB_VERSION:="<none>"}

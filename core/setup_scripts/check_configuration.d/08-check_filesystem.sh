@@ -33,7 +33,7 @@
 
 check_message "Checking filesystem type... "
 
-FS_TYPE=`stat -f . | grep -w Type`
+FS_TYPE=$(stat -f . | grep -w Type)
 FS_TYPE=${FS_TYPE#*Type: }
 
 if echo $FS_TYPE | grep -vqE "(ext[2,3,4])|(ntfs)|(ntfs-3g)|(fuse)|(reiser)|(jfs)|(xfs)"; then

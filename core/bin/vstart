@@ -21,7 +21,7 @@
 # This is the Netkit vstart script, which is used to start virtual machines with
 # given parameters.
 
-SCRIPTNAME=`basename $0`
+SCRIPTNAME=$(basename $0)
 
 # The following line has been introduced to ensure backward compatibility
 : ${NETKIT_HOME:=$VLAB_HOME}
@@ -207,7 +207,7 @@ while [ $i -lt $MAX_INTERFACES ]; do
    OPT_LIST="${OPT_LIST},eth$i:"
 	i=$(($i + 1))
 done
-CMDLINE_OPTIONS=`getopt 2>&1 -ql "$OPT_LIST" -- "k:M:m:f:e:l:w:FhHLWpqvD" "$@"`
+CMDLINE_OPTIONS=$(getopt 2>&1 -ql "$OPT_LIST" -- "k:M:m:f:e:l:w:FhHLWpqvD" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -248,7 +248,7 @@ parseCmdLine() {
          --kernel|-k)
             shift; CURRENT_ARGUMENT="$1"
             checkSpaces "$CURRENT_ARGUMENT"
-            VM_KERNEL=`makeAbsolutePath $CURRENT_ARGUMENT`;;
+            VM_KERNEL=$(makeAbsolutePath $CURRENT_ARGUMENT);;
          
          --mem|-M)
             shift; CURRENT_ARGUMENT="$1"
@@ -272,7 +272,7 @@ parseCmdLine() {
                        "Model filesystem name is missing."
                exit 1
             fi
-            VM_MODEL_FS=`makeAbsolutePath $CURRENT_ARGUMENT`;;
+            VM_MODEL_FS=$(makeAbsolutePath $CURRENT_ARGUMENT);;
 
          --filesystem|-f)
             shift; CURRENT_ARGUMENT="$1"
@@ -287,7 +287,7 @@ parseCmdLine() {
                        "Filesystem name is missing."
                exit 1
             fi
-            VM_FS=`makeAbsolutePath $CURRENT_ARGUMENT`;;
+            VM_FS=$(makeAbsolutePath $CURRENT_ARGUMENT);;
 
          --con0)
             shift; CURRENT_ARGUMENT="$1"
@@ -491,12 +491,12 @@ setupInterfaces() {
       fi
       if containsRegexp HUB_NAME "tap,"; then
          # This is an Internet connected (i.e., "tap") collision domain
-         CHECK_TAP=`echo $HUB_NAME | awk -v FS="," \
+         CHECK_TAP=$(echo $HUB_NAME | awk -v FS="," \
             '
                {
                   if (NF!=3 ||
-                      !match($2,"^[0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+$") ||
-                      !match($3,"^[0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+$"))
+                      !match($2,"^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$") ||
+                      !match($3,"^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$"))
                      print 0
                   else {
                      print "HUB_NAME=tap"
@@ -504,7 +504,7 @@ setupInterfaces() {
                      print "GUEST_ADDRESS=" $3
                   }
                }
-            '`
+            ')
          if [ "x$CHECK_TAP" = "x0" ]; then
             echo 1>&2
             warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid tap collision domain specification: \"$1\"."
@@ -559,7 +559,7 @@ setupInterfaces() {
 KERNELCMD="$VM_KERNEL"
 
 check_filesystem() {
-   FS_TYPE=`stat -f $2 | grep -w Type`
+   FS_TYPE=$(stat -f $2 | grep -w Type)
    FS_TYPE=${FS_TYPE#*Type: }
    if echo $FS_TYPE | grep -vqE "ext[234]|ntfs|ntfs-3g|fuse|reiser|jfs|xfs"; then
       warning "$SCRIPTNAME" "$CMDLINE" "$1" "Filesystem $FS_TYPE does not seems to support sparse file $2. This may result in dramatic performance loss and disk space consumption."
@@ -582,7 +582,7 @@ fi
 
 
 ##### Setup kernel modules directory
-eval KERNEL_MODULES_DIRECTORY=`dirname $VM_KERNEL`/modules
+eval KERNEL_MODULES_DIRECTORY=$(dirname $VM_KERNEL)/modules
 if [ -d $KERNEL_MODULES_DIRECTORY ]; then
    [ -z "$BE_QUIET" ] && echo "   Modules:    $KERNEL_MODULES_DIRECTORY"
    KERNELCMD="$KERNELCMD modules=$KERNEL_MODULES_DIRECTORY"

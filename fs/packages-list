@@ -85,6 +85,7 @@ tftp
 tftpd
 tshark
 traceroute
+# ucarp -- temporarily removed until package is added to Bullseye
 vim
 vlan
 xl2tpd

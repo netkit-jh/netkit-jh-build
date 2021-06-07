@@ -44,13 +44,13 @@ SYSTEM_COMMANDS="awk basename date dirname find getopt grep head id kill ls lsof
 for CURRENT_COMMAND in $SYSTEM_COMMANDS; do
    printf "\t%-13s: " $CURRENT_COMMAND
    
-   COMMAND_DIR=`which $CURRENT_COMMAND 2>/dev/null`
+   COMMAND_DIR=$(which $CURRENT_COMMAND 2>/dev/null)
    ADD_TO_PATH=0
    
    # If the requested executable has not been found in the PATH,
    # try looking in standard directories
    if [ -z "$COMMAND_DIR" ]; then
-      COMMAND_DIR=`whereis -b $CURRENT_COMMAND`
+      COMMAND_DIR=$(whereis -b $CURRENT_COMMAND)
       # Clean up the output of whereis
       COMMAND_DIR=${COMMAND_DIR##*$CURRENT_COMMAND:}
       COMMAND_DIR=${COMMAND_DIR##* }
