@@ -36,7 +36,7 @@ if [ -f "${LAB_DIRECTORY}/lab.conf" ]; then
    # are not supported by some shells. They will be handled
    # separately later on.
 
-   LAB_VARIABLE_ASSIGNMENTS=$(grep -E '^[ \t]*(LAB_[A-Z]+|machines)=' "$LAB_DIRECTORY/lab.conf" | sed -r 's/^[ \t]*(LAB_[A-Z]+|machines)=\"?([^\"]*)\"?[ \t]*$/\1=\"\2\"/')
+   LAB_VARIABLE_ASSIGNMENTS=$(grep -E '^[ \t]*(LAB_[A-Z]+|machines)=' "$LAB_DIRECTORY/lab.conf" | sed -r 's/^[ \t]*(LAB_[A-Z]+|machines)="?([^\"]*)"?[ \t]*$/\1="\2"/')
    eval "$LAB_VARIABLE_ASSIGNMENTS"
 fi
 

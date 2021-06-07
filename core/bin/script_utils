@@ -670,11 +670,11 @@ showVMList() {
 
 # Escapes a variable for use in a grep expression.
 grepEscape() {
-  printf '%s' "$1" | sed -r 's/[][\.^$*\]/\\&/g' <<< "$1"
+  printf '%s' "$*" | sed -r 's/[][\.^$*\]/\\&/g'
 }
 
 
 # Escapes a variable for use in a grep -E expression.
 egrepEscape() {
-  printf '%s' "$1" | sed -r 's/[][\.^$()*+?|{}\]/\\&/g' <<< "$1"
+  printf '%s' "$*" | sed -r 's/[][\.^$()*+?|{}\]/\\&/g'
 }
