@@ -122,6 +122,8 @@ Console settings can be altered by the following options:
                           this       attach to stdin/stdout (i.e., use current
                                      terminal; only one console at a time can
                                      be set to "this" mode)
+                          tmux       run in a tmux session (only valid with
+                                     con0 - see documentation for more details)
                           pty        attach to a pseudo-terminal
                           port:xxx   attach to TCP port xxx
                           none       disable console (only valid with con1)
@@ -293,7 +295,7 @@ parseCmdLine() {
             shift; CURRENT_ARGUMENT="$1"
             checkSpaces "$CURRENT_ARGUMENT"
             case "$CURRENT_ARGUMENT" in
-               xterm|this|pty|port:*|none)   VM_CON0=$CURRENT_ARGUMENT;;
+               xterm|this|tmux|pty|port:*|none)   VM_CON0=$CURRENT_ARGUMENT;;
                *)
                   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
                           "Unrecognized device for con0: $CURRENT_ARGUMENT."
