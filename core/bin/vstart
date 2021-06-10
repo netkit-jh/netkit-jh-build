@@ -170,267 +170,244 @@ END_OF_HELP
 }
 
 
-# Get command line options
-INVALID_OPTION=0
-OPT_LIST="kernel:,mem:,model-fs:,filesystem:,con0:,con1:,exec:"
-OPT_LIST="${OPT_LIST},hostlab:,hostwd:,append:,foreground,help,hide-disk-file"
-OPT_LIST="${OPT_LIST},no-cow,print,verbose,no-hosthome"
-OPT_LIST="${OPT_LIST},quiet,debug, version,test,xterm:"
-OPT_LIST="${OPT_LIST},tmux-attached,tmux-detached"
-
-i=0
-while [ $i -lt $MAX_INTERFACES ]; do
-   OPT_LIST="${OPT_LIST},eth$i:"
-   i=$(($i + 1))
-done
-CMDLINE_OPTIONS=$(getopt 2>&1 -ql "$OPT_LIST" -- "k:M:m:f:e:l:w:FhHLWpqvD" "$@")
-if [ $? -gt 0 ]; then
-   INVALID_OPTION=1
-fi
-
-
-# Parse command line options
-parseCmdLine() {
-   local CURRENT_ARGUMENT
-   while [ $# -gt 0 ]; do
-      CURRENT_ARGUMENT="$1"
-      case "$CURRENT_ARGUMENT" in
-      
-         --eth*)
-            ETH_INTERFACES="${ETH_INTERFACES} ${CURRENT_ARGUMENT#--}="
-            shift; CURRENT_ARGUMENT="$1"
-            if containsRegexp CURRENT_ARGUMENT "_"; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Invalid collision domain: $CURRENT_ARGUMENT (underscores are are not allowed)."
-               exit 1
-            fi
-            if containsRegexp CURRENT_ARGUMENT "," || containsRegexp CURRENT_ARGUMENT "\\."; then
-               if [ "${CURRENT_ARGUMENT#tap,}" = "$CURRENT_ARGUMENT" ]; then
-                  # This is not a special hub, but its name contains a comma
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                        "Invalid collision domain: $CURRENT_ARGUMENT (commas and dots are only allowed for Internet connected collision domains)."
-                  exit 1
-               fi
-            fi
-            
-            if [ "x$CURRENT_ARGUMENT" = "x" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Collision domain name is missing."
-               exit 1
-            fi
-            checkSpaces "$CURRENT_ARGUMENT"
-            ETH_INTERFACES="${ETH_INTERFACES}${CURRENT_ARGUMENT}" ;;
-
-         --kernel|-k)
-            shift; CURRENT_ARGUMENT="$1"
-            checkSpaces "$CURRENT_ARGUMENT"
-            VM_KERNEL=$(makeAbsolutePath $CURRENT_ARGUMENT);;
-         
-         --mem|-M)
-            shift; CURRENT_ARGUMENT="$1"
-            VM_MEMORY="$CURRENT_ARGUMENT"
-            if [ $(($VM_MEMORY)) -lt $MIN_MEM -o $(($VM_MEMORY)) -gt $MAX_MEM ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Memory out of allowed range: ${VM_MEMORY} MB (min: ${MIN_MEM}; max: ${MAX_MEM})."
-               exit 1
-            fi;;
-         
-         --model-fs|-m)
-            shift; CURRENT_ARGUMENT="$1"
-            checkSpaces "$CURRENT_ARGUMENT"
-            if containsRegexp CURRENT_ARGUMENT ","; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Invalid filesystem name: $CURRENT_ARGUMENT (commas are not allowed)."
-               exit 1
-            fi
-            if [ "x$CURRENT_ARGUMENT" = "x" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Model filesystem name is missing."
-               exit 1
-            fi
-            VM_MODEL_FS=$(makeAbsolutePath $CURRENT_ARGUMENT);;
-
-         --filesystem|-f)
-            shift; CURRENT_ARGUMENT="$1"
-            checkSpaces "$CURRENT_ARGUMENT"
-            if containsRegexp CURRENT_ARGUMENT ","; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Invalid filesystem name: $CURRENT_ARGUMENT (commas are not allowed)."
-               exit 1
-            fi
-            if [ "x$CURRENT_ARGUMENT" = "x" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Filesystem name is missing."
-               exit 1
-            fi
-            VM_FS=$(makeAbsolutePath $CURRENT_ARGUMENT);;
-
-         --con0)
-            shift; CURRENT_ARGUMENT="$1"
-            checkSpaces "$CURRENT_ARGUMENT"
-            case "$CURRENT_ARGUMENT" in
-               xterm|this|pty|port:*|none)   VM_CON0=$CURRENT_ARGUMENT;;
-               *)
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                          "Unrecognized device for con0: $CURRENT_ARGUMENT."
-                  exit 1;;
-            esac ;;
-
-         --con1)
-            shift; CURRENT_ARGUMENT="$1"
-            checkSpaces "$CURRENT_ARGUMENT"
-            case "$CURRENT_ARGUMENT" in
-               xterm|this|pty|port:*|none)   VM_CON1=$CURRENT_ARGUMENT;;
-               *)
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                          "Unrecognized device for con1: $CURRENT_ARGUMENT."
-                  exit 1;;
-            esac ;;
-
-         --exec|-e)
-            shift; CURRENT_ARGUMENT="$1"
-            VM_EXEC="$CURRENT_ARGUMENT";;
-
-         --hostlab|-l)
-            shift; CURRENT_ARGUMENT="$1"
-            checkSpaces "$CURRENT_ARGUMENT"
-            VM_HOSTLAB=$CURRENT_ARGUMENT;;
-            
-         --hostwd|-w)
-            shift; CURRENT_ARGUMENT="$1"
-            checkSpaces "$CURRENT_ARGUMENT"
-            VM_HOSTWD=$CURRENT_ARGUMENT;;
-            
-         --append)
-            shift; CURRENT_ARGUMENT="$1"
-            checkSpaces "$CURRENT_ARGUMENT"
-            KERNEL_APPEND="$KERNEL_APPEND $CURRENT_ARGUMENT";;
-
-         --tmux-attached)
-            VM_CON0="tmux"
-            TMUX_OPEN_TERMS=yes
-            ;;
-            
-         --tmux-detached)
-            VM_CON0="tmux"
-            TMUX_OPEN_TERMS=no
-            ;;
-            
-         -F|--foreground)
-            RUN_IN_FOREGROUND=1;;
-            
-         --help|-h)
-            help
-            exit;;
-
-         --no-hosthome|-H)
-            NO_HOSTHOME=1;;
-            
-         --no-cow|-W)
-            USE_MODEL_FS=1;;
-            
-         -D|--hide-disk-file)
-            REMOVE_FS=1;;
-         
-         -q|--quiet)
-            BE_QUIET=1;;
-            
-         --print|-p)
-            JUST_PRINT=1;;
-            
-         --verbose|-v)
-            VERBOSE=1;;  
-
-         --debug)
-            DEBUG=1;;                
-         
-         --xterm)
-            if [ ! -z "$ASSIGNED_TERM_TYPE" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                        "Duplicate specification of the terminal emulator application: $CURRENT_ARGUMENT."
-               exit 1
-            fi
-            shift; CURRENT_ARGUMENT="$1"
-            checkSpaces "$CURRENT_ARGUMENT"
-            case "$CURRENT_ARGUMENT" in
-               konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl|wt)
-                  ASSIGNED_TERM_TYPE=1
-                  TERM_TYPE=$CURRENT_ARGUMENT;;
-               *)
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                          "Unsupported terminal emulator application: $CURRENT_ARGUMENT."
-                  exit 1;;
-            esac;;
-         
-         --version)
-            showVersion
-            exit 0;;
-            
-         # --test is required by the lab test scripts in order to work properly
-         --test)
-            KERNEL_APPEND="$KERNEL_APPEND test";;
-         
-         --)
-            shift
-            break;;
-      esac
-      shift
-   done
-
-   # Parse virtual machine name   
-   while [ $# != 0 ]; do
-      if [ ! -z "$VM_NAME" ]; then
-         warning "$SCRIPTNAME" "$CMDLINE" "$0" "Too many arguments: $*"
-         exit 1
-      fi
-      checkSpaces "$1"
-      VM_NAME=$1
-      
-      shift
-   done
+# Output vhalt's usage to stderr
+# Usage: usage
+usage() {
+   echo 1>&2 "Usage: $SCRIPTNAME [OPTION]... MACHINE"
+   echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
 }
-eval parseCmdLine $CMDLINE_OPTIONS
 
-# Check whether user gave some strange options
-if [ "$INVALID_OPTION" -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter (or maybe out of range network interfaces)."
+
+# Get command line options
+LONG_OPTS="append:,con0:,con1:,debug,exec:,filesystem:,foreground,help,hide-disk-file,hostlab:,hostwd:,kernel:,mem:,model-fs:,no-cow,no-hosthome,print,quiet,test,tmux-attached,tmux-detached,verbose,version,xterm:"
+SHORT_OPTS="De:Ff:Hhk:Ll:M:m:pqvWw:"
+
+for i in $(seq 0 $MAX_INTERFACES); do
+   LONG_OPTS="$LONG_OPTS,eth$i:"
+done
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage
    exit 1
 fi
 
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
+
+while true; do
+   case "$1" in
+      --append)
+         ADDITIONAL_ARG="$2"
+         shift
+
+         checkSpaces "$ADDITIONAL_ARG"
+         KERNEL_APPEND="$KERNEL_APPEND $ADDITIONAL_ARG"
+         ;;
+      --con0|--con1)
+         CON="$2"
+         shift
+
+         case "$CON" in
+            xterm|this|pty|port:*|none)
+               checkSpaces "$CON"
+               [ "$1" = "--con0" ] && VM_CON0="$CON" || VM_CON1="$CON"
+               ;;
+            *)
+               echo 1>&2 "$SCRIPTNAME: $CON: Unrecognized console"
+               exit 1
+               ;;
+         esac
+         ;;
+      -D|--hide-disk-file)
+         REMOVE_FS=1
+         ;;
+      --debug)
+         DEBUG=1
+         ;;
+      -e|--exec)
+         VM_EXEC="$2"
+         shift
+         ;;
+      --eth*)
+         OPT="$1"
+         DOMAIN="$2"
+         shift
+
+         if containsRegexp DOMAIN "_"; then
+            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - underscores are not allowed"
+            exit 1
+         fi
+
+         if containsRegexp DOMAIN "," || containsRegexp DOMAIN "\\."; then
+            # If not a tap specification, but its name contains a comma
+            if [ "${DOMAIN#tap,}" = "$DOMAIN" ]; then
+               echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - commas and periods are only valid for tap interface specification"
+               exit 1
+            fi
+         fi
+
+         checkSpaces "$DOMAIN"
+         ETH_INTERFACES="$ETH_INTERFACES ${OPT#--}=$DOMAIN"
+         ;;
+      -F|--foreground)
+         RUN_IN_FOREGROUND=1
+         ;;
+      -f|--filesystem)
+         VM_FS="$2"
+         shift
+
+         if containsRegexp CURRENT_ARGUMENT ","; then
+            echo 1>&2 "$SCRIPTNAME: $VM_FS: Invalid filesystem - commas are not allowed"
+            exit 1
+         fi
+
+         checkSpaces "$VM_FS"
+         VM_FS=$(makeAbsolutePath "$VM_FS")
+         ;;
+      -H|--no-hosthome)
+         NO_HOSTHOME=1
+         ;;
+      -h|--help)
+         help
+         exit 0
+         ;;
+      -k|--kernel)
+         VM_KERNEL="$2"
+         shift
+
+         checkSpaces "$VM_KERNEL"
+         VM_KERNEL=$(makeAbsolutePath "$VM_KERNEL")
+         ;;
+      -l|--hostlab)
+         VM_HOSTLAB="$2"
+         shift
+         checkSpaces "$VM_HOSTLAB"
+         ;;
+      -M|--mem)
+         VM_MEMORY="$2"
+         shift
+
+         if [ "$VM_MEMORY" -lt "$MIN_MEM" ] || [ "$VM_MEMORY" -gt "$MAX_MEM" ]; then
+            echo 1>&2 "$SCRIPTNAME: Memory out of permitted range (min: $MIN_MEM MB; max: $MAX_MEM MB)"
+            exit 1
+         fi
+         ;;
+      -m|--model-fs)
+         VM_MODEL_FS="$2"
+         shift
+
+         if containsRegexp VM_MODEL_FS ","; then
+            echo 1>&2 "$SCRIPTNAME: $VM_MODEL_FS: Invalid filesystem - commas are not allowed"
+            exit 1
+         fi
+
+         checkSpaces "$VM_MODEL_FS"
+         VM_MODEL_FS=$(makeAbsolutePath "$VM_MODEL_FS")
+         ;;
+      -p|--print)
+         JUST_PRINT=1
+         ;;
+      -q|--quiet)
+         BE_QUIET=1
+         ;;
+      --test)
+         KERNEL_APPEND="$KERNEL_APPEND test"
+         ;;
+      --tmux-attached)
+         VM_CON0="tmux"
+         TMUX_OPEN_TERMS=yes
+         ;;
+      --tmux-detached)
+         VM_CON0="tmux"
+         TMUX_OPEN_TERMS=no
+         ;;
+      -v|--verbose)
+         VERBOSE=1
+         ;;
+      --version)
+         showVersion
+         exit 0
+         ;;
+      -W|--no-cow)
+         USE_MODEL_FS=1
+         ;;
+      -w|--hostwd)
+         VM_HOSTWD="$2"
+         shift
+         checkSpaces "$VM_HOSTWD"
+         ;;
+      --xterm)
+         TERM_TYPE="$2"
+         shift
+
+         case "$TERM_TYPE" in
+            konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl|wt)
+               checkSpaces "$TERM_TYPE"
+               ;;
+            *)
+               echo 1>&2 "$SCRIPTNAME: $TERM_TYPE: Unsupported terminal emulator"
+               exit 1
+               ;;
+         esac
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage
+         exit 1
+         ;;
+   esac
+
+   shift
+done
+
+# Parse virtual machine name
+if [ $# -eq 1 ]; then
+   VM_NAME=$1
+   checkSpaces "$VM_NAME"
+   shift
+elif [ $# -eq 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: Missing machine name"
+   usage
+   exit 1
+else
+   echo 1>&2 "$SCRIPTNAME: Too many machine names"
+   usage
+   exit 1
+fi
+
+
 # Check whether user is trying to attach more than one console to stdin/stdout
-if [ $VM_CON0 = "this" -a $VM_CON1 = "this" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Only one console can be attached to the current terminal."
+if [ "$VM_CON0" = "this" ] && [ "$VM_CON1" = "this" ]; then
+   echo 1>&2 "$SCRIPTNAME: Only one console can be attached to the current terminal"
    exit 1
 fi
 
 # Check whether a COW filesystem has been explictly provided when using the --no-cow option
-if [ ! -z "$USE_MODEL_FS" -a ! -z "$VM_FS" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "You cannot use the --no-cow option when explicitly providing a filesystem name."
+if [ -n "$USE_MODEL_FS" ] && [ -n "$VM_FS" ]; then
+   echo 1>&2 "$SCRIPTNAME: Cannot provide a filesystem name with --no-cow"
    exit 1
 fi   
 
 # Check whether the user asked to hide the virtual machine filesystem while using the --no-cow option
-if [ ! -z "$REMOVE_FS" -a ! -z "$USE_MODEL_FS" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "You cannot hide the filesystem when using use the --no-cow option."
-   exit 1
-fi
-
-# Check whether virtual machine name is missing
-if [ -z "$VM_NAME" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Virtual machine name is missing."
+if [ -n "$REMOVE_FS" ] && [ -n "$USE_MODEL_FS" ]; then
+   echo 1>&2 "$SCRIPTNAME: Cannot hide the filesystem when using --no-cow"
    exit 1
 fi
 
 # Check whether the path to the current directory contains spaces
 if containsRegexp PWD " "; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Path to the current directory contains spaces. Please move to a different directory."
+   echo 1>&2 "$SCRIPTNAME: Current working directory path contains spaces"
    exit 1
 fi
 
 # Check whether the requested terminal emulator application exists
-if [ "$VM_CON0" = "xterm" -o "$VM_CON1" = "xterm" ] || [ "$VM_CON0" = "tmux" -a "$TMUX_OPEN_TERMS" = "yes" ]; then
-   # Look for user specified terminal application or, if none has been specified,
-   # search for the standard xterm.
+if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "xterm" ] || [ "$VM_CON1" = "xterm" ]; then
+   # Look for terminal application
    TERMINAL_APPLICATION=${TERM_TYPE:-xterm}
    [ $TERMINAL_APPLICATION = "konsole-tab" ] && TERMINAL_APPLICATION=konsole
    [ $TERMINAL_APPLICATION = "gnome" ] && TERMINAL_APPLICATION=gnome-terminal
@@ -462,7 +439,7 @@ setupInterfaces() {
       HUB_NAME=${1#*=}
       if [ "${HUB_NAME}" = "tap" ]; then
          echo 1>&2
-         warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid tap collision domain specification: \"$1\"."
+         echo 1>&2 "$SCRIPTNAME: Invalid tap collision domain specification: \"$1\"."
          exit 1
       fi
       if containsRegexp HUB_NAME "tap,"; then
@@ -483,7 +460,7 @@ setupInterfaces() {
             ')
          if [ "x$CHECK_TAP" = "x0" ]; then
             echo 1>&2
-            warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid tap collision domain specification: \"$1\"."
+            echo 1>&2 "$SCRIPTNAME: Invalid tap collision domain specification: \"$1\"."
             exit 1
          else
             eval "$CHECK_TAP"
@@ -502,7 +479,7 @@ setupInterfaces() {
       [ -z "$BE_QUIET" ] && echo "${DEVICE} @ ${HUB_NAME}\t(${HUB_SOCKET})"
 
       if containsRegexp USED_DEVICES " ${DEVICE} "; then
-         warning "$SCRIPTNAME" "$CMDLINE" "$0" "Duplicate interface: $DEVICE."
+         echo 1>&2 "$SCRIPTNAME: Duplicate interface: $DEVICE."
          exit 1
       fi
       
