@@ -91,6 +91,25 @@ checkSpaces() {
 }
 
 
+###############################################################################
+# Check if string is a valid IPv4 dotted-quad address.
+# Usage:
+#   is_inet_addr ADDR
+# Globals:
+#   None
+# Arguments:
+#   $1 - IPv4 address string
+# Returns:
+#   Returns 0 on success, non-zero if an invalid address.
+# Example:
+#   None
+###############################################################################
+is_inet_addr() {
+   inet_regex="((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])"
+   [[ "$1" =~ $inet_regex ]] && return 0 || return 1
+}
+
+
 # This function converts a relative path to an absolute path, if needed
 makeAbsolutePath() {
    ARGUMENT=$(echo "$1" | awk '{gsub("^ *",""); print}')
@@ -339,21 +358,20 @@ startHub() {
 
 # This function starts all the hubs inside a given list
 runHubs() {
-   local HUB_NAME BASE_HUB_NAME ACTUAL_HUB_NAME TAP_ADDRESS GUEST_ADDRESS
-   while [ $# -gt 0 ]; do
-      HUB_NAME="$1"
-      BASE_HUB_NAME="$(varReplace HUB_NAME ".*_" "")"
+   local hub_name BASE_HUB_NAME ACTUAL_HUB_NAME TAP_ADDRESS GUEST_ADDRESS
+
+   hubs=( "$@" )
+
+   for hub_name in "${hubs[@]}"; do
+      BASE_HUB_NAME="$(varReplace hub_name ".*_" "")"
+
       if [ "${BASE_HUB_NAME#tap${HUB_SOCKET_EXTENSION},}" != "$BASE_HUB_NAME" ]; then
-         # This is an Internet connected hub
-         ACTUAL_HUB_NAME=$(echo $1 | awk -v FS="," '{print $1}')
-         TAP_ADDRESS=$(echo $1 | awk -v FS="," '{print $(NF-1)}')
-         GUEST_ADDRESS=$(echo $1 | awk -v FS="," '{print $NF}')
+         IFS=, read -r ACTUAL_HUB_NAME TAP_ADDRESS GUEST_ADDRESS <<< "$hub_name"
          startInetHub "$ACTUAL_HUB_NAME" "$TAP_ADDRESS" "$GUEST_ADDRESS"
       else
          # This is a normal hub
-         startHub "$HUB_NAME"
+         startHub "$hub_name"
       fi
-      shift
    done
 }
 

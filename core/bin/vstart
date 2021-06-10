@@ -425,80 +425,69 @@ fi
 
 
 # This function prepares network interfaces for use.
-setupInterfaces() {
-   local DEVICE HUB_NAME HUB_SOCKET FIRSTLINE IF_CMDLINE CHECK_TAP TAP_ADDRESS
-   local GUEST_ADDRESS ENABLED_DEFAULT_ROUTE USED_DEVICES
-   FIRSTLINE=1
+setup_interfaces() {
+   local device hub_name hub_socket tap_address
+   local guest_address enabled_default_route used_devices
+   
+   first_iteration=true
    while [ $# -gt 0 ]; do
-      # Using a double percent (%%) allows to tolerate situations in which
-      # virtual hub names include an equal sign (=)
-      DEVICE=${1%%=*}
-      # Using a single hash (#) allows to tolerate situations in which
-      # virtual hub names include an equal sign (=)
-      HUB_NAME=${1#*=}
-      if [ "${HUB_NAME}" = "tap" ]; then
-         echo 1>&2
-         echo 1>&2 "$SCRIPTNAME: Invalid tap collision domain specification: \"$1\"."
+      device=${1%%=*}
+      hub_name=${1#*=}
+
+      # Check if interface has already been configured
+      if [[ " $used_devices " == *" $device "* ]]; then
+         echo 1>&2 "$SCRIPTNAME: $device: Duplicate interface"
          exit 1
       fi
-      if containsRegexp HUB_NAME "tap,"; then
-         # This is an Internet connected (i.e., "tap") collision domain
-         CHECK_TAP=$(echo $HUB_NAME | awk -v FS="," \
-            '
-               {
-                  if (NF!=3 ||
-                      !match($2,"^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$") ||
-                      !match($3,"^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$"))
-                     print 0
-                  else {
-                     print "HUB_NAME=tap"
-                     print "TAP_ADDRESS=" $2
-                     print "GUEST_ADDRESS=" $3
-                  }
-               }
-            ')
-         if [ "x$CHECK_TAP" = "x0" ]; then
-            echo 1>&2
-            echo 1>&2 "$SCRIPTNAME: Invalid tap collision domain specification: \"$1\"."
+
+      # Remember that this network interface has been configured
+      used_devices="$used_devices $device"
+
+      # Check if tap interface (regular hubs cannot be named with commas)
+      if [[ "$hub_name" == tap,* ]]; then
+         # Format: tap,tap_address,guest_address
+         IFS=, read -r hub_name tap_address guest_address <<< "$hub_name"
+
+         if ! is_inet_addr "$tap_address"; then
+            echo 1>&2 "$SCRIPTNAME: $tap_address: Invalid tap address"
             exit 1
-         else
-            eval "$CHECK_TAP"
+         fi
+
+         if ! is_inet_addr "$guest_address"; then
+            echo 1>&2 "$SCRIPTNAME: $guest_address: Invalid guest address"
+            exit 1
          fi
       else
-         # This is a normal (i.e., not "tap") collision domain
-         TAP_ADDRESS=""
-         GUEST_ADDRESS=""
+         # This is a normal (i.e., not 'tap') collision domain
+         unset tap_address guest_address
       fi
       
-      HUB_SOCKET="${HUB_SOCKET_DIR}/${HUB_SOCKET_PREFIX}_${USERID}_${HUB_NAME}${HUB_SOCKET_EXTENSION}"
-      
-      if [ $FIRSTLINE != 1 ]; then
-         [ -z "$BE_QUIET" ] && echo -n "               "
-      fi
-      [ -z "$BE_QUIET" ] && echo "${DEVICE} @ ${HUB_NAME}\t(${HUB_SOCKET})"
+      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USERID}_$hub_name$HUB_SOCKET_EXTENSION"
 
-      if containsRegexp USED_DEVICES " ${DEVICE} "; then
-         echo 1>&2 "$SCRIPTNAME: Duplicate interface: $DEVICE."
-         exit 1
-      fi
+      KERNELCMD="$KERNELCMD $device=daemon,,,$hub_socket"
       
-      KERNELCMD="$KERNELCMD $DEVICE=daemon,,,$HUB_SOCKET"
-      # Remember that this network interface is in use
-      USED_DEVICES="${USED_DEVICES} ${DEVICE} "
-      
-      if [ ! -z "$TAP_ADDRESS" ]; then
-         HUBLIST="$HUBLIST $HUB_SOCKET,$TAP_ADDRESS,$GUEST_ADDRESS"
-         KERNELCMD="$KERNELCMD autoconf_$DEVICE=$GUEST_ADDRESS"
-         if [ -z "$ENABLED_DEFAULT_ROUTE" ]; then
-            # Ensure the default route is specified only once.
-            KERNELCMD="$KERNELCMD def_route=$TAP_ADDRESS"
-            ENABLED_DEFAULT_ROUTE=1
+      if [ -n "$tap_address" ]; then
+         HUBLIST+=( "$hub_socket,$tap_address,$guest_address" )
+
+         KERNELCMD="$KERNELCMD autoconf_$device=$guest_address"
+
+         # Ensure the default route is specified only once
+         if [ -z "$enabled_default_route" ]; then
+            KERNELCMD="$KERNELCMD def_route=$tap_address"
+            enabled_default_route=1
          fi
       else
-         HUBLIST="$HUBLIST $HUB_SOCKET"
+         HUBLIST+=( "$hub_socket" )
       fi
 
-      FIRSTLINE=0
+      if $first_iteration; then
+         first_iteration=false
+      elif [ -z "$BE_QUIET" ]; then
+         echo -n "               "
+      fi
+
+      [ -z "$BE_QUIET" ] && echo "$device @ $hub_name ($hub_socket)"
+
       shift
    done
 }
@@ -589,26 +578,26 @@ KERNELCMD="$KERNELCMD uml_dir=$MCONSOLE_DIR"
 ##### Setup network interfaces
 if [ -n "$ETH_INTERFACES" ]; then
    [ -z "$BE_QUIET" ] && echo -n "   Interfaces: "
-   eval setupInterfaces $ETH_INTERFACES
+   setup_interfaces $ETH_INTERFACES
 fi
 
 ##### Set HOSTHOME
 if [ -z "$NO_HOSTHOME" ]; then
    [ -z "$BE_QUIET" ] && echo "   Hostfs at:  $HOME"
-   KERNELCMD="$KERNELCMD hosthome=${HOME}"
+   KERNELCMD="$KERNELCMD hosthome=$HOME"
 fi
 
 
 ##### Check whether virtual machine already exists
 if [ -z "$JUST_PRINT" ] && get_machine_state "$USERID" "$VM_NAME"; then
-   echo 1>&2 "${SCRIPTNAME}: Virtual machine '$VM_NAME' is already running. Please halt it before starting a new one or use a different virtual machine name"
+   echo 1>&2 "$SCRIPTNAME: Virtual machine '$VM_NAME' is already running. Please halt it before starting a new one or use a different virtual machine name"
    exit 1
 fi
 
 
 ##### Check whether filesystem is already in use
 if [ -z "$JUST_PRINT" ] && file_in_use "$VM_FS"; then
-   echo 1>&2 "${SCRIPTNAME}: Filesystem '$VM_FS' is already in use. Please use a different filesystem or virtual machine name"
+   echo 1>&2 "$SCRIPTNAME: Filesystem '$VM_FS' is already in use. Please use a different filesystem or virtual machine name"
    exit 1
 fi
 
@@ -696,7 +685,7 @@ if [ "$VM_CON0" = "tmux" ]; then
 fi
 
 ##### Actually start network hubs
-eval runHubs $HUBLIST
+eval runHubs "${HUBLIST[@]}"
 
 ##### Prepare the cleanHubs function for execution after a virtual machine stops
 export cleanHubs
@@ -722,7 +711,7 @@ if [ "$VM_CON0" = "none" ]; then
    REDIRECT_CONSOLE="> /dev/null 2>&1"
 fi
 
-run_command "$JUST_PRINT" "$KERNELCMD" "{ $WAKEUP_PORTHELPER $REMOVE_FS_COMMAND $KERNELCMD; cleanHubs $HUBLIST; } $REDIRECT_CONSOLE $BACKGROUND"
+run_command "$JUST_PRINT" "$KERNELCMD" "{ $WAKEUP_PORTHELPER $REMOVE_FS_COMMAND $KERNELCMD; cleanHubs ${HUBLIST[*]}; } $REDIRECT_CONSOLE $BACKGROUND"
 
 # Connect to the tmux session if TMUX_OPEN_TERMS is set
 if [ "$TMUX_OPEN_TERMS" = "yes" ] && [ "$VM_CON0" = "tmux" ]; then
