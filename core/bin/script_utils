@@ -247,11 +247,31 @@ run_command() {
 # This function returns zero if some process is using the specified file; non-zero
 # otherwise
 someOneUses() {
-   # A non existent file is not used by anybody
-   [ -e "$1" ] || return 1
+   file=$1
    
+   # A non existent file is not used by anybody
+   [ -e "$file" ] || return 1
    lsof -f -- "$1" > /dev/null 2>&1
    return
+}
+
+
+###############################################################################
+# Test if a file is being used by a process.
+# Usage:
+#   file_in_use FILE
+# Globals:
+#   None
+# Arguments:
+#   $1 - file to test
+# Returns:
+#   Returns 0 if the file is in use by a process, non-zero if not or on failure
+#   (e.g., if file does not exist).
+# Example:
+#   None
+###############################################################################
+file_in_use() {
+   lsof -f -- "$1" > /dev/null 2>&1
 }
 
 
