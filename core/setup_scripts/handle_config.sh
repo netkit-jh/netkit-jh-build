@@ -87,7 +87,8 @@ if [ "${CURRENT_VERSION}" -lt 5 ]; then
     echo "Upgrading Netkit configuration to V5."
 
     # Add tmux to the list of valid options for VM_CON0
-    sed -i '/^\s*\# none, xterm, this, pty, port:port_number/ s/$/, tmux/' ${NEW_DIR}/netkit.conf
+    sed -i '/^\s*\# none, xterm, this, pty, port:port_number/ s/$/, tmux\
+                                # Note: tmux can only be used for the primary console./' ${NEW_DIR}/netkit.conf
 
     # Remove USE_TMUX section as con0 is now used to handle tmux
     sed -i ':a;N;$!ba;s/USE_TMUX=FALSE.*commands to it with vcommand.//g' ${NEW_DIR}/netkit.conf
