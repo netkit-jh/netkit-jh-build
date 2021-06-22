@@ -36,145 +36,174 @@ fi
 log_write "$0 $*"
 
 
-# This function is used to print the vstart usage
-help() {
+###############################################################################
+# Write vstart's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... MACHINE"
+}
+
+
+###############################################################################
+# Write vstart's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
    cat << END_OF_HELP
+$(usage_line)
 Start MACHINE with a given configuration.
 
 You can use the following options to adjust the virtual machine parameters:
-      --ethN=DOMAIN     Equip machine with a network interface ethN, where N is
-                        a number between 0 and $((MAX_INTERFACES - 1)).
-                        It will be connected to the DOMAIN collision domain
-                        (network segment).
-                        The special domain 'tap' is reserved: when connected to
-                        it, an external network can be reached through this
-                        interface. A 'tap' interface is declared as follows:
+      --ethN=DOMAIN   equip machine with a network interface ethN, where N is a
+                        number between 0 and $((MAX_INTERFACES - 1)). It will be connected to the
+                        DOMAIN collision domain (network segment). The special
+                        domain 'tap' is reserved: when connected to it, an
+                        external network can be reached through this interface.
+                        A 'tap' interface is declared as follows:
                         --ethN=tap,TAP_ADDRESS,GUEST_ADDRESS
-                        where TAP_ADDRESS is the IP address of the host side
-                        of the interface and GUEST_ADDRESS is the IP address of
+                        where TAP_ADDRESS is the IP address of the host side of
+                        the interface and GUEST_ADDRESS is the IP address of
                         the interface inside the virtual machine. TAP_ADDRESS
                         and GUEST_ADDRESS must be on the same subnetwork which,
                         in turn, must not exist on your host network.
                         Note:
                         - Using 'tap' domains performs host-side operations
-                          with administrative privileges. The script will take
-                          care of asking you for the root password if and when
-                          required.
+                           with administrative privileges. The script will take
+                           care of asking you for the root password if and when
+                           required.
                         - TAP_ADDRESS is mandatory, but is only taken into
-                          account when a 'tap' collision domain is first used.
-                          The script only uses one 'tap' collision domain for
-                          each user on the host machine.
+                           account when a 'tap' collision domain is first used.
+                           The script only uses one 'tap' collision domain for
+                           each user on the host machine.
                         - Host-side configurations are not automatically
-                          removed when halting machines: you should use the
-                          vclean script instead.
-                        Please read the Netkit-JH documentation before using
-                        'tap' collision domains.
-  -k, --kernel=FILENAME Use FILENAME as the UML kernel for the virtual machine.
-                        Default kernel is:
-                        $VM_KERNEL
-  -M, --mem=MEM         Give the virtual machine MEM MB of RAM. Allowed values
-                        span from $MIN_MEM MB to $MAX_MEM MB, defaulting to $VM_MEMORY MB.
+                           removed when halting machines: you should use the
+                           vclean script instead.
+  -k, --kernel=FILENAME  use FILENAME as the UML kernel for the virtual
+                          machine. The default kernel is:
+                          $VM_KERNEL
+  -M, --mem=MEM       give the virtual machine MEM MB of RAM. Allowed values
+                        span from $MIN_MEM MB to $MAX_MEM MB, defaulting to $VM_MEMORY MB
 
 Filesystem settings can be tuned by using the following options:
-  -H, --no-hosthome         Do not mount host filesystem inside the machine.
-  -m, --model-fs=FILENAME   Use the specified filesystem image as a model for
+  -H, --no-hosthome   do not mount host filesystem inside the machine
+  -m, --model-fs=FILENAME  use the specified filesystem image as a model for
                             the virtual machine. FILENAME will not be altered
-                            in any way unless the --no-cow option is used.
-                            Default model filesystem is:
+                            in any way unless the --no-cow option is used. The
+                            default model filesystem is:
                             $VM_MODEL_FS
-  -f, --filesystem=FILENAME Use FILENAME as a filesystem for the machine. By
-                            default, MACHINE.disk is used. Do not use this in
-                            conjunction with --no-cow.
-  -D, --hide-disk-file      Hide the virtual machine filesystem (.disk file).
-                            The virtual machine will continue to operate
-                            normally. Do not use this in conjunction with
-                            --no-cow.
-  -W, --no-cow              Avoid using copy-on-write (COW); every change to
-                            the virtual machine filesystem is applied directly
-                            to the model filesystem.
+  -f, --filesystem=FILENAME  use FILENAME as a filesystem for the machine. By
+                              default, MACHINE.disk is used. Do not use this in
+                              conjunction with --no-cow
+  -D, --hide-disk-file  hide the virtual machine filesystem (.disk file). The
+                         virtual machine will continue to operate normally. Do
+                         not use this in conjunction with --no-cow
+  -W, --no-cow        avoid using copy-on-write (COW); every change to the
+                        virtual machine filesystem is applied directly to the
+                        model filesystem
 
 Console settings can be altered by the following options:
       --con0=MODE
-      --con1=MODE       Attach the virtual machine primary (con0) and secondary
+      --con1=MODE     attach the virtual machine primary (con0) and secondary
                         (con1) consoles to different devices or terminal
                         emulators.
                         Allowed values for MODE are:
-                          xterm      attach to a terminal emulator application
-                          this       attach to stdin/stdout, i.e., use current
-                                     terminal; only one console at a time can
-                                     be set to 'this'.
-                          pty        attach to a pseudo-terminal
-                          port:N     attach to TCP port N
-                          none       disable console
-                        Default mode for con0 is ${VM_CON0}.
-                        Default mode for con1 is ${VM_CON1}.
-      --xterm=TYPE      Specify the terminal emulator application. The
-                        following values are supported:
+                          xterm   attach to a terminal emulator application
+                          this    attach to stdin/stdout, i.e., use current
+                                   terminal; only one console at a time can be
+                                   set to 'this'.
+                          pty     attach to a pseudo-terminal
+                          port:N  attach to TCP port N
+                          none    disable console
+                        The default modes for con0 and con1, respectively, are
+                        ${VM_CON0} and ${VM_CON1}
+      --xterm=TYPE    specify the terminal emulator application. The following
+                        values are supported:
                           alacritty    use the lightweight Alacritty terminal
                           gnome        use xtermGNOME Terminal
                           kitty        use the lightweight Kitty terminal
                           konsole      use the KDE Konsole
                           konsole-tab  same as above, but different virtual
-                                       machines are opened in different Konsole
-                                       tabs of the same window
+                                        machines are opened in different
+                                        Konsole tabs of the same window
                           wsl          use Windows Subsystem for Linux (WSL) in
-                                       a conhost.exe window
+                                        a conhost.exe window
                           wt           use Windows Subsystem for Linux (WSL) in
-                                       a Windows Terminal window
+                                        a Windows Terminal window
                           xterm        use the standard xterm (default)
-                          
 
 If wanting to set up a lab, the following options are relevant:
-  -e, --exec=FILENAME   Run a specified command or script inside the virtual
-                        machine during the boot phase.
-  -l, --hostlab=DIR     Tell the virtual machine that the base directory for a
-                        Netkit-JH laboratory is DIR.
-  -w, --hostwd=DIR      Set the lab working directory to DIR.
+  -e, --exec=FILENAME  run a specified command or script inside the virtual
+                        machine during the boot phase
+  -l, --hostlab=DIR   tell the virtual machine that the base directory for a
+                        Netkit-JH laboratory is DIR
+  -w, --hostwd=DIR    set the lab working directory to DIR
 
-Miscellaneous options:
-      --append=PARAM    Append additional kernel command line parameters when
+Miscellaneous:
+$(help_option)
+      --append=PARAM  append additional kernel command line parameters when
                         running the virtual machine kernel; PARAM can also be
                         an OPTION=VALUE pair. This option can be used multiple
                         times. Parameters will be passed to the kernel in the
-                        same order in which they are provided.
-      --debug           Run the virtual machine under a GDB instance to report
+                        same order in which they are provided
+      --debug         run the virtual machine under a GDB instance to report
                         more messages than with --verbose, and for further
                         debugging. The process requires a SIGINT delivery with
                         kill -INT <pid> to start debugging (if the session
-                        booted successfully.)
-  -F, --foreground      Do not launch the virtual machine in background (the
+                        booted successfully)
+  -F, --foreground    do not launch the virtual machine in background (the
                         latter being the default behavior). Note that virtual
                         hubs are always started in background, regardless of
                         this option. This is the default when using 'this' as
-                        the console mode.
-  --tmux-attached       Run each VM in tmux and start a terminal attached to
-                        the tmux session. This is equivalent to VM_CON0=tmux
-                        and TMUX_OPEN_TERMS=yes in netkit.conf.
-  --tmux-detached       Run each VM in a tmux session without opening
-                        terminals. This is the same as VM_CON0=tmux and
-                        TMUX_OPEN_TERMS=no in netkit.conf.
-  -h, --help            Show this help.
-  -p, --print           Do not start anything, just show which commands would
-                        be executed.
-  -q, --quiet           Quiet mode (suppress any output except errors and
-                        warnings).
-  -v, --verbose         Tell the virtual machine kernel to report verbose
-                        messages during boot.
-      --version         Print version information and exit.
+                        the console mode
+  -p, --print         do not start anything, just show which commands would be
+                        executed
+  -q, --quiet         quiet mode (suppress any output except errors and
+                        warnings)
+  --tmux-attached     run each VM in tmux and start a terminal attached to the
+                        tmux session. This is equivalent to VM_CON0=tmux and
+                        TMUX_OPEN_TERMS=yes in netkit.conf
+  --tmux-detached     run each VM in a tmux session without opening terminals.
+                        This is the same as VM_CON0=tmux and TMUX_OPEN_TERMS=no
+                        in netkit.conf
+  -v, --verbose       show debugging messages during the boot sequence
+$(version_option)
 
 Note: unless otherwise stated, whitespace is not permitted in any option
 argument. It is also prohibited in filepaths, including the path to the current
 directory at the time vstart is invoked.
+
 END_OF_HELP
-}
 
-
-# Output vhalt's usage to stderr
-# Usage: usage
-usage() {
-   echo 1>&2 "Usage: $SCRIPTNAME [OPTION]... MACHINE"
-   echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
+   exit "$status"
 }
 
 
