@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script essentially wraps around gnome/tmux commands and forces them to
 # block. This is needed because gnome-terminal/tmux don't block until the

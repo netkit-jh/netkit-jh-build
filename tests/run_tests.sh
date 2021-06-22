@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Returns 1 if the files existed, or 0 if they didn't after waiting for wait_seconds (first parameter)
 wait_for_files() {

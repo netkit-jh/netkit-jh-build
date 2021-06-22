@@ -1,4 +1,5 @@
 #!/bin/false
+# shellcheck shell=bash
 
 #     Copyright 2009 Julien Iguchi-Cartigny
 #     XLIM Laboratory, Limoges University, France

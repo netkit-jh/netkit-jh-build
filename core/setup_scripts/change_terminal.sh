@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Check that NETKIT_HOME is set
 if [ -z "${NETKIT_HOME}" ]; then

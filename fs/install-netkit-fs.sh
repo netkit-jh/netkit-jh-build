@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # First argument is the work directory, that contains the packages list, package selections, service lists
 WORK_DIRECTORY="$1"

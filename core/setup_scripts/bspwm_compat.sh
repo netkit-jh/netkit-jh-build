@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 pidof bspwm
 if [ $? -eq 0 ] ; then
     echo "Bspwm is running! Downloading and applying patch."

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script is responsible for copying over the previous user's installation and updating the config with any new options.
 

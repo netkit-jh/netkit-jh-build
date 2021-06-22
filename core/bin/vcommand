@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 PARAMS=""
 COMMAND_TIMEOUT="1"
