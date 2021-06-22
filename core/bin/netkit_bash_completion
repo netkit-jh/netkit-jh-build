@@ -31,6 +31,7 @@ fi
 # because this would result in several environment variables (e.g., VM_MEMORY,
 # etc.) being permanently fixed in the user's environment, which is not what we
 # want.
+# shellcheck source=./script_utils
 MAX_INTERFACES=$( . "$NETKIT_HOME/bin/script_utils"; echo $MAX_INTERFACES; )
 
 _command_options() {

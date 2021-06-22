@@ -29,8 +29,15 @@
 export LANG=C
 
 # Read Netkit configuration
+# There must be multiple ShellCheck directives to mask warnings
+
+# shellcheck source=../netkit.conf
 [ -f /etc/netkit.conf ] && . "/etc/netkit.conf"
+
+# shellcheck source=../netkit.conf
 [ -f "$NETKIT_HOME/netkit.conf" ] && . "$NETKIT_HOME/netkit.conf"
+
+# shellcheck source=../netkit.conf
 [ -f "$HOME/.netkit/netkit.conf" ] && . "$HOME/.netkit/netkit.conf"
 
 # Assign default values to undefined parameters
