@@ -27,8 +27,6 @@ if [ -z "$NETKIT_HOME" ]; then
    exit 1
 fi
 
-CMDLINE="$0 $*"
-
 . "$NETKIT_HOME/bin/script_utils"
 
 
@@ -221,8 +219,7 @@ parseCmdLine() {
          -d)
             shift; CURRENT_ARGUMENT="$1"
             if [ ! -z "$LAB_DIRECTORY" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                  "Multiple directory specifications: where can I find the lab?"
+               echo 1>&2 "$SCRIPTNAME: Multiple directory specifications: where can I find the lab?"
                exit 1
             fi
             LAB_DIRECTORY=$(makeAbsolutePath "$CURRENT_ARGUMENT");;
@@ -257,13 +254,11 @@ parseCmdLine() {
             shift; CURRENT_ARGUMENT="$1"
             if [ ! -z "$CURRENT_ARGUMENT" ]; then
                if ! echo "$CURRENT_ARGUMENT" | grep -q "^[0-9][0-9]*$"; then
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                     "Invalid setting for option -p: \"$CURRENT_ARGUMENT\". Positive integer expected."
+                  echo 1>&2 "$SCRIPTNAME: Invalid setting for option -p: '$CURRENT_ARGUMENT'. Positive integer expected"
                   exit 1
                fi
                if [ ! -z "$FORCE_PARALLEL_MODE" ]; then
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                     "Option -p is used multiple times."
+                  echo 1>&2 "$SCRIPTNAME: Option -p is used multiple times"
                   exit 1
                fi
                MAX_SIMULTANEOUS_VMS="$CURRENT_ARGUMENT"
@@ -283,8 +278,7 @@ parseCmdLine() {
          --wait|-w)
             shift; CURRENT_ARGUMENT="$1"
             if ! echo "$CURRENT_ARGUMENT" | grep -q "^[0-9][0-9]*$"; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                  "Invalid setting for option -w: \"$CURRENT_ARGUMENT\". Positive integer expected."
+               echo 1>&2 "$SCRIPTNAME: Invalid setting for option -w: '$CURRENT_ARGUMENT'. Positive integer expected"
                exit 1
             fi
             GRACE_TIME="$CURRENT_ARGUMENT";;
@@ -301,8 +295,7 @@ parseCmdLine() {
                user|builtin|both)
                   VERIFY="$CURRENT_ARGUMENT";;
                *)
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                     "Invalid setting for option --verify: \"$CURRENT_ARGUMENT\"."
+                  echo 1>&2 "$SCRIPTNAME: Invalid setting for option --verify: '$CURRENT_ARGUMENT'"
                   exit 1;;
             esac;;
 
@@ -325,7 +318,7 @@ eval parseCmdLine $CMDLINE_OPTIONS
 
 # Check whether user gave some strange options
 if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
+   echo 1>&2 "$SCRIPTNAME: Invalid option or missing option parameter"
    exit 1
 fi
 
@@ -334,14 +327,13 @@ LAB_DIRECTORY=${LAB_DIRECTORY:-$PWD}
 
 # Check that the lab directory exists
 if [ ! -d "$LAB_DIRECTORY" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Lab directory ($LAB_DIRECTORY) does not exist."
+   echo 1>&2 "$SCRIPTNAME: Lab directory ($LAB_DIRECTORY) does not exist"
    exit 1
 fi
 
 # Check whether path to the lab directory contains spaces
 if containsRegexp LAB_DIRECTORY " "; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-            "Invalid lab directory: \"$LAB_DIRECTORY\" (path contains spaces)."
+   echo 1>&2 "$SCRIPTNAME: Invalid lab directory: '$LAB_DIRECTORY' (path contains spaces)"
    exit 1
 fi
 
@@ -354,8 +346,7 @@ fi
 
 # Check if -p and -s options are being used together
 if [ ! -z "$FORCE_PARALLEL_MODE" -a ! -z "$BE_SEQUENTIAL" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-            "Options -s and -p cannot be used together."
+   echo 1>&2 "$SCRIPTNAME: Options -s and -p cannot be used together"
    exit 1
 fi
 
@@ -381,8 +372,7 @@ if [ ! -z "$MAKEFILE" ]; then
 fi
 
 if [ ! -f "$LAB_DIRECTORY/lab.conf" -a ! -f "$LAB_DIRECTORY/lab.dep" -a -z "$FORCE_LAB" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-            "This does not appear to be a lab directory. Use option -F to convince me it is."
+   echo 1>&2 "$SCRIPTNAME: This does not appear to be a lab directory. Use option -F to convince me it is"
    exit 1
 fi
 

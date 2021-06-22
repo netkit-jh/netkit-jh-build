@@ -30,8 +30,6 @@ if [ -z "$NETKIT_HOME" ]; then
    exit 1
 fi
 
-CMDLINE="$0 $*"
-
 # shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
@@ -175,8 +173,7 @@ parseCmdLine() {
          --user|-u)
             shift; CURRENT_ARGUMENT="$1"
             if [ "x$CURRENT_ARGUMENT" = "x" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Expecting username."
+               echo 1>&2 "$SCRIPTNAME: Expecting username"
                exit 1
             fi
             checkSpaces "$CURRENT_ARGUMENT"
@@ -211,7 +208,7 @@ parseCmdLine() {
          checkSpaces "$1"
          if [ ! -z "$VM_PID" ]; then
             if [ ! -z "$VM_NAME" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" "Too many arguments: \"$1\". Option --force requires two arguments."
+               echo 1>&2 "$SCRIPTNAME: Too many arguments: '$1'. Option --force requires two arguments"
                exit 1
             else
                VM_NAME=$1
@@ -234,21 +231,21 @@ eval parseCmdLine $CMDLINE_OPTIONS
 
 # Check whether user gave some strange options
 if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
+   echo 1>&2 "$SCRIPTNAME: Invalid option or missing option parameter"
    exit 1
 fi
 
 
 # Check whether virtual machine name is missing
 if [ -z "$FORCE_MODE" -a -z "$VM_IDS" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Virtual machine name/PID is missing."
+   echo 1>&2 "$SCRIPTNAME: Virtual machine name/PID is missing"
    exit 1
 fi
 
 
 # Check whether incompatible modes have been selected
 if [ ! -z "$FORCE_MODE" -a ! -z "$USE_MCONSOLE" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "You cannot use the --force option if you asked to use mconsole sockets."
+   echo 1>&2 "$SCRIPTNAME: You cannot use the --force option if you asked to use mconsole sockets"
    exit 1
 fi
 
@@ -256,7 +253,7 @@ fi
 # Check whether arguments for the --force option are missing
 if [ ! -z "$FORCE_MODE" ]; then
    if [ -z "$VM_PID" -o -z "$VM_NAME" ]; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" "Missing virtual machine and/or PID."
+      echo 1>&2 "$SCRIPTNAME: Missing virtual machine and/or PID"
       exit 1
    fi
 fi
@@ -264,7 +261,7 @@ fi
 
 # Test mode is senseless if working in quiet mode
 if [ ! -z "$TEST_MODE" -a ! -z "$BE_QUIET" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Option --test cannot be used when working in quiet mode."
+   echo 1>&2 "$SCRIPTNAME: Option --test cannot be used when working in quiet mode"
    exit 1
 fi
 

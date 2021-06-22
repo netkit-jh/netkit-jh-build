@@ -136,7 +136,7 @@ eval parseCmdLine $CMDLINE_OPTIONS
 
 # Check whether user gave some strange options
 if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
+   echo 1>&2 "$SCRIPTNAME: Invalid option or missing option parameter"
    exit 1
 fi
 

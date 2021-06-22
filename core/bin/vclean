@@ -28,8 +28,6 @@ if [ -z "$NETKIT_HOME" ]; then
    exit 1
 fi
 
-CMDLINE="$0 $*"
-
 . "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
@@ -175,8 +173,7 @@ parseCmdLine() {
          --user|-u)
             shift; CURRENT_ARGUMENT="$1"
             if [ "x$CURRENT_ARGUMENT" = "x" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Expecting username."
+               echo 1>&2 "$SCRIPTNAME: Expecting username"
                exit 1
             fi
             checkSpaces "$CURRENT_ARGUMENT"
@@ -204,7 +201,7 @@ parseCmdLine() {
    done
    
    if [ $# -gt 0 ]; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" "Too many arguments: $*"
+      echo 1>&2 "$SCRIPTNAME: Too many arguments: $*"
       exit 1
    fi
 }
@@ -213,20 +210,20 @@ eval parseCmdLine $CMDLINE_OPTIONS
 
 # Check whether user gave some strange options
 if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
+   echo 1>&2 "$SCRIPTNAME: Invalid option or missing option parameter"
    exit 1
 fi
 
 
 # Test mode is senseless if working in quiet mode
 if [ ! -z "$TEST_MODE" -a ! -z "$BE_QUIET" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Option --test cannot be used when working in quiet mode."
+   echo 1>&2 "$SCRIPTNAME: Option --test cannot be used when working in quiet mode"
    exit 1
 fi
 
 # Actions --remove-hubs and --kill-machines are incompatible
 if [ ! -z "$REMOVE_UNUSED_HUBS" -a ! -z "$KILL_MACHINES" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Actions --remove-hubs and --kill-machines cannot be performed at the same time."
+   echo 1>&2 "$SCRIPTNAME: Actions --remove-hubs and --kill-machines cannot be performed at the same time"
    exit 1
 fi
 

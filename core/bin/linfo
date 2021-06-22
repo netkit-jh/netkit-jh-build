@@ -28,8 +28,6 @@ if [ -z "$NETKIT_HOME" ]; then
    exit 1
 fi
 
-CMDLINE="$0 $*"
-
 # shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
@@ -160,7 +158,7 @@ parseCmdLine() {
    done
 
    if [ $# -gt 0 ]; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option: \"$1\"."
+      echo 1>&2 "$SCRIPTNAME: Invalid option: '$1'"
       exit 1
    fi
 }
@@ -168,7 +166,7 @@ eval parseCmdLine $CMDLINE_OPTIONS
 
 # Check whether user gave some strange options
 if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
+   echo 1>&2 "$SCRIPTNAME: Invalid option or missing option parameter"
    exit 1
 fi
 
@@ -186,14 +184,13 @@ for LAB_DIRECTORY in $LAB_DIRECTORIES; do
    LAB_DESCRIPTIONS="$LAB_DESCRIPTIONS  \"$LAB_DESCRIPTION\""
    # Check that the lab directory exists
    if [ ! -d "$LAB_DIRECTORY" ]; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" "Lab directory ($LAB_DIRECTORY) does not exist."
+      echo 1>&2 "$SCRIPTNAME: Lab directory ($LAB_DIRECTORY) does not exist"
       exit 1
    fi
 
    # Check whether path to the lab directory contains spaces
    if containsRegexp LAB_DIRECTORY " "; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-               "Invalid lab directory: \"$LAB_DIRECTORY\" (path contains spaces)."
+      echo 1>&2 "$SCRIPTNAME: Invalid lab directory: '$LAB_DIRECTORY' (path contains spaces)"
       exit 1
    fi
 
@@ -224,13 +221,13 @@ done
 if [ ! -z "$MAP_FILE" ]; then
    for LAB_DIRECTORY in $LAB_DIRECTORIES; do
       if [ ! -f "${LAB_DIRECTORY%/}/lab.conf" ]; then
-         warning "$SCRIPTNAME" "$CMDLINE" "$0" "Unable to find file ${LAB_DIRECTORY}/lab.conf: Skipping"
+         echo 1>&2 "$SCRIPTNAME: Unable to find file $LAB_DIRECTORY/lab.conf: Skipping"
          continue
       fi
       CONFLIST="$CONFLIST ${LAB_DIRECTORY%/}/lab.conf"
    done
    if [ -z "$CONFLIST" ]; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" "No valid lab.confs found: cannot create topology map."
+      echo 1>&2 "$SCRIPTNAME: No valid lab.confs found: cannot create topology map"
       exit 1
    fi
    if labMap "$MAP_FILE" $CONFLIST; then

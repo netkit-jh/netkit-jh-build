@@ -28,8 +28,6 @@ if [ -z "$NETKIT_HOME" ]; then
    exit 1
 fi
 
-CMDLINE="$0 $*"
-
 # shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 

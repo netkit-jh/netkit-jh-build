@@ -32,8 +32,6 @@ if [ -z "$NETKIT_HOME" ]; then
    exit 1
 fi
 
-CMDLINE="$0 $*"
-
 . "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
@@ -163,15 +161,13 @@ parseCmdLine() {
             ETH_INTERFACES="${ETH_INTERFACES} ${CURRENT_ARGUMENT#--}="
             shift; CURRENT_ARGUMENT="$1"
             if containsRegexp CURRENT_ARGUMENT "_"; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Invalid collision domain: $CURRENT_ARGUMENT (underscoresare are not allowed)."
+               echo 1>&2 "$SCRIPTNAME: Invalid collision domain: $CURRENT_ARGUMENT (underscoresare are not allowed)"
                exit 1
             fi
             if containsRegexp CURRENT_ARGUMENT "," || containsRegexp CURRENT_ARGUMENT "\\."; then
                if [ "${CURRENT_ARGUMENT#tap,}" = "$CURRENT_ARGUMENT" ]; then
                   # This is not a special hub, but its name contains a comma
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                        "Invalid collision domain: $CURRENT_ARGUMENT (commas and dots are only allowed for Internet connected collision domains)."
+                  echo 1>&2 "$SCRIPTNAME: Invalid collision domain: $CURRENT_ARGUMENT (commas and dots are only allowed for Internet connected collision domains)"
                   exit 1
                fi
             fi
@@ -193,8 +189,7 @@ parseCmdLine() {
          --user|-u)
             shift; CURRENT_ARGUMENT="$1"
             if [ "x$CURRENT_ARGUMENT" = "x" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Expecting username."
+               echo 1>&2 "$SCRIPTNAME: Expecting username"
                exit 1
             fi
             checkSpaces "$CURRENT_ARGUMENT"
@@ -218,7 +213,7 @@ parseCmdLine() {
    # Parse virtual machine name   
    while [ $# != 0 ]; do
       if [ ! -z "$VM_ID" ]; then
-         warning "$SCRIPTNAME" "$CMDLINE" "$0" "Too many arguments: $*"
+         echo 1>&2 "$SCRIPTNAME: Too many arguments: $*"
          exit 1
       fi
       checkSpaces "$1"
@@ -232,13 +227,13 @@ eval parseCmdLine $CMDLINE_OPTIONS
 
 # Check whether user gave some strange options
 if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
+   echo 1>&2 "$SCRIPTNAME: Invalid option or missing option parameter"
    exit 1
 fi
 
 # Check whether virtual machine name is missing
 if [ -z "$VM_ID" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Virtual machine name/PID is missing."
+   echo 1>&2 "$SCRIPTNAME: Virtual machine name/PID is missing"
    exit 1
 fi
 
@@ -256,7 +251,7 @@ setupInterfaces() {
       HUB_NAME=${1#*=}
       if [ "${HUB_NAME}" = "tap" ]; then
          echo 1>&2
-         warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid tap collision domain specification: \"$1\"."
+         echo 1>&2 "$SCRIPTNAME: Invalid tap collision domain specification: '$1'"
          exit 1
       fi
       if containsRegexp HUB_NAME "tap,"; then
@@ -277,7 +272,7 @@ setupInterfaces() {
             ')
          if [ "x$CHECK_TAP" = "x0" ]; then
             echo 1>&2
-            warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid tap collision domain specification: \"$1\"."
+            echo 1>&2 "$SCRIPTNAME: Invalid tap collision domain specification: '$1'"
             exit 1
          else
             eval "$CHECK_TAP"
@@ -287,7 +282,7 @@ setupInterfaces() {
       HUB_SOCKET="${HUB_SOCKET_DIR}/${HUB_SOCKET_PREFIX}_${USERID}_${HUB_NAME}${HUB_SOCKET_EXTENSION}"
       
       if containsRegexp MCONSOLE_CMD "${DEVICE}=daemon,,,"; then
-         warning "$SCRIPTNAME" "$CMDLINE" "$0" "Duplicate interface: $DEVICE."
+         echo 1>&2 "$SCRIPTNAME: Duplicate interface: $DEVICE"
          exit 1
       fi
       

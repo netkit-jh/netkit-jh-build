@@ -85,8 +85,7 @@ varReplace() {
 checkSpaces() {
    STRING="$1"
    if containsRegexp STRING " "; then
-      warning "$SCRIPTNAME" "$0" \
-              "Argument \"$STRING\" contains spaces. They are not allowed."
+      echo 1>&2 "$SCRIPTNAME: Argument '$STRING' contains spaces. They are not allowed"
       exit 1
    fi
 }
@@ -255,15 +254,6 @@ showVersion() {
    else
       echo "<unknown>"
    fi
-}
-
-
-
-# This function can be used to print warnings concerning command line parameters
-warning() {
-   echo 1>&2 "$1: In command line \"$2\""
-   echo 1>&2 "$4"
-   echo 1>&2 "Use $3 --help to get help."
 }
 
 
