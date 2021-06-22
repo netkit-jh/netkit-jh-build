@@ -21,22 +21,6 @@
 # This is the Netkit vlist script, which is used to list running virtual machines
 # and/or ask for details about a given machine.
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
-   echo 1>&2 "please set it as described in the Netkit documentation and try again."
-   exit 1
-fi
-
-# shellcheck source=./lcommon
-. "$NETKIT_HOME/bin/lcommon"
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-# Write to the vcommands log
-log_write "$0 $*"
-
 
 ###############################################################################
 # Write vlist's usage line to standard output.
@@ -104,73 +88,6 @@ END_OF_HELP
 
    exit "$status"
 }
-
-
-# USERID is set in script_utils
-USER="$USERID"
-
-
-# Get command line options
-LONG_OPTS="help,no-header,user:,version"
-SHORT_OPTS="hnu:"
-
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
-   # getopt will output the errorneous command-line argument
-   usage 1
-fi
-
-# (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
-
-while true; do
-   case "$1" in
-      --help|-h)
-         usage 0
-         ;;
-      --no-header|-n)
-         no_header=true
-         ;;
-      --user|-u)
-         USER="$2"
-         [ "$USER" = "-" ] && unset USER
-         shift
-         ;;
-      --version)
-         showVersion
-         exit 0
-         ;;
-      --)
-         shift
-         break
-         ;;
-      *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
-         usage 1
-         ;;
-   esac
-
-   shift
-done
-
-# Non-option arguments are machine names
-vm_ids=( "$@" )
-
-for host in "${vm_ids[@]}"; do
-   checkSpaces "$host"
-done
-
-
-# Check whether -u - is being used together with a virtual machine ID
-if [ -z "$USER" ] && [ "${#vm_ids[@]}" -ne 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: When giving VM names, a specific user ID must be provided"
-   exit 1
-fi
-
-
-# Display summary of virtual machines
-if [ "${#vm_ids[@]}" -eq 0 ]; then
-   print_vm_summary "$no_header" "$USER"
-fi
 
 
 ###############################################################################
@@ -291,6 +208,89 @@ print_vm_summary() {
    printf "Total virtual machines: %9d\n" "$machine_count"
    printf "Total consumed memory:  %9d KB\n" "$total_memory_usage"
 }
+
+
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./lcommon
+. "$NETKIT_HOME/bin/lcommon"
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
+# USERID is set in script_utils
+USER="$USERID"
+
+
+# Get command line options
+LONG_OPTS="help,no-header,user:,version"
+SHORT_OPTS="nu:"
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
+fi
+
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
+
+while true; do
+   case "$1" in
+      --help)
+         usage 0
+         ;;
+      -n|--no-header)
+         no_header=true
+         ;;
+      -u|--user)
+         USER="$2"
+         [ "$USER" = "-" ] && unset USER
+         shift
+         ;;
+      --version)
+         showVersion
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
+
+# Non-option arguments are machine names
+vm_ids=( "$@" )
+
+for host in "${vm_ids[@]}"; do
+   checkSpaces "$host"
+done
+
+
+# Check whether -u - is being used together with a virtual machine ID
+if [ -z "$USER" ] && [ "${#vm_ids[@]}" -ne 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: When giving VM names, a specific user ID must be provided"
+   usage 1
+fi
+
+
+# Display summary of virtual machines
+if [ "${#vm_ids[@]}" -eq 0 ]; then
+   print_vm_summary "$no_header" "$USER"
+fi
 
 
 ###############################################################################

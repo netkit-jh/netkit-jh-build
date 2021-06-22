@@ -23,9 +23,7 @@
 SCRIPTNAME=$(basename "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
-   echo 1>&2 "please set it as described in the Netkit documentation and try"
-   echo 1>&2 "again."
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
