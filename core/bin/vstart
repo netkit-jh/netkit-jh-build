@@ -208,7 +208,9 @@ END_OF_HELP
 
 
 # Get command line options
-LONG_OPTS="append:,con0:,con1:,debug,exec:,filesystem:,foreground,help,hide-disk-file,hostlab:,hostwd:,kernel:,mem:,model-fs:,no-cow,no-hosthome,print,quiet,test,tmux-attached,tmux-detached,verbose,version,xterm:"
+LONG_OPTS="append:,con0:,con1:,debug,exec:,filesystem:,foreground,help,\
+hide-disk-file,hostlab:,hostwd:,kernel:,mem:,model-fs:,no-cow,no-hosthome,\
+print,quiet,test,tmux-attached,tmux-detached,verbose,version,xterm:"
 SHORT_OPTS="De:Ff:Hk:Ll:M:m:pqvWw:"
 
 for i in $(seq 0 $MAX_INTERFACES); do
@@ -448,7 +450,54 @@ if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "
 fi
 
 
-# This function prepares network interfaces for use.
+########################## Build kernel command line ##########################
+
+
+###############################################################################
+# Warn if file is located on a filesystem that does not support sparse files.
+# Usage:
+#   check_filesystem FILE
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - file on target filesystem
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+check_filesystem() {
+   file=$1
+
+   fs_type=$(stat -f "$file" | grep -w Type)
+   fs_type=${fs_type#*Type: }
+
+   if [[ "$fs_type" =~ ^(ext[2-4]|ntfs|ntfs-3g|fuse|reiser|jfs|xfs)$ ]]; then
+      echo 1>&2 "$SCRIPTNAME: Filesystem '$fs_type' does not seem to support sparse files, this may result in performance loss and disk space consumption"
+   fi
+}
+
+
+###############################################################################
+# Append network interface specifications to the kernel invocation command.
+# Usage:
+#   setup_interfaces [INTERFACE]...
+# Globals:
+#   r- BE_QUIET
+#   -w HUBLIST
+#   r- HUB_SOCKET_DIR
+#   r- HUB_SOCKET_EXTENSION
+#   r- HUB_SOCKET_PREFIX
+#   r- KERNELCMD
+#   r- SCRIPTNAME
+#   r- USERID
+# Arguments:
+#  ... - list of interfaces
+# Returns:
+#   None. Will exit with usage 1 on invalid specification.
+# Example:
+#   None
+###############################################################################
 setup_interfaces() {
    local device hub_name hub_socket tap_address
    local guest_address enabled_default_route used_devices
@@ -517,24 +566,12 @@ setup_interfaces() {
 }
 
 
-
-################## Building kernel command line ##################
-
-: "${VM_FS:="$PWD/$VM_NAME.disk"}"
 KERNELCMD="$VM_KERNEL"
 
-check_filesystem() {
-   FS=$1
-
-   FS_TYPE=$(stat -f "$FS" | grep -w Type)
-   FS_TYPE=${FS_TYPE#*Type: }
-
-   if echo "$FS_TYPE" | grep -vqE "(ext[2,3,4])|(ntfs)|(ntfs-3g)|(fuse)|(reiser)|(jfs)|(xfs)"; then
-      echo 1>&2 "$SCRIPTNAME: Filesystem '$FS_TYPE' does not seem to support sparse files, this may result in performance loss and disk space consumption"
-   fi
-}
 
 # Check if model fs or cow fs are on a filesystem supporting sparse files
+: "${VM_FS:="$PWD/$VM_NAME.disk"}"
+
 if [ -z "$USE_MODEL_FS" ]; then
    check_filesystem "$VM_MODEL_FS"
 else
@@ -547,7 +584,7 @@ if [ -z "$BE_QUIET" ]; then
 fi
 
 
-##### Setup kernel modules directory
+# Setup kernel modules directory
 KERNEL_MODULES_DIRECTORY=$(dirname "$VM_KERNEL")/modules
 
 if [ -d "$KERNEL_MODULES_DIRECTORY" ]; then
