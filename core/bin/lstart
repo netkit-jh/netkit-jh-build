@@ -338,6 +338,7 @@ if containsRegexp LAB_DIRECTORY " "; then
    exit 1
 fi
 
+# shellcheck source=./lcommon
 . "$NETKIT_HOME/bin/lcommon"
 
 # Check whether parallel startup and -f are being used together

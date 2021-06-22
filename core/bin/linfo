@@ -173,9 +173,11 @@ fi
 # If no lab directory has been given, assume current directory
 LAB_DIRECTORIES=${LAB_DIRECTORIES:-${PWD}}
 
+# shellcheck source=./lcommon
 . "$NETKIT_HOME/bin/lcommon"
 
 for LAB_DIRECTORY in $LAB_DIRECTORIES; do
+   # shellcheck source=./lcommon
    . "$NETKIT_HOME/bin/lcommon"
    LAB_VERSIONS="$LAB_VERSIONS  \"$LAB_VERSION\""
    LAB_AUTHORS="$LAB_AUTHORS  \"$LAB_AUTHOR\""
