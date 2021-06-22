@@ -7,7 +7,6 @@ fi
 
 # shellcheck source=../netkit.conf
 . "$NETKIT_HOME/netkit.conf"
-
 # shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
