@@ -38,64 +38,110 @@ CMDLINE="$0 $*"
 log_write "$0 $*"
 
 
-# This function is used to print the vclean usage
-help() {
-   echo
-   echo "Usage: $SCRIPTNAME [options]"
+###############################################################################
+# Write vclean's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]..."
+}
+
+
+###############################################################################
+# Write vclean's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
    cat << END_OF_HELP
-This script can be used to perform the following cleanup operations:
-- kill processes associated to unused (or all) virtual hubs;
-- kill running virtual machines;
-- remove host-side configurations set up for tap interfaces.
+$(usage_line)
+Perform a Netkit cleanup operation:
+- Kill processes associated to unused (or all) virtual hubs
+- Kill running virtual machines
+- Remove host-side configurations set up for tap interfaces
+By default, the script just removes unused virtual hubs.
 
-By default, the script just removes unused virtual hubs. Other actions can be
-triggered by using the following options:
+This command can be used to clean up a directory containing a Netkit lab. It
+takes care of removing any temporary files, that is, '.ready' files, '.log'
+files, the 'readyfor.test' file as well as virtual machines (COW) filesystems
+('.disk' files). Therefore, any change to the virtual machines filesystems is
+lost. Of course, any persistent part of the lab is preserved, including those
+files that are automatically copied inside virtual machines during the boot
+phase.
 
-      --clean-all      A synonym for -HKT (use with care).
-  -H, --remove-hubs    Just kill unused virtual hubs. This is the default,
-                       unless another action has been explicitly requested.
+      --clean-all     A synonym for -HKT (use with care)
+  -H, --remove-hubs   Just kill unused virtual hubs. This is the default,
+                        unless another action has been explicitly requested.
   -K, --kill-machines  Kill all running virtual machines and virtual hubs. This
-                       corresponds to crashing all running virtual machines
-                       (even those that are frozen) and the virtual hubs they
-                       are attached to.
-  -T, --remove-tunnels Remove tunnels and other configuration settings that have
-                       been altered in order to set up "tap" collision domains.
-                       This is not a per-user action: using this option will
-                       remove every host-side configuration that has been set up
-                       to use tap interfaces.
-                       This operation requires administrative privileges. The
-                       script will take care of asking for the root password
-                       if required.
-                       Please read the Netkit documentation before using this
-                       option.
-      --test           Do not actually stop virtual machines and hubs: just
-                       show which processes would be killed. This option cannot
-                       be used when working in quiet mode.
-                       Action --remove-tunnels is not affected by this option.
-  -u, --user=USERNAME  Perform operations on processes and tunnels owned by user
-                       USERNAME. By using the special user name '-' all the
-                       processes are affected, regardless of their user (this
-                       requires administrative privileges).
-                       Action --remove-tunnels is not affected by this option.
+                        corresponds to crashing all running virtual machines
+                        (even those that are frozen) and the virtual hubs they
+                        are attached to.
+  -T, --remove-tunnels  Remove tunnels and other configuration settings that
+                         have been altered in order to set up "tap" collision
+                         domains. This is not a per-user action: using this
+                         option will remove every host-side configuration that
+                         has been set up to use tap interfaces. This operation
+                         requires administrative privileges. The script will
+                         take care of asking for the root password if required.
+      --test          Do not actually stop virtual machines and hubs: just show
+                        which processes would be killed. This option cannot be
+                        used when working in quiet mode. Action
+                        --remove-tunnels is not affected by this option
+  -u, --user=USERNAME  perform operations on processes and tunnels owned by
+                        USERNAME. By using the special user name '-' all the
+                        processes are affected, regardless of their user (this
+                        requires administrative privileges). Action
+                        --remove-tunnels is not affected by this option
 
-Other options are:
-  
-  -h, --help           Show this help.
+  -d DIRECTORY        clean up the lab inside DIRECTORY. By default, the
+                        cleaning process takes place in the current directory
+
+Miscellaneous:
+$(help_option)
   -q, --quick
-      --quiet          Quiet mode (suppress any output except errors and
-                       warnings). Also, do not check whether processes have been
-                       actually stopped. This option cannot be used in
-                       conjunction with --test.
-      --version        Print version information and exit.
-                   
+      --quiet         quiet mode (suppress any output except errors and
+                        warnings). Also, do not check whether processes have been
+                        actually stopped. This option cannot be used in
+                        conjunction with --test.
+$(version_option)
+
 END_OF_HELP
+
+   exit "$status"
 }
 
 
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="clean-all,kill-machines,remove-hubs,remove-tunnels,user:,help,quiet,quick,test,version"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "HKTu:hq" "$@")
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "HKTu:q" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -142,9 +188,8 @@ parseCmdLine() {
                USER=$CURRENT_ARGUMENT
             fi;;
             
-         --help|-h)
-            help
-            exit;;
+         --help)
+            usage 0;;
             
          -q|--quiet|--quick)
             BE_QUIET=1;;

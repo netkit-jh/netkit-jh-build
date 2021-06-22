@@ -155,6 +155,60 @@ log_write() {
 }
 
 
+###############################################################################
+# Write the "try --help" message to standard error.
+# Usage:
+#   try_help
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+try_help() {
+   echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
+}
+
+
+###############################################################################
+# Write the standard --help command-line option usage to standard output.
+# Usage:
+#   help_option
+# Globals:
+#   None
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+help_option() {
+   echo "      --help          display this help and exit"
+}
+
+
+###############################################################################
+# Write the standard --version command-line option usage to standard output.
+# Usage:
+#   version_option
+# Globals:
+#   None
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+version_option() {
+   echo "      --version       output version information and exit"
+}
+
+
 # This function prints out some version information
 showVersion() {
    local NETKIT_VERSION KERNEL_VERSION KERNEL_FILE_NAME NETKIT_KERNEL_VERSION

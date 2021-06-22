@@ -17,10 +17,9 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This is the Netkit vdump script, which is used to start uml_dump
+# This is the Netkit vdump script, which is used to start uml_dump.
 
 SCRIPTNAME=$(basename "$0")
-VERSION="2.6"
 
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
@@ -28,31 +27,73 @@ if [ -z "$NETKIT_HOME" ]; then
    exit 1
 fi
 
-CMDLINE="$0 $*"
-
+# shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
 log_write "$0 $*"
 
 
-# This function is used to print the vlist usage
-help() {
-   echo "Usage: $SCRIPTNAME [options] domain"
-   cat << END_OF_HELP
-This command can be used to connect to an uml_switch and print packets in pcap format to standard output.
-
-This command also supports the following standard options:
-
-  -h, --help          Show this help.
-      --version       Print version information and exit.
-END_OF_HELP
+###############################################################################
+# Write vdump's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME DOMAIN"
 }
+
+
+###############################################################################
+# Write vdump's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
+   cat << END_OF_HELP
+$(usage_line)
+  or:  $SCRIPTNAME OPTION
+Dump packets from a Netkit DOMAIN (collision domain) to standard output.
+
+$(help_option)
+$(version_option)
+
+END_OF_HELP
+
+   exit "$status"
+}
+
 
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="help,version"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hnu:" "$@")
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "nu:" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -62,9 +103,8 @@ parseCmdLine() {
       CURRENT_ARGUMENT="$1"
       case "$CURRENT_ARGUMENT" in
       
-         --help|-h)
-            help
-            exit;;
+         --help)
+            usage 0;;
          
          --version)
             showVersion

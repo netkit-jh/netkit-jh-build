@@ -34,75 +34,119 @@ fi
 
 CMDLINE="$0 $*"
 
+# shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
 log_write "$0 $*"
 
 
-# This function is used to print the vcrash usage
-help() {
-   echo
-   echo "Usage: $SCRIPTNAME [options] MACHINE-ID..."
-   cat << END_OF_HELP
-This script kills running virtual machines without halting them. This roughly
-corresponds to disconnecting their power plug. MACHINE-ID is either the name or
-the PID of a virtual machine. Available options are:
+###############################################################################
+# Write vcrash's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
+}
 
-  -h, --help          Show this help.
-  -k, --kill          By default, virtual machines are crashed by using their
-                      mconsole socket. This method is generally faster, but in
-                      some situations it may not work properly (for example, if
-                      a virtual machine is somewhy frozen). If crashing a
-                      machine via its mconsole fails, vcrash automatically tries
-                      hard to kill the virtual machine processes. By using this
-                      option, the attempt via the mconsole socket is simply
-                      skipped, and virtual machine processes are just killed.
+
+###############################################################################
+# Write vcrash's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
+   cat << END_OF_HELP
+$(usage_line)
+Kill running virtual machines without halting them. This roughly corresponds to
+disconnecting their power plug. MACHINE is either the name or the PID of a
+virtual machine.
+
+  -k, --kill          by default, virtual machines are crashed by using their
+                        mconsole socket. This method is generally faster, but
+                        in some situations it may not work properly (for
+                        example, if a virtual machine is somewhy frozen). If
+                        crashing a machine via its mconsole fails, vcrash
+                        automatically tries hard to kill the virtual machine
+                        processes. By using this option, the attempt via the
+                        mconsole socket is simply skipped, and virtual machine
+                        processes are just killed
   -q, --quick
-      --quiet         Quiet mode (suppress any output except errors and
-                      warnings). Using this option also disables checking
-                      whether virtual machines have actually been crashed, and
-                      causes vcrash to exit (almost) immediately. The 'almost'
-                      is due to the fact that vcrash will still wait for the
-                      crash directive to reach the virtual machine when mconsole
-                      is being used (default behaviour unless -k is used). Of
-                      course, a check inside vcrash prevents from waiting
-                      endlessly.
-  -r, --remove-fs     Delete virtual machine (COW) filesystem after crashing
-                      machine. Using this option has no effect on machines
-                      started with the --no-cow option. Log files are not
-                      removed.
-      --test          Do not actually crash virtual machines. Just show which
-                      processes would be killed or which mconsole socket would
-                      be used to send the crash directive. This option cannot be
-                      used when working in quiet mode.
-  -u, --user=USERNAME Crash virtual machine(s) owned by user USERNAME. By using
-                      the special user name '-' any virtual machine can be
-                      crashed, regardless of its owner (this requires
-                      administrative privileges). If MACHINE-ID is a virtual
-                      machine name, and the option --user=- is being used,
-                      then only the virtual machine reported by
-                      'vlist --user=- MACHINE-ID' is crashed.
-      --version       Print version information and exit.
+      --quiet         quiet mode (suppress any output except errors and
+                        warnings). Using this option also disables checking
+                        whether virtual machines have actually been crashed,
+                        and causes vcrash to exit (almost) immediately. The
+                        'almost' is due to the fact that vcrash will still wait
+                        for the crash directive to reach the virtual machine
+                        when mconsole is being used (default behaviour unless
+                        -k is used). Of course, a check inside vcrash prevents
+                        from waiting endlessly
+  -r, --remove-fs     delete virtual machine (COW) filesystem after crashing
+                        machine. Using this option has no effect on machines
+                        started with the --no-cow option. Log files are not
+                        removed
+      --test          do not actually crash virtual machines. Just show which
+                        processes would be killed or which mconsole socket
+                        would be used to send the crash directive. This option
+                        cannot be used when working in quiet mode
+  -u, --user=USERNAME  crash virtual machine(s) owned by user USERNAME. By
+                        using the special user name '-' any virtual machine can
+                        be crashed, regardless of its owner (this requires
+                        administrative privileges). If MACHINE is a virtual
+                        machine name, and the option --user=- is being used,
+                        then only the virtual machine reported by
+                        'vlist --user=- MACHINE' is crashed
 
 The following options are deprecated and should not be used. They are only
 provided for backward compatibility.
+      --force         this option alters command syntax. In particular, when
+                        using --force only one virtual machine can be crashed.
+                        Two arguments are expected: the first one is the PID of
+                        the virtual machine and the second one is its name.
+                        Option --remove-fs does not work when using this switch
+      --root          a synonym for --user=-
 
-      --force         This option alters command syntax. In particular, when
-                      using --force only one virtual machine can be crashed.
-                      Two arguments are expected: the first one is the PID of
-                      the virtual machine and the second one is its name.
-                      Option --remove-fs does not work when using this switch.
-      --root          A synonym for --user=-.
+Miscellaneous:
+$(help_option)
+$(version_option)
+
 END_OF_HELP
-}
 
+   exit "$status"
+}
 
 
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="help,quiet,kill,user:,version,force,remove-fs,root,test"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hqkru:" "$@")
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "qkru:" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -118,9 +162,8 @@ parseCmdLine() {
       CURRENT_ARGUMENT="$1"
       case "$CURRENT_ARGUMENT" in
       
-         --help|-h)
-            help
-            exit;;
+         --help)
+            usage 0;;
             
          --quiet|--quick|-q)
             BE_QUIET=1;;

@@ -40,109 +40,158 @@ log_write "$0 $*"
 # Used later on to return the status of the lab test
 EXIT_VALUE=0
 
-# This function is used to print the lstart/ltest usage
-help() {
-   echo
+
+###############################################################################
+# Write lstart/ltest's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
-   echo
-   if [ "$SCRIPTNAME" = "ltest" ]; then
-      echo "This command can be used to test a Netkit lab. Depending on the command line"
-   else
-      echo "This command can be used to start a Netkit lab. Depending on the command line"
+}
+
+
+###############################################################################
+# Write lstart/ltest's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
    fi
-   cat << END_OF_HELP
-arguments, it is possible to start up the whole lab or just some of the
-virtual machines that compose it.
-Available options are:
-END_OF_HELP
+
+   usage_line
+
    if [ "$SCRIPTNAME" = "ltest" ]; then
-      echo "  -d DIRECTORY        Assume the lab to be tested is located inside DIRECTORY."
+      echo "Test a Netkit lab."
    else
-      echo "  -d DIRECTORY        Assume the lab to be started is located inside DIRECTORY."
+      echo "Start a Netkit lab."
    fi
+
    cat << END_OF_HELP
-                      By default, it is assumed that the lab is located in the
-                      current directory.
-  -F, --force-lab     By default, Netkit refuses to start a lab in a directory
-                      that has neither a lab.conf nor a lab.dep file. Enable
-                      this option if you really want to start a lab without
-                      any of those two files.
+It is possible to start up the whole lab or just some of the virtual machines
+that compose it.
 END_OF_HELP
+
+   if [ "$SCRIPTNAME" = "ltest" ]; then
+      echo -n "  -d DIRECTORY        test the lab located inside DIRECTORY."
+   else
+      echo -n "  -d DIRECTORY        start the lab located inside DIRECTORY."
+   fi
+
+   cat << END_OF_HELP
+ By default, the
+                        process takes place in the current directory
+END_OF_HELP
+
    if [ "$SCRIPTNAME" != "ltest" ]; then
       cat << END_OF_HELP
-  -f, --fast          Do not wait for a virtual machine to complete the boot
-                      phase before starting the next one. This option has no
-                      effect when parallel startup is being used, and is not
-                      impacted by the use of the -p option.
+  -F, --force-lab     by default, Netkit refuses to start a lab in a directory
+                        that has neither a lab.conf nor a lab.dep file. Enable
+                        this option if you really want to start a lab without
+                        any of those two files
+  -f, --fast          do not wait for a virtual machine to complete the boot
+                        phase before starting the next one. This option has no
+                        effect when parallel startup is being used, and is not
+                        impacted by the use of the -p option
 END_OF_HELP
    fi
-   cat << END_OF_HELP
-  --tmux-attached     Run each VM in tmux and start a terminal attached to the
-                      tmux session. This is the same as VM_CON0=tmux and
-                      TMUX_OPEN_TERMS=yes in netkit.conf
-  --tmux-detached     Run each VM in a tmux session without opening terminals.
-                      This is the same as VM_CON0=tmux and TMUX_OPEN_TERMS=no
-                      in netkit.conf
-  -l, --list          Show a list of running virtual machines after starting
-                      up the lab.
-  -o, --pass=OPTION   Pass OPTION unaltered to vstart. This will affect all the
-                      (newly started) virtual machines of the lab.
-  -p[VALUE]           Enable parallel startup, even if a lab.dep file does not
-                      exist inside the lab directory. If a VALUE is provided,
-                      it determines the maximum number of virtual machines that
-                      can be launched simultaneously. VALUE must be a positive
-                      integer. A VALUE of 0 corresponds to setting no limit.
-                      This option is incompatible with -s. Default setting if
-END_OF_HELP
-   echo "                      no VALUE is provided is $MAX_SIMULTANEOUS_VMS."
-   cat << END_OF_HELP
-  -s, --sequential    Disable parallel startup, even if a lab.dep file is found
-                      to exist inside the lab directory. This option conflicts
-                      with -p.
-  -w, --wait=SECONDS  Wait the specified amount of time before launching the
-                      next virtual machine. Of course, this is only useful when
-                      using either parallel startup or the -f option.
-END_OF_HELP
-if [ "$SCRIPTNAME" = "ltest" ]; then
-   cat << END_OF_HELP
-ltest-specific options follow:
 
-  -R, --rebuild-signature Unconditionally rebuild the test signature,
-                      overwriting any existing one.
-  -S, --script-mode   Use a terser and prettier output, suitable for automating
-                      the test of several labs.
-  --verify=TESTTYPE   When performing the test, force ltest to verify the
-                      outcome of the test specified by TESTTYPE. Allowed values
-                      for TESTTYPE are:
-                        user       check the outcome of user-defined tests only
-                        builtin    check the outcome of builtin tests only
-                        both       always check the outcome of all tests
-                      By default, for each virtual machine ltest verifies only
-                      the user-defined test if one is available in the
-                      signature, or only the built-in test otherwise.
-END_OF_HELP
-fi
    cat << END_OF_HELP
-Other standard options are:
+  --tmux-attached     run each VM in tmux and start a terminal attached to the
+                        tmux session. This is the same as VM_CON0=tmux and
+                        TMUX_OPEN_TERMS=yes in netkit.conf
+  --tmux-detached     run each VM in a tmux session without opening terminals.
+                        This is the same as VM_CON0=tmux and TMUX_OPEN_TERMS=no
+                        in netkit.conf
+  -l, --list          show a list of running virtual machines after starting up
+                        the lab.
+  -o, --pass=OPTION   pass OPTION unaltered to vstart. This will affect all the
+                        (newly started) virtual machines of the lab.
+  -p[VALUE]           enable parallel startup, even if a lab.dep file does not
+                        exist inside the lab directory. If a VALUE is provided,
+                        it determines the maximum number of virtual machines
+                        that can be launched simultaneously. VALUE must be a
+                        positive integer. A VALUE of 0 corresponds to setting
+                        no limit. This option is incompatible with -s. Default
+                        value is $MAX_SIMULTANEOUS_VMS
+  -s, --sequential    disable parallel startup, even if a lab.dep file is found
+                        to exist inside the lab directory. This option
+                        conflicts with -p
+  -w, --wait=SECONDS  wait the specified amount of time before launching the
+                        next virtual machine. Of course, this is only useful
+                        when using either parallel startup or the -f option
+END_OF_HELP
 
-  -h, --help          Show this help.
-  -v, --verbose       Show details about virtual machines while starting them.
-      --version       Print version information and exit.
+   if [ "$SCRIPTNAME" = "ltest" ]; then
+      cat << END_OF_HELP
+
+ltest-specific options:
+  -R, --rebuild-signature  unconditionally rebuild the test signature,
+                            overwriting any existing one
+  -S, --script-mode   use a terser and prettier output, suitable for automating
+                        the test of several labs
+  --verify=TESTTYPE   when performing the test, force ltest to verify the
+                        outcome of the test specified by TESTTYPE. Allowed
+                        values for TESTTYPE are:
+                          user     check the outcome of user-defined tests only
+                          builtin  check the outcome of builtin tests only
+                          both     always check the outcome of all tests
+                        By default, for each virtual machine ltest verifies
+                        only the user-defined test if one is available in the
+                        signature, or only the built-in test otherwise
+END_OF_HELP
+   fi
+
+   cat << END_OF_HELP
+
+Miscellaneous:
+$(help_option)
+  -v, --verbose       show details about virtual machines while starting them
+$(version_option)
 
 Notice: using parallel startup requires the 'make' utility to be properly
 installed.
 
 By default, all the virtual machines of the lab are started. If one or more
-MACHINE-NAMEs are passed on the command line, then only those machines will be
-actually started. If any of the MACHINE-NAMEs is invalid (i.e., it does not
+MACHINEs are passed on the command line, then only those machines will be
+actually started. If any of the MACHINE names is invalid (i.e., it does not
 correspond to a virtual machine of the lab), it will simply be skipped.
+
 END_OF_HELP
-if [ "$SCRIPTNAME" = "ltest" ]; then
-   cat << END_OF_HELP
+
+   if [ "$SCRIPTNAME" = "ltest" ]; then
+      cat << END_OF_HELP
 The return value of ltest is zero (=good) if and only if the test completed
 successfully or a new test signature has been produced.
+
 END_OF_HELP
-fi
+   fi
+
+   exit "$status"
 }
 
 
@@ -150,7 +199,7 @@ fi
 INVALID_OPTION=0
 OPT_LIST="help,version,verbose,list,pass:,makefile,sequential,wait:,force-lab"
 OPT_LIST="${OPT_LIST},tmux-attached,tmux-detached"
-SHORTOPT_LIST="hd:vlo:p::sw:F"
+SHORTOPT_LIST="d:vlo:p::sw:F"
 if [ "$SCRIPTNAME" = "ltest" ]; then
    OPT_LIST="${OPT_LIST},script-mode,rebuild-signature,verify:"
    SHORTOPT_LIST="${SHORTOPT_LIST}SR"
@@ -191,9 +240,8 @@ parseCmdLine() {
          --fast|-f)
             FASTMODE=1;;
          
-         --help|-h)
-            help
-            exit;;
+         --help)
+            usage 0;;
             
          --list|-l)
             LISTVM=1;;

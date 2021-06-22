@@ -38,36 +38,71 @@ fi
 log_write "$0 $*"
 
 
-# This function is used to print the vlist usage
-help() {
+###############################################################################
+# Write vlist's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
+}
+
+
+###############################################################################
+# Write vlist's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
    cat << END_OF_HELP
+$(usage_line)
 List running Netkit virtual machines and get detailed information about
 MACHINE(s).
 
-You can use the following options to select the output contents:
+  -n, --no-header     suppress header line and summary information in the
+                        output
+  -u, --user=USERNAME  show virtual machines owned by USERNAME. Using the
+                        special user name '-' results in considering all users.
+                        By default, only virtual machines for the current user
+                        are shown
 
-  -h, --help          Show this help.
-  -n, --no-header     Suppress header line and summary information in the
-                      output.
-  -u, --user=USERNAME Show virtual machines owned by USERNAME.
-                      Using the special user name '-' results in considering
-                      all users. By default, only virtual machines for the
-                      current user are shown.
-      --version       Print version information and exit.
+Miscellaneous:
+$(help_option)
+$(version_option)
 
 By specifying one or more MACHINEs it is possible to get detailed information.
 If --user=- is also being used, information about the first MACHINE with a
 matching name in the output of 'vlist --user=-' is reported.
+
 END_OF_HELP
-}
 
-
-# Output vlist's usage to stderr
-# Usage: usage
-usage() {
-   echo 1>&2 "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
-   echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
+   exit "$status"
 }
 
 
@@ -81,8 +116,7 @@ SHORT_OPTS="hnu:"
 
 if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
    # getopt will output the errorneous command-line argument
-   usage
-   exit 1
+   usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
@@ -91,8 +125,7 @@ eval set -- "$GETOPT_OPTS"
 while true; do
    case "$1" in
       --help|-h)
-         help
-         exit 0
+         usage 0
          ;;
       --no-header|-n)
          no_header=true
@@ -112,8 +145,7 @@ while true; do
          ;;
       *)
          echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
-         usage
-         exit 1
+         usage 1
          ;;
    esac
 

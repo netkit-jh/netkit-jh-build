@@ -42,28 +42,64 @@ CMDLINE="$0 $*"
 log_write "$0 $*"
 
 
-# This function is used to print the vstart usage
-help() {
-   echo
-   echo "Usage: $SCRIPTNAME [options] MACHINE-ID"
-   cat << END_OF_HELP
-This script can be used to attach interfaces to running virtual machines.
-Configuration can be performed via the following options:
+###############################################################################
+# Write vconf's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE"
+}
 
-      --ethN=DOMAIN     Equip virtual machine with a network interface ethN,
-END_OF_HELP
-   echo "                        where N is a number between 0 and $(($MAX_INTERFACES-1)). DOMAIN is the name"
+
+###############################################################################
+# Write vconf's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
    cat << END_OF_HELP
-                        of the collision domain the interface should be
-                        connected to. Using an empty DOMAIN name (e.g., 'eth0=')
-                        results in detaching the interface from a running
-                        virtual machine. The special name "tap" is reserved: when
-                        connecting an interface to the "tap" domain, an external
-                        network can be reached through this interface. A "tap"
-                        collision domain must be declared with the following
-                        syntax:
-                        --ethX=tap,TAP_ADDRESS,GUEST_ADDRESS
-                        where TAP_ADDRESS is the IP address of the "host side"
+$(usage_line)
+Attach network interfaces to running virtual machines.
+
+      --ethN=DOMAIN   equip virtual machine with a network interface ethN,
+                        where N is a number between 0 and $((MAX_INTERFACES - 1)). DOMAIN is the
+                        name of the collision domain the interface should be
+                        connected to. Using an empty DOMAIN name (e.g.,
+                        'eth0=') results in detaching the interface from a
+                        running virtual machine. The special name 'tap' is
+                        reserved: when connecting an interface to the 'tap'
+                        domain, an external network can be reached through this
+                        interface. A 'tap' collision domain must be declared
+                        with the following syntax:
+                          --ethX=tap,TAP_ADDRESS,GUEST_ADDRESS
+                        where TAP_ADDRESS is the IP address of the 'host side'
                         of the interface and GUEST_ADDRESS is the IP address of
                         the interface inside the virtual machine. TAP_ADDRESS
                         and GUEST_ADDRESS must be on the same network.
@@ -78,33 +114,30 @@ END_OF_HELP
                         - Tunnel configurations are not automatically removed
                           when halting machines: you should use the vclean
                           script for this purpose.
-                        Please read the Netkit documentation before using "tap"
-                        collision domains.
-                          
-MACHINE-ID is either a virtual machine name or its PID.
-
-Other options are:
-
-  -h, --help            Show this help.
-  -p, --print           Do not actually start anything. Just show which commands
-                        would be executed.
-  -q, --quiet           Quiet mode (suppress any output except errors and
-                        warnings).
-  -u, --user=USERNAME   Attach interfaces to a virtual machine owned by user
+  -u, --user=USERNAME  attach interfaces to a virtual machine owned by user
                         USERNAME. Using the special user name '-' results in
-                        considering all users. If MACHINE-ID is a virtual
-                        machine name, and the option --user=- is being used,
-                        then interfaces are attached to the virtual machine
-                        reported by 'vlist --user=- MACHINE-ID'. By default,
-                        interfaces are attached to virtual machines owned by the
-                        current user.
-      --version         Print version information and exit.
-                        
+                        considering all users. If MACHINE is a virtual machine
+                        name, and the option --user=- is being used, then
+                        interfaces are attached to the virtual machine reported
+                        by 'vlist --user=- MACHINE'. By default, interfaces are
+                        attached to virtual machines owned by the current user
+
+Miscellaneous:
+$(help_option)
+  -p, --print         do not actually start anything. Just show which commands
+                        would be executed
+  -q, --quiet         quiet mode (suppress any output except errors and
+                        warnings)
+$(version_option)
+
 Notice: arguments containing spaces are not allowed. Interfaces attached by
 using this tool will not be shown by vlist, and the corresponding virtual hubs
-will not be automatically stopped. Also, when using "tap" collision domains,
+will not be automatically stopped. Also, when using 'tap' collision domains,
 configuration inside virtual machines must be performed by hand.
+
 END_OF_HELP
+
+   exit "$status"
 }
 
 
@@ -116,7 +149,7 @@ while [ $i -lt $MAX_INTERFACES ]; do
    OPT_LIST="${OPT_LIST},eth$i:"
    i=$(($i + 1))
 done
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hpqvu:" "$@")
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "pqvu:" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -150,9 +183,8 @@ parseCmdLine() {
             checkSpaces "$CURRENT_ARGUMENT"
             ETH_INTERFACES="${ETH_INTERFACES}${CURRENT_ARGUMENT}" ;;
 
-         --help|-h)
-            help
-            exit;;
+         --help)
+            usage 0;;
 
          -q|--quiet)
             BE_QUIET=1;;

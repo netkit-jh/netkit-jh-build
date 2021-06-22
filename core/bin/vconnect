@@ -1,6 +1,10 @@
 #!/bin/bash
 
-. $NETKIT_HOME/netkit.conf
+# shellcheck source=../netkit.conf
+. "$NETKIT_HOME/netkit.conf"
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
 
 export TMUX='' # allow nesting of tmux sessions
 
@@ -37,30 +41,85 @@ open_terminal(){ # $1 = machine name
     nohup $TERMCMD tmux -L netkit attach -t="$1" &> /dev/null &
 }
 
-print_help(){
-    echo
-    echo -e " vconnect - connect to the tmux session of a netkit virtual machine."
-    echo
-    echo -e " Example: vconnect -m web --terminal --retry-count 3 --interval 5"
-    echo
-    echo -e "\toptions:"
-    echo
-    echo -e "\t-h | --help                       Print this Help."
-    echo -e "\t-l | --list                       List all running sessions on the tmux 'netkit' server."
-    echo -e "\t-t | --terminal                   Connect to the tmux session from a new terminal. The terminal opened is dependent on the TERM_TYPE set in netkit.conf."
-    echo -e "\t-m | --machine MACHINENEAME       Name of the machine to connect to."
-    echo -e "\t-r | --retry-count N              Number of times to attempt to connect to a tmux session."
-    echo -e "\t-n | --interval X                 Sleep duration between attempts to connect to a tmux session."
-    echo
+
+###############################################################################
+# Write vconnect's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]..."
 }
+
+
+###############################################################################
+# Write vconnect's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
+   cat << END_OF_HELP
+$(usage_line)
+Connect to the tmux session of a Netkit virtual machine.
+
+  -l, --list          list all running sessions on the tmux 'netkit' server
+  -t, --terminal      connect to the tmux session from a new terminal. The
+                        terminal opened is dependent on the TERM_TYPE set in
+                        netkit.conf
+  -m, --machine=MACHINE  name of the machine to connect to
+  -r, --retry-count=N  number of times to attempt to connect to a tmux session
+  -n, --interval=N    Sleep duration between attempts to connect to a tmux
+                        session
+
+Miscellaneous:
+$(help_option)
+$(version_option)
+
+The cleaning process involves temporary files generated for any of the virtual
+machines of the lab. If one or more MACHINEs are passed on the command line,
+then only those files generated for the matching virtual machines are deleted,
+as well as the 'readyfor.test' file. If any of the VM names are invalid (i.e.,
+it does not correspond to a virtual machine of the lab), it will simply be
+skipped.
+
+END_OF_HELP
+
+   exit "$status"
+}
+
 
 # from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
 
 while (( "$#" )); do
   case "$1" in
-    -h|--help)
-      print_help
-      exit
+    --help)
+      usage 0
       ;;
     -l|--list)
       LIST_ONLY="TRUE"
@@ -76,7 +135,7 @@ while (( "$#" )); do
         shift 2
       else
         echo "Error: Argument for $1 is missing" >&2
-        exit 1
+        usage 1
       fi
       ;;
     -n|--interval)
@@ -85,7 +144,7 @@ while (( "$#" )); do
         shift 2
       else
         echo "Error: Argument for $1 is missing" >&2
-        exit 1
+        usage 1
       fi
       ;;
     -m|--machine)
@@ -94,12 +153,16 @@ while (( "$#" )); do
         shift 2
       else
         echo "Error: Argument for $1 is missing" >&2
-        exit 1
+        usage 1
       fi
+      ;;
+    --version)
+      showVersion
+      exit 0
       ;;
     *)
       echo "Error: Unsupported flag $1" >&2
-      exit 1
+      usage 1
       ;;
   esac
 done
@@ -112,8 +175,7 @@ fi
 
 if [ -z ${MACHINE_NAME+x} ]; then
     echo "Machine name not given."
-    print_help
-    exit 1
+    usage 1
 fi
 
 ATTEMPTS=1

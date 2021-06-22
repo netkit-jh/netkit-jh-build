@@ -180,7 +180,7 @@ usage() {
 
 # Get command line options
 LONG_OPTS="append:,con0:,con1:,debug,exec:,filesystem:,foreground,help,hide-disk-file,hostlab:,hostwd:,kernel:,mem:,model-fs:,no-cow,no-hosthome,print,quiet,test,tmux-attached,tmux-detached,verbose,version,xterm:"
-SHORT_OPTS="De:Ff:Hhk:Ll:M:m:pqvWw:"
+SHORT_OPTS="De:Ff:Hk:Ll:M:m:pqvWw:"
 
 for i in $(seq 0 $MAX_INTERFACES); do
    LONG_OPTS="$LONG_OPTS,eth$i:"
@@ -188,8 +188,7 @@ done
 
 if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
    # getopt will output the errorneous command-line argument
-   usage
-   exit 1
+   usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
@@ -215,7 +214,7 @@ while true; do
                ;;
             *)
                echo 1>&2 "$SCRIPTNAME: $CON: Unrecognized console"
-               exit 1
+               usage 1
                ;;
          esac
          ;;
@@ -236,14 +235,14 @@ while true; do
 
          if containsRegexp DOMAIN "_"; then
             echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - underscores are not allowed"
-            exit 1
+            usage 1
          fi
 
          if containsRegexp DOMAIN "," || containsRegexp DOMAIN "\\."; then
             # If not a tap specification, but its name contains a comma
             if [ "${DOMAIN#tap,}" = "$DOMAIN" ]; then
                echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - commas and periods are only valid for tap interface specification"
-               exit 1
+               usage 1
             fi
          fi
 
@@ -259,7 +258,7 @@ while true; do
 
          if containsRegexp CURRENT_ARGUMENT ","; then
             echo 1>&2 "$SCRIPTNAME: $VM_FS: Invalid filesystem - commas are not allowed"
-            exit 1
+            usage 1
          fi
 
          checkSpaces "$VM_FS"
@@ -268,9 +267,8 @@ while true; do
       -H|--no-hosthome)
          NO_HOSTHOME=1
          ;;
-      -h|--help)
-         help
-         exit 0
+      --help)
+         usage 0
          ;;
       -k|--kernel)
          VM_KERNEL="$2"
@@ -290,7 +288,7 @@ while true; do
 
          if [ "$VM_MEMORY" -lt "$MIN_MEM" ] || [ "$VM_MEMORY" -gt "$MAX_MEM" ]; then
             echo 1>&2 "$SCRIPTNAME: Memory out of permitted range (min: $MIN_MEM MB; max: $MAX_MEM MB)"
-            exit 1
+            usage 1
          fi
          ;;
       -m|--model-fs)
@@ -299,7 +297,7 @@ while true; do
 
          if containsRegexp VM_MODEL_FS ","; then
             echo 1>&2 "$SCRIPTNAME: $VM_MODEL_FS: Invalid filesystem - commas are not allowed"
-            exit 1
+            usage 1
          fi
 
          checkSpaces "$VM_MODEL_FS"
@@ -347,7 +345,7 @@ while true; do
                ;;
             *)
                echo 1>&2 "$SCRIPTNAME: $TERM_TYPE: Unsupported terminal emulator"
-               exit 1
+               usage 1
                ;;
          esac
          ;;
@@ -357,8 +355,7 @@ while true; do
          ;;
       *)
          echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
-         usage
-         exit 1
+         usage 1
          ;;
    esac
 
@@ -372,37 +369,35 @@ if [ $# -eq 1 ]; then
    shift
 elif [ $# -eq 0 ]; then
    echo 1>&2 "$SCRIPTNAME: Missing machine name"
-   usage
-   exit 1
+   usage 1
 else
    echo 1>&2 "$SCRIPTNAME: Too many machine names"
-   usage
-   exit 1
+   usage 1
 fi
 
 
 # Check whether user is trying to attach more than one console to stdin/stdout
 if [ "$VM_CON0" = "this" ] && [ "$VM_CON1" = "this" ]; then
    echo 1>&2 "$SCRIPTNAME: Only one console can be attached to the current terminal"
-   exit 1
+   usage 1
 fi
 
 # Check whether a COW filesystem has been explictly provided when using the --no-cow option
 if [ -n "$USE_MODEL_FS" ] && [ -n "$VM_FS" ]; then
    echo 1>&2 "$SCRIPTNAME: Cannot provide a filesystem name with --no-cow"
-   exit 1
+   usage 1
 fi   
 
 # Check whether the user asked to hide the virtual machine filesystem while using the --no-cow option
 if [ -n "$REMOVE_FS" ] && [ -n "$USE_MODEL_FS" ]; then
    echo 1>&2 "$SCRIPTNAME: Cannot hide the filesystem when using --no-cow"
-   exit 1
+   usage 1
 fi
 
 # Check whether the path to the current directory contains spaces
 if containsRegexp PWD " "; then
    echo 1>&2 "$SCRIPTNAME: Current working directory path contains spaces"
-   exit 1
+   usage 1
 fi
 
 # Check whether the requested terminal emulator application exists
@@ -437,7 +432,7 @@ setup_interfaces() {
       # Check if interface has already been configured
       if [[ " $used_devices " == *" $device "* ]]; then
          echo 1>&2 "$SCRIPTNAME: $device: Duplicate interface"
-         exit 1
+         usage 1
       fi
 
       # Remember that this network interface has been configured
@@ -450,12 +445,12 @@ setup_interfaces() {
 
          if ! is_inet_addr "$tap_address"; then
             echo 1>&2 "$SCRIPTNAME: $tap_address: Invalid tap address"
-            exit 1
+            usage 1
          fi
 
          if ! is_inet_addr "$guest_address"; then
             echo 1>&2 "$SCRIPTNAME: $guest_address: Invalid guest address"
-            exit 1
+            usage 1
          fi
       else
          # This is a normal (i.e., not 'tap') collision domain

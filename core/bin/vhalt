@@ -36,38 +36,72 @@ fi
 log_write "$0 $*"
 
 
-# This function is used to print the vhalt usage
-help() {
-   echo
+###############################################################################
+# Write vhalt's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
-   cat << END_OF_HELP
-Gracefully shutdown running MACHINE(s).
-
-Available options are:
-
-  -h, --help          Show this help.
-  -q, --quick
-      --quiet         Do not wait for virtual machines to shut down. Just issue
-                      the halt command and exit. Using this option also
-                      suppresses any output except errors and warnings.
-  -r, --remove-fs     Delete virtual machine (COW) filesystem after halting
-                      machine. Using this option has no effect on machines
-                      started with the --no-cow option. Log files are not
-                      removed.
-  -u, --user=USERNAME Halt virtual machine(s) owned by user USERNAME. By using
-                      the special user name '-' any virtual machine can be
-                      halted, regardless of its owner (administrative privileges
-                      are required).
-      --version       Print version information and exit.             
-END_OF_HELP
 }
 
 
-# Output vhalt's usage to stderr
-# Usage: usage
+###############################################################################
+# Write vhalt's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
 usage() {
-   echo 1>&2 "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
-   echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
+   cat << END_OF_HELP
+$(usage_line)
+Gracefully shutdown running MACHINE(s).
+
+  -q, --quick
+      --quiet         do not wait for virtual machines to shut down. Just issue
+                        the halt command and exit. Using this option also
+                        suppresses any output except errors and warnings
+  -r, --remove-fs     delete virtual machine (COW) filesystem after halting
+                        machine. Using this option has no effect on machines
+                        started with the --no-cow option. Log files are not
+                        removed
+  -u, --user=USERNAME  halt virtual machine(s) owned by user USERNAME. By using
+                        the special user name '-' any virtual machine can be
+                        halted, regardless of its owner (administrative
+                        privileges are required)
+
+Miscellaneous:
+$(help_option)
+$(version_option)
+
+END_OF_HELP
+
+   exit "$status"
 }
 
 
@@ -81,8 +115,7 @@ SHORT_OPTS="hqru:"
 
 if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
    # getopt will output the errorneous command-line argument
-   usage
-   exit 1
+   usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
@@ -90,9 +123,8 @@ eval set -- "$GETOPT_OPTS"
 
 while true; do
    case "$1" in
-      -h|--help)
-         help
-         exit 0
+      --help)
+         usage 0
          ;;
 
       # TODO: Remove --quiet. Have --verbose and --quick (independent).
@@ -117,8 +149,7 @@ while true; do
          ;;
       *)
          echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
-         usage
-         exit 1
+         usage 1
          ;;
    esac
 

@@ -39,43 +39,83 @@ CMDLINE="$0 $*"
 log_write "$0 $*"
 
 
-# This function is used to print the lhalt usage
-help() {
-   echo
+###############################################################################
+# Write lhalt's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
+}
+
+
+###############################################################################
+# Write lhalt's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
    cat << END_OF_HELP
-This command gracefully shuts down the virtual machines of a Netkit lab. Halting
-instead of crashing is much slower but preserves virtual machines filesystem
-integrity. Optionally, this command also deletes virtual machines filesystems.
-Depending on the command line being used, it is possible to halt only a subset
-of the virtual machines that make up the lab.
-Available options are:
+$(usage_line)
+Gracefully shut down the virtual machines of a Netkit lab.
+Halting instead of crashing is much slower but preserves virtual machines
+filesystem integrity. Optionally, this command also deletes virtual machines
+filesystems. Depending on the command line being used, it is possible to halt
+only a subset of the virtual machines that make up the lab.
 
-  -d DIRECTORY        Halt the lab inside DIRECTORY. By default, the lab in
-                      the current directory is halted.
-  -l, --list          Show a list of running virtual machines after halting
-                      the lab.
+  -d DIRECTORY        halt the lab inside DIRECTORY. By default, the lab in
+                        the current directory is halted
+  -l, --list          show a list of running virtual machines after halting the
+                        lab
   -q, --quick
-      --quiet         Disable checking whether virtual machines have properly
-                      shut down. This quickens the halt process, but no
-                      warnings are raised if a virtual machine is unable to
-                      shut down.
-                      This option slightly reduces the amount of printed
-                      information as well. It cannot be used together with -r.
-  -r, --remove-fs     Delete virtual machines filesystems after halting them.
+      --quiet         disable checking whether virtual machines have properly
+                        shut down. This quickens the halt process, but no
+                        warnings are raised if a virtual machine is unable to
+                        shut down. This option slightly reduces the amount of
+                        printed information as well. It cannot be used together
+                        with -r
+  -r, --remove-fs     delete virtual machines filesystems after halting them.
                       This never impacts the model filesystem. This option
-                      cannot be used together with -q.
+                      cannot be used together with -q
 
-Other standard options are:
+Miscellaneous:
+$(help_option)
+$(version_option)
 
-  -h, --help          Show this help.
-      --version       Print version information and exit.
-
-If one or more MACHINE-NAMEs are passed on the command line, then only those
+If one or more MACHINEs are passed on the command line, then only those
 machines will be halted (and their filesystems deleted, if asked to). If any
-of the MACHINE-NAMEs is invalid (i.e., it does not correspond to a virtual
+of the MACHINE names is invalid (i.e., it does not correspond to a virtual
 machine of the lab), it will simply be skipped.
+
 END_OF_HELP
+
+   exit "$status"
 }
 
 
@@ -94,12 +134,11 @@ VERBOSE=1
 
 # Get command line options
 LONG_OPTS="help,version,remove-fs,quick,quiet,list"
-SHORT_OPTS="d:hlqr"
+SHORT_OPTS="d:lqr"
 
 if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
    # getopt will output the errorneous command-line argument
-   usage
-   exit 1
+   usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
@@ -113,15 +152,13 @@ while true; do
 
          if [ -n "$LAB_DIRECTORY" ]; then
             echo 1>&2 "$SCRIPTNAME: Multiple directory specifications"
-            usage
-            exit 1
+            usage 1
          fi
 
          LAB_DIRECTORY=$(makeAbsolutePath "$OPT_ARG")
          ;;
-      -h|--help)
-         help
-         exit 0
+      --help)
+         usage 0
          ;;
       -r|--remove-fs)
          REMOVE_FILESYSTEM=1
@@ -142,8 +179,7 @@ while true; do
          ;;
       *)
          echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
-         usage
-         exit 1
+         usage 1
          ;;
    esac
 

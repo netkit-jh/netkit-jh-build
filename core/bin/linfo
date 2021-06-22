@@ -32,6 +32,7 @@ fi
 
 CMDLINE="$0 $*"
 
+# shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
 
@@ -39,43 +40,84 @@ CMDLINE="$0 $*"
 log_write "$0 $*"
 
 
-# This function is used to print the linfo usage
-help() {
-   echo
-   echo "Usage: $SCRIPTNAME [options]"
+###############################################################################
+# Write linfo's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]..."
+}
+
+
+###############################################################################
+# Write linfo's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
    cat << END_OF_HELP
-This command displays information about a Netkit lab without running it.
+$(usage_line)
+Display information about a Netkit lab without running it.
 Displayed information includes the number of virtual machines that make up the
 lab. If asked to, the command can create a PNG file containing a graphical map
 of the link-level topology of the lab.
-Multiple lab directories can be specified by using the -d option. (current required)
-A -d is needed per directory. The -a option will auto-detect other labs within
-the parent directory.
+Multiple lab directories can be specified by using the -d option. A -d is
+needed per directory. The -a option will auto-detect other labs within the
+parent directory.
 
-Available options are:
+  -d DIRECTORY        assume the lab is located inside DIRECTORY. By default,
+                        the lab is assumed to be located in the current
+                        directory
+  -m, --map=FILE      Create a graphical link-level topology map of the lab and
+                        save it into FILE in PNG format. This requires the
+                        Graphviz library to be installed
+  -a, --auto          Finds sibling folders which all share the same prefix as
+                        the current directory bar the final character. E.g.,
+                        running in lab3a will find all directories starting
+                        with lab3* (lab3a, lab3b, lab3c, etc) can be paired
+                        with multiple -d to specify additional folders
 
-  -d DIRECTORY       Assume the lab is located inside DIRECTORY. By default,
-                     the lab is assumed to be located in the current directory.
-  -m, --map=FILE     Create a graphical link-level topology map of the lab and
-                     save it into FILE in PNG format. This requires the
-                     Graphviz library to be installed.
-  -a, --auto         Finds sibling folders which all share the same prefix as the
-                     current directory bar the final character. E.g. running in lab3a
-                     will find all directories starting with lab3* (lab3a,lab3b,lab3c,etc...)
-                     can be paired with multiple -d to specify additional folders.
- 
-Other standard options are:
+Miscellaneous:
+$(help_option)
+$(version_option)
 
-  -h, --help          Show this help.
-      --version       Print version information and exit.
 END_OF_HELP
+
+   exit "$status"
 }
 
 
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="auto,help,version,map:"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "ahd:m:" "$@")
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "ad:m:" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -100,9 +142,8 @@ parseCmdLine() {
                LAB_DIRECTORIES="$LAB_DIRECTORIES ${dir}"
             done;;
          
-         --help|-h)
-            help
-            exit;;
+         --help)
+            usage 0;;
             
          --map|-m)
             shift; CURRENT_ARGUMENT="$1"

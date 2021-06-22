@@ -37,30 +37,76 @@ tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
     echo "$tmux_buffer" |  sed "1,/$cmd_uuid/d" - | head -n -1 | sed '1,2d' -
 }
 
-print_help(){
-    echo
-    echo -e " vcommand - send a command to a netkit virtual machine through its tmux session."
-    echo
-    echo -e " Example: vcommand -m web "
-    echo
-    echo -e "\toptions:"
-    echo
-    echo -e "\t-h | --help                       Print this Help."
-    echo -e "\t-m | --machine MACHINENAME       Name of the machine to send the command to."
-    echo -e "\t-n | --timeout N                  Set how long to wait before grabbing the output of the command."
-    echo -e "\t-v | --verbose                    Enables VERBOSE variable for adding debugging echo statements."
-    echo -e "\t-c | --command cmd                command to send to the machine. This should always be the"
-    echo -e "\t                                  last argument to vcommand"
-    echo
+
+###############################################################################
+# Write vcommand's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]..."
 }
+
+
+###############################################################################
+# Write vcommand's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
+   cat << END_OF_HELP
+$(usage_line)
+Send a command to a netkit virtual machine through its tmux session.
+
+  -m, --machine=MACHINE  machine to send the command to
+  -n, --timeout=N     set how long to wait before grabbing the command output
+  -c, --command=CMD   command to send to the machine. This must be the last
+                        option.
+
+
+Miscellaneous:
+$(help_option)
+  -v, --verbose       display debugging messages
+$(version_option)
+
+END_OF_HELP
+
+   exit "$status"
+}
+
 
 # from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
 
 while (( "$#" )); do
   case "$1" in
-    -h|--help)
-      print_help
-      exit 0
+    --help)
+      usage 0
       ;;
     -v|--verbose)
       VERBOSE="TRUE"
@@ -72,7 +118,7 @@ while (( "$#" )); do
         shift 2
       else
         echo "Error: Argument for $1 is missing" >&2
-        exit 1
+        usage 1
       fi
       ;;
     -m|--machine)
@@ -81,7 +127,7 @@ while (( "$#" )); do
         shift 2
       else
         echo "Error: Argument for $1 is missing" >&2
-        exit 1
+        usage 1
       fi
       ;;
     -c|--command)
@@ -91,12 +137,12 @@ while (( "$#" )); do
         shift $#
       else
         echo "Error: Argument for $1 is missing" >&2
-        exit 1
+        usage 1
       fi
       ;;
     *) # unsupported flags
       echo "Error: Unsupported flag $1" >&2
-      exit 1
+      usage 1
       ;;
   esac
 done
@@ -105,8 +151,7 @@ eval set -- "$PARAMS"
 
 if [ -z ${MACHINE_NAME+x} ]; then
     echo "Machine name not given."
-    print_help
-    exit 1
+    usage 1
 fi
 
 tmux_command $MACHINE_NAME $COMMAND_TIMEOUT $VERBOSE $PARAMS

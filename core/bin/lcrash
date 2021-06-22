@@ -32,6 +32,7 @@ fi
 
 CMDLINE="$0 $*"
 
+# shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
 
@@ -39,64 +40,102 @@ CMDLINE="$0 $*"
 log_write "$0 $*"
 
 
-# This function is used to print the lcrash usage
-help() {
-   echo
+###############################################################################
+# Write lcrash's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
+}
+
+
+###############################################################################
+# Write lcrash's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
    cat << END_OF_HELP
-This command crashes the virtual machines of a Netkit lab. Crashing corresponds
-to hardly unplugging their power cord, which is very fast but at the same time
-may cause filesystem inconsistencies inside virtual machines. Depending on the
-command line being used, it is possible to crash only a subset of the virtual
-machines that make up the lab.
-Available options are:
+$(usage_line)
+Crash the virtual machines of a Netkit lab.
+Crashing corresponds to hardly unplugging their power cord, which is very fast
+but at the same time may cause filesystem inconsistencies inside virtual
+machines. Depending on the command line being used, it is possible to crash
+only a subset of the virtual machines that make up the lab.
 
-  -d DIRECTORY        Crash the lab inside DIRECTORY. By default, the lab in
-                      the current directory is crashed.
-  -F, --keep-fs       Avoid deleting virtual machines filesystems. This
-                      is useful when virtual machines are to be restarted while
-                      preserving filesystem contents. By default, all the
-                      filesystems are deleted after crashing the corresponding
-                      virtual machine.
-                      Notice that, regardless of this option, the model
-                      filesystem is never deleted.
-  -k, --kill          Crash virtual machines by simply killing their processes.
-                      The default setting is to first try crashing virtual
-                      machines by sending them a special message via their
-                      mconsole socket. If such an attempt fails, the command
-                      reverts to killing processes.
-                      If the mconsole method happens to fail too often, this
-                      option may result in a speedup of the crash process.
-                      Otherwise, it is advised to rely on the default setting,
-                      as using the mconsole is generally faster.
-  -l, --list          Show a list of running virtual machines after crashing
-                      the lab.
+  -d DIRECTORY        crash the lab inside DIRECTORY. By default, the lab in
+                        the current directory is crashed
+  -F, --keep-fs       avoid deleting virtual machines filesystems. This is
+                        useful when virtual machines are to be restarted while
+                        preserving filesystem contents. By default, all the
+                        filesystems are deleted after crashing the
+                        corresponding virtual machine. Notice that, regardless
+                        of this option, the model filesystem is never deleted
+  -k, --kill          crash virtual machines by simply killing their processes.
+                        The default setting is to first try crashing virtual
+                        machines by sending them a special message via their
+                        mconsole socket. If such an attempt fails, the command
+                        reverts to killing processes. If the mconsole method
+                        happens to fail too often, this option may result in a
+                        speedup of the crash process. Otherwise, it is advised
+                        to rely on the default setting, as using the mconsole
+                        is generally faster
+  -l, --list          show a list of running virtual machines after crashing
+                        the lab.
   -q, --quick
-      --quiet         Disable checking whether virtual machines have actually
-                      crashed. This results in a faster crash process, but
-                      may cause some processes to hang. If this happens, try
-                      crashing again without using this option or use
-                      vclean.
-                      This option slightly reduces the amount of printed
-                      information as well.
+      --quiet         disable checking whether virtual machines have actually
+                        crashed. This results in a faster crash process, but
+                        may cause some processes to hang. If this happens, try
+                        crashing again without using this option or use vclean.
+                        This option slightly reduces the amount of printed
+                        information as well.
 
-Other standard options are:
+Miscellaneous:
+$(help_option)
+$(version_option)
 
-  -h, --help          Show this help.
-      --version       Print version information and exit.
-
-If one or more MACHINE-NAMEs are passed on the command line, then only those
+If one or more MACHINEs are passed on the command line, then only those
 machines will be crashed (and their filesystems deleted, if asked to). If any
-of the MACHINE-NAMEs is invalid (i.e., it does not correspond to a virtual
+of the MACHINE names are invalid (i.e., it does not correspond to a virtual
 machine of the lab), it will simply be skipped.
+
 END_OF_HELP
+
+   exit "$status"
 }
 
 
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="help,version,kill,keep-fs,list,quick,quiet"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hd:Fklq" "$@")
+CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "d:Fklq" "$@")
 if [ $? -gt 0 ]; then
    INVALID_OPTION=1
 fi
@@ -121,9 +160,8 @@ parseCmdLine() {
             fi
             LAB_DIRECTORY=$(makeAbsolutePath "$CURRENT_ARGUMENT");;
          
-         --help|-h)
-            help
-            exit;;
+         --help)
+            usage 0;;
             
          --keep-fs|-F)
             KEEP_FILESYSTEM=1;;
@@ -165,6 +203,8 @@ fi
 
 # If no lab directory has been given, assume current directory
 LAB_DIRECTORY=${LAB_DIRECTORY:-$PWD}
+
+# shellcheck source=./lcommon
 . "$NETKIT_HOME/bin/lcommon"
 
 # Check that the lab directory exists

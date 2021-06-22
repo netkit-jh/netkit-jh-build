@@ -37,11 +37,50 @@ fi
 log_write "$0 $*"
 
 
-# This function is used to print the lclean help dialog
-# Usage: help 
-help() {
+###############################################################################
+# Write lclean's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
+}
+
+
+###############################################################################
+# Write lclean's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
    cat << END_OF_HELP
+$(usage_line)
 Clean a Netkit lab directory of temporary files and machine file systems.
 
 This command can be used to clean up a directory containing a Netkit lab. It
@@ -52,43 +91,34 @@ lost. Of course, any persistent part of the lab is preserved, including those
 files that are automatically copied inside virtual machines during the boot
 phase.
 
-Available options are:
+  -d DIRECTORY        clean up the lab inside DIRECTORY. By default, the
+                        cleaning process takes place in the current directory
 
-  -d DIRECTORY        Clean up the lab inside DIRECTORY. By default, the
-                      cleaning process takes place in the current directory.
-
-This command also supports the following standard options:
-
-  -h, --help          Show this help.
-  -v, --verbose       Show which files are being deleted.
-      --version       Print version information and exit.
+Miscellaneous:
+$(help_option)
+  -v, --verbose       show which files are being deleted
+$(version_option)
 
 The cleaning process involves temporary files generated for any of the virtual
-machines of the lab. If one or more MACHINEs are passed on the command
-line, then only those files generated for the matching virtual machines are
-deleted, as well as the 'readyfor.test' file. If any of the VM names are
-invalid (i.e., it does not correspond to a virtual machine of the lab), it will
-simply be skipped.
+machines of the lab. If one or more MACHINEs are passed on the command line,
+then only those files generated for the matching virtual machines are deleted,
+as well as the 'readyfor.test' file. If any of the VM names are invalid (i.e.,
+it does not correspond to a virtual machine of the lab), it will simply be
+skipped.
+
 END_OF_HELP
-}
 
-
-# Output lclean's usage to stderr
-# Usage: usage
-usage() {
-   echo 1>&2 "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
-   echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
+   exit "$status"
 }
 
 
 # Get command line options
 LONG_OPTS="help,version,verbose"
-SHORT_OPTS="d:hv"
+SHORT_OPTS="d:v"
 
 if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
    # getopt will output the errorneous command-line argument
-   usage
-   exit 1
+   usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
@@ -102,15 +132,13 @@ while true; do
 
          if [ -n "$LAB_DIRECTORY" ]; then
             echo 1>&2 "$SCRIPTNAME: Multiple directory specifications"
-            usage
-            exit 1
+            usage 1
          fi
 
          LAB_DIRECTORY=$(makeAbsolutePath "$OPT_ARG")
          ;;
-      -h|--help)
-         help
-         exit 0
+      --help)
+         usage 0
          ;;
       -v|--verbose)
          VERBOSE=1
@@ -125,8 +153,7 @@ while true; do
          ;;
       *)
          echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
-         usage
-         exit 1
+         usage 1
          ;;
    esac
 
