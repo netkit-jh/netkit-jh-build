@@ -152,20 +152,6 @@ are only provided to ensure backward compatibility with older versions of Netkit
 
 .TP
 .B
---force
-This option can be used to crash a virtual machine for which both the PID and
-the name are known. When using \fB\-\-force\fR, \fIvcrash\fR switches to an
-alternative syntax. In particular, it takes exactly two arguments: the virtual
-machine PID and its name. Option \fB\-r\fR or \fB\-\-remove-fs\fR does not work
-when using \fB\-\-force\fR.
-
-This option had been introduced (but was undocumented) in older versions of
-\fIvcrash\fR with the purpose of speeding up the process of halting laboratories.
-With the current version of \fIvcrash\fR there isn't any reason to use it (not
-even for speeding up the crash).
-
-.TP
-.B
 --root
 A synonym for \fB\-\-user\fR=\fB-\fR.
 

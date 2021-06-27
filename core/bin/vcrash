@@ -122,11 +122,6 @@ virtual machine.
 
 The following options are deprecated and should not be used. They are only
 provided for backward compatibility.
-      --force         this option alters command syntax. In particular, when
-                        using --force only one virtual machine can be crashed.
-                        Two arguments are expected: the first one is the PID of
-                        the virtual machine and the second one is its name.
-                        Option --remove-fs does not work when using this switch
       --root          a synonym for --user=-
 
 Miscellaneous:
@@ -140,122 +135,74 @@ END_OF_HELP
 
 
 # Get command line options
-INVALID_OPTION=0
-OPT_LIST="help,quiet,kill,user:,version,force,remove-fs,root,test"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "qkru:" "$@")
-if [ $? -gt 0 ]; then
-   INVALID_OPTION=1
+LONG_OPTS="help,quiet,kill,user:,version,force,remove-fs,root,test"
+SHORT_OPTS="qkru:"
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
 fi
-
-
 
 USER=$USERID
 
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
 
-# Parse command line options
-parseCmdLine() {
-   while [ $# -gt 0 ]; do
-      CURRENT_ARGUMENT="$1"
-      case "$CURRENT_ARGUMENT" in
-      
-         --help)
-            usage 0;;
-            
-         --quiet|--quick|-q)
-            BE_QUIET=1;;
-            
-         --kill|-k)
-            DO_KILL=1;;
-            
-         --remove-fs|-r)
-            REMOVE_FS=1;;
-         
-         --user|-u)
-            shift; CURRENT_ARGUMENT="$1"
-            if [ "x$CURRENT_ARGUMENT" = "x" ]; then
-               echo 1>&2 "$SCRIPTNAME: Expecting username"
-               exit 1
-            fi
-            checkSpaces "$CURRENT_ARGUMENT"
-            if [ "$CURRENT_ARGUMENT" = "-" ]; then
-               USER=""
-            else
-               USER=$CURRENT_ARGUMENT
-            fi;;
-            
-         --version)
-            showVersion
-            exit 0;;
-            
-         --force)
-            FORCE_MODE=1;;
-            
-         --root)
-            USER="";;
-            
-         --test)
-            TEST_MODE=1;;
-            
-         --)
-            shift
-            break;;
-      esac
-      shift
-   done
-   
-   if [ ! -z "$FORCE_MODE" ]; then
-      while [ $# -gt 0 ]; do
-         checkSpaces "$1"
-         if [ ! -z "$VM_PID" ]; then
-            if [ ! -z "$VM_NAME" ]; then
-               echo 1>&2 "$SCRIPTNAME: Too many arguments: '$1'. Option --force requires two arguments"
-               exit 1
-            else
-               VM_NAME=$1
-            fi
-         else
-            VM_PID=$1
-         fi
+while true; do
+   case "$1" in
+      --help)
+         usage 0
+         ;;
+      --kill|-k)
+         DO_KILL=1
+         ;;
+      -q|--quick|--quiet)
+         BE_QUIET=1
+         ;;
+      -r|--remove-fs)
+         REMOVE_FS=1
+         ;;
+      --root)
+         USER=""
+         ;;
+      --test)
+         TEST_MODE=1
+         ;;
+      --user|-u)
+         USER=$2
+         [ "$USER" = "-" ] && unset USER
+         checkSpaces "$USER"
          shift
-      done
-   else
-      while [ $# -gt 0 ]; do
-         checkSpaces "$1"
-         VM_IDS="$VM_IDS $1"
+         ;;
+      --version)
+         showVersion
+         exit 0
+         ;;
+      --)
          shift
-      done
-   fi
-}
-eval parseCmdLine $CMDLINE_OPTIONS
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
 
 
-# Check whether user gave some strange options
-if [ $INVALID_OPTION -eq 1 ]; then
-   echo 1>&2 "$SCRIPTNAME: Invalid option or missing option parameter"
-   exit 1
-fi
+while [ $# -gt 0 ]; do
+   checkSpaces "$1"
+   VM_IDS="$VM_IDS $1"
+   shift
+done
 
 
 # Check whether virtual machine name is missing
-if [ -z "$FORCE_MODE" -a -z "$VM_IDS" ]; then
+if [ -z "$VM_IDS" ]; then
    echo 1>&2 "$SCRIPTNAME: Virtual machine name/PID is missing"
    exit 1
-fi
-
-
-# Check whether incompatible modes have been selected
-if [ ! -z "$FORCE_MODE" -a ! -z "$USE_MCONSOLE" ]; then
-   echo 1>&2 "$SCRIPTNAME: You cannot use the --force option if you asked to use mconsole sockets"
-   exit 1
-fi
-
-
-# Check whether arguments for the --force option are missing
-if [ ! -z "$FORCE_MODE" ]; then
-   if [ -z "$VM_PID" -o -z "$VM_NAME" ]; then
-      echo 1>&2 "$SCRIPTNAME: Missing virtual machine and/or PID"
-      exit 1
-   fi
 fi
 
 
@@ -441,24 +388,7 @@ printConciseVMinfo() {
 }
 
 
-
-
-
-if [ ! -z "$FORCE_MODE" ]; then
-   # Simple --force mode: user gave both PID and name for the virtual machine
-   VM_PROCESSES=$(getVMPIDsByPID "$VM_PID")
-   if [ ! -z "$VM_PROCESSES" ]; then
-      if [ -z "$BE_QUIET" ]; then
-         echo
-         echo "============= Crashing virtual machine \"$VMINFO_NAME\" (PID $VMINFO_PID) ========="
-         echo "Virtual machine PIDs are: " $VM_PROCESSES
-      fi
-      [ -z "$BE_QUIET" ] && echo -n "Killing..."
-      kill -KILL $VM_PROCESSES > /dev/null 2>&1
-      kill -CONT $VM_PROCESSES > /dev/null 2>&1
-      [ -z "$BE_QUIET" ] && echo "done."
-   fi
-elif [ -z "$DO_KILL" ]; then
+if [ -z "$DO_KILL" ]; then
    # Use mconsole sockects to crash virtual machine kernels
    for VM in $VM_IDS; do
       # Check whether the current machine exists
