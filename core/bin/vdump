@@ -125,14 +125,15 @@ done
 
 if [ $# -eq 0 ]; then
    echo 1>&2 "$SCRIPTNAME: Missing collision domain name"
-   exit 1
+   usage 1
 elif [ $# -gt 1 ]; then
    echo 1>&2 "$SCRIPTNAME: Can only specify one collision domain"
-   exit 1
+   usage 1
 fi
 
 hub_name=$1
 checkSpaces "$hub_name"
+shift
 
 
 # check if file exist and if a pipe file
