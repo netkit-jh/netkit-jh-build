@@ -392,18 +392,19 @@ while true; do
    shift
 done
 
-# Parse virtual machine name
-if [ $# -eq 1 ]; then
-   VM_NAME=$1
-   checkSpaces "$VM_NAME"
-   shift
-elif [ $# -eq 0 ]; then
+
+if [ $# -eq 0 ]; then
    echo 1>&2 "$SCRIPTNAME: Missing machine name"
    usage 1
-else
-   echo 1>&2 "$SCRIPTNAME: Too many machine names"
+elif [ $# -gt 1 ]; then
+   echo 1>&2 "$SCRIPTNAME: Can only specify one machine"
    usage 1
 fi
+
+# Parse virtual machine name
+VM_NAME=$1
+checkSpaces "$VM_NAME"
+shift
 
 
 # Check whether user is trying to attach more than one console to stdin/stdout
