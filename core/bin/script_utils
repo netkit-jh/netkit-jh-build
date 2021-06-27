@@ -490,6 +490,51 @@ getVMinfoByName() {
 
 
 ###############################################################################
+# Remove the filesystem of a virtual machine.
+# Usage:
+#   remove_fs FILE
+# Globals:
+#   None
+# Arguments:
+#   $1 - filesystem filepath
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+remove_fs() {
+   rm --verbose "$1"
+}
+
+
+###############################################################################
+# Get the mconsole socket for a machine.
+# Usage:
+#   get_vm_mconsole MACHINE
+# Globals:
+#   r- MCONSOLE_DIR
+# Arguments:
+#   $1 - machine name
+# Returns:
+#   If exists, the mconsole socket filepath will be printed to stdout and zero
+#   is returned, else non-zero is.
+# Example:
+#   None
+###############################################################################
+get_vm_mconsole() {
+   local vm=$1
+   local mconsole_socket="$MCONSOLE_DIR/$vm/mconsole"
+
+   if [ -S "$mconsole_socket" ]; then
+      echo "$mconsole_socket"
+      return 0
+   fi
+   
+   return 1
+}
+
+
+###############################################################################
 # Check if machine, by name, is online.
 # Usage:
 #   get_machine_state USER MACHINE
@@ -590,6 +635,69 @@ get_vm_pid_by_name() {
    done
 
    return 1
+}
+
+
+###############################################################################
+# Get a list of all of the process IDs of a machine by its name and,
+# optionally, owner.
+# Usage:
+#   get_vm_all_pids_by_name USER MACHINE
+# Globals:
+#   r- NETKIT_HOME
+# Arguments:
+#   $1 - owner of the machine; pass an empty string for all users
+#   $2 - machine name
+# Returns:
+#   Prints an IFS separated list of PIDs related to MACHINE to stdout. Returns
+#   0 if the machine exists, non-zero otherwise.
+# Example:
+#   for pid in $(get_vm_all_pids_by_name "" "foobar"); do echo $pid; done
+###############################################################################
+get_vm_all_pids_by_name() {
+   local vm_pids
+
+   user=$1
+   name=$2
+
+   [ -n "$user" ] && pgrep_euid="--euid"
+
+   # Quick filter for pgrep. It is not 100% accurate, returning multiple
+   # instances if there is a machine called "foo" and "foo bar". We hence do
+   # further processing - this filter just removes processes which definitely
+   # are not matches.
+   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel.*[[:blank:]]umid=${name}(\$|[[:blank:]].+)"
+
+   # See get_vm_pid_by_name for a process hierarchy explanation.
+
+   # Iterate over the PIDs of running Netkit instances with name matches.
+   for pid in $(pgrep ${pgrep_euid:+"$pgrep_euid"} ${user:+"$user"} --full "$full_command_regex"); do
+      # Full command used to invoke the process
+      full_command=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
+
+      first_iteration=true
+      while IFS="" read -r argument; do
+         # Skip program name
+         if $first_iteration; then
+            first_iteration=false
+            continue
+         fi
+
+         if [[ "$argument" =~ ^umid=.*$ ]]; then
+            umid=${argument#*=}
+
+            if [ "$umid" = "$name" ]; then
+               vm_pids+=( "$pid" )
+            fi
+
+            break
+         fi
+      done <<< "$full_command"
+   done
+
+   echo "${vm_pids[*]}"
+
+   [ "${#vm_pids[@]}" -gt 0 ] && return 0 || return 1
 }
 
 
@@ -737,39 +845,6 @@ getVMinfo() {
    
    # Mconsole handle
    VMINFO_MCONSOLE=$MCONSOLE_DIR/$VMINFO_NAME/mconsole
-}
-
-
-# This function, given a user name and a virtual machine name, returns a list of
-# PIDs of processes that are related to that machine. If the user name is
-# not null, then only machines for that user are taken into account. Otherwise,
-# PIDs for the first virtual machine with a matching name are reported. If there
-# is no virtual machine with this name (for the given user), a null result is
-# reported.
-getVMPIDsByName() {
-   psList | awk -v username=$1 -v vm_name=$2 \
-      '
-         BEGIN {
-            # A user is said to be valid if it either matches the username
-            # passed as argument or it is the first user for which a matching
-            # virtual machine has been found (this prevents considering
-            # different virtual machines having the same name but owned by
-            # different users).
-            valid_user=""
-         }
-         (match($0,"^" username " .* umid=" vm_name " ")) {
-            if (!match($0,"awk") && (valid_user=="" || valid_user==$1)) {
-               print $2
-               valid_user=$1
-            }
-         }
-         (match($0,"xterm.*(" vm_name ").*-uml-socket") && $1==valid_user) {
-            vm_xterm_socket=$NF
-         }
-         (match($0,"port-helper") && $NF==vm_xterm_socket) {
-            if (!match($0,"xterm ")) print $2
-         }
-      '         
 }
 
 
