@@ -178,12 +178,6 @@ if [ -n "$REMOVE_FS" ] && [ -n "$BE_QUIET" ]; then
 fi
 
 
-# This function removes a virtual machine filesystem
-remove_fs() {
-   rm --verbose "$1"
-}
-
-
 for vm in "${vm_hostnames[@]}"; do
    if ! get_vm_info "$USER" "$vm"; then
       echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$vm' exists"
