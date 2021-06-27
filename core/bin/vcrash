@@ -120,10 +120,6 @@ virtual machine.
                         then only the virtual machine reported by
                         'vlist --user=- MACHINE' is crashed
 
-The following options are deprecated and should not be used. They are only
-provided for backward compatibility.
-      --root          a synonym for --user=-
-
 Miscellaneous:
 $(help_option)
 $(version_option)
@@ -161,9 +157,6 @@ while true; do
          ;;
       -r|--remove-fs)
          REMOVE_FS=1
-         ;;
-      --root)
-         USER=""
          ;;
       --test)
          TEST_MODE=1
