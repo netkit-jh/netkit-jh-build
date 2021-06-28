@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
+SCRIPTNAME=$(basename "$0")
+
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
-# shellcheck source=../netkit.conf
-. "$NETKIT_HOME/netkit.conf"
 # shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
