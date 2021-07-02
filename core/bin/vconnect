@@ -11,7 +11,7 @@ fi
 . "$NETKIT_HOME/bin/script_utils"
 
 # Allow nesting of tmux sessions
-export TMUX=''
+unset TMUX
 
 ###############################################################################
 # Attach to a machine's tmux session in the current terminal.
@@ -116,7 +116,7 @@ Connect to the tmux session of a Netkit virtual machine.
                         netkit.conf
   -m, --machine=MACHINE  name of the machine to connect to
   -r, --retry-count=N  number of times to attempt to connect to a tmux session
-  -n, --interval=N    Sleep duration between attempts to connect to a tmux
+  -n, --interval=N    sleep duration between attempts to connect to a tmux
                         session
 
 Miscellaneous:
