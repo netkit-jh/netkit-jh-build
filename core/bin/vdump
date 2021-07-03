@@ -107,7 +107,7 @@ while true; do
          usage 0
          ;;
       --version)
-         showVersion
+         show_version
          exit 0
          ;;
       --)

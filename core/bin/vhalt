@@ -139,7 +139,7 @@ while true; do
          shift
          ;;
       --version)
-         showVersion
+         show_version
          exit 0
          ;;
       --)

@@ -167,7 +167,7 @@ while true; do
          unset VERBOSE
          ;;
       --version)
-         showVersion
+         show_version
          exit 0
          ;;
       --)

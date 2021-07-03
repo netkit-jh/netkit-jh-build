@@ -168,7 +168,7 @@ while true; do
          OPEN_TERM=1
          ;;
       --version)
-         showVersion
+         show_version
          exit 0
          ;;
       --)

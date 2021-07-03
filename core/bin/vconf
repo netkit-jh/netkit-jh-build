@@ -201,7 +201,7 @@ parseCmdLine() {
             fi;;
          
          --version)
-            showVersion
+            show_version
             exit 0;;
             
          --)

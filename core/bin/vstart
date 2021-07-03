@@ -354,7 +354,7 @@ while true; do
          VERBOSE=1
          ;;
       --version)
-         showVersion
+         show_version
          exit 0
          ;;
       -W|--no-cow)

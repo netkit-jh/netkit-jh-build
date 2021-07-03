@@ -147,7 +147,7 @@ parseCmdLine() {
             MAP_FILE="$CURRENT_ARGUMENT";;
             
          --version)
-            showVersion
+            show_version
             exit 0;;
             
          --)

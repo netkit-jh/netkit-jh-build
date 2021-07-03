@@ -216,19 +216,33 @@ version_option() {
 }
 
 
-# This function prints out some version information
-showVersion() {
-   local NETKIT_VERSION KERNEL_VERSION KERNEL_FILE_NAME NETKIT_KERNEL_VERSION
-   local NETKIT_FILESYSTEM_NAME KERNEL_RELEASE
+###############################################################################
+# Write the Netkit-JH core, filesystem, and kernel versions, and host kernel
+# release version to standard output.
+# Usage:
+#   show_version
+# Globals:
+#   None
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+show_version() {
+   local netkit_version
+   local kernel_filepath kernel_filename kernel_version
+   local filesystem_filepath filesystem_filename filesystem_version
    
    # Netkit version information
    echo -n "Netkit version:            "
-   NETKIT_VERSION=$(cat "$NETKIT_HOME/netkit-version" 2>&1 | grep "Netkit version")
-   if [ $? = 0 ]; then
-      NETKIT_VERSION="${NETKIT_VERSION##Netkit version }"
-      if echo "$NETKIT_VERSION" | grep -Eq "([0-9]+[\.\-])+[0-9]+[a-zA-Z]*$"; then
-         # This appears to be a valid version number
-         echo "$NETKIT_VERSION"
+
+   if netkit_version=$(grep "Netkit version" "$NETKIT_HOME/netkit-version" 2> /dev/null); then
+      netkit_version="${netkit_version##"Netkit version "}"
+
+      if [[ "$netkit_version" =~ ^([0-9]+[.-])+[0-9]+[a-zA-Z]*$ ]]; then
+         echo "$netkit_version"
       else
          echo "<unknown>"
       fi
@@ -238,29 +252,47 @@ showVersion() {
    
    # Netkit kernel version information
    echo -n "Netkit kernel version:     "
-   KERNEL_FILE_NAME=""
-   [ -f "$VM_KERNEL" ] && KERNEL_FILE_NAME=$(basename "$VM_KERNEL")
-   [ -L "$VM_KERNEL" ] && { KERNEL_FILE_NAME=$(readlink "$VM_KERNEL");
-                            KERNEL_FILE_NAME=$(basename "$KERNEL_FILE_NAME"); }
-   NETKIT_KERNEL_VERSION="${KERNEL_FILE_NAME##netkit-kernel-}"
-   echo "${NETKIT_KERNEL_VERSION}"
-   
-   # Netkit filesystem version information
-   echo -n "Netkit filesystem version: "
-   NETKIT_FILESYSTEM_NAME=""
-   [ -f "$VM_MODEL_FS" ] && NETKIT_FILESYSTEM_NAME=$(basename "$VM_MODEL_FS")
-   [ -L "$VM_MODEL_FS" ] && { NETKIT_FILESYSTEM_NAME=$(readlink "$VM_MODEL_FS");
-                              NETKIT_FILESYSTEM_NAME=$(basename "$NETKIT_FILESYSTEM_NAME"); }
-   NETKIT_FILESYSTEM_VERSION="${NETKIT_FILESYSTEM_NAME##netkit-fs-}"
-   echo "${NETKIT_FILESYSTEM_VERSION}"
-   
-   # Host kernel version information
-   echo -n "Host kernel version:       "
-   if which uname > /dev/null 2>&1; then
-      uname -r
+
+   if [ -e "$VM_KERNEL" ]; then
+      kernel_filepath=$VM_KERNEL
+
+      # By default, the compiled kernel is a symbolic link
+      [ -L "$kernel_filepath" ] && kernel_filepath=$(readlink "$kernel_filepath")
+      
+      kernel_filename=$(basename "$kernel_filepath")
+      kernel_version=${kernel_filename##"netkit-kernel-"}
+
+      if [ "$kernel_version" = "$kernel_filename" ]; then
+         echo "<unknown>"
+      else
+         echo "$kernel_version"
+      fi
    else
       echo "<unknown>"
    fi
+
+   # Netkit filesystem version information
+   echo -n "Netkit filesystem version: "
+
+   if [ -e "$VM_MODEL_FS" ]; then
+      filesystem_filepath=$VM_MODEL_FS
+
+      # By default, the filesystem is a symbolic link
+      [ -L "$filesystem_filepath" ] && filesystem_filepath=$(readlink "$filesystem_filepath")
+
+      filesystem_filename=$(basename "$filesystem_filepath")
+      filesystem_version=${filesystem_filename##"netkit-fs-"}
+
+      if [ "$filesystem_version" = "$filesystem_filename" ]; then
+         echo "<unknown>"
+      else
+         echo "$filesystem_version"
+      fi
+   fi
+   
+   # Host kernel version information
+   echo -n "Host kernel version:       "
+   uname -r
 }
 
 
