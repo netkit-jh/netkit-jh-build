@@ -125,12 +125,11 @@ while true; do
       --help)
          usage 0
          ;;
-
       # TODO: Remove --quiet. Have --verbose and --quick (independent).
       -q|--quick|--quiet)
          BE_QUIET=1
          ;;
-      --remove-fs|-r)
+      -r|--remove-fs)
          REMOVE_FS=1
          ;;
       -u|--user)
@@ -179,12 +178,13 @@ fi
 
 
 for vm in "${vm_hostnames[@]}"; do
-   if ! get_vm_info "$USER" "$vm"; then
+   if ! get_machine_state "$USER" "$vm"; then
       echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$vm' exists"
       [ -n "$USER" ] && echo " for user $USER." || echo "."
       exit 1
    fi
 
+   # TODO: Sort out VMINFO variables
    [ -z "$BE_QUIET" ] && echo -e -n "Halting '$VMINFO_NAME' (PID $VMINFO_PID) owned by \
    $VMINFO_USER [                    ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
 
@@ -223,7 +223,7 @@ for vm in "${vm_hostnames[@]}"; do
 
    if [ -z "$BE_QUIET" ]; then
       ATTEMPTS=1
-      while get_vm_info "$USER" "$vm"; do
+      while get_machine_state "$USER" "$vm"; do
          sleep 1
          echo -n "."
 
@@ -234,7 +234,7 @@ for vm in "${vm_hostnames[@]}"; do
       echo
 
       # If machine is still up
-      if get_vm_info "$USER" "$vm"; then
+      if get_machine_state "$USER" "$vm"; then
          echo 1>&2 "$SCRIPTNAME: could not shut down '$vm'."
       else
          if [ -n "$REMOVE_FS" ] && [ "$VMINFO_FS" != "$VMINFO_SHAREDFS" ]; then
