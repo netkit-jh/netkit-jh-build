@@ -447,7 +447,7 @@ runHubs() {
    hubs=( "$@" )
 
    for hub_name in "${hubs[@]}"; do
-      BASE_HUB_NAME="$(varReplace hub_name ".*_" "")"
+      BASE_HUB_NAME=$(varReplace hub_name ".*_" "")
 
       if [ "${BASE_HUB_NAME#tap${HUB_SOCKET_EXTENSION},}" != "$BASE_HUB_NAME" ]; then
          IFS=, read -r ACTUAL_HUB_NAME TAP_ADDRESS GUEST_ADDRESS <<< "$hub_name"
