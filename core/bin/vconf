@@ -159,7 +159,7 @@ eval set -- "$GETOPT_OPTS"
 while true; do
    case "$1" in
       --eth*)
-         OPT=$1
+         interface=${1#--}
          DOMAIN=$2
          shift
 
@@ -177,7 +177,9 @@ while true; do
          fi
 
          checkSpaces "$DOMAIN"
-         ETH_INTERFACES="$ETH_INTERFACES ${OPT#--}=$DOMAIN"
+
+         # Construct array of ethN=DOMAIN
+         network_interfaces+=( "$interface=$DOMAIN" )
          ;;
       --help)
          usage 0
@@ -239,23 +241,26 @@ shift
 #   r- SCRIPTNAME
 #   r- USERID
 # Arguments:
-#  ... - list of interfaces
+#  ... - array of interface specifications (ethN=DOMAIN)
 # Returns:
 #   None. Will exit with usage 1 on invalid specification.
 # Example:
 #   None
 ###############################################################################
 setup_interfaces() {
+   local interface_specification interface_specifications
    local device hub_name hub_socket tap_address
    local guest_address used_devices
    local first_iteration
 
+   interface_specifications=( "$@" )
+
    first_iteration=true
-   while [ $# -gt 0 ]; do
-      device=${1%%=*}
+   for interface_specification in "${interface_specifications[@]}"; do
+      device=${interface_specification%%=*}
 
       # If hub_name is blank, the network interface will be removed.
-      hub_name=${1#*=}
+      hub_name=${interface_specification#*=}
 
       # Check if interface has already been configured
       if [[ " $used_devices " == *" $device "* ]]; then
@@ -306,8 +311,6 @@ setup_interfaces() {
          MCONSOLE_CMD+=( "$device" )
          [ -z "$BE_QUIET" ] && echo "$device removed"
       fi
-
-      shift
    done
 }
 
@@ -371,9 +374,9 @@ fi
 
 
 ##### Setup network interfaces
-if [ -n "$ETH_INTERFACES" ]; then
+if [ ${#network_interfaces[@]} -gt 0 ]; then
    [ -z "$BE_QUIET" ] && echo -n "   Interfaces: "
-   setup_interfaces $ETH_INTERFACES
+   setup_interfaces "${network_interfaces[@]}"
 fi
 
 ##### Start network hubs
