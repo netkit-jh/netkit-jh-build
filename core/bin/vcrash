@@ -208,8 +208,7 @@ fi
 
 
 # This function kills a virtual machine by simply signaling the corresponding
-# processes. It is assumed that VMINFO variables have been populated by a
-# preceding call to getVMinfoByName.
+# processes. It is assumed that VMINFO variables have been populated.
 kill_by_signaling() {
    vm=$1
 
@@ -263,8 +262,7 @@ kill_by_signaling() {
 # freezes. In such a situations, it kills the uml_mconsole process and returns
 # a non-zero value. Please note that the function only fails when uml_mconsole
 # hangs, regardless of whether the virtual machine has been actually crashed
-# or not. Here it is assumed that VMINFO variables have been populated
-# by a previous call to getVMinfoByName.
+# or not. Here it is assumed that VMINFO variables have been populated.
 mconsole_halt() {
    mconsole_socket=$1
 
@@ -289,8 +287,7 @@ mconsole_halt() {
 
 # This function kills a virtual machine by using their management console
 # (mconsole) socket. Upon failure, it reverts to killing the virtual machine
-# processes. It assumes that VMINFO variables have been populated by a
-# previous call to getVMinfoByName.
+# processes. It assumes that VMINFO variables have been populated.
 kill_by_mconsole() {
    vm=$1
 
