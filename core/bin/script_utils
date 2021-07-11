@@ -761,6 +761,161 @@ getVMinfoByPID() {
 }
 
 
+###############################################################################
+# Fill the vm_info and vm_uml_sockets global arrays with information about a
+# running virtual machine.
+# Usage:
+#   get_vm_info_by_pid PID
+# Globals:
+#   rw vm_info
+#   rw vm_uml_sockets
+# Arguments:
+#   $1 - process ID of the machine
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+get_vm_info_by_pid() {
+   local argument first_iteration key n pid uml_socket value
+
+   pid=$1
+
+   # Unset the globals incase the
+   unset vm_info
+   unset vm_uml_sockets
+
+   declare -A vm_info
+
+   # Effective user ID of the process (full username if not too long)
+   vm_info["owner"]=$(ps --no-headers --format euser --pid "$pid")
+
+   # Total virtual memory usage of the process.
+   # Logically this should be the sum of every process in the group (PGID),
+   # however in practice just taking the value of the parent process is enough.
+   # The value should equate to roughly the size of the machine's memory.
+   vm_info["memory_usage"]=$(ps --no-headers --format vsize --pid "$pid")
+
+   # Full command used to invoke the process.
+   # Why not parse the output of ps? Whitespace in the program name or
+   # arguments is impossible to deal with. /proc/$pid/cmdline stores argv with
+   # null-byte field separators, which is the only character that cannot be
+   # present in a Linux filepath. This will still break if a newline is present
+   # in the command, but if a user is doing that then they are just asking for
+   # an error somewhere down the line to be honest.
+   vm_info["full_command"]=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
+
+   first_iteration=true
+   while IFS="" read -r argument; do
+      if $first_iteration; then
+         vm_info["kernel"]=$argument
+         first_iteration=false
+         continue
+      fi
+
+      # As per the manual, UML options are key=value pairs.
+      # ${argument#*=} removes the key= prefix from argument (the single #
+      # permits usage of further equals signs in the argument).
+
+      # Edge-cases that can only be matched with regular expressions (or with
+      # extglob enabled, which cannot be done.)
+      if [[ "$argument" =~ ^eth[0-9]+=.*$ ]]; then
+         key=${argument%%=*}
+         value=${argument#*=}
+
+         # Interface number
+         n=${key#eth}
+
+         # UML socket filepath (assuming transport mode is daemon)
+         uml_socket=${value#daemon,,,*}
+
+         # Array of UML sockets indexed by the interface number
+         vm_uml_sockets[$n]=$uml_socket
+         continue
+      fi
+
+      # Most of the command-line options can be matched with basic pattern
+      # matching:
+      case "$argument" in
+         con0=* )
+            value=${argument#*=}
+            case "$value" in
+               xterm)      vm_info["con0"]=$value;;
+               fd:0,fd:1)  vm_info["con0"]="this";;
+               pty)        vm_info["con0"]=$value;;
+               port:*)     vm_info["con0"]=$value;;
+               null)       vm_info["con0"]="none";;
+            esac
+            ;;
+         con1=*)
+            value=${argument#*=}
+            case "$value" in
+               xterm)      vm_info["con1"]=$value;;
+               fd:0,fd:1)  vm_info["con1"]="this";;
+               pty)        vm_info["con1"]=$value;;
+               port:*)     vm_info["con1"]=$value;;
+               null)       vm_info["con1"]="none";;
+            esac
+            ;;
+         exec=*)     vm_info["boot_cmd"]=${argument#*=};;
+         hosthome=*) vm_info["hosthome"]=${argument#*=};;
+         hostlab=*)  vm_info["hostlab"]=${argument#*=};;
+         hostwd=*)   vm_info["hostwd"]=${argument#*=};;
+         # Memory is NOT adjusted by the skew here
+         mem=*)      vm_info["mem"]=${argument#*=};;
+         modules=*)  vm_info["modules"]=${argument#*=};;
+         name=*)     vm_info["name"]=${argument#*=};;
+         title=*)    vm_info["title"]=${argument#*=};;
+         udb0=*)
+            value=${argument#*=}
+
+            # The udb0 value is disk,fs or fs
+            vm_info["disk"]=${value%%,*}
+            vm_info["fs"]=${value#*,}
+
+            # The parameter expansions result in equal values if a single,
+            # shared filesystem is used.
+            [ "${vm_info["disk"]}" = "${vm_info["fs"]}" ] && unset vm_info["disk"]
+            ;;
+         umid=*)     vm_info["umid"]=${argument#*=};;
+         *)          vm_info["other"]="${vm_info["$other"]} $argument"
+      esac
+   done <<< "${vm_info["full_command"]}"
+
+   # The UML console socket filepath
+   vm_info["mconsole"]=$MCONSOLE_DIR/${vm_info["umid"]}/mconsole
+}
+
+
+###############################################################################
+# Fill the vm_info and vm_uml_sockets global arrays with information about a
+# running virtual machine by machine name and, optionally, user.
+# Usage:
+#   get_vm_info_by_name USER VM
+# Globals:
+#   rw vm_info
+#   rw vm_uml_sockets
+# Arguments:
+#   $1 - owner of the machine; pass an empty string for all users
+#   $2 - machine name
+# Returns:
+#   0 on success, non-zero on failure
+# Example:
+#   None
+###############################################################################
+get_vm_info_by_name() {
+   user=$1
+   vm=$2
+
+   if ! pid=$(get_vm_pid_by_name "$user" "$vm"); then
+      return 1
+   fi
+
+   get_vm_info_by_pid "$pid"
+   return 0
+}
+
+
 # This function, given a virtual machine 'ps'-like process line, extracts
 # information about the machine. 
 getVMinfo() {
