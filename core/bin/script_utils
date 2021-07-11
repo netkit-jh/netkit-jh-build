@@ -347,18 +347,6 @@ run_command() {
 }
 
 
-# This function returns zero if some process is using the specified file; non-zero
-# otherwise
-someOneUses() {
-   file=$1
-   
-   # A non existent file is not used by anybody
-   [ -e "$file" ] || return 1
-   lsof -f -- "$1" > /dev/null 2>&1
-   return
-}
-
-
 ###############################################################################
 # Test if a file is being used by a process.
 # Usage:
@@ -387,7 +375,7 @@ startInetHub() {
    HUB_COMMAND="$NETKIT_HOME/bin/uml_switch -tap $TAP_DEVICE -hub -unix $1 </dev/null 2>&1"
    COMPLETE_COMMAND="${HUB_COMMAND} | awk -v SWITCHNAME=$1 -v USER=$USERID -v CURRENTDATE=\"$(date +"%Y/%m/%d %H:%M:%S")\" \
                '{printf \"%s %15s %25s %s\n\", CURRENTDATE, USER, SWITCHNAME, \$0}' > ${HUB_LOG} &"
-   if [ ! -S "$1" ] || ! someOneUses "$1"; then
+   if [ ! -S "$1" ] || ! file_in_use "$1"; then
       # Either socket does not exist yet or it is still unused
       if [ "$USE_SUDO" = "yes" ]; then
          TUNTAP_COMMAND="sudo -p \"$USER's password:\" $NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME start $USER $2 $3 $1"
@@ -428,7 +416,7 @@ startHub() {
                 '{printf \"%s %15s %25s %s\n\", CURRENTDATE, USER, SWITCHNAME, \$0}' > ${HUB_LOG} &"
    if [ ! -S "$1" ]; then
       run_command "$JUST_PRINT" "$HUB_COMMAND" "$COMPLETE_COMMAND"
-   elif ! someOneUses "$1"; then
+   elif ! file_in_use "$1"; then
       # Socket already exists but is not used
       run_command "$JUST_PRINT" "$HUB_COMMAND" "$COMPLETE_COMMAND"
    fi
@@ -483,7 +471,7 @@ cleanHubs() {
          continue
       fi
       
-      if someOneUses $FULL_HUB_NAME; then
+      if file_in_use $FULL_HUB_NAME; then
          SWITCH_PROCESS=$(ps -wwwwwweo pid,command --sort=pid | grep "uml_switch.*$FULL_HUB_NAME" | grep -v "grep uml_switch" | awk '{print $1}' | head -n 1)
          if [ $(lsof -p $SWITCH_PROCESS 2>/dev/null | grep -c $FULL_HUB_NAME) -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
