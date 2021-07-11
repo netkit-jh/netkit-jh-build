@@ -733,34 +733,6 @@ get_vm_all_pids_by_name() {
 }
 
 
-# This function takes as argument a PID and, if a virtual machine with that
-# PID exists, it populates some environemnt variables with a description of
-# the machine status. If the machine is found to exist, returned value is 0.
-# Otherwise, 1 is returned.
-getVMinfoByPID() {
-   VM_PS_ENTRY=$(psList | awk -v pid=$1 \
-      '
-         BEGIN {
-            vm_process = 0
-         }
-         
-         (match($0," umid=[^ ]+")) {
-            vm_id = substr($0,RSTART,RLENGTH)
-            if (machines[vm_id] != 1) vm_process = $2
-            else vm_process = 0
-            machines[vm_id] = 1
-         }
-         (vm_process==pid) {print}
-      ' | head -n 1)
-   if [ -z "$VM_PS_ENTRY" ]; then
-      # Virtual machine does not exist
-      return 1
-   fi
-   getVMinfo "$VM_PS_ENTRY"
-   return 0   
-}
-
-
 ###############################################################################
 # Fill the vm_info and vm_uml_sockets global arrays with information about a
 # running virtual machine.

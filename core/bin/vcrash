@@ -209,7 +209,7 @@ fi
 
 # This function kills a virtual machine by simply signaling the corresponding
 # processes. It is assumed that VMINFO variables have been populated by a
-# preceding call to either getVMinfoByName or getVMinfoByPID.
+# preceding call to getVMinfoByName.
 kill_by_signaling() {
    vm=$1
 
@@ -227,9 +227,6 @@ kill_by_signaling() {
    if [ -z "$BE_QUIET" ]; then
       sleep 1
 
-      # Do not use getVMinfoByPID here: this may result in missing some
-      # process which may have started in the meantime (that process would of
-      # course have a different PID).
       if get_machine_state "$USER" "$vm"; then
          [ -z "$BE_QUIET" ] && echo -n "killing harder... "
          # Recompute PID list (some threads may have been launched in the
@@ -267,7 +264,7 @@ kill_by_signaling() {
 # a non-zero value. Please note that the function only fails when uml_mconsole
 # hangs, regardless of whether the virtual machine has been actually crashed
 # or not. Here it is assumed that VMINFO variables have been populated
-# by a previous call to either getVMinfoByName or getVMinfoByPID.
+# by a previous call to getVMinfoByName.
 mconsole_halt() {
    mconsole_socket=$1
 
@@ -293,7 +290,7 @@ mconsole_halt() {
 # This function kills a virtual machine by using their management console
 # (mconsole) socket. Upon failure, it reverts to killing the virtual machine
 # processes. It assumes that VMINFO variables have been populated by a
-# previous call to either getVMinfoByName or getVMinfoByPID.
+# previous call to getVMinfoByName.
 kill_by_mconsole() {
    vm=$1
 
