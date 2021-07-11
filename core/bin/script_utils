@@ -993,34 +993,3 @@ getVMinfo() {
    # Mconsole handle
    VMINFO_MCONSOLE=$MCONSOLE_DIR/$VMINFO_NAME/mconsole
 }
-
-
-# This function, given a virtual machine PID, returns a list of PIDs of processes
-# that are related to that machine. If no virtual machine with that PID exists, a
-# null result is reported.
-getVMPIDsByPID() {
-   psList | awk -v pid=$1 \
-      '
-         BEGIN {
-            # A user is said to be valid if it is the same user as the
-            # one that owns the virtual machine whose PID has been passed
-            # as argument (this prevents considering different virtual
-            # machines having the same name but owned by different users).
-            valid_user=""
-         }
-         (match($0,"umid=[^ ]+") && pid==$2 && (valid_user=="" || valid_user==$1)) {
-            vm_name = substr($0,RSTART+5,RLENGTH-5)
-            valid_user=$1
-         }
-         (vm_name != "" && match($0,"^" valid_user " .* umid=" vm_name " ")) {
-            if (!match($0,"awk"))
-               print $2
-         }
-         (vm_name != "" && match($0,"xterm.*(" vm_name ").*-uml-socket") && $1==valid_user) {
-            vm_xterm_socket=$NF
-         }
-         (match($0,"port-helper") && $NF==vm_xterm_socket) {
-            if (!match($0,"xterm ")) print $2
-         }
-      '
-}
