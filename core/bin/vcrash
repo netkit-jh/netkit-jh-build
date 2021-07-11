@@ -208,7 +208,7 @@ fi
 
 
 # This function kills a virtual machine by simply signaling the corresponding
-# processes. It is assumed that VMINFO variables have been populated.
+# processes. It is assumed that vm_info has been populated.
 kill_by_signaling() {
    vm=$1
 
@@ -250,7 +250,7 @@ kill_by_signaling() {
    fi
 
    # Virtual machine filesystem is removed only if it has been successfully crashed
-   [ -n "$REMOVE_FS" ] && [ "$VMINFO_FS" != "$VMINFO_SHAREDFS" ] && remove_fs "$VMINFO_FS"
+   [ -n "$REMOVE_FS" ] && [ -n "${vm_info[disk]}" ] && remove_fs "${vm_info[disk]}"
    
    return 0
 }
@@ -262,11 +262,9 @@ kill_by_signaling() {
 # freezes. In such a situations, it kills the uml_mconsole process and returns
 # a non-zero value. Please note that the function only fails when uml_mconsole
 # hangs, regardless of whether the virtual machine has been actually crashed
-# or not. Here it is assumed that VMINFO variables have been populated.
+# or not. Here it is assumed that vm_info has been populated.
 mconsole_halt() {
-   mconsole_socket=$1
-
-   "$NETKIT_HOME/bin/uml_mconsole" "$mconsole_socket" halt > /dev/null &
+   "$NETKIT_HOME/bin/uml_mconsole" "${vm_info[mconsole]}" halt > /dev/null &
    uml_mconsole_pid=$!
 
    # Check whether the mconsole process is hanging forever
@@ -287,17 +285,13 @@ mconsole_halt() {
 
 # This function kills a virtual machine by using their management console
 # (mconsole) socket. Upon failure, it reverts to killing the virtual machine
-# processes. It assumes that VMINFO variables have been populated.
+# processes. It assumes that vm_info has been populated.
 kill_by_mconsole() {
    vm=$1
 
    [ -z "$BE_QUIET" ] && echo -n "Crashing... "
 
-   if mconsole_socket=$(get_vm_mconsole "$vm"); then
-      mconsole_halt "$mconsole_socket"
-   else
-      return 1
-   fi
+   mconsole_halt
 
    # When the above command exits, an attempt via the mconsole has been
    # performed. Regardless of whether the virtual machine has actually halted,
@@ -308,7 +302,7 @@ kill_by_mconsole() {
          echo -n "retrying... "
          sleep 1
 
-         if ! mconsole_halt "$mconsole_socket"; then
+         if ! mconsole_halt; then
             # uml_mconsole is hanging forever
             
             # The two lines below are necessary in order to retrieve the
@@ -329,17 +323,19 @@ kill_by_mconsole() {
       fi
    fi
 
-   [ -n "$REMOVE_FS" ] && [ "$VMINFO_FS" != "$VMINFO_SHAREDFS" ] && remove_fs "$VMINFO_FS"
+   [ -n "$REMOVE_FS" ] && [ -n "${vm_info[disk]}" ] && remove_fs "${vm_info[disk]}"
 }
 
 
 for vm in "${vm_ids[@]}"; do
    # Check whether the current machine exists
-   if get_machine_state "$USER" "$vm" ; then
+   if get_machine_state "$USER" "$vm"; then
+      get_vm_info_by_name "$USER" "$vm"
+
       if [ -z "$BE_QUIET" ]; then
-         echo "============= Crashing virtual machine '$vm' (PID $(get_vm_pid_by_name "$USER" "$VM")) ========="
+         echo "============= Crashing virtual machine '$vm' (PID ${vm_info[pid]}) ========="
          echo "Virtual machine owner: $USER"
-         echo "Virtual machine mconsole socket: $(get_vm_mconsole "$vm")"
+         echo "Virtual machine mconsole socket: ${vm_info[mconsole]}"
          echo "Virtual machine PIDs: $(get_vm_all_pids_by_name "$USER" "$vm")"
       fi
    

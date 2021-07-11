@@ -366,9 +366,9 @@ if ! get_machine_state "$USER" "$VM_ID"; then
    exit 1
 fi
 
-# TODO: Sort out VMINFO variables
+
 if [ -z "$BE_QUIET" ]; then
-   echo "============= Configuring virtual machine '$VM_ID' (PID $VMINFO_PID) ============="
+   echo "============= Configuring virtual machine '$VM_ID' (PID $(get_vm_pid_by_name "$user" "$vm")) ============="
    echo "   Virtual machine owner: $USER"
 fi
 

@@ -512,33 +512,6 @@ remove_fs() {
 
 
 ###############################################################################
-# Get the mconsole socket for a machine.
-# Usage:
-#   get_vm_mconsole MACHINE
-# Globals:
-#   r- MCONSOLE_DIR
-# Arguments:
-#   $1 - machine name
-# Returns:
-#   If exists, the mconsole socket filepath will be printed to stdout and zero
-#   is returned, else non-zero is.
-# Example:
-#   None
-###############################################################################
-get_vm_mconsole() {
-   local vm=$1
-   local mconsole_socket="$MCONSOLE_DIR/$vm/mconsole"
-
-   if [ -S "$mconsole_socket" ]; then
-      echo "$mconsole_socket"
-      return 0
-   fi
-   
-   return 1
-}
-
-
-###############################################################################
 # Check if machine, by name, is online.
 # Usage:
 #   get_machine_state USER MACHINE
@@ -730,6 +703,8 @@ get_vm_info_by_pid() {
    unset vm_uml_sockets
 
    declare -A vm_info
+
+   vm_info["pid"]=$pid
 
    # Effective user ID of the process (full username if not too long)
    vm_info["owner"]=$(ps --no-headers --format euser --pid "$pid")
