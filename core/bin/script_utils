@@ -486,13 +486,6 @@ cleanHubs() {
 }
 
 
-# This function just outputs a process list in a format that is suitable for
-# processing by the following functions.
-psList() {
-   ps -wwwwwweo uname=ENSURE_USER_NAME_COLUMN_IS_VERY_WIDE,pid,vsize,command --sort=pid
-}
-
-
 ###############################################################################
 # Remove the filesystem of a virtual machine.
 # Usage:
