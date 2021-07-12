@@ -95,9 +95,11 @@ END_OF_HELP
 # Usage:
 #   print_vm_summary NO_HEADER USER
 # Globals:
-#   r- NETKIT_HOME
 #   r- HUB_SOCKET_PREFIX
 #   r- HUB_SOCKET_EXTENSION
+#   r- NETKIT_HOME
+#   rw vm_info
+#   rw vm_uml_sockets
 # Arguments:
 #   $1 - do not display column headers; pass an empty string to show them
 #   $2 - user; pass an empty string for all users
@@ -131,61 +133,24 @@ print_vm_summary() {
 
       # Ignore if not a process leader
       [ "$pgid" -ne "$pid" ] && continue
-
+   
       machine_count=$((machine_count + 1))
 
-      # Effective user ID of the process (full username if not too long)
-      owner=$(ps --no-headers --format euser --pid "$pid")
+      get_vm_info_by_pid "$pid"
 
       # Total virtual memory usage of the process.
       # Logically this should be the sum of every process in the group (PGID),
       # however in practice just taking the value of the parent process is
       # enough. The value should equate to roughly the size of the machine's
       # memory.
-      memory_usage=$(ps --no-headers --format vsize --pid "$pid")
-      total_memory_usage=$((total_memory_usage + memory_usage))
-
-      # Full command used to invoke the process.
-      # Why not parse the output of ps? Whitespace in the program name or
-      # arguments is impossible to deal with. /proc/$pid/cmdline stores argv
-      # with null-byte field separators, which is the only character that
-      # cannot be present in a Linux filepath. This will still break if a
-      # newline is present in the command, but if a user is doing that then
-      # they are just asking for an error somewhere down the line to be honest.
-      full_command=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
-
-      first_iteration=true
-      while IFS="" read -r argument; do
-         # As per the manual, UML options are key=value pairs.
-         # ${argument#*=} removes the key= prefix from argument (the single #
-         # permits usage of further equals signs in the argument).
-         # We skip the first argument (the program name)
-         if $first_iteration; then
-            first_iteration=false
-         elif [[ "$argument" =~ ^umid=.*$ ]]; then
-            umid=${argument#*=}
-         elif [[ "$argument" =~ ^eth[0-9]+=.*$ ]]; then
-            key=${argument%%=*}
-            value=${argument#*=}
-
-            # Interface number
-            n=${key#eth}
-
-            # UML socket filepath (assuming transport mode is daemon)
-            uml_socket=${value#daemon,,,*}
-
-            # Array of UML sockets indexed by the interface number
-            uml_sockets[$n]=$uml_socket
-            continue
-         fi
-      done <<< "$full_command"
+      total_memory_usage=$((total_memory_usage + vm_info[memory_usage]))
 
       # No column will be truncated on a value that is too long
-      printf "%-20s %-20s %5d %9d   " "$owner" "$umid" "$pid" "$memory_usage"
+      printf "%-20s %-20s %5d %9d   " "${vm_info[owner]}" "${vm_info[umid]}" "${vm_info[pid]}" "${vm_info[memory_usage]}"
 
       first_iteration=true
-      for i in "${!uml_sockets[@]}"; do
-         filepath=${uml_sockets[$i]}
+      for i in "${!vm_uml_sockets[@]}"; do
+         filepath=${vm_uml_sockets[$i]}
          filename=$(basename "$filepath")
 
          collision_domain_and_ext=${filename#"$HUB_SOCKET_PREFIX"_*_}
@@ -296,137 +261,45 @@ fi
 ###############################################################################
 # Print complete information about a machine.
 # Usage:
-#   print_vm_info PID
+#   print_vm_info_by_name USER VM
 # Globals:
 #   r- NETKIT_HOME
+#   rw vm_info
+#   rw vm_uml_sockets
 #   r- VM_MEMORY_SKEW
 # Arguments:
-#   $1 - process ID (PID) of the machine
+#   $1 - owner of the machine; pass an empty string for all users
+#   $2 - machine name
 # Returns:
 #   Prints machine details to stdout. Returns 0 on success, non-zero on
 #   failure.
 # Example:
 #   None
 ###############################################################################
-print_vm_info() {
-   pid=$1
+print_vm_info_by_name() {
+   user=$1
+   vm=$2
 
-   # Effective user ID of the process (full username if not too long)
-   owner=$(ps --no-headers --format euser --pid "$pid")
-
-   # Total virtual memory usage of the process.
-   # Logically this should be the sum of every process in the group (PGID),
-   # however in practice just taking the value of the parent process is enough.
-   # The value should equate to roughly the size of the machine's memory.
-   memory_usage=$(ps --no-headers --format vsize --pid "$pid")
-
-   # Full command used to invoke the process.
-   # Why not parse the output of ps? Whitespace in the program name or
-   # arguments is impossible to deal with. /proc/$pid/cmdline stores argv with
-   # null-byte field separators, which is the only character that cannot be
-   # present in a Linux filepath.
-   # This will still break if a newline is present in the command, but if a
-   # user is doing that then they are just asking for an error somewhere down
-   # the line to be honest.
-   full_command=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
-
-   first_iteration=true
-   while IFS="" read -r argument; do
-      if $first_iteration; then
-         program=$argument
-         first_iteration=false
-         continue
-      fi
-
-      # As per the manual, UML options are key=value pairs.
-      # ${argument#*=} removes the key= prefix from argument (the single #
-      # permits usage of further equals signs in the argument).
-
-      # Edge-cases that can only be matched with regular expressions (or with
-      # extglob enabled, which cannot be done.)
-      if [[ "$argument" =~ ^eth[0-9]+=.*$ ]]; then
-         key=${argument%%=*}
-         value=${argument#*=}
-
-         # Interface number
-         n=${key#eth}
-
-         # UML socket filepath (assuming transport mode is daemon)
-         uml_socket=${value#daemon,,,*}
-
-         # Array of UML sockets indexed by the interface number
-         uml_sockets[$n]=$uml_socket
-         continue
-      fi
-
-      # Most of the command-line options can be matched with basic pattern
-      # matching:
-      case "$argument" in
-         umid=*)     umid=${argument#*=};;
-
-         # Memory is NOT adjusted by the skew here
-         mem=*)      mem=${argument#*=};;
-         udb0=*)
-            value=${argument#*=}
-
-            # The udb0 value is disk,fs or fs
-            disk=${value%%,*}
-            fs=${value#*,}
-
-            # The parameter expansions result in equal values if a single,
-            # shared filesystem is used.
-            [ "$disk" = "$fs" ] && unset disk
-            ;;
-         con0=* )
-            value=${argument#*=}
-            case "$value" in
-               xterm)      con0=$value;;
-               fd:0,fd:1)  con0="this";;
-               pty)        con0=$value;;
-               port:*)     con0=$value;;
-               null)       con0="none";;
-            esac
-            ;;
-         con1=*)
-            value=${argument#*=}
-            case "$value" in
-               xterm)      con1=$value;;
-               fd:0,fd:1)  con1="this";;
-               pty)        con1=$value;;
-               port:*)     con1=$value;;
-               null)       con1="none";;
-            esac
-            ;;
-         exec=*)     boot_cmd=${argument#*=};;
-         hostlab=*)  hostlab=${argument#*=};;
-         hostwd=*)   hostwd=${argument#*=};;
-         hosthome=*) hosthome=${argument#*=};;
-         modules=*)  modules=${argument#*=};;
-         *)          other="$other $argument"
-      esac
-   done <<< "$full_command"
-
-   # The UML console socket filepath
-   mconsole=$MCONSOLE_DIR/$umid/mconsole
+   get_vm_info_by_name "$user" "$vm"
 
    # Output the machine details in a structured format
-   echo "============= Information for virtual machine '$umid' ============="
+   echo "============= Information for virtual machine '$vm' ============="
    echo " --- Accounting information ---"
-   echo "   PID:               $pid"
-   echo "   Owner:             $owner"
-   echo "   Used mem:          $memory_usage KB"
+   echo "   PID:               ${vm_info[pid]}"
+   echo "   Owner:             ${vm_info[owner]}"
+   echo "   Used mem:          ${vm_info[memory_usage]} KB"
    echo " --- Emulation parameters ---"
-   echo "   Kernel:            $program"
-   echo "   Modules:           ${modules:-"-"}"
-   echo "   Memory:            $((mem - VM_MEMORY_SKEW)) MB (+$VM_MEMORY_SKEW MB skew)"
-   echo "   Model fs:          $fs"
-   echo "   Filesystem:        ${disk:-"-"}"
+   echo "   Kernel:            ${vm_info[kernel]}"
+   echo "   Modules:           ${vm_info[modules]:-"-"}"
+   echo "   Memory:            $((vm_info[mem] - VM_MEMORY_SKEW)) MB (+$VM_MEMORY_SKEW MB skew)"
+   echo "   Model fs:          ${vm_info[fs]}"
+   echo "   Filesystem:        ${vm_info[disk]:-"-"}"
 
    echo -n "   Interfaces:        "
 
    first_iteration=true
-   for i in "${!uml_sockets[@]}"; do
-      filepath=${uml_sockets[$i]}
+   for i in "${!vm_uml_sockets[@]}"; do
+      filepath=${vm_uml_sockets[$i]}
       filename=$(basename "$filepath")
 
       collision_domain_and_ext=${filename#"$HUB_SOCKET_PREFIX"_*_}
@@ -442,13 +315,13 @@ print_vm_info() {
       echo "eth$i @ $collision_domain ($filepath)"
    done
 
-   echo "   Hostlab:           ${hostlab:-"-"}"
-   echo "   Hosthome:          ${hosthome:-"-"}"
-   echo "   Working directory: ${hostwd:-"-"}"
-   echo "   Boot command:      ${boot_cmd:-"-"}"
+   echo "   Hostlab:           ${vm_info[hostlab]:-"-"}"
+   echo "   Hosthome:          ${vm_info[hosthome]:-"-"}"
+   echo "   Working directory: ${vm_info[hostwd]:-"-"}"
+   echo "   Boot command:      ${vm_info[boot_cmd]:-"-"}"
 
    echo -n "   Console 1:         "
-   case "$con0" in
+   case "${vm_info[con0]}" in
       none)    echo "disabled";;
       xterm)   echo "terminal emulator";;
       this)    echo "stdin/stdout";;
@@ -457,7 +330,7 @@ print_vm_info() {
    esac
 
    echo -n "   Console 2:         "
-   case "$con1" in
+   case "${vm_info[con1]}" in
       none)    echo "disabled";;
       xterm)   echo "terminal emulator";;
       this)    echo "stdin/stdout";;
@@ -465,15 +338,15 @@ print_vm_info() {
       port:*)  echo "port ${con1#"port:"}"
    esac
 
-   echo "   Other arguments:   ${other:-"-"}"
-   echo "   Console socket:    $mconsole"
+   echo "   Other arguments:   ${vm_info[other]:-"-"}"
+   echo "   Console socket:    ${vm_info[mconsole]}"
 }
 
 
 # Get verbose information for specific virtual machines
 for vm in "${vm_ids[@]}"; do
-   if pid=$(get_vm_pid_by_name "$USER" "$vm"); then
-      print_vm_info "$pid"
+   if get_machine_state "$USER" "$vm"; then
+      print_vm_info_by_name "$USER" "$vm"
    else
       echo 1>&2 "$SCRIPTNAME: no virtual machine named '$vm' exists for $USER"
    fi
