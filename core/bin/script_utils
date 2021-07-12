@@ -741,7 +741,9 @@ get_vm_info_by_pid() {
          # UML socket filepath (assuming transport mode is daemon)
          uml_socket=${value#daemon,,,*}
 
-         # Array of UML sockets indexed by the interface number
+         # Array of UML sockets indexed by the interface number.
+         # Disable SC2034 check (unused variable) - it is used eslewhere.
+         # shellcheck disable=SC2034
          vm_uml_sockets[$n]=$uml_socket
          continue
       fi
