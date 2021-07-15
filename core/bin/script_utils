@@ -321,29 +321,42 @@ ensureDir $MCONSOLE_DIR
 USERID=$(id -un)
 
 
-
-
-
-# This function runs a given command, or, if the first argument is 1, it just
-# prints what would be done. The third argument is the command line that should
-# be actually executed. In case the second argument is not null, it contains the
-# command line that should be shown to user (which may differ from the real
-# executed command line).
+###############################################################################
+# Execute a command and write the argument list to stdout.
+# Usage:
+#   run_command DRY_RUN PRINTED_CMD CMD...
+# Globals:
+#   r- BE_QUIET
+# Arguments:
+#   $1 - set to 1 if only doing a dry run of the command that would be ran.
+#        Otherwise pass an empty string.
+#   $2 - the command to print. If an empty string, this will be set to the
+#        actual command that is ran.
+#  ... - the command to run as a separated argument list.
+# Returns:
+#   Returns the exit status of the command.
+# Example:
+#   None
+###############################################################################
 run_command() {
-   if [ -z "$2" ]; then
-      SHOW_COMMAND="$3"
-   else
-      SHOW_COMMAND="$2"
-   fi
+   dry_run=$1
+   printed_cmd=$2
+   shift
+   shift
 
-   if [ "$1" = "1" ]; then
-      [ -z "$BE_QUIET" ] && echo "Not running ==> $SHOW_COMMAND"
-      return 0
-   else
-      [ -z "$BE_QUIET" ] && echo "Running ==> $SHOW_COMMAND"
-      eval $3
+   cmd=( "$@" )
+
+   # If the command to print has not been explicitly given, we print the one
+   # being executed.
+   [ -z "$printed_cmd" ] && printed_cmd=$*
+
+   if [ "$dry_run" -ne 0 ] && [ -z "$BE_QUIET" ]; then
+      echo "Not running ==> $printed_cmd"
       return
    fi
+
+   [ -z "$BE_QUIET" ] && echo "Running ==> $printed_cmd"
+   "${cmd[@]}"
 }
 
 
@@ -370,17 +383,14 @@ file_in_use() {
 # does not exist yet (this operation requires administrative privileges).
 # Arguments are: hub name, tap interface IP address, guest interface IP address.
 startInetHub() {
-   local HUB_COMMAND COMPLETE_COMMAND TAP_DEVICE TUNTAP_COMMAND PRESERVE_ENV
-   TAP_DEVICE="nk_tap_$USER"
-   HUB_COMMAND="$NETKIT_HOME/bin/uml_switch -tap $TAP_DEVICE -hub -unix $1 </dev/null 2>&1"
-   COMPLETE_COMMAND="${HUB_COMMAND} | awk -v SWITCHNAME=$1 -v USER=$USERID -v CURRENTDATE=\"$(date +"%Y/%m/%d %H:%M:%S")\" \
-               '{printf \"%s %15s %25s %s\n\", CURRENTDATE, USER, SWITCHNAME, \$0}' > ${HUB_LOG} &"
+   local HUB_COMMAND COMPLETE_COMMAND TAP_DEVICE TUNTAP_COMMAND
+
    if [ ! -S "$1" ] || ! file_in_use "$1"; then
       # Either socket does not exist yet or it is still unused
       if [ "$USE_SUDO" = "yes" ]; then
-         TUNTAP_COMMAND="sudo -p \"$USER's password:\" $NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME start $USER $2 $3 $1"
+         TUNTAP_COMMAND=( "sudo" "-p" "$USER's password:" "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "start" "$USER" "$2" "$3" "$1" )
       else
-         TUNTAP_COMMAND="su -mc \"$NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME start $USER $2 $3 $1\""
+         TUNTAP_COMMAND=( "su" "-mc" "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "start" "$USER" "$2" "$3" "$1" )
       fi
       if [ -z "$BE_QUIET" ]; then
          echo "******** Starting Internet connected virtual hub ********"
@@ -388,17 +398,21 @@ startInetHub() {
          echo "********     (root privileges are required)      ********"
          run_command "$JUST_PRINT" \
                      "$NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME start $USER $2 $3 $1" \
-                     "$TUNTAP_COMMAND" || \
+                     "${TUNTAP_COMMAND[@]}" || \
             { echo 1>&2 "Error while configuring the tunnel."; exit 1; }
          echo "************** Abandoning root privileges ***************"
          echo
       else
          run_command "$JUST_PRINT" \
                      "$NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME start $USER $2 $3 $1" \
-                     "$TUNTAP_COMMAND" >/dev/null || \
+                     "${TUNTAP_COMMAND[@]}" > /dev/null || \
             { echo 1>&2 "Error while configuring the tunnel."; exit 1; }
       fi
-      run_command "$JUST_PRINT" "$HUB_COMMAND" "$COMPLETE_COMMAND"
+
+      TAP_DEVICE="nk_tap_$USER"
+
+      # TODO: run_command "$JUST_PRINT" "$HUB_COMMAND" "$COMPLETE_COMMAND"
+      "$NETKIT_HOME/bin/uml_switch" -tap "$TAP_DEVICE" -hub -unix "$1" < /dev/null 2>&1 | awk -v SWITCHNAME="$1" -v USER="$USERID" -v CURRENTDATE="$(date +"%Y/%m/%d %H:%M:%S")" '{ printf "%s %15s %25s %s\n", CURRENTDATE, USER, SWITCHNAME, $0 }' > "$HUB_LOG" &
    fi
    
    # Wait for uml_switch to start
@@ -410,15 +424,10 @@ startInetHub() {
 
 # This function starts a hub, if it does not exist yet
 startHub() {
-   local HUB_COMMAND COMPLETE_COMMAND
-   HUB_COMMAND="$NETKIT_HOME/bin/uml_switch -hub -unix $1 </dev/null 2>&1"
-   COMPLETE_COMMAND="${HUB_COMMAND} | awk -v SWITCHNAME=$1 -v USER=$USERID -v CURRENTDATE=\"$(date +"%Y/%m/%d %H:%M:%S")\" \
-                '{printf \"%s %15s %25s %s\n\", CURRENTDATE, USER, SWITCHNAME, \$0}' > ${HUB_LOG} &"
-   if [ ! -S "$1" ]; then
-      run_command "$JUST_PRINT" "$HUB_COMMAND" "$COMPLETE_COMMAND"
-   elif ! file_in_use "$1"; then
-      # Socket already exists but is not used
-      run_command "$JUST_PRINT" "$HUB_COMMAND" "$COMPLETE_COMMAND"
+   # Socket already exists but is not used
+   if [ ! -S "$1" ] || ! file_in_use "$1"; then
+      # TODO: run_command "$JUST_PRINT" "$HUB_COMMAND" "$COMPLETE_COMMAND"
+      "$NETKIT_HOME/bin/uml_switch" -hub -unix "$1" < /dev/null 2>&1  | awk -v SWITCHNAME="$1" -v USER="$USERID" -v CURRENTDATE="$(date +"%Y/%m/%d %H:%M:%S")" '{printf "%s %15s %25s %s\n", CURRENTDATE, USER, SWITCHNAME, $0}' > "$HUB_LOG" &
    fi
    
    # Wait for uml_switch to start

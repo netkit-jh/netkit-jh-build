@@ -356,19 +356,19 @@ if [ ! -z "$REMOVE_TUNNELS" ]; then
       echo "******** This operation requires root privileges ********"
    fi
    if [ "$USE_SUDO" = "yes" ]; then      
-      TUNTAP_COMMAND="sudo -p \"$USER's password: \" $NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME stop"
+      TUNTAP_COMMAND=( "sudo" "-p" "$USER's password: " "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "stop" )
    else
-      TUNTAP_COMMAND="su -mc \"$NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME stop\""
+      TUNTAP_COMMAND=( "su" "-mc" "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "stop" )
    fi
    if [ -z "$BE_QUIET" ]; then   
       run_command "" \
                   "$NETKIT_HOME/bin/manage_tuntap stop" \
-                  "$TUNTAP_COMMAND" || \
+                  "${TUNTAP_COMMAND[@]}" || \
                      { echo 1>&2 "Error while removing tap configurations"; exit 1; }
    else
       run_command "" \
                   "$NETKIT_HOME/bin/manage_tuntap stop" \
-                  "$TUNTAP_COMMAND\"" >/dev/null || \
+                  "${TUNTAP_COMMAND[@]}" > /dev/null || \
                      { echo 1>&2 "Error while removing tap configurations"; exit 1; }
    fi
 

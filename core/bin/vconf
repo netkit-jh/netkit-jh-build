@@ -351,8 +351,7 @@ invoke_mconsole() {
          action_desc="remove"
       fi
 
-      # TODO: run_command
-      if ! "$NETKIT_HOME/bin/uml_mconsole" "$VM_ID" "$action" "$device" 2>&1; then
+      if ! run_command "$JUST_PRINT" "" "$NETKIT_HOME/bin/uml_mconsole" "$VM_ID" "$action" "$device" 2>&1; then
          echo 2>&1 "Failed to $action_desc interface '$device'"
       fi
    done
