@@ -231,7 +231,7 @@ while true; do
          shift
 
          checkSpaces "$ADDITIONAL_ARG"
-         KERNEL_APPEND="$KERNEL_APPEND $ADDITIONAL_ARG"
+         KERNEL_APPEND+=( "$ADDITIONAL_ARG" )
          ;;
       --con0|--con1)
          CON="$2"
@@ -340,7 +340,7 @@ while true; do
          BE_QUIET=1
          ;;
       --test)
-         KERNEL_APPEND="$KERNEL_APPEND test"
+         KERNEL_APPEND+=( "test" )
          ;;
       --tmux-attached)
          VM_CON0="tmux"
@@ -566,7 +566,7 @@ setup_interfaces() {
 }
 
 
-KERNELCMD="$VM_KERNEL"
+KERNELCMD=( "$VM_KERNEL" )
 
 
 # Check if model fs or cow fs are on a filesystem supporting sparse files
@@ -589,18 +589,18 @@ KERNEL_MODULES_DIRECTORY=$(dirname "$VM_KERNEL")/modules
 
 if [ -d "$KERNEL_MODULES_DIRECTORY" ]; then
    [ -z "$BE_QUIET" ] && echo "   Modules:    $KERNEL_MODULES_DIRECTORY"
-   KERNELCMD="$KERNELCMD modules=$KERNEL_MODULES_DIRECTORY"
+   KERNELCMD+=( "modules=$KERNEL_MODULES_DIRECTORY" )
 fi
 
 
 ##### Set virtual machine name
-KERNELCMD="$KERNELCMD name=$VM_NAME title=$VM_NAME umid=$VM_NAME"
+KERNELCMD+=( "name=$VM_NAME" "title=$VM_NAME" "umid=$VM_NAME" )
 
 
 ##### Set memory amount
 [ -z "$BE_QUIET" ] && echo "   Memory:     $VM_MEMORY MB"
 VM_MEMORY=$((VM_MEMORY + VM_MEMORY_SKEW))
-KERNELCMD="$KERNELCMD mem=${VM_MEMORY}M"
+KERNELCMD+=( "mem=${VM_MEMORY}M" )
 
 
 ##### Filesystem settings
@@ -610,7 +610,7 @@ if [ -n "$USE_MODEL_FS" ]; then
    [ -z "$BE_QUIET" ] && echo "   Filesystem: using model fs (no COW)"
 
    # Use model fs as virtual machine filesystem (do not use COW)
-   KERNELCMD="$KERNELCMD ubd0=$VM_MODEL_FS"
+   KERNELCMD+=( "ubd0=$VM_MODEL_FS" )
 
    VM_FS="$VM_MODEL_FS"
 else
@@ -619,13 +619,13 @@ else
    # Explicitly declaring the model fs name is redundant after the COW file has
    # been created. Nevertheless, this is needed in order to later get
    # information about the virtual machine (i.e., by using vlist).
-   KERNELCMD="$KERNELCMD ubd0=${VM_FS},${VM_MODEL_FS}"
+   KERNELCMD+=( "ubd0=$VM_FS,$VM_MODEL_FS" )
 
    [ -z "$BE_QUIET" ] && [ ! -f "$VM_FS" ] && echo " (new)" || echo
 fi
 
 # Append a boot option that specifies the root filesystem
-KERNELCMD="$KERNELCMD root=98:0"
+KERNELCMD+=( "root=98:0" )
 
 # The following root= options should also be valid
 # KERNELCMD="$KERNELCMD root=/dev/ubd/disc0/part1"
@@ -633,7 +633,7 @@ KERNELCMD="$KERNELCMD root=98:0"
 
 
 ##### Setup mconsole directory
-KERNELCMD="$KERNELCMD uml_dir=$MCONSOLE_DIR"
+KERNELCMD+=( "uml_dir=$MCONSOLE_DIR" )
 
 
 ##### Setup network interfaces
@@ -645,7 +645,7 @@ fi
 ##### Set HOSTHOME
 if [ -z "$NO_HOSTHOME" ]; then
    [ -z "$BE_QUIET" ] && echo "   Hostfs at:  $HOME"
-   KERNELCMD="$KERNELCMD hosthome=$HOME"
+   KERNELCMD+=( "hosthome=$HOME" )
 fi
 
 
@@ -666,25 +666,25 @@ fi
 ##### Append exec, hostlab and hostwd parameters, if any
 if [ -n "$VM_EXEC" ]; then
    [ -z "$BE_QUIET" ] && echo "   Boot cmd:   '$VM_EXEC'"
-   KERNELCMD="$KERNELCMD exec=\"$VM_EXEC\""
+   KERNELCMD+=( "exec=$VM_EXEC" )
 fi
 
 if [ -n "$VM_HOSTLAB" ]; then
    [ -z "$BE_QUIET" ] && echo "   Hostlab at: $VM_HOSTLAB"
-   KERNELCMD="$KERNELCMD hostlab=$VM_HOSTLAB"
+   KERNELCMD+=( "hostlab=$VM_HOSTLAB" )
 fi
 
 if [ -n "$VM_HOSTWD" ]; then
    [ -z "$BE_QUIET" ] && echo "   Host WD at: $VM_HOSTWD"
-   KERNELCMD="$KERNELCMD hostwd=$VM_HOSTWD"
+   KERNELCMD+=( "hostwd=$VM_HOSTWD" )
 fi
 
 
 ##### Set verbosity parameter (is 'verbose' by default)
 if [ -n "$DEBUG" ]; then
-   KERNELCMD="gdb --args $KERNELCMD"
+   KERNELCMD=( "gdb --args" "${KERNELCMD[@]}" )
 elif [ -z "$VERBOSE" ]; then
-   KERNELCMD="$KERNELCMD quiet"
+   KERNELCMD+=( "quiet" )
 fi
 
 ##### Bypass port helper, if required (only allowed for the primary terminal)
@@ -694,45 +694,45 @@ fi
 
 ##### Attach terminals
 case $VM_CON0 in
-   none)                      KERNELCMD="$KERNELCMD con0=null";;
-   xterm)                     KERNELCMD="$KERNELCMD con0=xterm";;
-   this|this_noporthelper)    KERNELCMD="$KERNELCMD con0=fd:0,fd:1";;
-   pty)                       KERNELCMD="$KERNELCMD con0=pty";;
-   port:*)                    KERNELCMD="$KERNELCMD con0=$VM_CON0";;
+   none)                      KERNELCMD+=( "con0=null" );;
+   xterm)                     KERNELCMD+=( "con0=xterm" );;
+   this|this_noporthelper)    KERNELCMD+=( "con0=fd:0,fd:1" );;
+   pty)                       KERNELCMD+=( "con0=pty" );;
+   port:*)                    KERNELCMD+=( "con0=$VM_CON0" );;
 esac
 
 case $VM_CON1 in
-   none)    KERNELCMD="$KERNELCMD con1=null";;
-   xterm)   KERNELCMD="$KERNELCMD con1=xterm";;
-   this)    KERNELCMD="$KERNELCMD con1=fd:0,fd:1";;
-   pty)     KERNELCMD="$KERNELCMD con1=pty";;
-   port:*)  KERNELCMD="$KERNELCMD con1=$VM_CON1";;
+   none)    KERNELCMD+=( "con1=null" );;
+   xterm)   KERNELCMD+=( "con1=xterm" );;
+   this)    KERNELCMD+=( "con1=fd:0,fd:1" );;
+   pty)     KERNELCMD+=( "con1=pty" );;
+   port:*)  KERNELCMD+=( "con1=$VM_CON1" );;
 esac
 
 
 
 ##### Disable SELinux
-KERNELCMD="$KERNELCMD SELINUX_INIT=0"
+KERNELCMD+=( "SELINUX_INIT=0" )
 
 
 ##### Setup a proper terminal emulator
 case $TERM_TYPE in
-   gnome)         KERNELCMD="$KERNELCMD xterm=gnome-terminal,-t,-x";;
-   konsole)       KERNELCMD="$KERNELCMD xterm=konsole,-T,-e";;
-   konsole-tab)   KERNELCMD="$KERNELCMD xterm=$NETKIT_HOME/bin/konsole-tabs.sh,-T,-e";;
+   gnome)         KERNELCMD+=( "xterm=gnome-terminal,-t,-x" );;
+   konsole)       KERNELCMD+=( "xterm=konsole,-T,-e" );;
+   konsole-tab)   KERNELCMD+=( "xterm=$NETKIT_HOME/bin/konsole-tabs.sh,-T,-e" );;
 esac
 
 ##### Append any other user provided parameters
-if [ -n "$KERNEL_APPEND" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Other args: $KERNEL_APPEND"
-   KERNELCMD="$KERNELCMD $KERNEL_APPEND"
+if [ ${#KERNEL_APPEND[@]} -gt 0 ]; then
+   [ -z "$BE_QUIET" ] && echo "   Other args: ${KERNEL_APPEND[*]}"
+   KERNELCMD+=( "${KERNEL_APPEND[@]}" )
 fi
 
 [ -z "$BE_QUIET" ] && echo
 
 # Add our blocking script to the execution order
 if [ "$VM_CON0" = "xterm" ] || [ "$VM_CON0" = "this_noporthelper" ]; then
-    KERNELCMD="$NETKIT_HOME/bin/block-wrapper $TERM_TYPE $VM_NAME $KERNELCMD"
+    KERNELCMD=( "$NETKIT_HOME/bin/block-wrapper" "$TERM_TYPE" "$VM_NAME" "${KERNELCMD[@]}" )
 fi
 
 # Set up tmux
@@ -742,7 +742,7 @@ if [ "$VM_CON0" = "tmux" ]; then
       exit 1
    fi
    
-   KERNELCMD="$NETKIT_HOME/bin/block-wrapper tmux $VM_NAME $KERNELCMD"
+   KERNELCMD=( "$NETKIT_HOME/bin/block-wrapper" "tmux" "$VM_NAME" "${KERNELCMD[@]}" )
 fi
 
 ##### Actually start network hubs
@@ -775,7 +775,7 @@ run_kernel_command() {
       remove_fs_command &
    fi
 
-   eval "$KERNELCMD"
+   "${KERNELCMD[@]}"
 
    cleanHubs "${HUBLIST[@]}"
 }
