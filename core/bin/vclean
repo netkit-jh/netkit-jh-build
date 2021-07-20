@@ -257,7 +257,7 @@ killHubs() {
       HUB_PID=$1
       shift
       HUB_NAME=$1
-      if [ $(lsof -p $HUB_PID 2>/dev/null | grep -c $HUB_NAME) -le 1 ]; then
+      if [ "$(lsof -p "$HUB_PID" 2>/dev/null | grep -c "$(grepEscape "$HUB_NAME")")" -le 1 ]; then
          # No more virtual machines are using the hub connected to this socket
          FOUND_UNUSED_HUB=1
          [ -z "$BE_QUIET" ] && echo -n "   $HUB_NAME (PID $HUB_PID)"
@@ -290,7 +290,7 @@ fi
 if [ ! -z "$REMOVE_UNUSED_HUBS" ]; then
    # Just remove unused switches
    [ -z "$BE_QUIET" ] && echo "Killing unusued virtual hubs owned by $USER_STRING:"
-   HUB_PIDS_NAMES=$(ps -wwwwwweo user=ENSURE_USER_NAME_COLUMN_IS_VERY_WIDE,pid,command | grep -w "$USER" | grep "uml_switch .*-unix" | \
+   HUB_PIDS_NAMES=$(ps -wwwwwweo user=ENSURE_USER_NAME_COLUMN_IS_VERY_WIDE,pid,command | grep -w "$(grepEscape "$USER")" | grep "uml_switch .*-unix" | \
                    grep -v grep | awk '{print $2 " " $NF}')
    killHubs $HUB_PIDS_NAMES
 fi

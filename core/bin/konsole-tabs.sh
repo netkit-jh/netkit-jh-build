@@ -164,7 +164,7 @@ if [ ! -z "$TERM_TITLE" ]; then
    VM_CONSOLE_NUMBER=${VM_CONSOLE_NUMBER% (*)}
    VM_TITLE="${VM_NAME} (con${VM_CONSOLE_NUMBER})"
 else
-   VM_TITLE=$(echo $EXECUTE_COMMAND | sed -r 's/^.*umid=([^ ]+).*$/\1/')
+   VM_TITLE=$(echo "$EXECUTE_COMMAND" | sed -r 's/^.*umid=([^ ]+).*$/\1/')
 fi
 
 qdbus $NETKIT_KONSOLE /Sessions/$SESSION setTitle 1 "${VM_TITLE}" >/dev/null

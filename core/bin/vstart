@@ -527,7 +527,7 @@ setupInterfaces() {
       fi
       [ -z "$BE_QUIET" ] && echo "${DEVICE} @ ${HUB_NAME}\t(${HUB_SOCKET})"
 
-      if containsRegexp USED_DEVICES " ${DEVICE} "; then
+      if containsRegexp USED_DEVICES " $(grepEscape "$DEVICE") "; then
          warning "$SCRIPTNAME" "$CMDLINE" "$0" "Duplicate interface: $DEVICE."
          exit 1
       fi
@@ -563,7 +563,7 @@ KERNELCMD="$VM_KERNEL"
 check_filesystem() {
    FS_TYPE=$(stat -f $2 | grep -w Type)
    FS_TYPE=${FS_TYPE#*Type: }
-   if echo $FS_TYPE | grep -vqE "(ext[2,3,4])|(ntfs)|(ntfs-3g)|(fuse)|(reiser)|(jfs)|(xfs)"; then
+   if echo $FS_TYPE | grep -vqE "ext[234]|ntfs|ntfs-3g|fuse|reiser|jfs|xfs"; then
       warning "$SCRIPTNAME" "$CMDLINE" "$1" "Filesystem $FS_TYPE does not seems to support sparse file $2. This may result in dramatic performance loss and disk space consumption."
    fi
 }

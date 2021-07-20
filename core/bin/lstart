@@ -218,7 +218,7 @@ parseCmdLine() {
          -p)
             shift; CURRENT_ARGUMENT="$1"
             if [ ! -z "$CURRENT_ARGUMENT" ]; then
-               if ! echo "$CURRENT_ARGUMENT" | grep -q "^[0-9][0-9]*$"; then
+               if ! echo "$CURRENT_ARGUMENT" | grep -Eq "^[0-9]+$"; then
                   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
                      "Invalid setting for option -p: \"$CURRENT_ARGUMENT\". Positive integer expected."
                   exit 1
@@ -244,7 +244,7 @@ parseCmdLine() {
             
          --wait|-w)
             shift; CURRENT_ARGUMENT="$1"
-            if ! echo "$CURRENT_ARGUMENT" | grep -q "^[0-9][0-9]*$"; then
+            if ! echo "$CURRENT_ARGUMENT" | grep -Eq "^[0-9]+$"; then
                warning "$SCRIPTNAME" "$CMDLINE" "$0" \
                   "Invalid setting for option -w: \"$CURRENT_ARGUMENT\". Positive integer expected."
                exit 1
@@ -363,7 +363,7 @@ update_available() {
 			
 			curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" | # Get latest release from GitHub api
 				grep '"tag_name":' |                                            # Get tag line
-				sed -E 's/.*"([^"]+)".*/\1/' > ${NETKIT_HOME}/.new-version                                  # Pluck JSON value
+				sed -r 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"                                  # Pluck JSON value
 		fi
 		
 		latest_version=$(cat ${NETKIT_HOME}/.new-version)
