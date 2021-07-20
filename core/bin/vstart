@@ -680,19 +680,21 @@ if [ -n "$VM_HOSTWD" ]; then
 fi
 
 
-##### Set verbosity parameter (is 'verbose' by default)
+# Set verbosity parameter (is 'verbose' by default)
 if [ -n "$DEBUG" ]; then
    KERNELCMD=( "gdb --args" "${KERNELCMD[@]}" )
 elif [ -z "$VERBOSE" ]; then
    KERNELCMD+=( "quiet" )
 fi
 
-##### Bypass port helper, if required (only allowed for the primary terminal)
+
+# Bypass port helper, if required (only allowed for the primary terminal)
 if [ $VM_CON0 = "xterm" ] && [ "$CON0_PORTHELPER" != "yes" ]; then
    VM_CON0="this_noporthelper"
 fi
 
-##### Attach terminals
+
+# Attach terminals
 case $VM_CON0 in
    none)                      KERNELCMD+=( "con0=null" );;
    xterm)                     KERNELCMD+=( "con0=xterm" );;
@@ -710,53 +712,78 @@ case $VM_CON1 in
 esac
 
 
-
-##### Disable SELinux
+# Disable SELinux
 KERNELCMD+=( "SELINUX_INIT=0" )
 
 
-##### Setup a proper terminal emulator
+# Setup a proper terminal emulator
 case $TERM_TYPE in
    gnome)         KERNELCMD+=( "xterm=gnome-terminal,-t,-x" );;
    konsole)       KERNELCMD+=( "xterm=konsole,-T,-e" );;
    konsole-tab)   KERNELCMD+=( "xterm=$NETKIT_HOME/bin/konsole-tabs.sh,-T,-e" );;
 esac
 
-##### Append any other user provided parameters
+
+# Append any other user provided parameters
 if [ ${#KERNEL_APPEND[@]} -gt 0 ]; then
    [ -z "$BE_QUIET" ] && echo "   Other args: ${KERNEL_APPEND[*]}"
    KERNELCMD+=( "${KERNEL_APPEND[@]}" )
 fi
 
+
 [ -z "$BE_QUIET" ] && echo
+
 
 # Add our blocking script to the execution order
 if [ "$VM_CON0" = "xterm" ] || [ "$VM_CON0" = "this_noporthelper" ]; then
-    KERNELCMD=( "$NETKIT_HOME/bin/block-wrapper" "$TERM_TYPE" "$VM_NAME" "${KERNELCMD[@]}" )
-fi
-
-# Set up tmux
-if [ "$VM_CON0" = "tmux" ]; then
-   if ! command -v "tmux" > /dev/null 2>&1; then
-      echo 1>&2 "$SCRIPTNAME: tmux could not be found"
-      exit 1
-   fi
-   
+   KERNELCMD=( "$NETKIT_HOME/bin/block-wrapper" "$TERM_TYPE" "$VM_NAME" "${KERNELCMD[@]}" )
+elif [ "$VM_CON0" = "tmux" ]; then
    KERNELCMD=( "$NETKIT_HOME/bin/block-wrapper" "tmux" "$VM_NAME" "${KERNELCMD[@]}" )
 fi
 
-##### Actually start network hubs
+
+# TODO: remove evil eval
+# Actually start network hubs
 eval runHubs "${HUBLIST[@]}"
 
-##### Prepare the cleanHubs function for execution after a virtual machine stops
+# TODO: why export?
+# Prepare the cleanHubs function for execution after a virtual machine stops
 export cleanHubs
 
 
+###############################################################################
+# Invoke uml_mconsole to "wake up" port-helper in the event that it hangs.
+# Usage:
+#   wakeup_porthelper
+# Globals:
+#   r- NETKIT_HOME
+#   r- VM_NAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
 wakeup_porthelper() {
    sleep 5
    "$NETKIT_HOME/bin/uml_mconsole" "$VM_NAME" help > /dev/null 2>&1 &
 }
 
+
+###############################################################################
+# Delete .disk file as soon as it is created by the UML instance.
+# Usage:
+#   remove_fs_command
+# Globals:
+#   r- VM_FS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   remove_fs_command &
+###############################################################################
 remove_fs_command() {
    while [ ! -f "$VM_FS" ]; do
       sleep 1
@@ -765,43 +792,63 @@ remove_fs_command() {
    rm -f "$VM_FS" 
 }
 
+
+###############################################################################
+# Run relevant kernel invocation setup functions and then invoke the UML kernel
+# instance. Upon return, clean up redundant network hubs.
+# Usage:
+#   run_kernel_command
+# Globals:
+#   r- CON0_PORTHELPER
+#   r- HUBLIST
+#   r- JUST_PRINT
+#   r- KERNELCMD
+#   r- REMOVE_FS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
 run_kernel_command() {
-   ### Invocation of uml_mconsole is needed in order to "wake up" port-helper
-   ### if it ever hangs when booting the virtual machine.
+   # If doing a dry run, we want to skip all four commands here.
+   if [ -n "$JUST_PRINT" ]; then
+      run_command "$JUST_PRINT" "${KERNELCMD[*]}" "${KERNELCMD[@]}"
+      return
+   fi
+
+   # Invocation of uml_mconsole is needed in order to "wake up" port-helper if
+   # it ever hangs when booting the virtual machine.
    [ "$CON0_PORTHELPER" = "yes" ] && wakeup_porthelper
    
-   ### Remove .disk file, if requested
+   # Remove .disk file, if requested
    if [ -n "$REMOVE_FS" ]; then
       remove_fs_command &
    fi
 
-   "${KERNELCMD[@]}"
+   run_command "$JUST_PRINT" "${KERNELCMD[*]}" "${KERNELCMD[@]}"
 
    cleanHubs "${HUBLIST[@]}"
 }
 
 
-### Completely hide primary console, if requested to
+# Completely hide primary console, if requested to
 if [ "$VM_CON0" = "none" ]; then
-   #TODO: run_command "$JUST_PRINT" "$KERNELCMD" "$KERNELCMD" > /dev/null 2>&1 &
-
-   #### Start machine in background unless otherwise requested
+   # Start machine in background unless otherwise requested
    if [ -z "$RUN_IN_FOREGROUND" ] && [ "$VM_CON1" != "this" ]; then
       run_kernel_command > /dev/null 2>&1 &
    else
       run_kernel_command > /dev/null 2>&1
    fi
 else
-   #TODO: run_command "$JUST_PRINT" "$KERNELCMD" "$KERNELCMD"
-
-   #### Start machine in background unless otherwise requested
+   # Start machine in background unless otherwise requested
    if [ -z "$RUN_IN_FOREGROUND" ] && [ "$VM_CON0" != "this" ] && [ "$VM_CON1" != "this" ]; then
       run_kernel_command &
    else
       run_kernel_command
    fi
 fi
-
 
 
 # Connect to the tmux session if TMUX_OPEN_TERMS is set
