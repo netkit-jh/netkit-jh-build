@@ -27,7 +27,9 @@ chroot $MOUNT_DIRECTORY apt install --no-install-recommends wireguard-tools
 chroot $MOUNT_DIRECTORY update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 # Copy netkit filesystem files
-tar -C $WORK_DIRECTORY/filesystem-tweaks -c . | tar --overwrite --same-owner -C $MOUNT_DIRECTORY -x
+# we want to keep the destination mode/ownership (--no-preserve)
+# we want to keep symlinks and not de-reference them (-d)
+cp -r --no-preserve=mode,ownership -d $WORK_DIRECTORY/filesystem-tweaks/* $MOUNT_DIRECTORY/
 
 # Copy in version file
 cp $BUILD_DIRECTORY/netkit-filesystem-version $MOUNT_DIRECTORY/etc/netkit-filesystem-version
