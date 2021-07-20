@@ -147,8 +147,7 @@ elif [ ! -S "$hub_socket" ]; then
    usage 1
 fi
 
-JUST_PRINT=0;
 DUMP_COMMAND="uml_dump $hub_name"
 COMPLETE_COMMAND=( "uml_dump" "$hub_socket" )
 
-run_command "$JUST_PRINT" "$DUMP_COMMAND" "${COMPLETE_COMMAND[@]}"
+run_command "" "$DUMP_COMMAND" "${COMPLETE_COMMAND[@]}"

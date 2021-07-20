@@ -350,7 +350,7 @@ run_command() {
    # being executed.
    [ -z "$printed_cmd" ] && printed_cmd=$*
 
-   if [ "$dry_run" -ne 0 ] && [ -z "$BE_QUIET" ]; then
+   if [ -n "$dry_run" ] && [ -z "$BE_QUIET" ]; then
       echo "Not running ==> $printed_cmd"
       return
    fi
