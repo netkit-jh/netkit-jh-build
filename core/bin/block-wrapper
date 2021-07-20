@@ -14,47 +14,56 @@
 # https://askubuntu.com/questions/627019/blocking-start-of-terminal
 
 
+# We shift the argument list for assignment of kernel_cmd
 TERM_TYPE="$1"
 shift
 VM_NAME="$1"
 shift
-KERNELCMD="$*"
 
 
 # The PID of the current terminal process is stored in a temporary file. This
 # is so the program's state can be monitored later on for termination.
 pidfile=$(mktemp)
 
-sh_cmd="echo \$\$ > $pidfile; $KERNELCMD"
 
-# PowerShell and cmd.exe requires escaping any semicolon in the Bash command to
-# prevent unwanted interpretation.
-# As an added quirk, the WSL invocation method does not require this escaping
-# (presumably due to how the start command arguments are processed.)
-ps_cmd="echo \$\$ > $pidfile\\; $KERNELCMD"
+# The reason behind making pid_cmd a string (and not array like kernel_cmd) is
+# to enforce the fact it is a command which will experience shell expansion
+# upon being processed by Bash inside the terminal emulator session. This
+# allows the $ special parameter and output redirection to function normally.
+pid_cmd="echo \$\$ > '$pidfile'"
+kernel_cmd=( "$@" )
 
 
-case "$TERM_TYPE" in
-    alacritty)      alacritty                                                               -e /bin/sh -c "$sh_cmd";;
-    gnome)          gnome-terminal --title "$VM_NAME"                                       -- /bin/sh -c "$sh_cmd";;
-    kitty)          kitty --title "$VM_NAME"                                                   /bin/sh -c "$sh_cmd";;
-    konsole)        konsole --nofork --title "$VM_NAME"                                     -e /bin/sh -c "$sh_cmd";;
-    konsole-tab)    "$NETKIT_HOME/bin/konsole-tabs.sh"                                      -e /bin/sh -c "$sh_cmd";;
-    wsl)            cmd.exe /c start wsl.exe                                                   /bin/sh -c "$sh_cmd";;
-    wt)             cmd.exe /c wt.exe --suppressApplicationTitle --title "$VM_NAME" wsl.exe    /bin/sh -c "$ps_cmd";;
-    xterm)          xterm -xrm 'XTerm*allowTitleOps: false' -T "$VM_NAME"                   -e /bin/sh -c "$sh_cmd";;
+# kernel_cmd is expanded with the Q operator, meaning Bash will sufficiently
+# quote and escape the string suitable for reuse as input.
+bash_cmd=( "bash" "-c" "$pid_cmd; ${kernel_cmd[*]@Q}" )
+
+# Windows Terminal further requires escaping of semicolons, otherwise they are
+# interpreted as splitting commands across multiple windows.
+wt_safe_bash_cmd=( "bash" "-c" "$pid_cmd\\; ${kernel_cmd[*]@Q}" )
+
+
+case $TERM_TYPE in
+    alacritty)      alacritty                                                    -e "${bash_cmd[@]}";;
+    gnome)          gnome-terminal --title "$VM_NAME"                            -- "${bash_cmd[@]}";;
+    kitty)          kitty --title "$VM_NAME"                                        "${bash_cmd[@]}";;
+    konsole)        konsole --nofork --title "$VM_NAME"                          -e "${bash_cmd[@]}";;
+    konsole-tab)    "$NETKIT_HOME/bin/konsole-tabs.sh"                           -e "${bash_cmd[@]}";;
+    wsl)            cmd.exe /c start wsl.exe                                        "${bash_cmd[@]}";;
+    wt)             wt.exe --suppressApplicationTitle --title "$VM_NAME" wsl.exe -e "${wt_safe_bash_cmd[@]}";;
+    xterm)          xterm -xrm 'XTerm*allowTitleOps: false' -T "$VM_NAME"        -e "${bash_cmd[@]}";;
     tmux)
         # Check if tmux session already exists
         if tmux -L netkit has-session -t "$VM_NAME" > /dev/null 2>&1; then
             while true; do
                 read -rp "tmux session already exists for machine $VM_NAME. Kill session [y/N]? " response
                 case "$response" in
-                    [Yy]|[Yy][Ee][Ss] )
+                    [Yy]|[Yy][Ee][Ss])
                         # Kill existing tmux session
                         tmux -L netkit kill-session -t "$VM_NAME"
                         break
                         ;;
-                    [Nn]|[Nn][Oo] )
+                    [Nn]|[Nn][Oo])
                         echo "tmux session in use - not starting $VM_NAME."
                         exit
                         ;;
@@ -65,12 +74,12 @@ case "$TERM_TYPE" in
         fi
 
         # Start detached tmux session
-        tmux -L netkit -f "$NETKIT_HOME/tools/tmux.conf" new-session -d -s "$VM_NAME" /bin/sh -c "$sh_cmd"
+        tmux -L netkit -f "$NETKIT_HOME/tools/tmux.conf" new-session -d -s "$VM_NAME" "${bash_cmd[@]}"
         ;;
 
     *)
         echo "Terminal $TERM_TYPE not supported, defaulting to xterm."
-        xterm -xrm 'XTerm*allowTitleOps: false' -T "$VM_NAME" -e /bin/sh -c "$sh_cmd";;
+        xterm -xrm 'XTerm*allowTitleOps: false' -T "$VM_NAME" -e "${bash_cmd[@]}";;
 esac
 
 
