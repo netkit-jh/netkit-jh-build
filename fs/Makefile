@@ -54,6 +54,9 @@ ${BUILD_DIR}/bootstrap-fs:
 	debootstrap ${FS_RELEASE} ${MOUNT_DIRECTORY} ${DEBIAN_MIRROR}
 
 ${FS_DIR}/${FS_FILE_NAME}: ${MODULES_PATH} ${BUILD_DIR}/bootstrap-fs
+	# Update version
+	echo "Netkit-JH filesystem version ${NETKIT_FS_RELEASE} (${NETKIT_BUILD_RELEASE})" > ${FS_DIR}/netkit-filesystem-version
+
 	# Run the install script, which will install packages, kernel modules and setup services
 	${MAKEFILE_DIR}/install-netkit-fs.sh ${MAKEFILE_DIR} ${FS_DIR} ${MOUNT_DIRECTORY} ${MODULES_PATH}
 	
@@ -64,9 +67,6 @@ ${FS_DIR}/${FS_FILE_NAME}: ${MODULES_PATH} ${BUILD_DIR}/bootstrap-fs
 	cp --sparse=always ${BUILD_DIR}/bootstrap-fs ${FS_DIR}/${FS_FILE_NAME}
 	cd ${FS_DIR} ; ln -sf ${FS_FILE_NAME} netkit-fs
 	
-	# Update version
-	echo "Netkit-JH filesystem version ${NETKIT_FS_RELEASE} (${NETKIT_BUILD_RELEASE})" > ${FS_DIR}/netkit-filesystem-version
-
 ../${FS_ARCHIVE_FILE}: ${FS_DIR}/${FS_FILE_NAME}
 	cd ${BUILD_DIR}/ ; tar -cvSjf ../../${FS_ARCHIVE_FILE} netkit-jh/
 
