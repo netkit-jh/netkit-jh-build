@@ -12,6 +12,9 @@ chmod +x install-netkit-jh-x.x.x.sh
 Clone the repository and build with Make:
 ```bash
 git clone https://github.com/netkit-jh/netkit-jh-build.git
+sudo apt install apt-utils git make debootstrap \
+    libreadline-dev bison flex gcc-multilib bc quilt xz-utils \
+    libvdeplug-dev
 cd netkit-jh-build
 sudo make
 ```
