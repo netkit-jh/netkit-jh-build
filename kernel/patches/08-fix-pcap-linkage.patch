@@ -26,17 +26,20 @@ Signed-off-by: Anton Ivanov <anton.ivanov@cambridgegreys.com>
 +if [ "${CONFIG_UML_NET_PCAP}" = "y" ] ; then
 +       UML_EXTRA_LIBS="$UML_EXTRA_LIBS -lpcap"
 +fi
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -97,12 +97,14 @@
+--- a/scripts/link-vmlinux.sh	2021-07-20 07:00:42.000000000 -0700
++++ b/scripts/link-vmlinux.sh	2021-07-23 08:19:46.706695397 -0700
+@@ -202,14 +202,16 @@ vmlinux_link()
+ 			${KBUILD_VMLINUX_LIBS}			\
  			-Wl,--end-group				\
  			${@}"
- 
-+                . arch/um/scripts/extra-libs.sh
-+
+-
++	
++		. arch/um/scripts/extra-libs.sh
++		
  		${CC} ${CFLAGS_vmlinux}				\
  			${strip_debug}				\
  			-o ${output}				\
+ 			${map_option:+-Wl,${map_option}}	\
  			-Wl,-T,${lds}				\
  			${objects}				\
 -			-lutil -lrt -lpthread

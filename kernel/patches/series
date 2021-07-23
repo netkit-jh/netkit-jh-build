@@ -1,7 +1,6 @@
 02_x-terminal-emulator.patch
 03_uml_switch.patch
 05_fix_static_build.patch
-06-fix-linkage-on-386-arch.patch
 07-remove-rpath.patch
 08-fix-pcap-linkage.patch
 90-netkit_support.patch
