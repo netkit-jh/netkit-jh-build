@@ -1,40 +1,70 @@
 #!/usr/bin/env bash
 
-PARAMS=""
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
 COMMAND_TIMEOUT="1"
-VERBOSE="FALSE"
 
-tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
-    session="$1"
-    target="${session}:netkit-vm.0"
-    timeout="$2"
-    verbose="$3"
-    shift 3
-    cmd="$*"
-    tmux -L netkit has-session -t="$session" 2>/dev/null
-    if [ $? -ne 0 ]; then
-        echo "tmux session does not exist for this machine."
-        exit 1
-    fi
 
-    # Generate UUID to work out where the command starts
-    cmd_uuid=$(cat /proc/sys/kernel/random/uuid)
-    [ "$VERBOSE" = "TRUE" ] && echo "UUID for command = $cmd_uuid"
-    tmux -L netkit send-keys -t="$target" "echo $cmd_uuid" ENTER
-    sleep 0.5
-    
-    ## RUN COMMAND ##
-    [ "$VERBOSE" = "TRUE" ] && echo -e "command: $cmd \n\n"
-    tmux -L netkit send-keys -t="$target" "$cmd" ENTER
+###############################################################################
+# Enter command to tmux session via send-keys and return the output to standard
+# output.
+# Usage:
+#   tmux_command SESSION TIMEOUT COMMAND
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - tmux session name
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+tmux_command() {
+   local session="$1"
+   local timeout="$2"
+   local cmd="$3"
 
-    ## SLEEP ##
-    sleep "$timeout"
+   local target="$session:netkit-vm.0"
 
-    # Get output buffer
-    tmux_buffer=$(tmux -L netkit capture-pane -t "$target" -S - -p)
-    [ "$VERBOSE" = "TRUE" ] && echo -e "buffer after command = $tmux_buffer \n\n"
-    
-    echo "$tmux_buffer" |  sed "1,/$cmd_uuid/d" - | head -n -1 | sed '1,2d' -
+   if ! tmux -L netkit has-session -t "$session" > /dev/null 2>&1; then
+      echo 1>&2 "tmux session does not exist for this machine"
+      exit 1
+   fi
+
+   # Generate UUID to work out where the command starts
+   cmd_uuid=$(cat /proc/sys/kernel/random/uuid)
+
+   if [ -n "$VERBOSE" ]; then
+      echo "Command UUID: $cmd_uuid"
+      echo "Command: $cmd"
+   fi
+
+   # Run command prefixed with a NOP of the UUID for output harvesting
+   tmux -L netkit send-keys -t "$target" ": $cmd_uuid; $cmd" Enter
+
+   # Wait for output to be generated
+   sleep "$timeout"
+
+   # Get output buffer
+   tmux_buffer=$(tmux -L netkit capture-pane -t "$target" -S - -p)
+
+   [ -n "$VERBOSE" ] && printf "Buffer after command:\n%s\n" "$tmux_buffer"
+
+   # Print all lines after the final match of ": $cmd_uuid" and remove the last
+   # line (which should the next shell prompt.)
+   sed -n "/: $cmd_uuid/{n;h;b};H;\${x;p}" <<< "$tmux_buffer" | head -n -1
 }
 
 
@@ -52,7 +82,7 @@ tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
 #   None
 ###############################################################################
 usage_line() {
-   echo "Usage: $SCRIPTNAME [OPTION]..."
+   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE"
 }
 
 
@@ -82,12 +112,10 @@ usage() {
 
    cat << END_OF_HELP
 $(usage_line)
-Send a command to a netkit virtual machine through its tmux session.
+Send a command to MACHINE through its tmux session.
 
-  -m, --machine=MACHINE  machine to send the command to
   -n, --timeout=N     set how long to wait before grabbing the command output
-  -c, --command=CMD   command to send to the machine. This must be the last
-                        option.
+  -c, --command=CMD   command to send to the machine
 
 
 Miscellaneous:
@@ -101,57 +129,63 @@ END_OF_HELP
 }
 
 
-# from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
+# Get command line options
+LONG_OPTS="command,help,timeout,verbose,version"
+SHORT_OPTS="c:n:v"
 
-while (( "$#" )); do
-  case "$1" in
-    --help)
-      usage 0
-      ;;
-    -v|--verbose)
-      VERBOSE="TRUE"
-      shift 1
-      ;;
-    -n|--timeout)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-        COMMAND_TIMEOUT=$2
-        shift 2
-      else
-        echo "Error: Argument for $1 is missing" >&2
-        usage 1
-      fi
-      ;;
-    -m|--machine)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-        MACHINE_NAME=$2
-        shift 2
-      else
-        echo "Error: Argument for $1 is missing" >&2
-        usage 1
-      fi
-      ;;
-    -c|--command)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-        shift
-        PARAMS="$*"
-        shift $#
-      else
-        echo "Error: Argument for $1 is missing" >&2
-        usage 1
-      fi
-      ;;
-    *) # unsupported flags
-      echo "Error: Unsupported flag $1" >&2
-      usage 1
-      ;;
-  esac
-done
-
-eval set -- "$PARAMS"
-
-if [ -z ${MACHINE_NAME+x} ]; then
-    echo "Machine name not given."
-    usage 1
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
 fi
 
-tmux_command $MACHINE_NAME $COMMAND_TIMEOUT $VERBOSE $PARAMS
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
+
+while true; do
+   case "$1" in
+      # TODO: make command or machine last command line option
+      -c|--command)
+         PARAMS=$2
+         ;;
+      --help)
+         usage 0
+         ;;
+      -n|--timeout)
+         COMMAND_TIMEOUT=$2
+         shift
+         ;;
+      -v|--verbose)
+         VERBOSE=1
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
+
+
+if [ $# -eq 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: Missing machine name"
+   usage 1
+elif [ $# -gt 1 ]; then
+   echo 1>&2 "$SCRIPTNAME: Can only specify one machine"
+   usage 1
+fi
+
+# Parse virtual machine name
+MACHINE_NAME=$1
+shift
+
+
+tmux_command "$MACHINE_NAME" "$COMMAND_TIMEOUT" "$PARAMS"
