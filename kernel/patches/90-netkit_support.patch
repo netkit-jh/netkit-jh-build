@@ -14,9 +14,9 @@ diff -urpN b/arch/um/drivers/Makefile a/arch/um/drivers/Makefile
  targets := pcap_kern.o pcap_user.o vde_kern.o vde_user.o
 
 diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
---- b/arch/um/drivers/net_kern.c	2021-01-07 16:27:03.957678551 +0000
-+++ a/arch/um/drivers/net_kern.c	2021-01-07 16:27:36.997565145 +0000
-@@ -25,11 +25,58 @@
+--- b/arch/um/drivers/net_kern.c	2021-07-27 03:48:35.633933822 -0700
++++ a/arch/um/drivers/net_kern.c	2021-07-27 03:58:42.398457614 -0700
+@@ -25,11 +25,61 @@
  #include <net_kern.h>
  #include <net_user.h>
  
@@ -46,9 +46,12 @@ diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
 +    //printk(KERN_INFO "umid: %s, ifname: %s, hashlocation: %p\n", umid, ifname, hash);
 +
 +    strncpy (vmif, umid, sizeof(vmif));
-+    strncat (vmif, ifname, sizeof(vmif)-strlen(umid));
++    vmif[sizeof(vmif) - 1] = '\0'; // ensure null termination
++    
++    strncat(vmif, ifname, sizeof(vmif) - strlen(vmif) - 1);
 +    //changed to ncpy and ncat to prevent buffer overflow with a 
-+    //obscenely long interface name - now you shall have no fear
++    //obscenely long interface name - now you shall have no fear (for real)
++    
 +    tfm = crypto_alloc_shash("sha1", 0, 0); //CRYPTO_ALG_ASYNC);
 +    if (IS_ERR(tfm))
 +        return 1;
@@ -75,7 +78,7 @@ diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
  /*
   * The drop_skb is used when we can't allocate an skb.  The
   * packet is read into drop_skb in order to get the data off the
-@@ -279,6 +326,7 @@ void uml_net_setup_etheraddr(struct net_
+@@ -279,6 +329,7 @@ void uml_net_setup_etheraddr(struct net_
  	unsigned char *addr = dev->dev_addr;
  	char *end;
  	int i;
@@ -83,7 +86,7 @@ diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
  
  	if (str == NULL)
  		goto random;
-@@ -318,10 +366,27 @@ void uml_net_setup_etheraddr(struct net_
+@@ -318,10 +369,27 @@ void uml_net_setup_etheraddr(struct net_
  	}
  	return;
  
