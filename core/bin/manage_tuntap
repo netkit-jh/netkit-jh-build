@@ -85,6 +85,7 @@ case $ACTION in
       fi
       ;;
 
+   # TODO: consider specifying the user.
    stop)
       if which iptables > /dev/null 2>&1; then
          if iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
