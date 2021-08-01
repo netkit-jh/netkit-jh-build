@@ -28,8 +28,6 @@ NETKIT_HOME=$1    # NETKIT_HOME environment variable. Environment was reset afte
 ACTION=$2         # either "start" or "stop"
 USER_NAME=$3      # name of the user the tunnel is being configured for
 TAP_ADDRESS=$4    # address of the (host side) tap interface
-GUEST_ADDRESS=$5  # address of the (virtual machine side) guest interface
-HUB_NAME=$6       # name of the virtual hub
 
 
 TAP_DEVICE="nk_tap_$USER_NAME"
@@ -39,79 +37,151 @@ TAP_DEVICE="nk_tap_$USER_NAME"
 PATH=$PATH:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin:$NETKIT_HOME/bin
 export PATH
 
-# Use the correct syntax for echo, depending on the shell being used
-if type source > /dev/null 2>&1; then
-   # We are using bash
-   alias echo="echo -e"
-fi
 
 case $ACTION in
    start)
       if [ ! -c /dev/net/tun ]; then
-         # Create /dev/net/tun device
-         echo -n "Creating /dev/net/tun device...\t\t"
-         mknod -m 666 /dev/net/tun c 10 200 && echo "done." || exit 1
+         printf "Creating /dev/net/tun device...\t\t"
+
+         if ! mknod -m 666 /dev/net/tun c 10 200; then
+            echo "failed."
+            exit 1
+         fi
+
+         echo "done."
+      fi
+
+      printf "Bringing down %s (if any)...\t" "$TAP_DEVICE"
+      ifconfig "$TAP_DEVICE" down > /dev/null
+      echo "done."
+
+      printf "Bringing down tunnel (if any)...\t"
+      "$NETKIT_HOME/bin/tunctl" -d "$TAP_DEVICE" > /dev/null
+      echo "done."
+
+      printf "Setting up tunnel...\t\t\t"
+
+      if ! "$NETKIT_HOME/bin/tunctl" -u "$USER_NAME" -t "$TAP_DEVICE" > /dev/null; then
+         echo "failed."
+         exit 1
+      fi
+
+      echo "done."
+      
+      printf "Bringing up %s...\t\t" "$TAP_DEVICE"
+      if ! ifconfig "$TAP_DEVICE" "$TAP_ADDRESS" up; then
+         echo "failed."
+         exit 1
       fi
       
-      echo -n "Bringing down $TAP_DEVICE (if any)...\t"
-      ifconfig $TAP_DEVICE down > /dev/null 2>&1
       echo "done."
       
-      echo -n "Bringing down tunnel (if any)...\t"
-      $NETKIT_HOME/bin/tunctl -d $TAP_DEVICE > /dev/null 2>&1
+      printf "Setting permissions for /dev/net/tun...\t"
+
+      if ! chmod 666 /dev/net/tun; then
+         echo "failed."
+         exit 1
+      fi
+      
       echo "done."
       
-      echo -n "Setting up tunnel...\t\t\t"
-      $NETKIT_HOME/bin/tunctl -u $USER_NAME -t $TAP_DEVICE > /dev/null && echo "done." || exit 1
-      
-      echo -n "Bringing up $TAP_DEVICE...\t\t"
-      ifconfig $TAP_DEVICE $TAP_ADDRESS up && echo "done." || exit 1
-      
-      echo -n "Setting permissions for /dev/net/tun...\t"
-      chmod 666 /dev/net/tun && echo "done." || exit 1
-      
-      echo -n "Enabling IP forwarding...\t\t"
-      echo 1 > /proc/sys/net/ipv4/ip_forward && echo "done." || exit 1
-      
-      if which iptables > /dev/null 2>&1; then
-         if ! iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
-            echo -n "Enabling masquerading...\t\t"
-            iptables -t nat -A POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE && echo "done." || exit 1
+      printf "Enabling IP forwarding...\t\t"
+
+      if ! echo 1 > /proc/sys/net/ipv4/ip_forward; then
+         echo "failed."
+         exit 1
+      fi
+
+      echo "done."
+
+      # Create a new masquerade rule if it doesn't already exist.
+      if ! iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
+         printf "Enabling masquerading...\t\t"
+         
+         if ! iptables -t nat -A POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE; then
+            echo "failed."
+            exit 1
          fi
-         if ! iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
-            echo -n "Opening firewall for tunnel...\t\t"
-            iptables -I FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT && echo "done." || exit 1
+
+         echo "done."
+      fi
+
+      # Create a new forwarding rule if it doesn't already exist.
+      if ! iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
+         printf "Opening firewall for tunnel...\t\t"
+         
+         if ! iptables -I FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT; then
+            echo "failed."
+            exit 1
          fi
+
+         echo "done."
       fi
       ;;
-
-   # TODO: consider specifying the user.
    stop)
-      if which iptables > /dev/null 2>&1; then
-         if iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
-            echo -n "Closing firewall...\t\t\t\t"
-            iptables -D FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT && echo "done." || exit 1
+      if iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
+         printf "Closing firewall...\t\t\t\t"
+         
+         if ! iptables -D FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT; then
+            echo "failed."
+            exit 1
          fi
-         if iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
-            echo -n "Disabling masquerading...\t\t\t"
-            iptables -t nat -D POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE && echo "done." || exit 1
-         fi
+
+         echo "done."
       fi
-      
-      echo -n "Disabling IP forwarding...\t\t\t"
+
+      if iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
+         printf "Disabling masquerading...\t\t\t"
+         
+         if ! iptables -t nat -D POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE; then
+            echo "failed."
+            exit 1
+         fi
+
+         echo "done."
+      fi
+
+      printf "Disabling IP forwarding...\t\t\t"
       echo 0 > /proc/sys/net/ipv4/ip_forward && echo "done." || exit 1
-      
+
       echo "Bringing down tap devices and tunnels:"
-      for INTERFACE in $(cat /proc/net/dev | awk -v FS=":" '/nk_tap_/ {print $1}'); do
-         echo -n "\t$INTERFACE...\t\t\t"
-         ifconfig $INTERFACE down > /dev/null 2>&1 && echo "done." || exit 1
-         echo -n "\t$INTERFACE tunnel...\t\t"
-         $NETKIT_HOME/bin/tunctl -d $INTERFACE > /dev/null 2>&1 && echo "done." || exit 1
+      for sys_class_net_entry in /sys/class/net/nk_tap_*; do
+         uid=$(cat "$sys_class_net_entry/user/owner")
+
+         # Ignore tuntap devices not owned by the user (if specified)
+         if [ -n "$USER_NAME" ] && [ "$(id -u "$USER_NAME")" != "$uid" ]; then
+            continue
+         fi
+
+         interface=$(basename "$sys_class_net_entry")
+
+         printf "\t%s...\t\t\t" "$interface"
+
+         if ! ifconfig "$interface" down > /dev/null; then
+            echo "failed."
+            exit 1
+         fi
+
+         echo "done."
+
+         printf "\t%s tunnel...\t\t" "$interface"
+         if ! "$NETKIT_HOME/bin/tunctl" -d "$interface" > /dev/null; then
+            echo "failed."
+            exit 1
+         fi
+         
+         echo "done."
       done
+
       echo "Done."
       
-      echo -n "Resetting permissions for /dev/net/tun...\t"
-      chmod 660 /dev/net/tun && echo "done." || exit 1
-      ;;
+      printf "Resetting permissions for /dev/net/tun...\t"
 
+      if ! chmod 660 /dev/net/tun; then
+         echo "failed."
+         exit 1
+      fi
+      
+      echo "done."
+      ;;
 esac
