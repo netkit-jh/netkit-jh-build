@@ -135,140 +135,142 @@ END_OF_HELP
 }
 
 
+# USERID is set in script_utils
+USER="$USERID"
+
+
 # Get command line options
-INVALID_OPTION=0
-OPT_LIST="clean-all,kill-machines,remove-hubs,remove-tunnels,user:,help,quiet,quick,test,version"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "HKTu:q" "$@")
-if [ $? -gt 0 ]; then
-   INVALID_OPTION=1
+LONG_OPTS="clean-all,help,kill-machines,quick,quiet,remove-hubs,remove-tunnels,test,user:,version"
+SHORT_OPTS="HKTu:q"
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
 fi
 
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
 
+while true; do
+   case "$1" in
+      --clean-all)
+         KILL_MACHINES=1
+         REMOVE_TUNNELS=1
+         ;;
+      -H|--remove-hubs)
+         REMOVE_UNUSED_HUBS=1
+         ;;
+      --help)
+         usage 0
+         ;;
+      -K|--kill-machines)
+         KILL_MACHINES=1
+         ;;
+      # TODO: Separate options (and use --verbose)
+      -q|--quick|--quiet)
+         BE_QUIET=1
+         ;;
+      -T|--remove-tunnels)
+         REMOVE_TUNNELS=1
+         ;;
+      --test)
+         TEST_MODE=1
+         ;;
+      --user|-u)
+         USER="$2"
+         [ "$USER" = "-" ] && unset USER
+         shift
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
 
-USER=$USERID
+   shift
+done
 
-
-# Parse command line options
-parseCmdLine() {
-   local CURRENT_ARGUMENT
-   while [ $# -gt 0 ]; do
-      CURRENT_ARGUMENT="$1"
-      case "$CURRENT_ARGUMENT" in
-      
-         --clean-all)
-            KILL_MACHINES=1
-            REMOVE_TUNNELS=1;;
-         
-         -H|--remove-hubs)
-            REMOVE_UNUSED_HUBS=1;;
-         
-         -K|--kill-machines)
-            KILL_MACHINES=1;;
-         
-         -T|--remove-tunnels)
-            REMOVE_TUNNELS=1;;
-            
-         --test)
-            TEST_MODE=1;;
-            
-         --user|-u)
-            shift; CURRENT_ARGUMENT="$1"
-            if [ "x$CURRENT_ARGUMENT" = "x" ]; then
-               echo 1>&2 "$SCRIPTNAME: Expecting username"
-               exit 1
-            fi
-            checkSpaces "$CURRENT_ARGUMENT"
-            if [ "$CURRENT_ARGUMENT" = "-" ]; then
-               USER=""
-            else
-               USER=$CURRENT_ARGUMENT
-            fi;;
-            
-         --help)
-            usage 0;;
-            
-         -q|--quiet|--quick)
-            BE_QUIET=1;;
-            
-         --version)
-            show_version
-            exit 0;;
-            
-         --)
-            shift
-            break;;
-      esac
-      shift
-   done
-   
-   if [ $# -gt 0 ]; then
-      echo 1>&2 "$SCRIPTNAME: Too many arguments: $*"
-      exit 1
-   fi
-}
-eval parseCmdLine $CMDLINE_OPTIONS
-
-
-# Check whether user gave some strange options
-if [ $INVALID_OPTION -eq 1 ]; then
-   echo 1>&2 "$SCRIPTNAME: Invalid option or missing option parameter"
+# Check for further arguments
+if [ $# -gt 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: Too many arguments"
+   usage 1
    exit 1
 fi
 
 
 # Test mode is senseless if working in quiet mode
-if [ ! -z "$TEST_MODE" -a ! -z "$BE_QUIET" ]; then
-   echo 1>&2 "$SCRIPTNAME: Option --test cannot be used when working in quiet mode"
+if [ -n "$TEST_MODE" ] && [ -n "$BE_QUIET" ]; then
+   echo 1>&2 "$SCRIPTNAME: test mode cannot function in quiet mode"
    exit 1
 fi
 
 # Actions --remove-hubs and --kill-machines are incompatible
-if [ ! -z "$REMOVE_UNUSED_HUBS" -a ! -z "$KILL_MACHINES" ]; then
-   echo 1>&2 "$SCRIPTNAME: Actions --remove-hubs and --kill-machines cannot be performed at the same time"
+if [ -n "$REMOVE_UNUSED_HUBS" ] && [ -n "$KILL_MACHINES" ]; then
+   echo 1>&2 "$SCRIPTNAME: Hub removal and machine kill cannot be performed simultaneously"
    exit 1
 fi
 
 # Enable default action (remove unused virtual hubs) if none has been requested
-if [ -z "$KILL_MACHINES" -a -z "$REMOVE_TUNNELS" ]; then
+if [ -z "$KILL_MACHINES" ] && [ -z "$REMOVE_TUNNELS" ]; then
    REMOVE_UNUSED_HUBS=1
 fi
 
 
+###############################################################################
+# Kill all running VMs.
+# Usage:
+#   kill_all_vms USER
+# Globals:
+#   r- BE_QUIET
+#   r- NETKIT_HOME
+#   r- TEST_MODE
+# Arguments:
+#   $1 - owner of the machines; pass an empty string for all users
+# Returns:
+#   None. Returns early on test mode (only outputs PIDs without killing them).
+# Example:
+#   None
+###############################################################################
+kill_all_vms() {
+   local user=$1
+   [ -n "$user" ] && pgrep_euid="--euid"
 
+   mapfile -t pids < <(pgrep "${pgrep_euid:+$pgrep_euid}" "${user:+$user}" --full "^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]]")
 
+   [ -z "$BE_QUIET" ] && echo "   PIDs: ${pids[*]}"
 
-# This function takes care of killing processes. The only argument is a command
-# which should be executed in order to get the list of processes to be killed.
-# If not in quiet mode (i.e., BE_QUIET is not set), processes are first sent the
-# TERM signal and, if some process still survives, it is sent the KILL signal. If
-# in quiet mode, processes are simply KILLed.
-killProcesses() {
-   PROCESSES=$(eval $1)
-   if [ -z "$PROCESSES" ]; then
-      # There are no processes to be killed
-      [ -z "$BE_QUIET" ] && echo "   None is currently running."
-      return
-   fi
-   [ -z "$BE_QUIET" ] && echo "   PIDs: $PROCESSES"
-   if [ ! -z "$TEST_MODE" ]; then
-      # We are in test mode: just show which processes would be killed
-      return
-   fi
+   # We are in test mode, just show which processes would be killed
+   [ -n "$TEST_MODE" ] && return
+
    if [ -z "$BE_QUIET" ]; then
       echo -n "   Killing... "
-      # Signalling processes twice ensures they stop even
-      # if they need to be killed in a certain order
-      kill -TERM $PROCESSES > /dev/null 2>&1
-      kill -TERM $PROCESSES > /dev/null 2>&1
+
+      # Signalling processes twice ensures they stop even if they need to be
+      # killed in a certain order
+      kill -TERM "${pids[@]}"
+      kill -TERM "${pids[@]}"
+
       sleep 1
-      PROCESSES=$(eval $1)
-      if [ ! -z "$PROCESSES" ]; then
+      mapfile -t pids < <(pgrep "${pgrep_euid:+$pgrep_euid}" "${user:+$user}" --full "^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]]")
+
+      if [ "${#pids[@]}" -gt 0 ]; then
          echo -n "killing harder... "
-         kill -KILL $PROCESSES > /dev/null 2>&1
-         kill -CONT $PROCESSES > /dev/null 2>&1
+
+         kill -KILL "${pids[@]}"
+         kill -CONT "${pids[@]}"
+
          sleep 1
-         PROCESSES=$(eval $1)
-         if [ ! -z "$PROCESSES" ]; then
+         mapfile -t pids < <(pgrep "${pgrep_euid:+$pgrep_euid}" "${user:+$user}" --full "^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]]")
+
+         if [ "${#pids[@]}" -gt 0 ]; then
             echo "failed!"
          else
             echo "done."
@@ -277,39 +279,62 @@ killProcesses() {
          echo "done."
       fi
    else
-      # Just kill processes, with no output
-      kill -KILL $PROCESSES > /dev/null 2>&1
-      kill -CONT $PROCESSES > /dev/null 2>&1
-   fi   
+      # Just kill processes
+      kill -KILL "${pids[@]}" > /dev/null
+      kill -CONT "${pids[@]}" > /dev/null
+   fi
 }
 
 
-# This function kills (if not in test mode) unused virtual hubs and removes
-# the corresponding socket files. Arguments are space separated pairs
-# "switch_PID socket_name".
-killHubs() {
-   local HUB_PID HUB_NAME FOUND_UNUSED_HUB
-   FOUND_UNUSED_HUB=0
-   while [ $# -gt 0 ]; do
-      HUB_PID=$1
-      shift
-      HUB_NAME=$1
-      if [ $(lsof -p $HUB_PID 2>/dev/null | grep -c $HUB_NAME) -le 1 ]; then
-         # No more virtual machines are using the hub connected to this socket
-         FOUND_UNUSED_HUB=1
-         [ -z "$BE_QUIET" ] && echo -n "   $HUB_NAME (PID $HUB_PID)"
+###############################################################################
+# Kill unused hubs by process ID and remove their socket files.
+# Usage:
+#   kill_hubs FORCE [PID]...
+# Globals:
+#   r- BE_QUIET
+#   r- TEST_MODE
+# Arguments:
+#   $1 - set to 1 to kill and remove hubs even if being used, otherwise pass an
+#        empty string.
+#  ... - the process IDs of the virtual hubs to clean up.
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+kill_hubs() {
+   local uml_switch_cmd
+   local hub_pid hub_file found_unused_hub
+
+   local force=$1
+   shift
+
+   local hub_pids=( "$@" )
+
+   for hub_pid in "${hub_pids[@]}"; do
+      # Safely extract the socket filename from argv.
+      # NOTE: we assume the final command line argument is the socket filename.
+      mapfile -d "" uml_switch_cmd < "/proc/$hub_pid/cmdline"
+      hub_file=${uml_switch_cmd[-1]}
+
+      if [ -n "$force" ] || [ "$(lsof -a -U -p "$hub_pid" -Fn | grep -c "^n$hub_file")" -le 1 ]; then
+         # Force mode or no more virtual machines are using the hub connected
+         # to this socket
+         found_unused_hub=1
+
+         [ -z "$BE_QUIET" ] && echo -n "   $hub_file (PID $hub_pid)"
+
          if [ -z "$TEST_MODE" ]; then
-            # The fact that we are in test mode ensures that we are not in
-            # quiet mode.
             echo -n ": Killing... "
-            kill $HUB_PID > /dev/null 2>&1 && rm $HUB_NAME 2>/dev/null
+            kill "$hub_pid" && rm "$hub_file"
             echo -n "done."
          fi
+
          [ -z "$BE_QUIET" ] && echo
       fi
-      shift
    done
-   [ "$FOUND_UNUSED_HUB" -eq 0 -a -z "$BE_QUIET" ] && echo "   No unused virtual hubs have been found."
+
+   [ -n "$found_unused_hub" ] && [ -z "$BE_QUIET" ] && echo "   No unused virtual hubs have been found."
 }
 
 
@@ -317,61 +342,70 @@ killHubs() {
 if [ -z "$USER" ]; then
    USER_STRING="all users"
 else
-   USER_STRING="user $USER"
+   # We need the euid option for pgrep to filter by user
+   pgrep_euid="--euid"
+   USER_STRING=$USER
 fi
 
 
-######################## Actually perform actions
-
 # Remove unused hubs (if asked to)
-if [ ! -z "$REMOVE_UNUSED_HUBS" ]; then
+if [ -n "$REMOVE_UNUSED_HUBS" ]; then
    # Just remove unused switches
    [ -z "$BE_QUIET" ] && echo "Killing unusued virtual hubs owned by $USER_STRING:"
-   HUB_PIDS_NAMES=$(ps -wwwwwweo user=ENSURE_USER_NAME_COLUMN_IS_VERY_WIDE,pid,command | grep -w "$USER" | grep "uml_switch .*-unix" | \
-                   grep -v grep | awk '{print $2 " " $NF}')
-   killHubs $HUB_PIDS_NAMES
+
+   # Get the process IDs of running UML virtual hubs
+   mapfile -t hub_pids < <(pgrep "${pgrep_euid:+$pgrep_euid}" "${user:+$user}" --full "^$NETKIT_HOME/bin/uml_switch")
+
+   # Kill uml_switch processes and clean up hub files
+   kill_hubs "" "${hub_pids[@]}"
 fi
 
 
 # Kill running virtual machines and hubs (if asked to)
-if [ ! -z "$KILL_MACHINES" ]; then
+if [ -n "$KILL_MACHINES" ]; then
    # Kill all running virtual machine kernels and all virtual hubs
    [ -z "$BE_QUIET" ] && echo "Killing virtual machines owned by $USER_STRING:"
-   killProcesses "ps -wwwwwweo user=ENSURE_USER_NAME_COLUMN_IS_VERY_WIDE,pid,command | grep -w \"^$USER\" | \
-                  grep -Ew \"(name=.+ .*umid=.+)|(port-helper)|(\[netkit-kernel\])\" | grep -v grep | \
-                  awk '{printf \"%i \",\$2} END {printf \"\\n\"}'"
+
+   kill_all_vms "$USER"
+
    [ -z "$BE_QUIET" ] && echo "Killing virtual hubs owned by $USER_STRING:"
-   killProcesses "ps -wwwwwweo user=ENSURE_USER_NAME_COLUMN_IS_VERY_WIDE,pid,command | grep -w \"^$USER\" | \
-                  grep \"uml_switch .*-unix\" | grep -v grep | \
-                  awk '{printf \"%i \",\$2} END {printf \"\\n\"}'"
+
+   # Get the process IDs of running UML virtual hubs
+   mapfile -t hub_pids < <(pgrep "${pgrep_euid:+$pgrep_euid}" "${user:+$user}" --full "^$NETKIT_HOME/bin/uml_switch")
+
+   # Kill uml_switch processes and clean up hub files
+   kill_hubs "1" "${hub_pids[@]}"
 fi
 
 
 # Remove tunnel configurations (if asked to)
-if [ ! -z "$REMOVE_TUNNELS" ]; then
+if [ -n "$REMOVE_TUNNELS" ]; then
    # Remove any previously configured tunnel
    if [ -z "$BE_QUIET" ]; then
-      echo "************* Removing tap configurations ************"
-      echo "   This will affect tap configurations for $USER_STRING."
-      echo "******** This operation requires root privileges ********"
+      echo "************* Removing tap configurations *************"
+      echo " This will affect tap configurations for $USER_STRING."
+      echo "******* This operation requires root privileges *******"
    fi
+
+   # TODO: These commands don't run for the specified user (this is a
+   # manage_tuntap limitation).
    if [ "$USE_SUDO" = "yes" ]; then      
       TUNTAP_COMMAND=( "sudo" "-p" "$USER's password: " "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "stop" )
    else
       TUNTAP_COMMAND=( "su" "-mc" "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "stop" )
    fi
+
    if [ -z "$BE_QUIET" ]; then   
-      run_command "" \
-                  "$NETKIT_HOME/bin/manage_tuntap stop" \
-                  "${TUNTAP_COMMAND[@]}" || \
-                     { echo 1>&2 "Error while removing tap configurations"; exit 1; }
+      if ! run_command "" "$NETKIT_HOME/bin/manage_tuntap stop" "${TUNTAP_COMMAND[@]}"; then
+         echo 1>&2 "Error while removing tap configurations"
+         exit 1
+      fi
    else
-      run_command "" \
-                  "$NETKIT_HOME/bin/manage_tuntap stop" \
-                  "${TUNTAP_COMMAND[@]}" > /dev/null || \
-                     { echo 1>&2 "Error while removing tap configurations"; exit 1; }
+      if ! run_command "" "$NETKIT_HOME/bin/manage_tuntap stop" "${TUNTAP_COMMAND[@]}" > /dev/null; then
+         echo 1>&2 "Error while removing tap configurations"
+         exit 1
+      fi
    fi
 
-   [ -z "$BE_QUIET" ] && echo "************** Abandoning root privileges ***************"
-   [ -z "$BE_QUIET" ] && echo
+   [ -z "$BE_QUIET" ] && echo "************** Abandoning root privileges *************"
 fi
