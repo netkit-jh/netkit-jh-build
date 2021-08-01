@@ -33,118 +33,101 @@ TAP_ADDRESS=$4    # address of the (host side) tap interface
 TAP_DEVICE="nk_tap_$USER_NAME"
 
 
-# Include some important entries inside the path along with $NETKIT_HOME/bin
-PATH=$PATH:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin:$NETKIT_HOME/bin
-export PATH
-
-
 case $ACTION in
    start)
       if [ ! -c /dev/net/tun ]; then
          printf "Creating /dev/net/tun device...\t\t"
-
-         if ! mknod -m 666 /dev/net/tun c 10 200; then
+         if ! sudo mknod -m 666 /dev/net/tun c 10 200; then
             echo "failed."
             exit 1
          fi
-
          echo "done."
       fi
 
       printf "Bringing down %s (if any)...\t" "$TAP_DEVICE"
-      ifconfig "$TAP_DEVICE" down > /dev/null
+      sudo ifconfig "$TAP_DEVICE" down > /dev/null
       echo "done."
 
       printf "Bringing down tunnel (if any)...\t"
-      "$NETKIT_HOME/bin/tunctl" -d "$TAP_DEVICE" > /dev/null
+      sudo "$NETKIT_HOME/bin/tunctl" -d "$TAP_DEVICE" > /dev/null
       echo "done."
 
       printf "Setting up tunnel...\t\t\t"
-
-      if ! "$NETKIT_HOME/bin/tunctl" -u "$USER_NAME" -t "$TAP_DEVICE" > /dev/null; then
+      if ! sudo "$NETKIT_HOME/bin/tunctl" -u "$USER_NAME" -t "$TAP_DEVICE" > /dev/null; then
          echo "failed."
          exit 1
       fi
-
       echo "done."
       
       printf "Bringing up %s...\t\t" "$TAP_DEVICE"
-      if ! ifconfig "$TAP_DEVICE" "$TAP_ADDRESS" up; then
+      if ! sudo ifconfig "$TAP_DEVICE" "$TAP_ADDRESS" up; then
          echo "failed."
          exit 1
       fi
-      
       echo "done."
       
       printf "Setting permissions for /dev/net/tun...\t"
-
-      if ! chmod 666 /dev/net/tun; then
+      if ! sudo chmod 666 /dev/net/tun; then
          echo "failed."
          exit 1
       fi
-      
       echo "done."
       
       printf "Enabling IP forwarding...\t\t"
-
-      if ! echo 1 > /proc/sys/net/ipv4/ip_forward; then
+      if ! echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward; then
          echo "failed."
          exit 1
       fi
-
       echo "done."
 
       # Create a new masquerade rule if it doesn't already exist.
-      if ! iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
+      if ! sudo iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
          printf "Enabling masquerading...\t\t"
-         
-         if ! iptables -t nat -A POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE; then
+         if ! sudo iptables -t nat -A POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE; then
             echo "failed."
             exit 1
          fi
-
          echo "done."
       fi
 
       # Create a new forwarding rule if it doesn't already exist.
-      if ! iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
+      if ! sudo iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
          printf "Opening firewall for tunnel...\t\t"
-         
-         if ! iptables -I FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT; then
+         if ! sudo iptables -I FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT; then
             echo "failed."
             exit 1
          fi
-
          echo "done."
       fi
       ;;
    stop)
-      if iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
+      if sudo iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
          printf "Closing firewall...\t\t\t\t"
-         
-         if ! iptables -D FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT; then
+         if ! sudo iptables -D FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT; then
             echo "failed."
             exit 1
          fi
-
          echo "done."
       fi
 
-      if iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
+      if sudo iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
          printf "Disabling masquerading...\t\t\t"
-         
-         if ! iptables -t nat -D POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE; then
+         if ! sudo iptables -t nat -D POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE; then
             echo "failed."
             exit 1
          fi
-
          echo "done."
       fi
 
       printf "Disabling IP forwarding...\t\t\t"
-      echo 0 > /proc/sys/net/ipv4/ip_forward && echo "done." || exit 1
+      if ! echo 0 | sudo tee /proc/sys/net/ipv4/ip_forward; then
+         echo "failed."
+         exit 1
+      fi
+      echo "done."
 
       echo "Bringing down tap devices and tunnels:"
+
       for sys_class_net_entry in /sys/class/net/nk_tap_*; do
          uid=$(cat "$sys_class_net_entry/user/owner")
 
@@ -156,32 +139,27 @@ case $ACTION in
          interface=$(basename "$sys_class_net_entry")
 
          printf "\t%s...\t\t\t" "$interface"
-
-         if ! ifconfig "$interface" down > /dev/null; then
+         if ! sudo ifconfig "$interface" down > /dev/null; then
             echo "failed."
             exit 1
          fi
-
          echo "done."
 
          printf "\t%s tunnel...\t\t" "$interface"
-         if ! "$NETKIT_HOME/bin/tunctl" -d "$interface" > /dev/null; then
+         if ! sudo "$NETKIT_HOME/bin/tunctl" -d "$interface" > /dev/null; then
             echo "failed."
             exit 1
          fi
-         
          echo "done."
       done
 
       echo "Done."
       
       printf "Resetting permissions for /dev/net/tun...\t"
-
-      if ! chmod 660 /dev/net/tun; then
+      if ! sudo chmod 660 /dev/net/tun; then
          echo "failed."
          exit 1
       fi
-      
       echo "done."
       ;;
 esac

@@ -388,9 +388,9 @@ startInetHub() {
    if [ ! -S "$1" ] || ! file_in_use "$1"; then
       # Either socket does not exist yet or it is still unused
       if [ "$USE_SUDO" = "yes" ]; then
-         TUNTAP_COMMAND=( "sudo" "-p" "$USER's password:" "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "start" "$USER" "$2" )
+         TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "start" "$USER" "$2" )
       else
-         TUNTAP_COMMAND=( "su" "-mc" "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "start" "$USER" "$2" )
+         TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "start" "$USER" "$2" )
       fi
       if [ -z "$BE_QUIET" ]; then
          echo "******** Starting Internet connected virtual hub ********"

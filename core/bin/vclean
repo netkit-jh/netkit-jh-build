@@ -390,9 +390,9 @@ if [ -n "$REMOVE_TUNNELS" ]; then
    # TODO: These commands don't run for the specified user (this is a
    # manage_tuntap limitation).
    if [ "$USE_SUDO" = "yes" ]; then      
-      TUNTAP_COMMAND=( "sudo" "-p" "$USER's password: " "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "stop" )
+      TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "stop" )
    else
-      TUNTAP_COMMAND=( "su" "-mc" "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "stop" )
+      TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "stop" )
    fi
 
    if [ -z "$BE_QUIET" ]; then   
