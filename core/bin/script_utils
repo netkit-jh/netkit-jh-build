@@ -60,7 +60,6 @@ export LANG=C
 : ${MAX_MEM:=512}
 : ${MAX_SIMULTANEOUS_VMS:=5}
 : ${GRACE_TIME:=0}
-: ${USE_SUDO:="yes"}
 : ${TMUX_OPEN_TERMS:="no"}
 : ${CHECK_FOR_UPDATES:="yes"}
 : ${UPDATE_CHECK_PERIOD:=5}
@@ -387,11 +386,8 @@ startInetHub() {
 
    if [ ! -S "$1" ] || ! file_in_use "$1"; then
       # Either socket does not exist yet or it is still unused
-      if [ "$USE_SUDO" = "yes" ]; then
-         TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "start" "$USER" "$2" )
-      else
-         TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "start" "$USER" "$2" )
-      fi
+      TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "start" "$USER" "$2" )
+
       if [ -z "$BE_QUIET" ]; then
          echo "******** Starting Internet connected virtual hub ********"
          echo "   $TAP_ADDRESS (host side) - $GUEST_ADDRESS (guest side)"
