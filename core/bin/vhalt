@@ -110,7 +110,7 @@ USER="$USERID"
 
 # Get command line options
 LONG_OPTS="help,quick,quiet,remove-fs,user:,version"
-SHORT_OPTS="hqru:"
+SHORT_OPTS="qru:"
 
 if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
    # getopt will output the errorneous command-line argument
