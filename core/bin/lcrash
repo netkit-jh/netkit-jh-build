@@ -222,7 +222,7 @@ lab_welcome
 bold_print "================================================================="
 
 # Crash virtual machines
-labCrash
+lab_crash
 echo
 bold_print "Lab has been crashed."
 bold_print "================================================================="

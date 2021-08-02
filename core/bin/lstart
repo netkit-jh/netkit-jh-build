@@ -520,7 +520,7 @@ if [ -n "$TESTMODE" ]; then
       echo -n "Stopping lab... "
    fi
 
-   labCrash > /dev/null
+   lab_crash > /dev/null
    lab_clean > /dev/null
 
    # Check whether we need to build a test signature or to verify the test

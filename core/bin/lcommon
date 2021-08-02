@@ -227,24 +227,22 @@ lab_clean() {
 
 
 # This function hardly crashes virtual machines of a Netkit lab
-labCrash() {
+lab_crash() {
    local VCRASH_OPTIONS
 
    build_vhostlist
+
+   [ -z "$VERBOSE" ]         && VCRASH_OPTIONS+=( "-q" )
+   [ -z "$KEEP_FILESYSTEM" ] && VCRASH_OPTIONS+=( "-r" )
+   [ -n "$KILL_MODE" ]       && VCRASH_OPTIONS+=( "-k" )
    
-   VCRASH_OPTIONS=""
-   [ -z "$VERBOSE" ] && VCRASH_OPTIONS="$VCRASH_OPTIONS -q"
-   [ -z "$KEEP_FILESYSTEM" ] && VCRASH_OPTIONS="$VCRASH_OPTIONS -r"
-   [ ! -z "$KILL_MODE" ] && VCRASH_OPTIONS="$VCRASH_OPTIONS -k"
-   
-   for VM in "${VHOSTLIST[@]}"; do      
-      [ -z "$VERBOSE" ] && bold_print "Crashing \"$VM\"... "
-      vcrash $VCRASH_OPTIONS $VM && \
-         rm -f "${LAB_DIRECTORY}/${VM}.ready" > /dev/null 2>&1
+   for VM in "${VHOSTLIST[@]}"; do
+      [ -z "$VERBOSE" ] && bold_print "Crashing '$VM'..."
+      vcrash "${VCRASH_OPTIONS[@]}" "$VM" && rm -f "$LAB_DIRECTORY/$VM.ready"
    done
    
    bold_print "Removing readyfor.test..."
-   rm -f "${LAB_DIRECTORY}/readyfor.test" > /dev/null 2>&1
+   rm -f "${LAB_DIRECTORY}/readyfor.test"
 }
 
 
