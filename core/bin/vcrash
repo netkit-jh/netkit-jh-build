@@ -131,7 +131,7 @@ END_OF_HELP
 
 
 # Get command line options
-LONG_OPTS="help,quiet,kill,user:,version,force,remove-fs,root,test"
+LONG_OPTS="force,help,kill,quiet,remove-fs,root,test,user:,version"
 SHORT_OPTS="qkru:"
 
 if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
@@ -149,7 +149,7 @@ while true; do
       --help)
          usage 0
          ;;
-      --kill|-k)
+      -k|--kill)
          DO_KILL=1
          ;;
 
@@ -163,7 +163,7 @@ while true; do
       --test)
          TEST_MODE=1
          ;;
-      --user|-u)
+      -u|--user)
          USER=$2
          [ "$USER" = "-" ] && unset USER
          checkSpaces "$USER"
