@@ -386,23 +386,22 @@ startInetHub() {
 
    if [ ! -S "$1" ] || ! file_in_use "$1"; then
       # Either socket does not exist yet or it is still unused
-      TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "start" "$USER" "$2" )
+      TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER" "$2" )
 
       if [ -z "$BE_QUIET" ]; then
          echo "******** Starting Internet connected virtual hub ********"
          echo "   $TAP_ADDRESS (host side) - $GUEST_ADDRESS (guest side)"
          echo "********     (root privileges are required)      ********"
-         run_command "$JUST_PRINT" \
-                     "$NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME start $USER $2" \
-                     "${TUNTAP_COMMAND[@]}" || \
-            { echo 1>&2 "Error while configuring the tunnel."; exit 1; }
+         if ! run_command "$JUST_PRINT" "${TUNTAP_COMMAND[*]}" "${TUNTAP_COMMAND[@]}"; then
+            echo 1>&2 "Error while configuring the tunnel."
+            exit 1
+         fi
          echo "************** Abandoning root privileges ***************"
-         echo
       else
-         run_command "$JUST_PRINT" \
-                     "$NETKIT_HOME/bin/manage_tuntap $NETKIT_HOME start $USER $2" \
-                     "${TUNTAP_COMMAND[@]}" > /dev/null || \
-            { echo 1>&2 "Error while configuring the tunnel."; exit 1; }
+         if ! run_command "$JUST_PRINT" "${TUNTAP_COMMAND[*]}" "${TUNTAP_COMMAND[@]}" > /dev/null; then
+            echo 1>&2 "Error while configuring the tunnel."
+            exit 1
+         fi
       fi
 
       TAP_DEVICE="nk_tap_$USER"

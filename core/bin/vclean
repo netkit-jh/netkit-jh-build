@@ -389,15 +389,15 @@ if [ -n "$REMOVE_TUNNELS" ]; then
 
    # TODO: These commands don't run for the specified user (this is a
    # manage_tuntap limitation). 
-   TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "$NETKIT_HOME" "stop" )
+   TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "stop" )
 
    if [ -z "$BE_QUIET" ]; then   
-      if ! run_command "" "$NETKIT_HOME/bin/manage_tuntap stop" "${TUNTAP_COMMAND[@]}"; then
+      if ! run_command "" "${TUNTAP_COMMAND[*]}" "${TUNTAP_COMMAND[@]}"; then
          echo 1>&2 "Error while removing tap configurations"
          exit 1
       fi
    else
-      if ! run_command "" "$NETKIT_HOME/bin/manage_tuntap stop" "${TUNTAP_COMMAND[@]}" > /dev/null; then
+      if ! run_command "" "${TUNTAP_COMMAND[*]}" "${TUNTAP_COMMAND[@]}" > /dev/null; then
          echo 1>&2 "Error while removing tap configurations"
          exit 1
       fi

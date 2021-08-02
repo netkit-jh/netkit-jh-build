@@ -22,12 +22,10 @@
 # a virtual machine to the Internet.
 # It is not intended for standalone usage.
 
-# Script arguments follow (arguments from 3 to 6 are only required when action
-# is "start").
-NETKIT_HOME=$1    # NETKIT_HOME environment variable. Environment was reset after sudo so we pass it in command line.
-ACTION=$2         # either "start" or "stop"
-USER_NAME=$3      # name of the user the tunnel is being configured for
-TAP_ADDRESS=$4    # address of the (host side) tap interface
+
+ACTION=$1         # either "start" or "stop"
+USER_NAME=$2      # name of the user the tunnel is being configured for
+TAP_ADDRESS=$3    # address of the (host side) tap interface
 
 
 TAP_DEVICE="nk_tap_$USER_NAME"
