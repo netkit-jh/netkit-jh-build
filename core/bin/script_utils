@@ -737,7 +737,7 @@ get_vm_info_by_pid() {
 
       # Edge-cases that can only be matched with regular expressions (or with
       # extglob enabled, which cannot be done.)
-      if [[ "$argument" =~ ^eth[0-9]+=.*$ ]]; then
+      if [[ "$argument" =~ ^eth([0-9]|[1-9][0-9]+)=.*$ ]]; then
          key=${argument%%=*}
          value=${argument#*=}
 
