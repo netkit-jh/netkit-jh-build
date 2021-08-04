@@ -241,7 +241,7 @@ while true; do
          MAKEFILE=1
          ;;
       -o|--pass)
-         PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS $2"
+         PASSTHROUGH_OPTIONS+=( "$2" )
          shift
          ;;
       -p)
@@ -272,10 +272,10 @@ while true; do
          BE_SEQUENTIAL=1
          ;;
       --tmux-attached)
-         PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS $1"
+         PASSTHROUGH_OPTIONS+=( "$1" )
          ;;
       --tmux-detached)
-         PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS $1"
+         PASSTHROUGH_OPTIONS+=( "$1" )
          ;;
       -v|--verbose)
          VERBOSE=1
@@ -371,7 +371,7 @@ if [ "$SCRIPTNAME" = "ltest" ]; then
    TESTMODE=1
 
    # Hide .disk files when running tests
-   PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS -D"
+   PASSTHROUGH_OPTIONS+=( "-D" )
 fi
 
 
@@ -381,7 +381,7 @@ if [ -n "$MAKEFILE" ]; then
    # would be satisfied!
    unset FASTMODE
 
-   labStart
+   lab_start
    exit 0
 fi
 
@@ -469,20 +469,20 @@ if [ -f "$LAB_DIRECTORY/lab.dep" ] && [ -z "$BE_SEQUENTIAL" ] || [ -n "$FORCE_PA
    # Use parallel startup
    if [ -z "$SCRIPTMODE" ]; then
       bold_print "You chose to use parallel startup."
-      labStartParallel
+      lab_start_parallel
    else
-      labStartParallel > /dev/null
+      lab_start_parallel > /dev/null
    fi
 else
    # Use sequential startup
 
-   # If VHOSTLIST is not empty, then labStart takes care of starting only the
+   # If VHOSTLIST is not empty, then lab_start takes care of starting only the
    # machines listed in VHOSTLIST; those appearing in VHOSTLIST but that are
    # not part in the lab will simply be skipped.
    if [ -z "$SCRIPTMODE" ]; then
-      labStart
+      lab_start
    else
-      labStart > /dev/null
+      lab_start > /dev/null
    fi
 fi
 

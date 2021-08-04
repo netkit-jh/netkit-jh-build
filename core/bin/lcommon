@@ -137,15 +137,15 @@ build_vhostlist() {
    fi
 
    # Check that virtual machines passed by command line are in the lab
-   if [ -n "$VHOSTLIST" ]; then
-      ORIGINAL_VHOSTLIST=$VHOSTLIST
+   if [ "${#VHOSTLIST[@]}" -gt 0 ]; then
+      ORIGINAL_VHOSTLIST=( "${VHOSTLIST[@]}" )
       unset VHOSTLIST
 
-      for host in $ORIGINAL_VHOSTLIST; do
+      for host in "${ORIGINAL_VHOSTLIST[@]}"; do
          if array_contains "$host" "${lab_hosts[@]}"; then
             VHOSTLIST+=( "$host" )
          else
-            echo 1>&2 "Warning: '${CURRENT_HOST}' is not part of the lab in '${LAB_DIRECTORY}'"
+            echo 1>&2 "Warning: '$CURRENT_HOST' is not part of the lab in '$LAB_DIRECTORY'"
          fi
       done
    else
@@ -207,10 +207,7 @@ lab_welcome() {
 #   None
 ###############################################################################
 lab_clean() {
-   # If the user didn't specify host list on the command line
-   if [ ${#VHOSTLIST[@]} -eq 0 ]; then
-      build_vhostlist
-   fi
+   build_vhostlist
 
    bold_print "Cleaning up lab inside '$LAB_DIRECTORY'..."
 
@@ -226,7 +223,23 @@ lab_clean() {
 }
 
 
-# This function hardly crashes virtual machines of a Netkit lab
+###############################################################################
+# Crash virtual machines of a Netkit lab.
+# Usage:
+#   lab_crash
+# Globals:
+#   r- KEEP_FILESYSTEM
+#   r- KILL_MODE
+#   r- LAB_DIRECTORY
+#   r- VERBOSE
+#   rw VHOSTLIST
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
 lab_crash() {
    local VCRASH_OPTIONS
 
@@ -242,146 +255,125 @@ lab_crash() {
    done
    
    bold_print "Removing readyfor.test..."
-   rm -f "${LAB_DIRECTORY}/readyfor.test"
+   rm -f "$LAB_DIRECTORY/readyfor.test"
 }
 
 
-# This function starts a single virtual machine. The only argument is the name
-# of the virtual machine to start.
-startSingleVM() {
-   local VSTART_OPTIONS VM
-   VM=$1
-   VSTART_OPTIONS=""
-   # Prepare network interfaces and other per-virtual-machine configuration
-   # settings
+###############################################################################
+# Start a single virtual machine within a lab.
+# Usage:
+#   single_lab_vm_start MACHINE
+# Globals:
+#   r- BASE_VSTART_OPTIONS
+#   r- FASTMODE
+#   r- GRACE_TIME
+#   r- LAB_DIRECTORY
+#   r- TESTMODE
+#   r- VERBOSE
+# Arguments:
+#   $1 - machine to start up
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+single_lab_vm_start() {
+   local VSTART_OPTIONS
+   local VM=$1
+
+   # Generate vstart argument list
    if [ -e "$LAB_DIRECTORY/lab.conf" ]; then
-      # Check for duplicate settings (e.g., duplicate interface declarations)
-      # and/or parameters with spaces.
-      grep "^[ \t]*$VM\[.*\] *=" ${LAB_DIRECTORY}/lab.conf | awk -v VM="$VM" -v FS="=" '
-         {
-            parameter_name=$1
-            value=substr($0,length(parameter_name)+2)
-            gsub(".*\\[","",parameter_name)
-            gsub("\\].*","",parameter_name)
-            if (match(parameter_name,"^[0-9]+$")) {
-               # This is an interface specification
-               if (parameter_name in parameter && !(parameter_name in warned)) {
-                  print "Warning: interface eth" parameter_name " for virtual machine \"" VM "\" is defined multiple times."
-                  print "Only preserving definition \"" parameter[parameter_name] "\"."
-                  warned[parameter_name]=1
-               }
-               else {
-                  parameter[parameter_name]=$0
-               }
-               if (match(value," ") || match(value,"_")) {
-                  print "Warning: collision domain name for interface eth" parameter_name " (" value ") on virtual machine \"" VM "\" contains invalid characters."
-                  gsub(" ","",value)
-                  gsub("_","",value)
-                  print "Renaming to \"" value "\"."
-               }
-            }
-            else {
-               # This is a generic parameter specification
-               if (parameter_name in parameter && !(parameter_name in warned)) {
-                  print "Warning: parameter " parameter_name " for virtual machine \"" VM "\" is configured multiple times."
-                  print "Only preserving setting \"" parameter[parameter_name] "\"."
-                  warned[parameter_name]=1
-               }
-               else {
-                  parameter[parameter_name]=$0
-               }
-               if (match(value," ")) {
-                  print "Warning: configuration setting for parameter \"" parameter_name "\" (" $2 ") on virtual machine \"" VM "\" contains spaces."
-                  gsub(" ","",$2)
-                  print "Renaming to \"" $2 "\"."
-               }
-            }
-         }' 1>&2
-      VSTART_OPTIONS=$(grep "^[ \t]*$VM\[.*\] *=" ${LAB_DIRECTORY}/lab.conf | awk -v FS="=" '
-         {
-            parameter_name=$1
-            value=substr($0,length(parameter_name)+2)
-            gsub(".*\\[","",parameter_name)
-            gsub("\\].*","",parameter_name)
-            if (!(parameter_name in assigned_parameters)) {
-               gsub (" ","",value)
-               if (match(parameter_name,"^[0-9]+$")) {
-                  if (!match(value,"^tap")) {
-                     # This is not a tap interface: remove commas and dots from the
-                     # name of the collision domain
-                     gsub (",","",value)
-                     gsub ("\\.","",value)
-                  }
-                  gsub ("_","",value)
-                  parameter="--eth" parameter_name
-               }
-               else {
-                  if (length(parameter_name)==1) parameter="-" parameter_name
-                  else parameter="--" parameter_name
-               }
-               if (match(parameter_name,"^append")) {
-                 parameter="--append"
-               } 
-               if (length(value)>0)
-                  # This option requires an argument
-                  if (length(parameter_name)==1) printf "%s %s ",parameter,value
-                  else printf "%s=%s ",parameter,value
-               else
-                  # This is a simple option
-                  printf "%s ",parameter
-               assigned_parameters[parameter_name]=1
-            }
-         }')
+      while IFS= read -r configuration; do
+         # The [][] is ][ inside a bracket expression to match an opening or
+         # closing square bracket. We know the machine name cannot contain
+         # square brackets, so the option is the first instance of them.
+         option=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
+
+         # Everything after the first '='
+         value=${configuration#*=}
+
+         # If option is all-digit, it must be a network interface specification
+         [[ "$option" =~ ^([0-9]|[1-9][0-9]+)$ ]] && option="eth$option"
+
+         if [ "${#option}" -eq 1 ]; then
+            VSTART_OPTIONS+=( "-$option" )
+         else
+            VSTART_OPTIONS+=( "--$option" )
+         fi
+
+         # NOTE: if vstart is ever changed to have an option with an optional
+         # argument (denoted with '::' in the option string), an exception when
+         # appending the argument must be made (an '=' is required for long
+         # options, no delimiter for short ones).
+         [ -n "$value" ] && VSTART_OPTIONS+=( "$value" )
+      done < <(grep "^[[:blank:]]*$VM\[.*\][[:blank:]]*=" "$LAB_DIRECTORY/lab.conf")
    fi
       
    # Add host lab and working directory
-   VSTART_OPTIONS="$VSTART_OPTIONS --hostlab=$LAB_DIRECTORY --hostwd=$PWD"
+   VSTART_OPTIONS+=( "--hostlab" "$LAB_DIRECTORY" "--hostwd" "$PWD" )
 
    # Place virtual machine filesystem inside the lab directory
-   VSTART_OPTIONS="$VSTART_OPTIONS --filesystem=${LAB_DIRECTORY}/${VM}.disk"
+   VSTART_OPTIONS+=( "--filesystem" "$LAB_DIRECTORY/$VM.disk" )
 
    # Check if is a testing phase
-   [ ! -z "$TESTMODE" ] && VSTART_OPTIONS="$VSTART_OPTIONS --test"
+   [ -n "$TESTMODE" ] && VSTART_OPTIONS+=( "--test" )
    
    # Remove .ready file, if existing
-   [ -e "${LAB_DIRECTORY}/$VM.ready" ] && rm -f "${LAB_DIRECTORY}/$VM.ready" > /dev/null 2>&1
+   [ -e "$LAB_DIRECTORY/$VM.ready" ] && rm -f "$LAB_DIRECTORY/$VM.ready"
 
    if [ -z "$VERBOSE" ]; then
-      bold_print "Starting \"$VM\"..."
+      bold_print "Starting '$VM'..."
    else
-      bold_print "Starting \"$VM\" with options \"$BASE_VSTART_OPTIONS $VSTART_OPTIONS\"... "
+      bold_print "Starting '$VM' with options '$BASE_VSTART_OPTIONS ${VSTART_OPTIONS[*]}'... "
    fi
-   if ! vstart $BASE_VSTART_OPTIONS $VSTART_OPTIONS $VM; then
-      echo "Error while starting virtual machine \"$VM\"."
+
+   if ! vstart "${BASE_VSTART_OPTIONS[@]}" "${VSTART_OPTIONS[@]}" "$VM"; then
+      echo 2>&1 "Error while starting virtual machine '$VM'"
       exit 1
    fi
 
    # Wait for virtual host startup script to create .ready file
    if [ -z "$FASTMODE" ]; then
-      while [ ! -e "${LAB_DIRECTORY}/$VM.ready" ]; do
+      while [ ! -e "$LAB_DIRECTORY/$VM.ready" ]; do
          sleep 1
       done
-      rm -f ${LAB_DIRECTORY}/$VM.ready > /dev/null 2>&1
+
+      rm -f "$LAB_DIRECTORY/$VM.ready"
    fi
    
    # Wait for a specified amount of time before returning
-   if [ "$GRACE_TIME" -gt 0 ]; then
-      sleep $GRACE_TIME
-   fi
+   [ "$GRACE_TIME" -gt 0 ] && sleep "$GRACE_TIME"
 }
 
 
-# This function starts up a Netkit lab
-labStart() {
+###############################################################################
+# Start virtual machines of a Netkit lab sequentially.
+# Usage:
+#   lab_crash
+# Globals:
+#   r- LAB_DIRECTORY
+#   r- MAKEFILE
+#   r- PASSTHROUGH_OPTIONS
+#   r- TESTMODE
+#   rw VHOSTLIST
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+lab_start() {
+   local BASE_VSTART_OPTIONS
+
    build_vhostlist
 
-   BASE_VSTART_OPTIONS=""
-   [ -z "$VERBOSE" ] && BASE_VSTART_OPTIONS="-q"
-   BASE_VSTART_OPTIONS="$BASE_VSTART_OPTIONS $PASSTHROUGH_OPTIONS"
+   [ -z "$VERBOSE" ] && BASE_VSTART_OPTIONS+=( "-q" )
+   BASE_VSTART_OPTIONS+=( "${PASSTHROUGH_OPTIONS[@]}" )
    
    if [ "${#VHOSTLIST[@]}" -gt 0 ]; then
       for VM in "${VHOSTLIST[@]}"; do
-         startSingleVM $VM
+         single_lab_vm_start "$VM"
       done
    else
       echo 1>&2 "Warning: there are no virtual machines to be started."
@@ -389,13 +381,29 @@ labStart() {
    
    # The readyfor.test file should not be created if we have been invoked
    # with the --makefile option (=launch a single machine and exit).
-   [ ! -z "$TESTMODE" -a -z "$MAKEFILE" ] && : > "$LAB_DIRECTORY/readyfor.test"
+   [ -n "$TESTMODE" ] && [ -z "$MAKEFILE" ] && : > "$LAB_DIRECTORY/readyfor.test"
 }
 
 
-# This function starts a Netkit lab while (optionally) using a dependency file.
-# The 'make' utility is required in order to make this work.
-labStartParallel() {
+###############################################################################
+# Start virtual machines of a Netkit lab simultaneously with GNU Make.
+# Usage:
+#   lab_crash
+# Globals:
+#   r- LAB_DIRECTORY
+#   r- MAKEFILE
+#   r- MAX_SIMULTANEOUS_VMS
+#   r- PASSTHROUGH_OPTIONS
+#   r- TESTMODE
+#   rw VHOSTLIST
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+lab_start_parallel() {
    build_vhostlist
    
    if [ "${#VHOSTLIST[@]}" -eq 0 ]; then
@@ -404,13 +412,13 @@ labStartParallel() {
    fi
    
    # Pass "passthrough" options on to further invocations of this script
-   [ ! -z "$VERBOSE" ] && PASSTHROUGH_STUFF="-v"
-   for CURRENT_OPTION in $PASSTHROUGH_OPTIONS; do
-      PASSTHROUGH_STUFF="$PASSTHROUGH_STUFF -o $CURRENT_OPTION"
+   [ -n "$VERBOSE" ] && PASSTHROUGH_STUFF+=( "-v" )
+   for CURRENT_OPTION in "${PASSTHROUGH_OPTIONS[@]}"; do
+      PASSTHROUGH_STUFF+=( "-o" "$CURRENT_OPTION" )
    done
-   
+
    # Pass testmode along subsequent invocations of this script
-   if [ ! -z "$TESTMODE" ]; then
+   if [ -n "$TESTMODE" ]; then
       COMMAND_NAME="ltest"
    else
       COMMAND_NAME="lstart"
@@ -419,16 +427,56 @@ labStartParallel() {
    # The make utility expects an empty argument when infinitely many jobs
    # should be used.
    [ "$MAX_SIMULTANEOUS_VMS" -eq 0 ] && MAX_SIMULTANEOUS_VMS=""
-   
-   # Play around with some makefile targets
-   {  echo "%: dummy-prerequisite-to-force-remaking"
-      echo '\t'"[ "\$*" != "lab.dep" ] && $COMMAND_NAME -d $LAB_DIRECTORY $PASSTHROUGH_STUFF --makefile \$*"
-      echo "dummy-prerequisite-to-force-remaking:"
-      echo '\t'"# Dummy line. Unuseful, yet necessary"
-   } | { cat; [ -f "$LAB_DIRECTORY/lab.dep" ] && cat "$LAB_DIRECTORY/lab.dep"; } | \
-   make -irsC $LAB_DIRECTORY -f - "${VHOSTLIST[@]}" -j $MAX_SIMULTANEOUS_VMS
 
-   [ ! -z "$TESTMODE" ] && : > "$LAB_DIRECTORY/readyfor.test"
+
+   cmd=( "$COMMAND_NAME" "-d" "$LAB_DIRECTORY" "${PASSTHROUGH_STUFF[@]}" "--makefile" )
+
+   # We expand this array with the Q operator when writing to the Makefile.
+   # This ensures escaping sufficient for reuse in a shell command.
+   escaped_cmd=${cmd[*]@Q}
+
+   # Make requires all dollar signs (whether quoted or not) to be escaped with
+   # a second dollar sign.
+   escaped_cmd=${escaped_cmd//$/\$$}
+
+   # Tabs are required for Makefile indentations
+   tab=$(printf '\t')
+
+   # Labs are started in parallel with GNU Make, which automatically handles
+   # lab.dep (which is formatted as Makefile targets).
+   #
+   # The script is invoked with each VM name as a target on the command line,
+   # which directs Make to run:
+   #   lstart [...] --makefile <machine>
+   # for each machine. $* is a GNU Make automatic variable that expands to the
+   # % (stem) in the target. In this usage it will expand to the machine name.
+   #
+   # The contents of lab.dep is copied in if it exists, which creates a target
+   # for each machine with dependencies ("prerequisities" in Make).
+   # NOTE: The dummy target is required, which has the unwanted side-effect
+   # that machines cannot be named "dummy-prerequisite-to-force-remaking".
+   # 
+   # The Makefile must use Bash as the shell for correct handling of ANSI-C
+   # expansions present after the previous Q-operator array expansion.
+   IFS='' read -r -d '' makefile_contents << EOF
+SHELL := /bin/bash
+
+%: dummy-prerequisite-to-force-remaking
+${tab}[ '$*' != "lab.dep" ] && $escaped_cmd '$*'
+
+dummy-prerequisite-to-force-remaking:
+${tab}# Dummy line. Unuseful, yet necessary
+
+$(cat "$LAB_DIRECTORY/lab.dep" 2> /dev/null)
+EOF
+
+   # Read the Makefile from stdin without implicit rules, and hide the output. It
+   # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
+   make -irsC "$LAB_DIRECTORY" -f - -j "$MAX_SIMULTANEOUS_VMS" "${VHOSTLIST[@]}" <<< "$makefile_contents"
+
+   
+   # Signal that every machine is ready for testing once booted.
+   [ -n "$TESTMODE" ] && : > "$LAB_DIRECTORY/readyfor.test"
 }
 
 
