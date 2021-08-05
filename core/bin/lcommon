@@ -462,7 +462,7 @@ lab_start_parallel() {
 SHELL := /bin/bash
 
 %: dummy-prerequisite-to-force-remaking
-${tab}[ '$*' != "lab.dep" ] && $escaped_cmd '$*'
+${tab}[ '\$*' != "lab.dep" ] && $escaped_cmd '\$*'
 
 dummy-prerequisite-to-force-remaking:
 ${tab}# Dummy line. Unuseful, yet necessary
