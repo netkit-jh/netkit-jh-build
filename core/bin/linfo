@@ -144,7 +144,6 @@ while true; do
       -m|--map)
          MAP_FILE=$2
          shift
-         checkSpaces "$MAP_FILE"
          ;;
       --version)
          show_version

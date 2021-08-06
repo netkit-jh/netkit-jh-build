@@ -230,17 +230,16 @@ while true; do
          ADDITIONAL_ARG="$2"
          shift
 
-         checkSpaces "$ADDITIONAL_ARG"
          KERNEL_APPEND+=( "$ADDITIONAL_ARG" )
          ;;
       --con0|--con1)
+         OPT=$1
          CON="$2"
          shift
 
          case "$CON" in
             xterm|this|pty|port:*|none)
-               checkSpaces "$CON"
-               [ "$1" = "--con0" ] && VM_CON0="$CON" || VM_CON1="$CON"
+               [ "$OPT" = "--con0" ] && VM_CON0="$CON" || VM_CON1="$CON"
                ;;
             *)
                echo 1>&2 "$SCRIPTNAME: $CON: Unrecognized console"
@@ -291,7 +290,7 @@ while true; do
             usage 1
          fi
 
-         checkSpaces "$VM_FS"
+         # TODO: double-check udb0 argument allows spaces
          VM_FS=$(makeAbsolutePath "$VM_FS")
          ;;
       -H|--no-hosthome)
@@ -301,16 +300,12 @@ while true; do
          usage 0
          ;;
       -k|--kernel)
-         VM_KERNEL="$2"
+         VM_KERNEL=$(makeAbsolutePath "$2")
          shift
-
-         checkSpaces "$VM_KERNEL"
-         VM_KERNEL=$(makeAbsolutePath "$VM_KERNEL")
          ;;
       -l|--hostlab)
-         VM_HOSTLAB="$2"
+         VM_HOSTLAB=$2
          shift
-         checkSpaces "$VM_HOSTLAB"
          ;;
       -M|--mem)
          VM_MEMORY="$2"
@@ -330,7 +325,7 @@ while true; do
             usage 1
          fi
 
-         checkSpaces "$VM_MODEL_FS"
+         # TODO: double-check udb0 can take spaces
          VM_MODEL_FS=$(makeAbsolutePath "$VM_MODEL_FS")
          ;;
       -p|--print)
@@ -361,23 +356,17 @@ while true; do
          USE_MODEL_FS=1
          ;;
       -w|--hostwd)
-         VM_HOSTWD="$2"
+         VM_HOSTWD=$2
          shift
-         checkSpaces "$VM_HOSTWD"
          ;;
       --xterm)
-         TERM_TYPE="$2"
+         TERM_TYPE=$2
          shift
 
-         case "$TERM_TYPE" in
-            konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl|wt)
-               checkSpaces "$TERM_TYPE"
-               ;;
-            *)
-               echo 1>&2 "$SCRIPTNAME: $TERM_TYPE: Unsupported terminal emulator"
-               usage 1
-               ;;
-         esac
+         if [[ "$TERM_TYPE" =~ ^(konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl|wt)$ ]]; then
+            echo 1>&2 "$SCRIPTNAME: $TERM_TYPE: Unsupported terminal emulator"
+            usage 1
+         fi
          ;;
       --)
          shift

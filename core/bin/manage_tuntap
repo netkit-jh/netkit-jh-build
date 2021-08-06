@@ -28,6 +28,7 @@ USER_NAME=$2      # name of the user the tunnel is being configured for
 TAP_ADDRESS=$3    # address of the (host side) tap interface
 
 
+# TODO: use tun/tap regex
 TAP_DEVICE="nk_tap_$USER_NAME"
 
 
@@ -42,8 +43,10 @@ case $ACTION in
          echo "done."
       fi
 
+      # TODO: check for the device existing first, and then run this command
+      # without redirecting stderr to /dev/null.
       printf "Bringing down %s (if any)...\t" "$TAP_DEVICE"
-      sudo ifconfig "$TAP_DEVICE" down > /dev/null
+      sudo ifconfig "$TAP_DEVICE" down > /dev/null 2>&1
       echo "done."
 
       printf "Bringing down tunnel (if any)...\t"
@@ -130,9 +133,7 @@ case $ACTION in
          uid=$(cat "$sys_class_net_entry/user/owner")
 
          # Ignore tuntap devices not owned by the user (if specified)
-         if [ -n "$USER_NAME" ] && [ "$(id -u "$USER_NAME")" != "$uid" ]; then
-            continue
-         fi
+         [ -n "$USER_NAME" ] && [ "$(id -u "$USER_NAME")" != "$uid" ] && continue
 
          interface=$(basename "$sys_class_net_entry")
 

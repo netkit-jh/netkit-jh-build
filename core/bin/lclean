@@ -163,6 +163,7 @@ done
 VHOSTLIST=( "$@" )
 
 for host in "${VHOSTLIST[@]}"; do
+   # TODO: change to validate against hostname regex
    checkSpaces "$host"
 done
 

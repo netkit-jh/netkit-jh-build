@@ -166,6 +166,7 @@ while true; do
       -u|--user)
          USER=$2
          [ "$USER" = "-" ] && unset USER
+         # TODO: change to username regex
          checkSpaces "$USER"
          shift
          ;;
