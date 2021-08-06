@@ -480,10 +480,118 @@ EOF
 }
 
 
+###############################################################################
+# Generate a DOT language graph from a list of lab.conf files and virtual
+# machine names and write to standard output.
+# Usage:
+#   generate_dot_graph [LAB_CONF]...
+# Globals:
+#   r- VHOSTLIST
+# Arguments:
+#  ... - list of lab.conf files to analyse
+# Returns:
+#   None
+# Example:
+#   generate_dot_graph lab.conf | dot
+###############################################################################
+generate_dot_graph() {
+   local lab_confs=( "$@" )
+
+   # Global map parameters
+   cat << EOF
+graph netkit_jh_graph {
+   overlap="prism";
+   overlap_scaling=-6.0;
+   resolution=400.0;
+   splines="line";
+EOF
+
+   declare -A device_ids options
+
+   while IFS= read -r configuration; do
+      # The [][] is ][ inside a bracket expression to match an opening or
+      # closing square bracket. We know the machine name cannot contain
+      # square brackets, so the option is the first instance of them.
+      vm=$(awk -F"[][]" '{ print $1 }' <<< "$configuration")
+      option=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
+
+      # Everything after the first '='
+      value=${configuration#*=}
+
+      # Ignore if VM is not part of the lab
+      array_contains "$vm" "${VHOSTLIST[@]}" || continue
+
+      # If option is all-digit, it must be a network interface specification
+      if [[ "$option" =~ ^([0-9]|[1-9][0-9]+)$ ]]; then
+         # Ignore if it has already been seen
+         [[ "${device_ids[$vm]}" =~ \ $option\  ]] && continue
+
+         # Add an edge between the machine and its collision domain
+         cat << EOF
+   "$vm" -- "$value" [
+      taillabel=<
+         <TABLE BGCOLOR="white" BORDER="0" CELLPADDING="1" CELLSPACING="0">
+            <TR>
+               <TD>eth$option</TD>
+            </TR>
+         </TABLE>
+      >,
+      labeldistance=1.5,
+      labelfontsize=8.0
+   ];'
+EOF
+
+         domains+=( "$value" )
+
+         # Device IDs cannot have whitespace, so a space-separated list is
+         # safe.
+         device_ids[$vm]+=" $option "
+      else
+         options[$vm]+="$option = $value<BR/>"
+      fi
+   done < <(grep --no-filename "^[[:blank:]].*\[.*\][[:blank:]]*=" "${lab_confs[@]}")
+   # TODO: Replace .* in above grep (and any other similar search) with the
+   # hostname regex.
+
+   # Label each machine with its hostname and vstart options
+   for vm in "${VHOSTLIST[@]}"; do
+      cat << EOF
+   "$vm" [
+      shape=box,
+      label=<
+         $vm
+         <FONT POINT-SIZE="10">
+            <BR/>${options[$vm]}
+         </FONT>
+      >,
+      height=0.5,
+      width=0.5
+   ];
+EOF
+   done
+
+   # Remove bounding box from collision domain labels (just text)
+   for domain in "${domains[@]}"; do
+      cat << EOF
+   "$domain" [
+      shape=plaintext,
+      width=0,
+      height=0,
+      margin=0
+   ]
+EOF
+   done
+
+   echo "}"
+}
+
+
 # This function creates a link-level topology map of the lab. Its argument is
 # the name of the PNG file to save the map in.
-labMap() {
-   MAP_FILE="$1"
+lab_map() {
+   local map_file=$1
+   local lab_confs=( "${@:2}" )
+
    GRAPH_GENERATOR=$(which neato)
    if [ -z "$GRAPH_GENERATOR" ]; then
       echo 1>&2 "Error: the GraphViz library does not appear to be installed."
@@ -491,82 +599,5 @@ labMap() {
       return 1
    fi
 
-   # TODO: Fix how VHOSTLIST is handled
-   cat $CONFLIST | awk -v vhostlist="${VHOSTLIST[*]}" '
-   BEGIN {
-      print "graph netkit_jh_graph {"
-      print "   overlap=\"prism\""
-      print "   overlap_scaling=\"-6.0\""
-      print "   resolution=400.0"
-      print "   splines=\"line\""
-
-      # Create array of hostnames
-      split(vhostlist, vm, " ")
-
-      # Create an array whose keys are virtual machine names
-      # vhosts = {"host1" : 1, "host2" : 1, "host3" : 1, ... }
-      for (i in vm) {
-         vhosts[vm[i]] = 1
-      }
-   }
-
-   # Matching an interface specification - "host[x]="
-   /^.+\[[0-9]+\]=/ {
-      lbracket_pos = match($0, "\\[")
-      rbracket_pos = match($0, "\\]")
-      equals_pos = match($0, "=")
-
-      # Get hostname, interface number, and collision domain name
-      machine_name = substr($0, 1, lbracket_pos - 1)
-      interface = substr($0, lbracket_pos + 1, rbracket_pos - lbracket_pos - 1)
-      collision_domain = substr($0, equals_pos + 1)
-
-      # Check if (hostname, interface number) pair has already appeared
-      if (interfaces[machine_name, interface] == 1) {
-         print "// Duplicate specification for interface eth" interface " on virtual machine " machine_name "."
-         print "// Only preserving the first specification."
-      } else {
-         collision_domains[collision_domain] = 1
-
-         # Only display hosts part of the lab
-         if (machine_name in vhosts) {
-            interfaces[machine_name,interface] = 1
-
-            # Create edge from host to collision domain
-            print "   \"" machine_name "\" -- \"" collision_domain \
-            "\" [taillabel =<<TABLE BGCOLOR=\"white\" BORDER=\"0\" CELLPADDING=\"1\" CELLSPACING=\"0\"><TR><TD>eth" \
-            interface "</TD></TR></TABLE>>, labeldistance = 1.5, labelfontsize = 8.0]"
-         }
-      }
-   }
-
-   # Matching an option specification - "host[option]="
-   /^.+\[[^0-9].*\]=/ {
-      lbracket_pos = match($0, "\\[")
-      rbracket_pos = match($0, "\\]")
-      equals_pos = match($0, "=")
-
-      # Get hostname, option, and option value
-      machine_name = substr($0, 1, lbracket_pos - 1)
-      option_name=substr($0, lbracket_pos + 1, rbracket_pos - lbracket_pos - 1)
-      option_value = substr($0, equals_pos + 1)
-
-      # options = {"host1" : "opt3=val\nopt2=val\nopt1=val", "host2" : ... }
-      options[machine_name] = options[machine_name] option_name " = " option_value "<BR/>"
-   }
-
-   END {
-      for (host in vhosts) {
-         print "   \"" host "\" [shape = box, label=<" host "<FONT POINT-SIZE=\"10\"><BR/>" options[host] \
-         "</FONT>>, height = 0.5, width = 0.5]"
-      }
-
-      for (cd in collision_domains) {
-         print "   \"" cd "\" [shape = plaintext, width = 0, height = 0, margin = \"0\"]"
-      }
-
-      print "}"
-   }'\
-   | $GRAPH_GENERATOR -Tpng -o "$MAP_FILE" 2>&1
-   return
+   generate_dot_graph "${lab_confs[@]}" | "$GRAPH_GENERATOR" -Tpng -o"$map_file"
 }
