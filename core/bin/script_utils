@@ -41,28 +41,28 @@ export LANG=C
 [ -f "$HOME/.netkit/netkit.conf" ] && . "$HOME/.netkit/netkit.conf"
 
 # Assign default values to undefined parameters
-: ${LOGFILENAME:=""}
-: ${MCONSOLE_DIR:="$HOME/.netkit/mconsole"}
-: ${HUB_SOCKET_DIR:="$HOME/.netkit/hubs"}
-: ${HUB_SOCKET_PREFIX:="vhub"}
-: ${HUB_SOCKET_EXTENSION:=".cnct"}
-: ${HUB_LOG:="$HUB_SOCKET_DIR/vhubs.log"}
-: ${VM_MEMORY:=32}
-: ${VM_MEMORY_SKEW:=4}
-: ${VM_MODEL_FS:="$NETKIT_HOME/fs/netkit-fs"}
-: ${VM_KERNEL:="$NETKIT_HOME/kernel/netkit-kernel"}
-: ${VM_CON0:=xterm}
-: ${VM_CON1:=none}
-: ${CON0_PORTHELPER:="no"}
-: ${TERM_TYPE:=xterm}
-: ${MAX_INTERFACES:=40}
-: ${MIN_MEM:=12}
-: ${MAX_MEM:=512}
-: ${MAX_SIMULTANEOUS_VMS:=5}
-: ${GRACE_TIME:=0}
-: ${TMUX_OPEN_TERMS:="no"}
-: ${CHECK_FOR_UPDATES:="yes"}
-: ${UPDATE_CHECK_PERIOD:=5}
+: "${LOGFILENAME:=""}"
+: "${MCONSOLE_DIR:="$HOME/.netkit/mconsole"}"
+: "${HUB_SOCKET_DIR:="$HOME/.netkit/hubs"}"
+: "${HUB_SOCKET_PREFIX:="vhub"}"
+: "${HUB_SOCKET_EXTENSION:=".cnct"}"
+: "${HUB_LOG:="$HUB_SOCKET_DIR/vhubs.log"}"
+: "${VM_MEMORY:=32}"
+: "${VM_MEMORY_SKEW:=4}"
+: "${VM_MODEL_FS:="$NETKIT_HOME/fs/netkit-fs"}"
+: "${VM_KERNEL:="$NETKIT_HOME/kernel/netkit-kernel"}"
+: "${VM_CON0:=xterm}"
+: "${VM_CON1:=none}"
+: "${CON0_PORTHELPER:="no"}"
+: "${TERM_TYPE:=xterm}"
+: "${MAX_INTERFACES:=40}"
+: "${MIN_MEM:=12}"
+: "${MAX_MEM:=512}"
+: "${MAX_SIMULTANEOUS_VMS:=5}"
+: "${GRACE_TIME:=0}"
+: "${TMUX_OPEN_TERMS:="no"}"
+: "${CHECK_FOR_UPDATES:="yes"}"
+: "${UPDATE_CHECK_PERIOD:=5}"
 
 # Check whether some environment variables override default settings
 [ ! -z "$NETKIT_FILESYSTEM" ] && VM_MODEL_FS=$NETKIT_FILESYSTEM
