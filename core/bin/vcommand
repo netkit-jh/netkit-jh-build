@@ -32,9 +32,9 @@ COMMAND_TIMEOUT="1"
 #   None
 ###############################################################################
 tmux_command() {
-   local session="$1"
-   local timeout="$2"
-   local cmd="$3"
+   local session=$1
+   local timeout=$2
+   local cmd=$3
 
    local target="$session:netkit-vm.0"
 
@@ -142,7 +142,7 @@ fi
 eval set -- "$GETOPT_OPTS"
 
 while true; do
-   case "$1" in
+   case $1 in
       # TODO: make command or machine last command line option
       -c|--command)
          PARAMS=$2

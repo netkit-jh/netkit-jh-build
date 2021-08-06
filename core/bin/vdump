@@ -102,7 +102,7 @@ fi
 eval set -- "$GETOPT_OPTS"
 
 while true; do
-   case "$1" in
+   case $1 in
       --help)
          usage 0
          ;;

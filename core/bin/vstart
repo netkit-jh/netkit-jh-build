@@ -225,27 +225,26 @@ fi
 eval set -- "$GETOPT_OPTS"
 
 while true; do
-   case "$1" in
+   case $1 in
       --append)
-         ADDITIONAL_ARG="$2"
+         KERNEL_APPEND+=( "$2" )
          shift
-
-         KERNEL_APPEND+=( "$ADDITIONAL_ARG" )
          ;;
       --con0|--con1)
          OPT=$1
-         CON="$2"
-         shift
+         CON=$2
 
-         case "$CON" in
+         case $CON in
             xterm|this|pty|port:*|none)
-               [ "$OPT" = "--con0" ] && VM_CON0="$CON" || VM_CON1="$CON"
+               [ "$OPT" = "--con0" ] && VM_CON0=$CON || VM_CON1=$CON
                ;;
             *)
                echo 1>&2 "$SCRIPTNAME: $CON: Unrecognized console"
                usage 1
                ;;
          esac
+
+         shift
          ;;
       -D|--hide-disk-file)
          REMOVE_FS=1
@@ -254,13 +253,12 @@ while true; do
          DEBUG=1
          ;;
       -e|--exec)
-         VM_EXEC="$2"
+         VM_EXEC=$2
          shift
          ;;
       --eth*)
          OPT="$1"
          DOMAIN="$2"
-         shift
 
          if containsRegexp DOMAIN "_"; then
             echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - underscores are not allowed"
@@ -275,15 +273,17 @@ while true; do
             fi
          fi
 
+         # TODO: double-check checkSpaces and maybe change ETH_INTERFACES to
+         # array.
          checkSpaces "$DOMAIN"
          ETH_INTERFACES="$ETH_INTERFACES ${OPT#--}=$DOMAIN"
+         shift
          ;;
       -F|--foreground)
          RUN_IN_FOREGROUND=1
          ;;
       -f|--filesystem)
-         VM_FS="$2"
-         shift
+         VM_FS=$2
 
          if containsRegexp CURRENT_ARGUMENT ","; then
             echo 1>&2 "$SCRIPTNAME: $VM_FS: Invalid filesystem - commas are not allowed"
@@ -292,6 +292,7 @@ while true; do
 
          # TODO: double-check udb0 argument allows spaces
          VM_FS=$(makeAbsolutePath "$VM_FS")
+         shift
          ;;
       -H|--no-hosthome)
          NO_HOSTHOME=1
@@ -308,17 +309,17 @@ while true; do
          shift
          ;;
       -M|--mem)
-         VM_MEMORY="$2"
-         shift
+         VM_MEMORY=$2
 
          if [ "$VM_MEMORY" -lt "$MIN_MEM" ] || [ "$VM_MEMORY" -gt "$MAX_MEM" ]; then
             echo 1>&2 "$SCRIPTNAME: Memory out of permitted range (min: $MIN_MEM MB; max: $MAX_MEM MB)"
             usage 1
          fi
+
+         shift
          ;;
       -m|--model-fs)
-         VM_MODEL_FS="$2"
-         shift
+         VM_MODEL_FS=$2
 
          if containsRegexp VM_MODEL_FS ","; then
             echo 1>&2 "$SCRIPTNAME: $VM_MODEL_FS: Invalid filesystem - commas are not allowed"
@@ -327,6 +328,7 @@ while true; do
 
          # TODO: double-check udb0 can take spaces
          VM_MODEL_FS=$(makeAbsolutePath "$VM_MODEL_FS")
+         shift
          ;;
       -p|--print)
          JUST_PRINT=1
@@ -424,7 +426,7 @@ fi
 if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "xterm" ] || [ "$VM_CON1" = "xterm" ]; then
    # Some xterm option arguments are not their relevant executable's name. We
    # hence map these edge cases here.
-   case "$TERM_TYPE" in
+   case $TERM_TYPE in
       gnome)         TERM_EXE="gnome-terminal";;
       konsole-tab)   TERM_EXE="konsole";;
       wsl)           TERM_EXE="wsl.exe";;
@@ -533,6 +535,7 @@ setup_interfaces() {
 
          KERNELCMD="$KERNELCMD autoconf_$device=$guest_address"
 
+         # TODO: KERNELCMD is an array now
          # Ensure the default route is specified only once
          if [ -z "$enabled_default_route" ]; then
             KERNELCMD="$KERNELCMD def_route=$tap_address"
@@ -601,7 +604,7 @@ if [ -n "$USE_MODEL_FS" ]; then
    # Use model fs as virtual machine filesystem (do not use COW)
    KERNELCMD+=( "ubd0=$VM_MODEL_FS" )
 
-   VM_FS="$VM_MODEL_FS"
+   VM_FS=$VM_MODEL_FS
 else
    [ -z "$BE_QUIET" ] && echo -n "   Filesystem: $VM_FS"
 

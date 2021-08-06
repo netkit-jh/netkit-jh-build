@@ -191,10 +191,6 @@ fi
 log_write "$0 $*"
 
 
-# USERID is set in script_utils
-USER="$USERID"
-
-
 # Get command line options
 LONG_OPTS="help,no-header,user:,version"
 SHORT_OPTS="nu:"
@@ -204,11 +200,14 @@ if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longopt
    usage 1
 fi
 
+# USERID is set in script_utils
+USER=$USERID
+
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$GETOPT_OPTS"
 
 while true; do
-   case "$1" in
+   case $1 in
       --help)
          usage 0
          ;;
@@ -216,7 +215,7 @@ while true; do
          no_header=true
          ;;
       -u|--user)
-         USER="$2"
+         USER=$2
          [ "$USER" = "-" ] && unset USER
          shift
          ;;
@@ -321,7 +320,7 @@ print_vm_info_by_name() {
    echo "   Boot command:      ${vm_info[boot_cmd]:-"-"}"
 
    echo -n "   Console 1:         "
-   case "${vm_info[con0]}" in
+   case ${vm_info[con0]} in
       none)    echo "disabled";;
       xterm)   echo "terminal emulator";;
       this)    echo "stdin/stdout";;
@@ -330,7 +329,7 @@ print_vm_info_by_name() {
    esac
 
    echo -n "   Console 2:         "
-   case "${vm_info[con1]}" in
+   case ${vm_info[con1]} in
       none)    echo "disabled";;
       xterm)   echo "terminal emulator";;
       this)    echo "stdin/stdout";;

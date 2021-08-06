@@ -125,7 +125,7 @@ VERBOSE=1
 eval set -- "$GETOPT_OPTS"
 
 while true; do
-   case "$1" in
+   case $1 in
       -a|--auto)
          # TODO: Remove or make better.
          for LAB_DIRECTORY in "${PWD%?}"*/; do
@@ -249,7 +249,7 @@ generate_info_str() {
       if array_contains "$value" "${!collated_lab_info_values[@]}"; then
          collated_lab_info_values[$value]="${collated_lab_info_values[$value]}, $dir"
       else
-         collated_lab_info_values[$value]="$dir"
+         collated_lab_info_values[$value]=$dir
       fi
    done
 
@@ -269,7 +269,7 @@ generate_info_str() {
    elif [ ${#collated_lab_info_values[@]} -eq 1 ]; then
       # If all directories share the same value, it is not necessary to display
       # the directory names.
-      lab_info_str="$value"
+      lab_info_str=$value
    else
       lab_info_str="<unknown>"
    fi

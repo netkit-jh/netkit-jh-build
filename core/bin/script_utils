@@ -79,9 +79,9 @@ export LANG=C
 # replacement string.
 varReplace() {
    local VARIABLE_NAME REGEXP REPLACE_STRING VARIABLE_VALUE
-   VARIABLE_NAME="$1"
-   REGEXP="$2"
-   REPLACE_STRING="$3"
+   VARIABLE_NAME=$1
+   REGEXP=$2
+   REPLACE_STRING=$3
    eval VARIABLE_VALUE='$'"${VARIABLE_NAME}"
    echo "${VARIABLE_VALUE}" | awk "{gsub(/${REGEXP}/, \"${REPLACE_STRING}\"); print}"
 }
@@ -89,7 +89,7 @@ varReplace() {
 
 # This function checks whether its argument contains spaces
 checkSpaces() {
-   STRING="$1"
+   STRING=$1
    if containsRegexp STRING " "; then
       echo 1>&2 "$SCRIPTNAME: Argument '$STRING' contains spaces. They are not allowed"
       exit 1
@@ -134,8 +134,8 @@ makeAbsolutePath() {
 # regular expression to be searched for.
 containsRegexp() {
    local VARIABLE_NAME VARIABLE_VALUE REGEXP
-   VARIABLE_NAME="$1"
-   REGEXP="$2"
+   VARIABLE_NAME=$1
+   REGEXP=$2
    eval VARIABLE_VALUE='$'"${VARIABLE_NAME}"
    echo "$VARIABLE_VALUE" | grep -q "$REGEXP" >/dev/null
    return $?
@@ -238,7 +238,7 @@ show_version() {
    echo -n "Netkit version:            "
 
    if netkit_version=$(grep "Netkit version" "$NETKIT_HOME/netkit-version" 2> /dev/null); then
-      netkit_version="${netkit_version##"Netkit version "}"
+      netkit_version=${netkit_version##"Netkit version "}
 
       if [[ "$netkit_version" =~ ^([0-9]+[.-])+[0-9]+[a-zA-Z]*$ ]]; then
          echo "$netkit_version"
@@ -756,10 +756,10 @@ get_vm_info_by_pid() {
 
       # Most of the command-line options can be matched with basic pattern
       # matching:
-      case "$argument" in
+      case $argument in
          con0=* )
             value=${argument#*=}
-            case "$value" in
+            case $value in
                xterm)      vm_info["con0"]=$value;;
                fd:0,fd:1)  vm_info["con0"]="this";;
                pty)        vm_info["con0"]=$value;;
@@ -769,7 +769,7 @@ get_vm_info_by_pid() {
             ;;
          con1=*)
             value=${argument#*=}
-            case "$value" in
+            case $value in
                xterm)      vm_info["con1"]=$value;;
                fd:0,fd:1)  vm_info["con1"]="this";;
                pty)        vm_info["con1"]=$value;;

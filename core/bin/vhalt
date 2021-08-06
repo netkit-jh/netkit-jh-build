@@ -104,10 +104,6 @@ END_OF_HELP
 }
 
 
-# USERID is set in script_utils
-USER="$USERID"
-
-
 # Get command line options
 LONG_OPTS="help,quick,quiet,remove-fs,user:,version"
 SHORT_OPTS="qru:"
@@ -117,11 +113,14 @@ if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longopt
    usage 1
 fi
 
+# USERID is set in script_utils
+USER=$USERID
+
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$GETOPT_OPTS"
 
 while true; do
-   case "$1" in
+   case $1 in
       --help)
          usage 0
          ;;
@@ -133,7 +132,7 @@ while true; do
          REMOVE_FS=1
          ;;
       -u|--user)
-         USER="$2"
+         USER=$2
          [ "$USER" = "-" ] && unset USER
          shift
          ;;

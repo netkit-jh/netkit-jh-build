@@ -15,23 +15,22 @@
 
 
 # We shift the argument list for assignment of kernel_cmd
-TERM_TYPE="$1"
+TERM_TYPE=$1
 shift
-VM_NAME="$1"
+VM_NAME=$1
 shift
+kernel_cmd=( "$@" )
 
 
 # The PID of the current terminal process is stored in a temporary file. This
 # is so the program's state can be monitored later on for termination.
 pidfile=$(mktemp)
 
-
 # The reason behind making pid_cmd a string (and not array like kernel_cmd) is
 # to enforce the fact it is a command which will experience shell expansion
 # upon being processed by Bash inside the terminal emulator session. This
 # allows the $ special parameter and output redirection to function normally.
 pid_cmd="echo \$\$ > '$pidfile'"
-kernel_cmd=( "$@" )
 
 
 # kernel_cmd is expanded with the Q operator, meaning Bash will sufficiently
@@ -57,7 +56,7 @@ case $TERM_TYPE in
         if tmux -L netkit has-session -t "$VM_NAME" > /dev/null 2>&1; then
             while true; do
                 read -rp "tmux session already exists for machine $VM_NAME. Kill session [y/N]? " response
-                case "$response" in
+                case $response in
                     [Yy]|[Yy][Ee][Ss])
                         # Kill existing tmux session
                         tmux -L netkit kill-session -t "$VM_NAME"

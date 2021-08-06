@@ -47,7 +47,7 @@ tmux_connect() {
 open_terminal() {
    vm=$1
 
-   case "$TERM_TYPE" in
+   case $TERM_TYPE in
       alacritty)     term_cmd=( "alacritty" "-e" );;
       kitty)         term_cmd=( "kitty" );;
       konsole)       term_cmd=( "konsole" "--nofork" "-e" );;
@@ -145,7 +145,7 @@ RETRY_INTERVAL=5
 eval set -- "$GETOPT_OPTS"
 
 while true; do
-   case "$1" in
+   case $1 in
       --help)
          usage 0
          ;;

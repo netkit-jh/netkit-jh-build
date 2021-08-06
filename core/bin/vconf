@@ -157,7 +157,7 @@ fi
 eval set -- "$GETOPT_OPTS"
 
 while true; do
-   case "$1" in
+   case $1 in
       --eth*)
          interface=${1#--}
          DOMAIN=$2
@@ -191,7 +191,7 @@ while true; do
          BE_QUIET=1
          ;;
       -u|--user)
-         USER="$2"
+         USER=$2
          [ "$USER" = "-" ] && unset USER
          shift
          ;;
