@@ -349,7 +349,7 @@ single_lab_vm_start() {
 ###############################################################################
 # Start virtual machines of a Netkit lab sequentially.
 # Usage:
-#   lab_crash
+#   lab_start
 # Globals:
 #   r- LAB_DIRECTORY
 #   r- MAKEFILE
@@ -388,7 +388,7 @@ lab_start() {
 ###############################################################################
 # Start virtual machines of a Netkit lab simultaneously with GNU Make.
 # Usage:
-#   lab_crash
+#   lab_start_parallel
 # Globals:
 #   r- LAB_DIRECTORY
 #   r- MAKEFILE
