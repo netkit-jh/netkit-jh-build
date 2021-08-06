@@ -65,12 +65,12 @@ export LANG=C
 : "${UPDATE_CHECK_PERIOD:=5}"
 
 # Check whether some environment variables override default settings
-[ ! -z "$NETKIT_FILESYSTEM" ] && VM_MODEL_FS=$NETKIT_FILESYSTEM
-[ ! -z "$NETKIT_MEMORY" ] && VM_MEMORY=$NETKIT_MEMORY
-[ ! -z "$NETKIT_KERNEL" ] && VM_KERNEL=$NETKIT_KERNEL
-[ ! -z "$NETKIT_CON0" ] && VM_CON0=$NETKIT_CON0
-[ ! -z "$NETKIT_CON1" ] && VM_CON1=$NETKIT_CON1
-[ ! -z "$NETKIT_TERM" ] && TERM_TYPE=$NETKIT_TERM
+[ -n "$NETKIT_FILESYSTEM" ] && VM_MODEL_FS=$NETKIT_FILESYSTEM
+[ -n "$NETKIT_MEMORY" ] &&     VM_MEMORY=$NETKIT_MEMORY
+[ -n "$NETKIT_KERNEL" ] &&     VM_KERNEL=$NETKIT_KERNEL
+[ -n "$NETKIT_CON0" ] &&       VM_CON0=$NETKIT_CON0
+[ -n "$NETKIT_CON1" ] &&       VM_CON1=$NETKIT_CON1
+[ -n "$NETKIT_TERM" ] &&       TERM_TYPE=$NETKIT_TERM
 
 
 # This function implements on-the-fly replacement of substrings on environment
