@@ -291,7 +291,7 @@ while true; do
          fi
 
          # TODO: double-check udb0 argument allows spaces
-         VM_FS=$(makeAbsolutePath "$VM_FS")
+         VM_FS=$(readlink --canonicalize-missing "$VM_FS")
          shift
          ;;
       -H|--no-hosthome)
@@ -301,7 +301,7 @@ while true; do
          usage 0
          ;;
       -k|--kernel)
-         VM_KERNEL=$(makeAbsolutePath "$2")
+         VM_KERNEL=$(readlink --canonicalize-missing "$2")
          shift
          ;;
       -l|--hostlab)
@@ -327,7 +327,7 @@ while true; do
          fi
 
          # TODO: double-check udb0 can take spaces
-         VM_MODEL_FS=$(makeAbsolutePath "$VM_MODEL_FS")
+         VM_MODEL_FS=$(readlink --canonicalize-missing "$VM_MODEL_FS")
          shift
          ;;
       -p|--print)

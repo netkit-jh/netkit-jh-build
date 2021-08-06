@@ -116,19 +116,6 @@ is_inet_addr() {
 }
 
 
-# This function converts a relative path to an absolute path, if needed
-makeAbsolutePath() {
-   ARGUMENT=$(echo "$1" | awk '{gsub("^ *",""); print}')
-   if containsRegexp ARGUMENT '^/' || containsRegexp ARGUMENT '^~' || containsRegexp ARGUMENT '^\$'; then
-      # This is an absolute path
-      eval echo $ARGUMENT
-   else
-      # This is a relative path
-      eval echo "${PWD}/$ARGUMENT"
-   fi
-}
-
-
 # This function searches for a regexp inside a variable value. Arguments are:
 # the name of the environment variable (the *name*, not its value!) and the
 # regular expression to be searched for.

@@ -133,10 +133,9 @@ while true; do
          done
          ;;
       -d)
-         LAB_DIRECTORY=$(makeAbsolutePath "$2")
-         shift
-
+         LAB_DIRECTORY=$(readlink --canonicalize-missing "$2")
          LAB_DIRECTORIES+=( "$LAB_DIRECTORY" )
+         shift
          ;;
       --help)
          usage 0
