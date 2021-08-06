@@ -126,11 +126,6 @@ eval set -- "$GETOPT_OPTS"
 while true; do
    case $1 in
       -d)
-         if [ -n "$LAB_DIRECTORY" ]; then
-            echo 1>&2 "$SCRIPTNAME: Multiple directory specifications"
-            usage 1
-         fi
-
          LAB_DIRECTORY=$(makeAbsolutePath "$2")
          shift
          ;;
