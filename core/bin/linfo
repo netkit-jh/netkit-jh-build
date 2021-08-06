@@ -111,131 +111,219 @@ END_OF_HELP
 
 
 # Get command line options
-INVALID_OPTION=0
-OPT_LIST="auto,help,version,map:"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "ad:m:" "$@")
-if [ $? -gt 0 ]; then
-   INVALID_OPTION=1
+LONG_OPTS="auto,help,version,map:"
+SHORT_OPTS="ad:m:"
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
 fi
 
-
-# Using verbose mode tells vcrash to wait for virtual machines to stop before
-# returning.
 VERBOSE=1
 
-# Parse command line options
-parseCmdLine() {
-   while [ $# -gt 0 ]; do
-      CURRENT_ARGUMENT="$1"
-      case "$CURRENT_ARGUMENT" in
-      
-         -d)
-            shift; CURRENT_ARGUMENT="$1"
-            LAB_DIRECTORIES="$LAB_DIRECTORIES $(makeAbsolutePath "${CURRENT_ARGUMENT}")";;
-            
-         --auto|-a)
-            for dir in $(ls -d ${PWD%?}*/); do
-               LAB_DIRECTORIES="$LAB_DIRECTORIES ${dir}"
-            done;;
-         
-         --help)
-            usage 0;;
-            
-         --map|-m)
-            shift; CURRENT_ARGUMENT="$1"
-            checkSpaces "$CURRENT_ARGUMENT"
-            MAP_FILE="$CURRENT_ARGUMENT";;
-            
-         --version)
-            show_version
-            exit 0;;
-            
-         --)
-            shift
-            break;;
-      esac
-      shift
-   done
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
 
-   if [ $# -gt 0 ]; then
-      echo 1>&2 "$SCRIPTNAME: Invalid option: '$1'"
-      exit 1
-   fi
-}
-eval parseCmdLine $CMDLINE_OPTIONS
+while true; do
+   case "$1" in
+      -a|--auto)
+         # TODO: Remove or make better.
+         for LAB_DIRECTORY in "${PWD%?}"*/; do
+            LAB_DIRECTORIES+=( "$LAB_DIRECTORY" )
+         done
+         ;;
+      -d)
+         LAB_DIRECTORY=$(makeAbsolutePath "$2")
+         shift
 
-# Check whether user gave some strange options
-if [ $INVALID_OPTION -eq 1 ]; then
-   echo 1>&2 "$SCRIPTNAME: Invalid option or missing option parameter"
+         LAB_DIRECTORIES+=( "$LAB_DIRECTORY" )
+         ;;
+      --help)
+         usage 0
+         ;;
+      -m|--map)
+         MAP_FILE=$2
+         shift
+         checkSpaces "$MAP_FILE"
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+   shift
+done
+
+if [ $# -gt 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: Too many arguments"
    exit 1
 fi
 
+
 # If no lab directory has been given, assume current directory
-LAB_DIRECTORIES=${LAB_DIRECTORIES:-${PWD}}
+[ "${#LAB_DIRECTORIES[@]}" -eq 0 ] && LAB_DIRECTORIES=( "$PWD" )
 
 # shellcheck source=./lcommon
 . "$NETKIT_HOME/bin/lcommon"
 
-for LAB_DIRECTORY in $LAB_DIRECTORIES; do
-   # shellcheck source=./lcommon
-   . "$NETKIT_HOME/bin/lcommon"
-   LAB_VERSIONS="$LAB_VERSIONS  \"$LAB_VERSION\""
-   LAB_AUTHORS="$LAB_AUTHORS  \"$LAB_AUTHOR\""
-   LAB_EMAILS="$LAB_EMAILS  \"$LAB_EMAIL\""
-   LAB_WEBS="$LAB_WEBS  \"$LAB_WEB\""
-   LAB_DESCRIPTIONS="$LAB_DESCRIPTIONS  \"$LAB_DESCRIPTION\""
+
+declare -A LAB_VERSIONS LAB_AUTHORS LAB_EMAILS LAB_WEBS LAB_DESCRIPTIONS
+
+for LAB_DIRECTORY in "${LAB_DIRECTORIES[@]}"; do
    # Check that the lab directory exists
    if [ ! -d "$LAB_DIRECTORY" ]; then
-      echo 1>&2 "$SCRIPTNAME: Lab directory ($LAB_DIRECTORY) does not exist"
+      echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: No such directory"
       exit 1
    fi
 
+   # TODO: change lab variable assignment to an lcommon function
+   # shellcheck source=./lcommon
+   . "$NETKIT_HOME/bin/lcommon"
+
+   dir=$(basename "$LAB_DIRECTORY")
+
+   # We use associative arrays for printing the values with their respective
+   # directory basename.
+   [ -n "$LAB_VERSION" ] &&     LAB_VERSIONS[$dir]=$LAB_VERSION
+   [ -n "$LAB_AUTHOR" ] &&      LAB_AUTHORS[$dir]=$LAB_AUTHOR
+   [ -n "$LAB_EMAIL" ] &&       LAB_EMAILS[$dir]=$LAB_EMAIL
+   [ -n "$LAB_WEB" ] &&         LAB_WEBS[$dir]=$LAB_WEB
+   [ -n "$LAB_DESCRIPTION" ] && LAB_DESCRIPTIONS[$dir]=$LAB_DESCRIPTION
+
    # Check whether path to the lab directory contains spaces
    if containsRegexp LAB_DIRECTORY " "; then
-      echo 1>&2 "$SCRIPTNAME: Invalid lab directory: '$LAB_DIRECTORY' (path contains spaces)"
+      echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Path contains spaces"
       exit 1
    fi
 
    build_vhostlist
-   
 done
 
-# TODO: VHOSTLIST array probably breaks this
-# Makes each list unique
-LAB_DIRECTORY=$(echo "${LAB_DIRECTORIES}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g' | sed 's/ $//') # Remove leading whitespace
-LAB_VERSION=$(echo "${LAB_VERSIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
-LAB_AUTHOR=$(echo "${LAB_AUTHORS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
-LAB_EMAIL=$(echo "${LAB_EMAILS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
-LAB_WEB=$(echo "${LAB_WEBS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
-LAB_DESCRIPTION=$(echo "${LAB_DESCRIPTIONS}" | sed 's/  /\n/g' | sort -u | tr '\n' ' ' | sed 's/""/<unknown>/g')
-HOSTLIST=$(echo "${VHOSTLIST[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ') # Removes duplicates
-# Print lab information
-echo
-bold_print "====================== Lab information =========================="
-lab_welcome
-bold_print "The lab is made up of $(echo $HOSTLIST | awk '{print NF}') virtual machines ($HOSTLIST)."
-for LAB_DIRECTORY in $LAB_DIRECTORIES; do
-   if [ -f "$LAB_DIRECTORY/lab.dep" ]; then
-      bold_print "The lab part $(basename $LAB_DIRECTORY) supports parallel startup."
+
+###############################################################################
+# From a lab info associative array (key is directory basename, value is the
+# relevant attribute's value) construct a formatted list suitable for
+# lab_welcome output (i.e. value1 (dir1, dir2, ...), value2 (dir3, dir4, ...),
+# ...) and write to standard output.
+# Usage:
+#   generate_lab_info_str LAB_INFO
+# Globals:
+#   None
+# Arguments:
+#   $1 - lab information associative array name reference
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+generate_info_str() {
+   local -n lab_info=$1
+
+   # For each directory chosen, add its lab information value as a key to an
+   # array with a value of directory listings. For example, for a lab_info
+   # array of version numbers:
+   #
+   #     lab_info["lab3a"]="1.0"
+   #     lab_info["lab3b"]="1.1"
+   #     lab_info["lab3c"]="1.0"
+   #     lab_info["lab3d"]="2.0"
+   #
+   # This would be transformed into collated_lab_info_values:
+   #
+   #     collated_lab_info_values["1.0"]="lab3a, lab3c"
+   #     collated_lab_info_values["1.1"]="lab3b"
+   #     collated_lab_info_values["2.0"]="lab3d"
+   declare -A collated_lab_info_values
+
+   for dir in "${!lab_info[@]}"; do
+      value=${lab_info[$dir]}
+
+      # Check if the value has been seen before
+      if array_contains "$value" "${!collated_lab_info_values[@]}"; then
+         collated_lab_info_values[$value]="${collated_lab_info_values[$value]}, $dir"
+      else
+         collated_lab_info_values[$value]="$dir"
+      fi
+   done
+
+   # collated_lab_info_values is then flattened into a string to display in the
+   # lab_welcome dialog.
+   if [ ${#collated_lab_info_values[@]} -gt 1 ]; then
+      first_iteration=1
+      for value in "${collated_lab_info_values[@]}"; do
+         if [ -z "$first_iteration" ]; then
+            lab_info_str+=", "
+         else
+            unset first_iteration
+         fi
+
+         lab_info_str+="$value (${collated_lab_info_values[$value]})"
+      done
+   elif [ ${#collated_lab_info_values[@]} -eq 1 ]; then
+      # If all directories share the same value, it is not necessary to display
+      # the directory names.
+      lab_info_str="$value"
+   else
+      lab_info_str="<unknown>"
    fi
+
+   echo "$lab_info_str"
+}
+
+
+printf -v LAB_DIRECTORY '%s, ' "${LAB_DIRECTORIES[@]}"
+LAB_DIRECTORY=${LAB_DIRECTORY%", "}
+
+# Convert the multi-lab arrays to flat lists for lab_welcome
+LAB_VERSION=$(generate_info_str LAB_VERSIONS)
+LAB_AUTHOR=$(generate_info_str LAB_AUTHOR)
+LAB_EMAIL=$(generate_info_str LAB_EMAIL)
+LAB_WEB=$(generate_info_str LAB_WEB)
+LAB_DESCRIPTION=$(generate_info_str LAB_DESCRIPTION)
+
+printf -v HOSTLIST '%s, ' "${VHOSTLIST[@]}"
+HOSTLIST=${HOSTLIST%", "}
+
+
+# Print lab information
+bold_print "======================== Lab information ========================"
+lab_welcome
+bold_print "The lab is made up of ${#VHOSTLIST[@]} virtual machines ($HOSTLIST)."
+
+for dir in "${LAB_DIRECTORIES[@]}"; do
+   [ -f "$dir/lab.dep" ] && bold_print "The lab part $dir supports parallel startup."
 done
 
-if [ ! -z "$MAP_FILE" ]; then
-   for LAB_DIRECTORY in $LAB_DIRECTORIES; do
-      if [ ! -f "${LAB_DIRECTORY%/}/lab.conf" ]; then
-         echo 1>&2 "$SCRIPTNAME: Unable to find file $LAB_DIRECTORY/lab.conf: Skipping"
+if [ -n "$MAP_FILE" ]; then
+   for dir in "${LAB_DIRECTORIES[@]}"; do
+      lab_conf="${dir%/}/lab.conf"
+      
+      if [ ! -f "$lab_conf" ]; then
+         echo 1>&2 "$SCRIPTNAME: Unable to find file $lab_conf: Skipping."
          continue
       fi
-      CONFLIST="$CONFLIST ${LAB_DIRECTORY%/}/lab.conf"
+
+      lab_confs+=( "$lab_conf" )
    done
-   if [ -z "$CONFLIST" ]; then
-      echo 1>&2 "$SCRIPTNAME: No valid lab.confs found: cannot create topology map"
+
+   if [ "${#lab_confs[@]}" -eq 0 ]; then
+      echo 1>&2 "$SCRIPTNAME: No valid lab.confs found - cannot create topology map."
       exit 1
    fi
-   if labMap "$MAP_FILE" $CONFLIST; then
+
+   if lab_map "$MAP_FILE" "${lab_confs[@]}"; then
       bold_print "Link-level topology map saved into $MAP_FILE."
    fi
 fi
+
 bold_print "================================================================="
 
 echo
