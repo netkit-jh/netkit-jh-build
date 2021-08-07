@@ -132,7 +132,10 @@ elif [ $# -gt 1 ]; then
 fi
 
 hub_name=$1
-checkSpaces "$hub_name"
+if string_contains " " "$hub_name"; then
+   echo 1>&2 "$SCRIPTNAME: Collision domain name cannot contain whitespace"
+   exit 1
+fi
 shift
 
 

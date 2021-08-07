@@ -3,7 +3,7 @@
 # This script essentially wraps around gnome/tmux commands and forces them to
 # block. This is needed because gnome-terminal/tmux don't block until the
 # command they're finishing has finished. Netkit relies on this to call the
-# cleanHubs function, by trusting that the terminal/kernel command will block
+# clean_hubs function, by trusting that the terminal/kernel command will block
 # until the VM has ended. However, as gnome/tmux don't do this, the second they
 # have booted the VMs, the hubs are cleaned, causing a kernel panic.
 #

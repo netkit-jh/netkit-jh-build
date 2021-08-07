@@ -163,12 +163,12 @@ while true; do
          DOMAIN=$2
          shift
 
-         if containsRegexp DOMAIN "_"; then
+         if string_contains "_" "$DOMAIN"; then
             echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - underscores are not allowed"
             usage 1
          fi
 
-         if containsRegexp DOMAIN "," || containsRegexp DOMAIN "\\."; then
+         if string_contains "," "$DOMAIN" || string_contains "." "$DOMAIN"; then
             # If not a tap specification, but its name contains a comma
             if [ "${DOMAIN#tap,}" = "$DOMAIN" ]; then
                echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - commas and periods are only valid for tap interface specification"
@@ -176,7 +176,10 @@ while true; do
             fi
          fi
 
-         checkSpaces "$DOMAIN"
+         if string_contains " " "$DOMAIN"; then
+            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Collision domain name cannot contain whitespace"
+            exit 1
+         fi
 
          # Construct array of ethN=DOMAIN
          network_interfaces+=( "$interface=$DOMAIN" )
@@ -223,7 +226,10 @@ fi
 
 # Parse virtual machine name
 VM_ID=$1
-checkSpaces "$VM_ID"
+if string_contains " " "$VM_ID"; then
+   echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
+   exit 1
+fi
 shift
 
 
@@ -258,9 +264,7 @@ setup_interfaces() {
    first_iteration=true
    for interface_specification in "${interface_specifications[@]}"; do
       device=${interface_specification%%=*}
-
-      # If hub_name is blank, the network interface will be removed.
-      hub_name=${interface_specification#*=}
+      hub_specification=${interface_specification#*=}
 
       # Check if interface has already been configured
       if [[ " $used_devices " == *" $device "* ]]; then
@@ -272,9 +276,9 @@ setup_interfaces() {
       used_devices="$used_devices $device"
 
       # Check if tap interface (regular hubs cannot be named with commas)
-      if [[ "$hub_name" == tap,* ]]; then
+      if [[ "$hub_specification" == tap,* ]]; then
          # Format: tap,tap_address,guest_address
-         IFS=, read -r hub_name tap_address guest_address <<< "$hub_name"
+         IFS=, read -r hub_name tap_address guest_address <<< "$hub_specification"
 
          if ! is_inet_addr "$tap_address"; then
             echo 1>&2 "$SCRIPTNAME: $tap_address: Invalid tap address"
@@ -288,14 +292,15 @@ setup_interfaces() {
       else
          # This is a normal (i.e., not 'tap') collision domain
          unset tap_address guest_address
+         hub_name=$hub_specification
       fi
       
       hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USERID}_$hub_name$HUB_SOCKET_EXTENSION"
 
       if [ -n "$tap_address" ]; then
-         HUBLIST+=( "$hub_socket,$tap_address,$guest_address" )
+         HUBLIST+=( "$hub_name,$tap_address" )
       elif [ -n "$hub_name" ]; then
-         HUBLIST+=( "$hub_socket" )
+         HUBLIST+=( "$hub_name" )
       fi
 
       if $first_iteration; then
@@ -379,7 +384,7 @@ if [ ${#network_interfaces[@]} -gt 0 ]; then
 fi
 
 ##### Start network hubs
-runHubs "${HUBLIST[@]}"
+run_hubs "${HUBLIST[@]}"
 
 ##### Attach/remove network interfaces
 invoke_mconsole "${MCONSOLE_CMD[@]}"

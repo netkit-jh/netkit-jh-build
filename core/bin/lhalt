@@ -180,7 +180,10 @@ done
 VHOSTLIST=( "$@" )
 
 for host in "${VHOSTLIST[@]}"; do
-   checkSpaces "$host"
+   if string_contains " " "$host"; then
+      echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
+      exit 1
+   fi
 done
 
 

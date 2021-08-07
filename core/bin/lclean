@@ -157,7 +157,10 @@ VHOSTLIST=( "$@" )
 
 for host in "${VHOSTLIST[@]}"; do
    # TODO: change to validate against hostname regex
-   checkSpaces "$host"
+   if string_contains " " "$host"; then
+      echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
+      exit 1
+   fi
 done
 
 

@@ -189,16 +189,22 @@ for LAB_DIRECTORY in "${LAB_DIRECTORIES[@]}"; do
    dir=$(basename "$LAB_DIRECTORY")
 
    # We use associative arrays for printing the values with their respective
-   # directory basename.
+   # directory basename. SC2034 (variable appears unused) must be ignored
+   # because the array is only referenced by name.
+   # shellcheck disable=SC2034
    [ -n "$LAB_VERSION" ] &&     LAB_VERSIONS[$dir]=$LAB_VERSION
+   # shellcheck disable=SC2034
    [ -n "$LAB_AUTHOR" ] &&      LAB_AUTHORS[$dir]=$LAB_AUTHOR
+   # shellcheck disable=SC2034
    [ -n "$LAB_EMAIL" ] &&       LAB_EMAILS[$dir]=$LAB_EMAIL
+   # shellcheck disable=SC2034
    [ -n "$LAB_WEB" ] &&         LAB_WEBS[$dir]=$LAB_WEB
+   # shellcheck disable=SC2034
    [ -n "$LAB_DESCRIPTION" ] && LAB_DESCRIPTIONS[$dir]=$LAB_DESCRIPTION
 
    # Check whether path to the lab directory contains spaces
-   if containsRegexp LAB_DIRECTORY " "; then
-      echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Path contains spaces"
+   if string_contains " " "$LAB_DIRECTORY"; then
+      echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Path contains whitespace"
       exit 1
    fi
 

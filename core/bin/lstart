@@ -329,7 +329,10 @@ done
 VHOSTLIST=( "$@" )
 
 for host in "${VHOSTLIST[@]}"; do
-   checkSpaces "$host"
+   if string_contains " " "$host"; then
+      echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
+      exit 1
+   fi
 done
 
 
@@ -343,8 +346,8 @@ if [ ! -d "$LAB_DIRECTORY" ]; then
 fi
 
 # Check whether path to the lab directory contains spaces
-if containsRegexp LAB_DIRECTORY " "; then
-   echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Path contains spaces"
+if string_contains " " "$LAB_DIRECTORY"; then
+   echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Path contains whitespace"
    exit 1
 fi
 

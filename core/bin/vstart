@@ -260,12 +260,12 @@ while true; do
          OPT="$1"
          DOMAIN="$2"
 
-         if containsRegexp DOMAIN "_"; then
+         if string_contains "_" "$DOMAIN"; then
             echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - underscores are not allowed"
             usage 1
          fi
 
-         if containsRegexp DOMAIN "," || containsRegexp DOMAIN "\\."; then
+         if string_contains "," "$DOMAIN" || string_contains "." "$DOMAIN"; then
             # If not a tap specification, but its name contains a comma
             if [ "${DOMAIN#tap,}" = "$DOMAIN" ]; then
                echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - commas and periods are only valid for tap interface specification"
@@ -275,7 +275,10 @@ while true; do
 
          # TODO: double-check checkSpaces and maybe change ETH_INTERFACES to
          # array.
-         checkSpaces "$DOMAIN"
+         if string_contains " " "$DOMAIN"; then
+            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Collision domain name cannot contain whitespace"
+            exit 1
+         fi
          ETH_INTERFACES="$ETH_INTERFACES ${OPT#--}=$DOMAIN"
          shift
          ;;
@@ -285,7 +288,7 @@ while true; do
       -f|--filesystem)
          VM_FS=$2
 
-         if containsRegexp CURRENT_ARGUMENT ","; then
+         if string_contains "," "$VM_FS"; then
             echo 1>&2 "$SCRIPTNAME: $VM_FS: Invalid filesystem - commas are not allowed"
             usage 1
          fi
@@ -321,7 +324,7 @@ while true; do
       -m|--model-fs)
          VM_MODEL_FS=$2
 
-         if containsRegexp VM_MODEL_FS ","; then
+         if string_contains "," "$VM_MODEL_FS"; then
             echo 1>&2 "$SCRIPTNAME: $VM_MODEL_FS: Invalid filesystem - commas are not allowed"
             usage 1
          fi
@@ -394,7 +397,10 @@ fi
 
 # Parse virtual machine name
 VM_NAME=$1
-checkSpaces "$VM_NAME"
+if string_contains " " "$VM_NAME"; then
+   echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
+   exit 1
+fi
 shift
 
 
@@ -417,7 +423,7 @@ if [ -n "$REMOVE_FS" ] && [ -n "$USE_MODEL_FS" ]; then
 fi
 
 # Check whether the path to the current directory contains spaces
-if containsRegexp PWD " "; then
+if string_contains " " "$PWD"; then
    echo 1>&2 "$SCRIPTNAME: Current working directory path contains spaces"
    usage 1
 fi
@@ -496,7 +502,7 @@ setup_interfaces() {
    first_iteration=true
    while [ $# -gt 0 ]; do
       device=${1%%=*}
-      hub_name=${1#*=}
+      hub_specification=${1#*=}
 
       # Check if interface has already been configured
       if [[ " $used_devices " == *" $device "* ]]; then
@@ -508,9 +514,9 @@ setup_interfaces() {
       used_devices="$used_devices $device"
 
       # Check if tap interface (regular hubs cannot be named with commas)
-      if [[ "$hub_name" == tap,* ]]; then
+      if [[ "$hub_specification" == tap,* ]]; then
          # Format: tap,tap_address,guest_address
-         IFS=, read -r hub_name tap_address guest_address <<< "$hub_name"
+         IFS=, read -r hub_name tap_address guest_address <<< "$hub_specification"
 
          if ! is_inet_addr "$tap_address"; then
             echo 1>&2 "$SCRIPTNAME: $tap_address: Invalid tap address"
@@ -524,6 +530,7 @@ setup_interfaces() {
       else
          # This is a normal (i.e., not 'tap') collision domain
          unset tap_address guest_address
+         hub_name=$hub_specification
       fi
       
       hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USERID}_$hub_name$HUB_SOCKET_EXTENSION"
@@ -531,7 +538,7 @@ setup_interfaces() {
       KERNELCMD="$KERNELCMD $device=daemon,,,$hub_socket"
       
       if [ -n "$tap_address" ]; then
-         HUBLIST+=( "$hub_socket,$tap_address,$guest_address" )
+         HUBLIST+=( "$hub_name,$tap_address" )
 
          KERNELCMD="$KERNELCMD autoconf_$device=$guest_address"
 
@@ -542,7 +549,7 @@ setup_interfaces() {
             enabled_default_route=1
          fi
       else
-         HUBLIST+=( "$hub_socket" )
+         HUBLIST+=( "$hub_name" )
       fi
 
       if $first_iteration; then
@@ -734,13 +741,8 @@ elif [ "$VM_CON0" = "tmux" ]; then
 fi
 
 
-# TODO: remove evil eval
 # Actually start network hubs
-eval runHubs "${HUBLIST[@]}"
-
-# TODO: why export?
-# Prepare the cleanHubs function for execution after a virtual machine stops
-export cleanHubs
+run_hubs "${HUBLIST[@]}"
 
 
 ###############################################################################
@@ -821,7 +823,7 @@ run_kernel_command() {
 
    run_command "$JUST_PRINT" "${KERNELCMD[*]}" "${KERNELCMD[@]}"
 
-   cleanHubs "${HUBLIST[@]}"
+   clean_hubs "${HUBLIST[@]}"
 }
 
 

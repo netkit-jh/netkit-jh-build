@@ -240,7 +240,10 @@ done
 vm_ids=( "$@" )
 
 for host in "${vm_ids[@]}"; do
-   checkSpaces "$host"
+   if string_contains " " "$host"; then
+      echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
+      exit 1
+   fi
 done
 
 

@@ -28,16 +28,13 @@
 # force language to avoid localization errors
 export LANG=C
 
-# Read Netkit configuration
-# There must be multiple ShellCheck directives to mask warnings
-
-# shellcheck source=../netkit.conf
+# Read Netkit configuration in order of file localisation (per system, per
+# install, per user).
+# shellcheck disable=SC1091
 [ -f /etc/netkit.conf ] && . "/etc/netkit.conf"
-
 # shellcheck source=../netkit.conf
 [ -f "$NETKIT_HOME/netkit.conf" ] && . "$NETKIT_HOME/netkit.conf"
-
-# shellcheck source=../netkit.conf
+# shellcheck disable=SC1091
 [ -f "$HOME/.netkit/netkit.conf" ] && . "$HOME/.netkit/netkit.conf"
 
 # Assign default values to undefined parameters
@@ -87,16 +84,6 @@ varReplace() {
 }
 
 
-# This function checks whether its argument contains spaces
-checkSpaces() {
-   STRING=$1
-   if containsRegexp STRING " "; then
-      echo 1>&2 "$SCRIPTNAME: Argument '$STRING' contains spaces. They are not allowed"
-      exit 1
-   fi
-}
-
-
 ###############################################################################
 # Check if string is a valid IPv4 dotted-quad address.
 # Usage:
@@ -116,16 +103,27 @@ is_inet_addr() {
 }
 
 
-# This function searches for a regexp inside a variable value. Arguments are:
-# the name of the environment variable (the *name*, not its value!) and the
-# regular expression to be searched for.
-containsRegexp() {
-   local VARIABLE_NAME VARIABLE_VALUE REGEXP
-   VARIABLE_NAME=$1
-   REGEXP=$2
-   eval VARIABLE_VALUE='$'"${VARIABLE_NAME}"
-   echo "$VARIABLE_VALUE" | grep -q "$REGEXP" >/dev/null
-   return $?
+###############################################################################
+# Check if a string contains a sub-string.
+# Usage:
+#   string_contains QUERY STRING
+# Globals:
+#   None
+# Arguments:
+#   $1 - string to search for
+#   $2 - string to search
+# Returns:
+#   0 if string contains query, non-zero if not
+# Example:
+#   None
+###############################################################################
+string_contains() {
+   local query=$1
+   local string=$2
+
+   [[ "$string" == *"$query"* ]] && return 0
+
+   return 1
 }
 
 
@@ -284,25 +282,23 @@ show_version() {
 
 # This function creates a directory and sets global permissions for it.
 # If the directory already exists, an error is issued.
-ensureDir() {
-   if [ ! -e "$1" ]; then
-      mkdir "$1"
-      chmod 777 "$1"
-   elif [ ! -d "$1" ]; then
-      echo 1>&2 "File $1 exists: unable to create directory $1. Sorry..."
+netkit_dir_check() {
+   local dir=$1
+   if [ ! -e "$dir" ]; then
+      mkdir "$dir"
+      chmod 777 "$dir"
+   elif [ ! -d "$dir" ]; then
+      echo 1>&2 "File '$1' exists: unable to create directory '$1'"
       exit 1
    fi
 }
 
 
+# Ensure critical directories exist
+netkit_dir_check "$HOME/.netkit"
+netkit_dir_check "$HUB_SOCKET_DIR"
+netkit_dir_check "$MCONSOLE_DIR"
 
-
-# Ensure personal Netkit dir exists
-ensureDir $HOME/.netkit
-# Ensure hub socket dir exists
-ensureDir $HUB_SOCKET_DIR
-# Ensure mconsole dir exists
-ensureDir $MCONSOLE_DIR
 
 USERID=$(id -un)
 
@@ -420,19 +416,15 @@ startHub() {
 
 
 # This function starts all the hubs inside a given list
-runHubs() {
-   local hub_name BASE_HUB_NAME ACTUAL_HUB_NAME TAP_ADDRESS GUEST_ADDRESS
+run_hubs() {
+   local hub_specifications=( "$@" )
 
-   hubs=( "$@" )
+   for hub_specification in "${hub_specifications[@]}"; do
+      IFS=, read -r hub_name tap_address <<< "$hub_specification"
 
-   for hub_name in "${hubs[@]}"; do
-      BASE_HUB_NAME=$(varReplace hub_name ".*_" "")
-
-      if [ "${BASE_HUB_NAME#tap${HUB_SOCKET_EXTENSION},}" != "$BASE_HUB_NAME" ]; then
-         IFS=, read -r ACTUAL_HUB_NAME TAP_ADDRESS GUEST_ADDRESS <<< "$hub_name"
-         startInetHub "$ACTUAL_HUB_NAME" "$TAP_ADDRESS"
+      if [ "$hub_name" = "tap" ]; then
+         startInetHub "$hub_name" "$tap_address"
       else
-         # This is a normal hub
          startHub "$hub_name"
       fi
    done
@@ -442,37 +434,32 @@ runHubs() {
 # This function takes as argument a list of sockets used by virtual hubs, stops
 # those that are not used by any virtual machine and deletes the corresponding
 # sockets.
-cleanHubs() {
-   local FULL_HUB_NAME BASE_HUB_NAME
-   while [ $# -gt 0 ]; do
-      FULL_HUB_NAME=$1
-      BASE_HUB_NAME="$(varReplace FULL_HUB_NAME ".*_" "")"
-      if [ "${BASE_HUB_NAME#tap${HUB_SOCKET_EXTENSION},}" != "$BASE_HUB_NAME" ]; then
-         # This is an Internet connected hub
-         FULL_HUB_NAME=$(echo $FULL_HUB_NAME | awk -v FS="," '{print $1}')
-      fi
-      
+clean_hubs() {
+   local hub_specifications=( "$@" )
+
+   for hub_specification in "${hub_specifications[@]}"; do
+      IFS=, read -r hub_name tap_address <<< "$hub_specification"
+
+      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USERID}_$hub_name$HUB_SOCKET_EXTENSION"
+
       # Avoid attempting to kill hubs for which the socket file does not exist
       # any more. Such situation may occur if user accidentally deleted it
       # (in which case the hub can safely be killed by using vclean), or if
       # a virtual machine has two (or more) network interfaces attached to the
       # same hub (in which case the script attempts to kill it twice).
-      if [ ! -e "$FULL_HUB_NAME" ]; then
-         shift
-         continue
-      fi
-      
-      if file_in_use $FULL_HUB_NAME; then
-         SWITCH_PROCESS=$(ps -wwwwwweo pid,command --sort=pid | grep "uml_switch.*$FULL_HUB_NAME" | grep -v "grep uml_switch" | awk '{print $1}' | head -n 1)
-         if [ $(lsof -p $SWITCH_PROCESS 2>/dev/null | grep -c $FULL_HUB_NAME) -le 1 ]; then
+      [ ! -e "$hub_socket" ] && continue
+
+      if file_in_use "$hub_socket"; then
+         # We get the oldest process to limit output to a single PID
+         hub_pid=$(pgrep --oldest --euid="$USERID" --full "^$NETKIT_HOME/bin/uml_switch.*$hub_socket")
+         if [ "$(lsof -a -U -p "$hub_pid" -Fn | grep -c "^n$hub_socket")" -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
-            kill $SWITCH_PROCESS > /dev/null 2>&1 && rm -f $FULL_HUB_NAME
+            kill "$hub_pid" && rm -f "$hub_socket"
          fi
       else
-         # There are no switches connected to this socket: just remove it
-         rm -f $FULL_HUB_NAME
+         # There are no switches connected to this socket - remove it
+         rm -f "$hub_socket"
       fi
-      shift
    done
 }
 
