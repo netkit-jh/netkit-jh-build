@@ -21,67 +21,8 @@
 
 # This script contains support definitions, functions and other shell stuff for
 # use within the other Netkit scripts. It is not intended for standalone usage.
-
-# Here we assume that the NETKIT_HOME environment variable has been properly set
-# (other scripts will take care about that).
-
-# force language to avoid localization errors
-export LANG=C
-
-# Read Netkit configuration in order of file localisation (per system, per
-# install, per user).
-# shellcheck disable=SC1091
-[ -f /etc/netkit.conf ] && . "/etc/netkit.conf"
-# shellcheck source=../netkit.conf
-[ -f "$NETKIT_HOME/netkit.conf" ] && . "$NETKIT_HOME/netkit.conf"
-# shellcheck disable=SC1091
-[ -f "$HOME/.netkit/netkit.conf" ] && . "$HOME/.netkit/netkit.conf"
-
-# Assign default values to undefined parameters
-: "${LOGFILENAME:=""}"
-: "${MCONSOLE_DIR:="$HOME/.netkit/mconsole"}"
-: "${HUB_SOCKET_DIR:="$HOME/.netkit/hubs"}"
-: "${HUB_SOCKET_PREFIX:="vhub"}"
-: "${HUB_SOCKET_EXTENSION:=".cnct"}"
-: "${HUB_LOG:="$HUB_SOCKET_DIR/vhubs.log"}"
-: "${VM_MEMORY:=32}"
-: "${VM_MEMORY_SKEW:=4}"
-: "${VM_MODEL_FS:="$NETKIT_HOME/fs/netkit-fs"}"
-: "${VM_KERNEL:="$NETKIT_HOME/kernel/netkit-kernel"}"
-: "${VM_CON0:=xterm}"
-: "${VM_CON1:=none}"
-: "${CON0_PORTHELPER:="no"}"
-: "${TERM_TYPE:=xterm}"
-: "${MAX_INTERFACES:=40}"
-: "${MIN_MEM:=12}"
-: "${MAX_MEM:=512}"
-: "${MAX_SIMULTANEOUS_VMS:=5}"
-: "${GRACE_TIME:=0}"
-: "${TMUX_OPEN_TERMS:="no"}"
-: "${CHECK_FOR_UPDATES:="yes"}"
-: "${UPDATE_CHECK_PERIOD:=5}"
-
-# Check whether some environment variables override default settings
-[ -n "$NETKIT_FILESYSTEM" ] && VM_MODEL_FS=$NETKIT_FILESYSTEM
-[ -n "$NETKIT_MEMORY" ] &&     VM_MEMORY=$NETKIT_MEMORY
-[ -n "$NETKIT_KERNEL" ] &&     VM_KERNEL=$NETKIT_KERNEL
-[ -n "$NETKIT_CON0" ] &&       VM_CON0=$NETKIT_CON0
-[ -n "$NETKIT_CON1" ] &&       VM_CON1=$NETKIT_CON1
-[ -n "$NETKIT_TERM" ] &&       TERM_TYPE=$NETKIT_TERM
-
-
-# This function implements on-the-fly replacement of substrings on environment
-# variables. Arguments are: the name of the environment variable (the *name*,
-# not its value!), the regular expression to be searched for, and the
-# replacement string.
-varReplace() {
-   local VARIABLE_NAME REGEXP REPLACE_STRING VARIABLE_VALUE
-   VARIABLE_NAME=$1
-   REGEXP=$2
-   REPLACE_STRING=$3
-   eval VARIABLE_VALUE='$'"${VARIABLE_NAME}"
-   echo "${VARIABLE_VALUE}" | awk "{gsub(/${REGEXP}/, \"${REPLACE_STRING}\"); print}"
-}
+# NOTE: it is assumed that the NETKIT_HOME environment variable is set. This
+# should be enforced by the calling script(s).
 
 
 ###############################################################################
@@ -133,6 +74,7 @@ string_contains() {
 #   log_write ...
 # Globals:
 #   r- LOGFILENAME
+#   r- USERID
 # Arguments:
 #  ... Log message
 # Returns:
@@ -142,7 +84,7 @@ string_contains() {
 #   None
 ###############################################################################
 log_write() {
-   echo "$(date +"%Y/%m/%d %H:%M:%S") $(id -nu) $*" 2> /dev/null >> "$LOGFILENAME"
+   echo "$(date --iso-8601=seconds) $USERID $*" 2> /dev/null >> "$LOGFILENAME"
 }
 
 
@@ -278,29 +220,6 @@ show_version() {
    echo -n "Host kernel version:       "
    uname -r
 }
-
-
-# This function creates a directory and sets global permissions for it.
-# If the directory already exists, an error is issued.
-netkit_dir_check() {
-   local dir=$1
-   if [ ! -e "$dir" ]; then
-      mkdir "$dir"
-      chmod 777 "$dir"
-   elif [ ! -d "$dir" ]; then
-      echo 1>&2 "File '$1' exists: unable to create directory '$1'"
-      exit 1
-   fi
-}
-
-
-# Ensure critical directories exist
-netkit_dir_check "$HOME/.netkit"
-netkit_dir_check "$HUB_SOCKET_DIR"
-netkit_dir_check "$MCONSOLE_DIR"
-
-
-USERID=$(id -un)
 
 
 ###############################################################################
@@ -870,3 +789,74 @@ get_vm_info_by_name() {
    get_vm_info_by_pid "$pid"
    return 0
 }
+
+
+# This function creates a directory and sets global permissions for it.
+# If the directory already exists, an error is issued.
+netkit_dir_check() {
+   local dir=$1
+   if [ ! -e "$dir" ]; then
+      mkdir "$dir"
+      chmod 777 "$dir"
+   elif [ ! -d "$dir" ]; then
+      echo 1>&2 "File '$1' exists: unable to create directory '$1'"
+      exit 1
+   fi
+}
+
+
+# force language to avoid localization errors
+export LANG=C
+
+
+# Read Netkit configuration in order of file localisation (per system, per
+# install, per user).
+# shellcheck disable=SC1091
+[ -f /etc/netkit.conf ] && . "/etc/netkit.conf"
+# shellcheck source=../netkit.conf
+[ -f "$NETKIT_HOME/netkit.conf" ] && . "$NETKIT_HOME/netkit.conf"
+# shellcheck disable=SC1091
+[ -f "$HOME/.netkit/netkit.conf" ] && . "$HOME/.netkit/netkit.conf"
+
+
+# Assign default values to undefined parameters
+: "${LOGFILENAME:=""}"
+: "${MCONSOLE_DIR:="$HOME/.netkit/mconsole"}"
+: "${HUB_SOCKET_DIR:="$HOME/.netkit/hubs"}"
+: "${HUB_SOCKET_PREFIX:="vhub"}"
+: "${HUB_SOCKET_EXTENSION:=".cnct"}"
+: "${HUB_LOG:="$HUB_SOCKET_DIR/vhubs.log"}"
+: "${VM_MEMORY:=32}"
+: "${VM_MEMORY_SKEW:=4}"
+: "${VM_MODEL_FS:="$NETKIT_HOME/fs/netkit-fs"}"
+: "${VM_KERNEL:="$NETKIT_HOME/kernel/netkit-kernel"}"
+: "${VM_CON0:=xterm}"
+: "${VM_CON1:=none}"
+: "${CON0_PORTHELPER:="no"}"
+: "${TERM_TYPE:=xterm}"
+: "${MAX_INTERFACES:=40}"
+: "${MIN_MEM:=12}"
+: "${MAX_MEM:=512}"
+: "${MAX_SIMULTANEOUS_VMS:=5}"
+: "${GRACE_TIME:=0}"
+: "${TMUX_OPEN_TERMS:="no"}"
+: "${CHECK_FOR_UPDATES:="yes"}"
+: "${UPDATE_CHECK_PERIOD:=5}"
+
+# Check whether some environment variables override default settings
+[ -n "$NETKIT_FILESYSTEM" ] && VM_MODEL_FS=$NETKIT_FILESYSTEM
+[ -n "$NETKIT_MEMORY" ] &&     VM_MEMORY=$NETKIT_MEMORY
+[ -n "$NETKIT_KERNEL" ] &&     VM_KERNEL=$NETKIT_KERNEL
+[ -n "$NETKIT_CON0" ] &&       VM_CON0=$NETKIT_CON0
+[ -n "$NETKIT_CON1" ] &&       VM_CON1=$NETKIT_CON1
+[ -n "$NETKIT_TERM" ] &&       TERM_TYPE=$NETKIT_TERM
+
+
+# Ensure critical directories exist
+netkit_dir_check "$HOME/.netkit"
+netkit_dir_check "$HUB_SOCKET_DIR"
+netkit_dir_check "$MCONSOLE_DIR"
+
+
+USERID=$(id -un)
+
