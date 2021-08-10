@@ -361,24 +361,46 @@ file_in_use() {
 }
 
 
-# This function starts a special hub that is connected to the Internet, if it
-# does not exist yet (this operation requires administrative privileges).
-# Arguments are: hub name, tap interface IP address, guest interface IP address.
-startInetHub() {
-   local HUB_COMMAND COMPLETE_COMMAND TAP_DEVICE TUNTAP_COMMAND
+###############################################################################
+# Create a special 'tap' hub that can connect a guest to an interface on the
+# host. NAT rules are created to allow access to the Internet through the host
+# interface.
+# Usage:
+#   start_inet_hub HUB ADDR
+# Globals:
+#   r- HUB_LOG
+#   r- JUST_PRINT
+#   r- NETKIT_HOME
+#   r- USER
+#   r- USERID
+# Arguments:
+#   $1 - hub socket filepath
+#   $2 - address of the tap interface on the host
+# Returns:
+#   None. Exits with a non-zero code on a configuration error
+# Example:
+#   None
+###############################################################################
+start_inet_hub() {
+   local TAP_DEVICE TUNTAP_COMMAND
 
-   if [ ! -S "$1" ] || ! file_in_use "$1"; then
+   local hub_socket=$1
+   local tap_address=$2
+
+   if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
       # Either socket does not exist yet or it is still unused
-      TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER" "$2" )
+      TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER" "$tap_address" )
 
       if [ -z "$BE_QUIET" ]; then
          echo "******** Starting Internet connected virtual hub ********"
-         echo "   $TAP_ADDRESS (host side) - $GUEST_ADDRESS (guest side)"
+         echo "   (host) $tap_address"
          echo "********     (root privileges are required)      ********"
+
          if ! run_command "$JUST_PRINT" "${TUNTAP_COMMAND[*]}" "${TUNTAP_COMMAND[@]}"; then
             echo 1>&2 "Error while configuring the tunnel."
             exit 1
          fi
+
          echo "************** Abandoning root privileges ***************"
       else
          if ! run_command "$JUST_PRINT" "${TUNTAP_COMMAND[*]}" "${TUNTAP_COMMAND[@]}" > /dev/null; then
@@ -388,44 +410,84 @@ startInetHub() {
       fi
 
       TAP_DEVICE="nk_tap_$USER"
-
-      # TODO: run_command "$JUST_PRINT" "$HUB_COMMAND" "$COMPLETE_COMMAND"
-      "$NETKIT_HOME/bin/uml_switch" -tap "$TAP_DEVICE" -hub -unix "$1" < /dev/null 2>&1 | awk -v SWITCHNAME="$1" -v USER="$USERID" -v CURRENTDATE="$(date +"%Y/%m/%d %H:%M:%S")" '{ printf "%s %15s %25s %s\n", CURRENTDATE, USER, SWITCHNAME, $0 }' > "$HUB_LOG" &
+      hub_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "$TAP_DEVICE" "-hub" "-unix" "$hub_socket" )
+      
+      # TODO: implement hub logging that's better (i.e. it works) than the
+      # original.
+      run_command "$JUST_PRINT" "${hub_cmd[*]} < /dev/null &" "${hub_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USERID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
    fi
-   
+
    # Wait for uml_switch to start
-   while [ -z "$JUST_PRINT" -a ! -S "$1" ]; do
+   while [ -z "$JUST_PRINT" ] && [ ! -S "$hub_socket" ]; do
       sleep 1
    done
 }
 
 
-# This function starts a hub, if it does not exist yet
-startHub() {
+###############################################################################
+# Start a virtual network hub.
+# Usage:
+#   start_hub HUB
+# Globals:
+#   r- HUB_LOG
+#   r- JUST_PRINT
+#   r- NETKIT_HOME
+#   r- USERID
+# Arguments:
+#   $1 - hub socket filepath
+# Returns:
+#   None. Exits with a non-zero code on a configuration error
+# Example:
+#   None
+###############################################################################
+start_hub() {
+   local hub_socket=$1
+
    # Socket already exists but is not used
-   if [ ! -S "$1" ] || ! file_in_use "$1"; then
-      # TODO: run_command "$JUST_PRINT" "$HUB_COMMAND" "$COMPLETE_COMMAND"
-      "$NETKIT_HOME/bin/uml_switch" -hub -unix "$1" < /dev/null 2>&1  | awk -v SWITCHNAME="$1" -v USER="$USERID" -v CURRENTDATE="$(date +"%Y/%m/%d %H:%M:%S")" '{printf "%s %15s %25s %s\n", CURRENTDATE, USER, SWITCHNAME, $0}' > "$HUB_LOG" &
+   if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
+      hub_cmd=( "$NETKIT_HOME/bin/uml_switch" "-hub" "-unix" "$hub_socket" )
+
+      # TODO: implement hub logging that's better (i.e. it works) than the
+      # original.
+      run_command "$JUST_PRINT" "${hub_cmd[*]} < /dev/null &" "${hub_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USERID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
    fi
-   
+
    # Wait for uml_switch to start
-   while [ -z "$JUST_PRINT" -a ! -S "$1" ]; do
+   while [ -z "$JUST_PRINT" ] && [ ! -S "$hub_socket" ]; do
       sleep 1
    done
 }
 
 
-# This function starts all the hubs inside a given list
+###############################################################################
+# Start all hubs specified in an array.
+# Usage:
+#   run_hubs [HUB[,ADDR]]...
+# Globals:
+#   r- HUB_LOG
+#   r- JUST_PRINT
+#   r- NETKIT_HOME
+#   r- USERID
+# Arguments:
+#  ... - list of hub names optionally paired with an IP address (for a tap
+#        interface).
+# Returns:
+#   None. Exits with a non-zero code on a configuration error
+# Example:
+#   run_hubs hub1 hub2 tap,10.0.0.1 hub3
+###############################################################################
 run_hubs() {
    local hub_specifications=( "$@" )
 
    for hub_specification in "${hub_specifications[@]}"; do
       IFS=, read -r hub_name tap_address <<< "$hub_specification"
 
-      if [ "$hub_name" = "tap" ]; then
-         startInetHub "$hub_name" "$tap_address"
+      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USERID}_$hub_name$HUB_SOCKET_EXTENSION"
+
+      if [ -n "$tap_address" ]; then
+         start_inet_hub "$hub_socket" "$tap_address"
       else
-         startHub "$hub_name"
+         start_hub "$hub_socket"
       fi
    done
 }
