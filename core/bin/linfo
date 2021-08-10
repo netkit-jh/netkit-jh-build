@@ -21,20 +21,6 @@
 # This script displays information about a lab without running it. Optionally,
 # it can create a PNG file containing the level 2 topology of the lab.
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-
-# Write to the vcommands log
-log_write "$0 $*"
-
 
 ###############################################################################
 # Write linfo's usage line to standard output.
@@ -110,108 +96,6 @@ END_OF_HELP
 }
 
 
-# Get command line options
-LONG_OPTS="auto,help,version,map:"
-SHORT_OPTS="ad:m:"
-
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
-   # getopt will output the errorneous command-line argument
-   usage 1
-fi
-
-VERBOSE=1
-
-# (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
-
-while true; do
-   case $1 in
-      -a|--auto)
-         # TODO: Remove or make better.
-         for LAB_DIRECTORY in "${PWD%?}"*/; do
-            LAB_DIRECTORIES+=( "$LAB_DIRECTORY" )
-         done
-         ;;
-      -d)
-         LAB_DIRECTORY=$(readlink --canonicalize-missing "$2")
-         LAB_DIRECTORIES+=( "$LAB_DIRECTORY" )
-         shift
-         ;;
-      --help)
-         usage 0
-         ;;
-      -m|--map)
-         MAP_FILE=$2
-         shift
-         ;;
-      --version)
-         show_version
-         exit 0
-         ;;
-      --)
-         shift
-         break
-         ;;
-      *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
-         usage 1
-         ;;
-   esac
-   shift
-done
-
-if [ $# -gt 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: Too many arguments"
-   exit 1
-fi
-
-
-# If no lab directory has been given, assume current directory
-[ "${#LAB_DIRECTORIES[@]}" -eq 0 ] && LAB_DIRECTORIES=( "$PWD" )
-
-# shellcheck source=./lcommon
-. "$NETKIT_HOME/bin/lcommon"
-
-
-declare -A LAB_VERSIONS LAB_AUTHORS LAB_EMAILS LAB_WEBS LAB_DESCRIPTIONS
-
-for LAB_DIRECTORY in "${LAB_DIRECTORIES[@]}"; do
-   # Check that the lab directory exists
-   if [ ! -d "$LAB_DIRECTORY" ]; then
-      echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: No such directory"
-      exit 1
-   fi
-
-   # TODO: change lab variable assignment to an lcommon function
-   # shellcheck source=./lcommon
-   . "$NETKIT_HOME/bin/lcommon"
-
-   dir=$(basename "$LAB_DIRECTORY")
-
-   # We use associative arrays for printing the values with their respective
-   # directory basename. SC2034 (variable appears unused) must be ignored
-   # because the array is only referenced by name.
-   # shellcheck disable=SC2034
-   [ -n "$LAB_VERSION" ] &&     LAB_VERSIONS[$dir]=$LAB_VERSION
-   # shellcheck disable=SC2034
-   [ -n "$LAB_AUTHOR" ] &&      LAB_AUTHORS[$dir]=$LAB_AUTHOR
-   # shellcheck disable=SC2034
-   [ -n "$LAB_EMAIL" ] &&       LAB_EMAILS[$dir]=$LAB_EMAIL
-   # shellcheck disable=SC2034
-   [ -n "$LAB_WEB" ] &&         LAB_WEBS[$dir]=$LAB_WEB
-   # shellcheck disable=SC2034
-   [ -n "$LAB_DESCRIPTION" ] && LAB_DESCRIPTIONS[$dir]=$LAB_DESCRIPTION
-
-   # Check whether path to the lab directory contains spaces
-   if string_contains " " "$LAB_DIRECTORY"; then
-      echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Path contains whitespace"
-      exit 1
-   fi
-
-   build_vhostlist
-done
-
-
 ###############################################################################
 # From a lab info associative array (key is directory basename, value is the
 # relevant attribute's value) construct a formatted list suitable for
@@ -283,6 +167,120 @@ generate_info_str() {
 }
 
 
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./lcommon
+. "$NETKIT_HOME/bin/lcommon"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
+# Get command line options
+LONG_OPTS="auto,help,version,map:"
+SHORT_OPTS="ad:m:"
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
+fi
+
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
+
+while true; do
+   case $1 in
+      -a|--auto)
+         # TODO: Remove or make better.
+         for LAB_DIRECTORY in "${PWD%?}"*/; do
+            LAB_DIRECTORIES+=( "$LAB_DIRECTORY" )
+         done
+         ;;
+      -d)
+         LAB_DIRECTORY=$(readlink --canonicalize-missing "$2")
+         LAB_DIRECTORIES+=( "$LAB_DIRECTORY" )
+         shift
+         ;;
+      --help)
+         usage 0
+         ;;
+      -m|--map)
+         MAP_FILE=$2
+         shift
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
+
+if [ $# -gt 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: Too many arguments"
+   exit 1
+fi
+
+
+# If no lab directory has been given, assume current directory
+[ "${#LAB_DIRECTORIES[@]}" -eq 0 ] && LAB_DIRECTORIES=( "$PWD" )
+
+
+declare -A LAB_VERSIONS LAB_AUTHORS LAB_EMAILS LAB_WEBS LAB_DESCRIPTIONS
+
+for LAB_DIRECTORY in "${LAB_DIRECTORIES[@]}"; do
+   # Check that the lab directory exists
+   if [ ! -d "$LAB_DIRECTORY" ]; then
+      echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: No such directory"
+      exit 1
+   fi
+
+   # TODO: change lab variable assignment to an lcommon function
+   # shellcheck source=./lcommon
+   . "$NETKIT_HOME/bin/lcommon"
+
+   dir=$(basename "$LAB_DIRECTORY")
+
+   # We use associative arrays for printing the values with their respective
+   # directory basename. SC2034 (variable appears unused) must be ignored
+   # because the array is only referenced by name.
+   # shellcheck disable=SC2034
+   [ -n "$LAB_VERSION" ] &&     LAB_VERSIONS[$dir]=$LAB_VERSION
+   # shellcheck disable=SC2034
+   [ -n "$LAB_AUTHOR" ] &&      LAB_AUTHORS[$dir]=$LAB_AUTHOR
+   # shellcheck disable=SC2034
+   [ -n "$LAB_EMAIL" ] &&       LAB_EMAILS[$dir]=$LAB_EMAIL
+   # shellcheck disable=SC2034
+   [ -n "$LAB_WEB" ] &&         LAB_WEBS[$dir]=$LAB_WEB
+   # shellcheck disable=SC2034
+   [ -n "$LAB_DESCRIPTION" ] && LAB_DESCRIPTIONS[$dir]=$LAB_DESCRIPTION
+
+   # Check whether path to the lab directory contains spaces
+   if string_contains " " "$LAB_DIRECTORY"; then
+      echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Path contains whitespace"
+      exit 1
+   fi
+
+   build_vhostlist
+done
+
+
 printf -v LAB_DIRECTORY '%s, ' "${LAB_DIRECTORIES[@]}"
 LAB_DIRECTORY=${LAB_DIRECTORY%", "}
 
@@ -329,5 +327,3 @@ if [ -n "$MAP_FILE" ]; then
 fi
 
 bold_print "================================================================="
-
-echo

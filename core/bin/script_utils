@@ -756,7 +756,7 @@ get_vm_info_by_pid() {
    done <<< "${vm_info["full_command"]}"
 
    # The UML console socket filepath
-   vm_info["mconsole"]=$MCONSOLE_DIR/${vm_info["umid"]}/mconsole
+   vm_info["mconsole"]="$MCONSOLE_DIR/${vm_info["umid"]}/mconsole"
 }
 
 

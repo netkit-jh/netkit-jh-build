@@ -23,19 +23,6 @@
 # their power cord. This script is also useful if you want to kill a hanging
 # virtual machine.
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-# Write to the vcommands log
-log_write "$0 $*"
-
 
 ###############################################################################
 # Write vcrash's usage line to standard output.
@@ -130,6 +117,187 @@ END_OF_HELP
 }
 
 
+###############################################################################
+# Kill a virtual machine by signaling the corresponding processes. It is
+# assumed that vm_info will be populated for disk removal.
+# Usage:
+#   kill_by_signaling MACHINE
+# Globals:
+#   r- BE_QUIET
+#   r- REMOVE_FS
+#   r- vm_info
+# Arguments:
+#   $1 - machine to kill
+# Returns:
+#   Returns zero on success, non-zero if there was an issue with killing the
+#   machine.
+# Example:
+#   None
+###############################################################################
+kill_by_signaling() {
+   vm=$1
+
+   [ -z "$BE_QUIET" ] && echo -n "Killing... "
+
+   # Signalling processes twice ensures they stop even if they need to be
+   # killed in a certain order
+   IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vm")"
+
+   if [ "${#pids[@]}" -eq 0 ]; then
+      kill -TERM "${pids[@]}" > /dev/null
+      kill -TERM "${pids[@]}" > /dev/null
+   fi
+
+   if [ -z "$BE_QUIET" ]; then
+      sleep 1
+
+      if get_machine_state "$target_user" "$vm"; then
+         [ -z "$BE_QUIET" ] && echo -n "killing harder... "
+         # Recompute PID list (some threads may have been launched in the
+         # meantime).
+         IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vm")"
+
+         if [ "${#pids[@]}" -eq 0 ]; then
+            kill -KILL "${pids[@]}" > /dev/null
+            kill -CONT "${pids[@]}" > /dev/null
+         fi
+
+         sleep 1
+
+         if get_machine_state "$target_user" "$vm"; then
+            [ -z "$BE_QUIET" ] && echo "failed!"
+            echo 1>&2 "Failed to crash virtual machine '$vm'"
+            return 1
+         fi
+      fi
+
+      [ -z "$BE_QUIET" ] && echo "done."
+   fi
+
+   # Virtual machine filesystem is removed only if it has been successfully crashed
+   [ -n "$REMOVE_FS" ] && [ -n "${vm_info[disk]}" ] && remove_fs "${vm_info[disk]}"
+   
+   return 0
+}
+
+
+###############################################################################
+# Use uml_mconsole to crash a machine. It is assumed that vm_info will be
+# populated for the mconsole directory.
+# NOTE: we can remove the reliance on vm_info by building the dir path here.
+# Usage:
+#   mconsole_halt
+# Globals:
+#   r- BE_QUIET
+#   r- NETKIT_HOME
+#   r- vm_info
+# Arguments:
+#   None
+# Returns:
+#   Returns zero on success, non-zero if there was an issue with killing the
+#   machine.
+# Example:
+#   None
+###############################################################################
+mconsole_halt() {
+   "$NETKIT_HOME/bin/uml_mconsole" "${vm_info[mconsole]}" halt > /dev/null &
+   uml_mconsole_pid=$!
+
+   # Check whether the mconsole process is hanging forever
+   i=0
+   while [ $i -le 5 ]; do
+      [ ! -e "/proc/$uml_mconsole_pid" ] && return 0
+      [ $i -lt 5 ] && sleep 1
+      i=$((i + 1))
+   done
+
+   [ -z "$BE_QUIET" ] && echo "hangup detected... "
+   kill "$uml_mconsole_pid"
+
+   return 1
+}
+
+
+###############################################################################
+# Use mconsole_halt to crash a machine and, if BE_QUIET is empty, upon failure
+# twice, resort to kill_by_signaling. It is assumed that vm_info will be
+# populated.
+# Usage:
+#   kill_by_mconsole MACHINE
+# Globals:
+#   r- BE_QUIET
+#   r- REMOVE_FS
+#   r- target_user
+#   r- vm_info
+# Arguments:
+#   None
+# Returns:
+#   Returns zero on success, non-zero if there was an issue with killing the
+#   machine.
+# Example:
+#   None
+###############################################################################
+kill_by_mconsole() {
+   vm=$1
+
+   [ -z "$BE_QUIET" ] && echo -n "Crashing... "
+
+   mconsole_halt
+
+   # When the above command exits, an attempt via the mconsole has been
+   # performed. Regardless of whether the virtual machine has actually halted,
+   # the above command ensures that the uml_mconsole process has ended.
+   if [ -z "$BE_QUIET" ]; then
+      # Make a second attempt if machine is still running
+      if get_machine_state "$target_user" "$vm"; then
+         echo -n "retrying... "
+         sleep 1
+
+         if ! mconsole_halt; then
+            # uml_mconsole is hanging forever
+            
+            # The two lines below are necessary in order to retrieve the
+            # virtual machine PIDs, which are required by kill_by_signaling.
+            # We chose not to retrieve them immediately because this requires
+            # time and is only necessary if mconsole does not work.
+            kill_by_signaling "$vm"
+            return $?
+         elif get_machine_state "$target_user" "$vm"; then
+            # Attempt to kill virtual machine processes
+            kill_by_signaling "$vm"
+            return $?
+         else
+            echo "done."
+         fi
+      else
+         echo "done."
+      fi
+   fi
+
+   # kill_by_signaling will handle filesystem removal, hence it exits early
+   [ -n "$REMOVE_FS" ] && [ -n "${vm_info[disk]}" ] && remove_fs "${vm_info[disk]}"
+
+   return 0
+}
+
+
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
+target_user=$USER_ID
+
+
 # Get command line options
 LONG_OPTS="force,help,kill,quiet,remove-fs,root,test,user:,version"
 SHORT_OPTS="kqru:"
@@ -138,8 +306,6 @@ if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longopt
    # getopt will output the errorneous command-line argument
    usage 1
 fi
-
-target_user=$USER_ID
 
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$GETOPT_OPTS"
@@ -212,126 +378,6 @@ if [ -n "$TEST_MODE" ] && [ -n "$BE_QUIET" ]; then
    echo 1>&2 "$SCRIPTNAME: Option --test cannot be used when working in quiet mode"
    usage 1
 fi
-
-
-# This function kills a virtual machine by simply signaling the corresponding
-# processes. It is assumed that vm_info has been populated.
-kill_by_signaling() {
-   vm=$1
-
-   [ -z "$BE_QUIET" ] && echo -n "Killing... "
-
-   # Signalling processes twice ensures they stop even if they need to be
-   # killed in a certain order
-   IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vm")"
-
-   if [ "${#pids[@]}" -eq 0 ]; then
-      kill -TERM "${pids[@]}" > /dev/null
-      kill -TERM "${pids[@]}" > /dev/null
-   fi
-
-   if [ -z "$BE_QUIET" ]; then
-      sleep 1
-
-      if get_machine_state "$target_user" "$vm"; then
-         [ -z "$BE_QUIET" ] && echo -n "killing harder... "
-         # Recompute PID list (some threads may have been launched in the
-         # meantime).
-         IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vm")"
-
-         if [ "${#pids[@]}" -eq 0 ]; then
-            kill -KILL "${pids[@]}" > /dev/null
-            kill -CONT "${pids[@]}" > /dev/null
-         fi
-
-         sleep 1
-
-         if get_machine_state "$target_user" "$vm"; then
-            [ -z "$BE_QUIET" ] && echo "failed!"
-            echo 1>&2 "Failed to crash virtual machine '$vm'"
-            return 1
-         fi
-      fi
-
-      [ -z "$BE_QUIET" ] && echo "done."
-   fi
-
-   # Virtual machine filesystem is removed only if it has been successfully crashed
-   [ -n "$REMOVE_FS" ] && [ -n "${vm_info[disk]}" ] && remove_fs "${vm_info[disk]}"
-   
-   return 0
-}
-
-
-
-# This function uses a virtual machine management console to immediately crash
-# it. The function also takes care of handling the case in which uml_console
-# freezes. In such a situations, it kills the uml_mconsole process and returns
-# a non-zero value. Please note that the function only fails when uml_mconsole
-# hangs, regardless of whether the virtual machine has been actually crashed
-# or not. Here it is assumed that vm_info has been populated.
-mconsole_halt() {
-   "$NETKIT_HOME/bin/uml_mconsole" "${vm_info[mconsole]}" halt > /dev/null &
-   uml_mconsole_pid=$!
-
-   # Check whether the mconsole process is hanging forever
-   i=0
-   while [ $i -le 5 ]; do
-      [ ! -e "/proc/$uml_mconsole_pid" ] && return 0
-      [ $i -lt 5 ] && sleep 1
-      i=$((i + 1))
-   done
-
-   [ -z "$BE_QUIET" ] && echo "hangup detected... "
-   kill "$uml_mconsole_pid"
-
-   return 1
-}
-
-
-
-# This function kills a virtual machine by using their management console
-# (mconsole) socket. Upon failure, it reverts to killing the virtual machine
-# processes. It assumes that vm_info has been populated.
-kill_by_mconsole() {
-   vm=$1
-
-   [ -z "$BE_QUIET" ] && echo -n "Crashing... "
-
-   mconsole_halt
-
-   # When the above command exits, an attempt via the mconsole has been
-   # performed. Regardless of whether the virtual machine has actually halted,
-   # the above command ensures that the uml_mconsole process has ended.
-   if [ -z "$BE_QUIET" ]; then
-      # Make a second attempt if machine is still running
-      if get_machine_state "$target_user" "$vm"; then
-         echo -n "retrying... "
-         sleep 1
-
-         if ! mconsole_halt; then
-            # uml_mconsole is hanging forever
-            
-            # The two lines below are necessary in order to retrieve the
-            # virtual machine PIDs, which are required by kill_by_signaling.
-            # We chose not to retrieve them immediately because this requires
-            # time and is only necessary if mconsole does not work.
-            kill_by_signaling "$vm"
-            return $?
-         elif get_machine_state "$target_user" "$vm"; then
-            # Attempt to kill virtual machine processes
-            kill_by_signaling "$vm"
-            return $?
-         else
-            echo "done."
-         fi
-      else
-         echo "done."
-      fi
-   fi
-
-   [ -n "$REMOVE_FS" ] && [ -n "${vm_info[disk]}" ] && remove_fs "${vm_info[disk]}"
-}
 
 
 for vm in "${vm_ids[@]}"; do

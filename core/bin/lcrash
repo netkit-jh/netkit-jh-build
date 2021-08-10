@@ -21,20 +21,6 @@
 # This script can be used to crash a Netkit lab. It also takes care of removing
 # .disk files, so that the lab can be cleanly restarted.
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-
-# Write to the vcommands log
-log_write "$0 $*"
-
 
 ###############################################################################
 # Write lcrash's usage line to standard output.
@@ -128,6 +114,26 @@ END_OF_HELP
 }
 
 
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./lcommon
+. "$NETKIT_HOME/bin/lcommon"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
+# Verbose mode tells vcrash to wait for machines to stop before returning
+VERBOSE=1
+
+
 # Get command line options
 LONG_OPTS="help,version,keep-fs,kill,list,quiet,quick"
 SHORT_OPTS="d:Fklq"
@@ -136,9 +142,6 @@ if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longopt
    # getopt will output the errorneous command-line argument
    usage 1
 fi
-
-# Verbose mode tells vcrash to wait for machines to stop before returning
-VERBOSE=1
 
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$GETOPT_OPTS"
@@ -206,10 +209,6 @@ if string_contains " " "$LAB_DIRECTORY"; then
    echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Path contains whitespace"
    exit 1
 fi
-
-
-# shellcheck source=./lcommon
-. "$NETKIT_HOME/bin/lcommon"
 
 
 # Print lab information

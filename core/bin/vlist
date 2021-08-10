@@ -175,91 +175,6 @@ print_vm_summary() {
 }
 
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./lcommon
-. "$NETKIT_HOME/bin/lcommon"
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-# Write to the vcommands log
-log_write "$0 $*"
-
-
-# Get command line options
-LONG_OPTS="help,no-header,user:,version"
-SHORT_OPTS="nu:"
-
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
-   # getopt will output the errorneous command-line argument
-   usage 1
-fi
-
-# USER_ID is set in script_utils
-target_user=$USER_ID
-
-# (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
-
-while true; do
-   case $1 in
-      --help)
-         usage 0
-         ;;
-      -n|--no-header)
-         no_header=true
-         ;;
-      -u|--user)
-         target_user=$2
-         [ "$target_user" = "-" ] && unset target_user
-         shift
-         ;;
-      --version)
-         show_version
-         exit 0
-         ;;
-      --)
-         shift
-         break
-         ;;
-      *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
-         usage 1
-         ;;
-   esac
-
-   shift
-done
-
-# Non-option arguments are machine names
-vm_ids=( "$@" )
-
-for host in "${vm_ids[@]}"; do
-   if string_contains " " "$host"; then
-      echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
-      exit 1
-   fi
-done
-
-
-# Check whether -u - is being used together with a virtual machine ID
-if [ -z "$target_user" ] && [ "${#vm_ids[@]}" -ne 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: When giving VM names, a specific user ID must be provided"
-   usage 1
-fi
-
-
-# Display summary of virtual machines
-if [ "${#vm_ids[@]}" -eq 0 ]; then
-   print_vm_summary "$no_header" "$target_user"
-fi
-
-
 ###############################################################################
 # Print complete information about a machine.
 # Usage:
@@ -343,6 +258,91 @@ print_vm_info_by_name() {
    echo "   Other arguments:   ${vm_info[other]:-"-"}"
    echo "   Console socket:    ${vm_info[mconsole]}"
 }
+
+
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./lcommon
+. "$NETKIT_HOME/bin/lcommon"
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
+target_user=$USER_ID
+
+
+# Get command line options
+LONG_OPTS="help,no-header,user:,version"
+SHORT_OPTS="nu:"
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
+fi
+
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
+
+while true; do
+   case $1 in
+      --help)
+         usage 0
+         ;;
+      -n|--no-header)
+         no_header=true
+         ;;
+      -u|--user)
+         target_user=$2
+         [ "$target_user" = "-" ] && unset target_user
+         shift
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
+
+# Non-option arguments are machine names
+vm_ids=( "$@" )
+
+for host in "${vm_ids[@]}"; do
+   if string_contains " " "$host"; then
+      echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
+      exit 1
+   fi
+done
+
+
+# Check whether -u - is being used together with a virtual machine ID
+if [ -z "$target_user" ] && [ "${#vm_ids[@]}" -ne 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: When giving VM names, a specific user ID must be provided"
+   usage 1
+fi
+
+
+# Display summary of virtual machines
+if [ "${#vm_ids[@]}" -eq 0 ]; then
+   print_vm_summary "$no_header" "$target_user"
+fi
 
 
 # Get verbose information for specific virtual machines

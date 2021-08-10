@@ -21,19 +21,6 @@
 # This is the Netkit vclean script, which can be used to remove unused virtual
 # hubs, hanging UML kernels and configured tunnels.
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-# Write to the vcommands log
-log_write "$0 $*"
-
 
 ###############################################################################
 # Write vclean's usage line to standard output.
@@ -133,94 +120,6 @@ END_OF_HELP
 
    exit "$status"
 }
-
-
-# Get command line options
-LONG_OPTS="clean-all,help,kill-machines,quick,quiet,remove-hubs,remove-tunnels,test,user:,version"
-SHORT_OPTS="HKTu:q"
-
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
-   # getopt will output the errorneous command-line argument
-   usage 1
-fi
-
-# USER_ID is set in script_utils
-target_user=$USER_ID
-
-# (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
-
-while true; do
-   case $1 in
-      --clean-all)
-         KILL_MACHINES=1
-         REMOVE_TUNNELS=1
-         ;;
-      -H|--remove-hubs)
-         REMOVE_UNUSED_HUBS=1
-         ;;
-      --help)
-         usage 0
-         ;;
-      -K|--kill-machines)
-         KILL_MACHINES=1
-         ;;
-      # TODO: Separate options (and use --verbose)
-      -q|--quick|--quiet)
-         BE_QUIET=1
-         ;;
-      -T|--remove-tunnels)
-         REMOVE_TUNNELS=1
-         ;;
-      --test)
-         TEST_MODE=1
-         ;;
-      --user|-u)
-         target_user=$2
-         [ "$target_user" = "-" ] && unset target_user
-         shift
-         ;;
-      --version)
-         show_version
-         exit 0
-         ;;
-      --)
-         shift
-         break
-         ;;
-      *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
-         usage 1
-         ;;
-   esac
-
-   shift
-done
-
-# Check for further arguments
-if [ $# -gt 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: Too many arguments"
-   usage 1
-   exit 1
-fi
-
-
-# Test mode is senseless if working in quiet mode
-if [ -n "$TEST_MODE" ] && [ -n "$BE_QUIET" ]; then
-   echo 1>&2 "$SCRIPTNAME: test mode cannot function in quiet mode"
-   exit 1
-fi
-
-# Actions --remove-hubs and --kill-machines are incompatible
-if [ -n "$REMOVE_UNUSED_HUBS" ] && [ -n "$KILL_MACHINES" ]; then
-   echo 1>&2 "$SCRIPTNAME: Hub removal and machine kill cannot be performed simultaneously"
-   exit 1
-fi
-
-# Enable default action (remove unused virtual hubs) if none has been requested
-if [ -z "$KILL_MACHINES" ] && [ -z "$REMOVE_TUNNELS" ]; then
-   REMOVE_UNUSED_HUBS=1
-fi
 
 
 ###############################################################################
@@ -336,6 +235,107 @@ kill_hubs() {
    [ -n "$found_unused_hub" ] && [ -z "$BE_QUIET" ] && echo "   No unused virtual hubs have been found."
 }
 
+
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
+target_user=$USER_ID
+
+
+# Get command line options
+LONG_OPTS="clean-all,help,kill-machines,quick,quiet,remove-hubs,remove-tunnels,test,user:,version"
+SHORT_OPTS="HKTu:q"
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
+fi
+
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
+
+while true; do
+   case $1 in
+      --clean-all)
+         KILL_MACHINES=1
+         REMOVE_TUNNELS=1
+         ;;
+      -H|--remove-hubs)
+         REMOVE_UNUSED_HUBS=1
+         ;;
+      --help)
+         usage 0
+         ;;
+      -K|--kill-machines)
+         KILL_MACHINES=1
+         ;;
+      # TODO: Separate options (and use --verbose)
+      -q|--quick|--quiet)
+         BE_QUIET=1
+         ;;
+      -T|--remove-tunnels)
+         REMOVE_TUNNELS=1
+         ;;
+      --test)
+         TEST_MODE=1
+         ;;
+      --user|-u)
+         target_user=$2
+         [ "$target_user" = "-" ] && unset target_user
+         shift
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
+
+# Check for further arguments
+if [ $# -gt 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: Too many arguments"
+   usage 1
+   exit 1
+fi
+
+
+# Test mode is senseless if working in quiet mode
+if [ -n "$TEST_MODE" ] && [ -n "$BE_QUIET" ]; then
+   echo 1>&2 "$SCRIPTNAME: test mode cannot function in quiet mode"
+   exit 1
+fi
+
+# Actions --remove-hubs and --kill-machines are incompatible
+if [ -n "$REMOVE_UNUSED_HUBS" ] && [ -n "$KILL_MACHINES" ]; then
+   echo 1>&2 "$SCRIPTNAME: Hub removal and machine kill cannot be performed simultaneously"
+   exit 1
+fi
+
+# Enable default action (remove unused virtual hubs) if none has been requested
+if [ -z "$KILL_MACHINES" ] && [ -z "$REMOVE_TUNNELS" ]; then
+   REMOVE_UNUSED_HUBS=1
+fi
 
 
 if [ -z "$target_user" ]; then

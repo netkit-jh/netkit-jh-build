@@ -21,19 +21,6 @@
 # This is the Netkit vstart script, which is used to start virtual machines with
 # given parameters.
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-# Write to the vcommands log
-log_write "$0 $*"
-
 
 ###############################################################################
 # Write vstart's usage line to standard output.
@@ -204,6 +191,217 @@ END_OF_HELP
 
    exit "$status"
 }
+
+
+###############################################################################
+# Warn if file is located on a filesystem that does not support sparse files.
+# Usage:
+#   check_filesystem FILE
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - file on target filesystem
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+check_filesystem() {
+   file=$1
+
+   fs_type=$(stat -f "$file" | grep -w Type)
+   fs_type=${fs_type#*Type: }
+
+   if [[ "$fs_type" =~ ^(ext[2-4]|ntfs|ntfs-3g|fuse|reiser|jfs|xfs)$ ]]; then
+      echo 1>&2 "$SCRIPTNAME: Filesystem '$fs_type' does not seem to support sparse files, this may result in performance loss and disk space consumption"
+   fi
+}
+
+
+###############################################################################
+# Append network interface specifications to the kernel invocation command.
+# Usage:
+#   setup_interfaces [INTERFACE]...
+# Globals:
+#   r- BE_QUIET
+#   -w HUBLIST
+#   r- HUB_SOCKET_DIR
+#   r- HUB_SOCKET_EXTENSION
+#   r- HUB_SOCKET_PREFIX
+#   r- KERNELCMD
+#   r- SCRIPTNAME
+#   r- USER_ID
+# Arguments:
+#  ... - list of interfaces
+# Returns:
+#   None. Will exit with usage 1 on invalid specification.
+# Example:
+#   None
+###############################################################################
+setup_interfaces() {
+   local device hub_name hub_socket tap_address
+   local guest_address enabled_default_route used_devices
+   
+   first_iteration=true
+   while [ $# -gt 0 ]; do
+      device=${1%%=*}
+      hub_specification=${1#*=}
+
+      # Check if interface has already been configured
+      if [[ " $used_devices " == *" $device "* ]]; then
+         echo 1>&2 "$SCRIPTNAME: $device: Duplicate interface"
+         usage 1
+      fi
+
+      # Remember that this network interface has been configured
+      used_devices="$used_devices $device"
+
+      # Check if tap interface (regular hubs cannot be named with commas)
+      if [[ "$hub_specification" == tap,* ]]; then
+         # Format: tap,tap_address,guest_address
+         IFS=, read -r hub_name tap_address guest_address <<< "$hub_specification"
+
+         if ! is_inet_addr "$tap_address"; then
+            echo 1>&2 "$SCRIPTNAME: $tap_address: Invalid tap address"
+            usage 1
+         fi
+
+         if ! is_inet_addr "$guest_address"; then
+            echo 1>&2 "$SCRIPTNAME: $guest_address: Invalid guest address"
+            usage 1
+         fi
+      else
+         # This is a normal (i.e., not 'tap') collision domain
+         unset tap_address guest_address
+         hub_name=$hub_specification
+      fi
+      
+      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
+
+      KERNELCMD="$KERNELCMD $device=daemon,,,$hub_socket"
+      
+      if [ -n "$tap_address" ]; then
+         HUBLIST+=( "$hub_name,$tap_address" )
+
+         KERNELCMD="$KERNELCMD autoconf_$device=$guest_address"
+
+         # TODO: KERNELCMD is an array now
+         # Ensure the default route is specified only once
+         if [ -z "$enabled_default_route" ]; then
+            KERNELCMD="$KERNELCMD def_route=$tap_address"
+            enabled_default_route=1
+         fi
+      else
+         HUBLIST+=( "$hub_name" )
+      fi
+
+      if $first_iteration; then
+         first_iteration=false
+      elif [ -z "$BE_QUIET" ]; then
+         echo -n "               "
+      fi
+
+      [ -z "$BE_QUIET" ] && echo "$device @ $hub_name ($hub_socket)"
+
+      shift
+   done
+}
+
+
+###############################################################################
+# Invoke uml_mconsole to "wake up" port-helper in the event that it hangs.
+# Usage:
+#   wakeup_porthelper
+# Globals:
+#   r- NETKIT_HOME
+#   r- VM_NAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+wakeup_porthelper() {
+   sleep 5
+   "$NETKIT_HOME/bin/uml_mconsole" "$VM_NAME" help > /dev/null 2>&1 &
+}
+
+
+###############################################################################
+# Delete .disk file as soon as it is created by the UML instance.
+# Usage:
+#   remove_fs_command
+# Globals:
+#   r- VM_FS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   remove_fs_command &
+###############################################################################
+remove_fs_command() {
+   while [ ! -f "$VM_FS" ]; do
+      sleep 1
+   done
+   
+   rm -f "$VM_FS" 
+}
+
+
+###############################################################################
+# Run relevant kernel invocation setup functions and then invoke the UML kernel
+# instance. Upon return, clean up redundant network hubs.
+# Usage:
+#   run_kernel_command
+# Globals:
+#   r- CON0_PORTHELPER
+#   r- HUBLIST
+#   r- JUST_PRINT
+#   r- KERNELCMD
+#   r- REMOVE_FS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+run_kernel_command() {
+   # If doing a dry run, we want to skip all four commands here.
+   if [ -n "$JUST_PRINT" ]; then
+      run_command "$JUST_PRINT" "${KERNELCMD[*]}" "${KERNELCMD[@]}"
+      return
+   fi
+
+   # Invocation of uml_mconsole is needed in order to "wake up" port-helper if
+   # it ever hangs when booting the virtual machine.
+   [ "$CON0_PORTHELPER" = "yes" ] && wakeup_porthelper
+   
+   # Remove .disk file, if requested
+   if [ -n "$REMOVE_FS" ]; then
+      remove_fs_command &
+   fi
+
+   run_command "$JUST_PRINT" "${KERNELCMD[*]}" "${KERNELCMD[@]}"
+
+   clean_hubs "${HUBLIST[@]}"
+}
+
+
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+log_write "$0 $*"
 
 
 # Get command line options
@@ -386,7 +584,7 @@ while true; do
    shift
 done
 
-
+# Parse virtual machine name
 if [ $# -eq 0 ]; then
    echo 1>&2 "$SCRIPTNAME: Missing machine name"
    usage 1
@@ -395,13 +593,13 @@ elif [ $# -gt 1 ]; then
    usage 1
 fi
 
-# Parse virtual machine name
 VM_NAME=$1
+shift
+
 if string_contains " " "$VM_NAME"; then
    echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
    exit 1
 fi
-shift
 
 
 # Check whether user is trying to attach more than one console to stdin/stdout
@@ -447,124 +645,7 @@ if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "
 fi
 
 
-########################## Build kernel command line ##########################
-
-
-###############################################################################
-# Warn if file is located on a filesystem that does not support sparse files.
-# Usage:
-#   check_filesystem FILE
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   $1 - file on target filesystem
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-check_filesystem() {
-   file=$1
-
-   fs_type=$(stat -f "$file" | grep -w Type)
-   fs_type=${fs_type#*Type: }
-
-   if [[ "$fs_type" =~ ^(ext[2-4]|ntfs|ntfs-3g|fuse|reiser|jfs|xfs)$ ]]; then
-      echo 1>&2 "$SCRIPTNAME: Filesystem '$fs_type' does not seem to support sparse files, this may result in performance loss and disk space consumption"
-   fi
-}
-
-
-###############################################################################
-# Append network interface specifications to the kernel invocation command.
-# Usage:
-#   setup_interfaces [INTERFACE]...
-# Globals:
-#   r- BE_QUIET
-#   -w HUBLIST
-#   r- HUB_SOCKET_DIR
-#   r- HUB_SOCKET_EXTENSION
-#   r- HUB_SOCKET_PREFIX
-#   r- KERNELCMD
-#   r- SCRIPTNAME
-#   r- USER_ID
-# Arguments:
-#  ... - list of interfaces
-# Returns:
-#   None. Will exit with usage 1 on invalid specification.
-# Example:
-#   None
-###############################################################################
-setup_interfaces() {
-   local device hub_name hub_socket tap_address
-   local guest_address enabled_default_route used_devices
-   
-   first_iteration=true
-   while [ $# -gt 0 ]; do
-      device=${1%%=*}
-      hub_specification=${1#*=}
-
-      # Check if interface has already been configured
-      if [[ " $used_devices " == *" $device "* ]]; then
-         echo 1>&2 "$SCRIPTNAME: $device: Duplicate interface"
-         usage 1
-      fi
-
-      # Remember that this network interface has been configured
-      used_devices="$used_devices $device"
-
-      # Check if tap interface (regular hubs cannot be named with commas)
-      if [[ "$hub_specification" == tap,* ]]; then
-         # Format: tap,tap_address,guest_address
-         IFS=, read -r hub_name tap_address guest_address <<< "$hub_specification"
-
-         if ! is_inet_addr "$tap_address"; then
-            echo 1>&2 "$SCRIPTNAME: $tap_address: Invalid tap address"
-            usage 1
-         fi
-
-         if ! is_inet_addr "$guest_address"; then
-            echo 1>&2 "$SCRIPTNAME: $guest_address: Invalid guest address"
-            usage 1
-         fi
-      else
-         # This is a normal (i.e., not 'tap') collision domain
-         unset tap_address guest_address
-         hub_name=$hub_specification
-      fi
-      
-      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
-
-      KERNELCMD="$KERNELCMD $device=daemon,,,$hub_socket"
-      
-      if [ -n "$tap_address" ]; then
-         HUBLIST+=( "$hub_name,$tap_address" )
-
-         KERNELCMD="$KERNELCMD autoconf_$device=$guest_address"
-
-         # TODO: KERNELCMD is an array now
-         # Ensure the default route is specified only once
-         if [ -z "$enabled_default_route" ]; then
-            KERNELCMD="$KERNELCMD def_route=$tap_address"
-            enabled_default_route=1
-         fi
-      else
-         HUBLIST+=( "$hub_name" )
-      fi
-
-      if $first_iteration; then
-         first_iteration=false
-      elif [ -z "$BE_QUIET" ]; then
-         echo -n "               "
-      fi
-
-      [ -z "$BE_QUIET" ] && echo "$device @ $hub_name ($hub_socket)"
-
-      shift
-   done
-}
-
-
+# Start building the kernel command line
 KERNELCMD=( "$VM_KERNEL" )
 
 
@@ -592,17 +673,17 @@ if [ -d "$KERNEL_MODULES_DIRECTORY" ]; then
 fi
 
 
-##### Set virtual machine name
+# Set virtual machine name
 KERNELCMD+=( "name=$VM_NAME" "title=$VM_NAME" "umid=$VM_NAME" )
 
 
-##### Set memory amount
+# Set memory amount
 [ -z "$BE_QUIET" ] && echo "   Memory:     $VM_MEMORY MB"
 VM_MEMORY=$((VM_MEMORY + VM_MEMORY_SKEW))
 KERNELCMD+=( "mem=${VM_MEMORY}M" )
 
 
-##### Filesystem settings
+# Filesystem settings
 [ -z "$BE_QUIET" ] && echo "   Model fs:   $VM_MODEL_FS"
 
 if [ -n "$USE_MODEL_FS" ]; then
@@ -623,46 +704,47 @@ else
    [ -z "$BE_QUIET" ] && [ ! -f "$VM_FS" ] && echo " (new)" || echo
 fi
 
-# Append a boot option that specifies the root filesystem
+
+# Append a boot option that specifies the root filesystem.
+# NOTE: The following root= options should also be valid: /dev/ubda1 and
+# /dev/ubd/disc0/part1.
 KERNELCMD+=( "root=98:0" )
 
-# The following root= options should also be valid
-# KERNELCMD="$KERNELCMD root=/dev/ubd/disc0/part1"
-# KERNELCMD="$KERNELCMD root=/dev/ubda1"
 
-
-##### Setup mconsole directory
+# Setup mconsole directory
 KERNELCMD+=( "uml_dir=$MCONSOLE_DIR" )
 
 
-##### Setup network interfaces
+# Setup network interfaces
 if [ -n "$ETH_INTERFACES" ]; then
    [ -z "$BE_QUIET" ] && echo -n "   Interfaces: "
+   # TODO: Fix SC2086
    setup_interfaces $ETH_INTERFACES
 fi
 
-##### Set HOSTHOME
+
+# Set host home directory path
 if [ -z "$NO_HOSTHOME" ]; then
    [ -z "$BE_QUIET" ] && echo "   Hostfs at:  $HOME"
    KERNELCMD+=( "hosthome=$HOME" )
 fi
 
 
-##### Check whether virtual machine already exists
+# Check whether the virtual machine already exists
 if [ -z "$JUST_PRINT" ] && get_machine_state "$USER_ID" "$VM_NAME"; then
    echo 1>&2 "$SCRIPTNAME: Virtual machine '$VM_NAME' is already running. Please halt it before starting a new one or use a different virtual machine name"
    exit 1
 fi
 
 
-##### Check whether filesystem is already in use
+# Check whether filesystem is already in use
 if [ -z "$JUST_PRINT" ] && file_in_use "$VM_FS"; then
    echo 1>&2 "$SCRIPTNAME: Filesystem '$VM_FS' is already in use. Please use a different filesystem or virtual machine name"
    exit 1
 fi
 
 
-##### Append exec, hostlab and hostwd parameters, if any
+# Append exec, hostlab and hostwd parameters, if any
 if [ -n "$VM_EXEC" ]; then
    [ -z "$BE_QUIET" ] && echo "   Boot cmd:   '$VM_EXEC'"
    KERNELCMD+=( "exec=$VM_EXEC" )
@@ -743,88 +825,6 @@ fi
 
 # Actually start network hubs
 run_hubs "${HUBLIST[@]}"
-
-
-###############################################################################
-# Invoke uml_mconsole to "wake up" port-helper in the event that it hangs.
-# Usage:
-#   wakeup_porthelper
-# Globals:
-#   r- NETKIT_HOME
-#   r- VM_NAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-wakeup_porthelper() {
-   sleep 5
-   "$NETKIT_HOME/bin/uml_mconsole" "$VM_NAME" help > /dev/null 2>&1 &
-}
-
-
-###############################################################################
-# Delete .disk file as soon as it is created by the UML instance.
-# Usage:
-#   remove_fs_command
-# Globals:
-#   r- VM_FS
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   remove_fs_command &
-###############################################################################
-remove_fs_command() {
-   while [ ! -f "$VM_FS" ]; do
-      sleep 1
-   done
-   
-   rm -f "$VM_FS" 
-}
-
-
-###############################################################################
-# Run relevant kernel invocation setup functions and then invoke the UML kernel
-# instance. Upon return, clean up redundant network hubs.
-# Usage:
-#   run_kernel_command
-# Globals:
-#   r- CON0_PORTHELPER
-#   r- HUBLIST
-#   r- JUST_PRINT
-#   r- KERNELCMD
-#   r- REMOVE_FS
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-run_kernel_command() {
-   # If doing a dry run, we want to skip all four commands here.
-   if [ -n "$JUST_PRINT" ]; then
-      run_command "$JUST_PRINT" "${KERNELCMD[*]}" "${KERNELCMD[@]}"
-      return
-   fi
-
-   # Invocation of uml_mconsole is needed in order to "wake up" port-helper if
-   # it ever hangs when booting the virtual machine.
-   [ "$CON0_PORTHELPER" = "yes" ] && wakeup_porthelper
-   
-   # Remove .disk file, if requested
-   if [ -n "$REMOVE_FS" ]; then
-      remove_fs_command &
-   fi
-
-   run_command "$JUST_PRINT" "${KERNELCMD[*]}" "${KERNELCMD[@]}"
-
-   clean_hubs "${HUBLIST[@]}"
-}
 
 
 # Completely hide primary console, if requested to

@@ -22,9 +22,6 @@
 # This is a support script for the Netkit lcommands. It is not intended for
 # standalone usage.
 
-# by Stefano Pettini <spettini@users.sourceforge.net>, Fabio Ricci, and Massimo
-# Rimondini
-
 
 ###############################################################################
 # Print a string with bold formatting.

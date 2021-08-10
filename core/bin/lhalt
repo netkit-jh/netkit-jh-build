@@ -21,20 +21,6 @@
 # This script can be used to gracefully halt a Netkit lab. If asked to, it
 # also removes .disk files.
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-
-# Write to the vcommands log
-log_write "$0 $*"
-
 
 ###############################################################################
 # Write lhalt's usage line to standard output.
@@ -116,12 +102,20 @@ END_OF_HELP
 }
 
 
-# Output lhalt's usage to stderr
-# Usage: usage
-usage() {
-   echo 1>&2 "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
-   echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
-}
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./lcommon
+. "$NETKIT_HOME/bin/lcommon"
+
+# Write to the vcommands log
+log_write "$0 $*"
 
 
 # Using verbose mode tells vcrash to wait for virtual machines to stop before
@@ -202,8 +196,6 @@ if [ -z "$VERBOSE" ] && [ -n "$REMOVE_FILESYSTEM" ]; then
    exit 1
 fi
 
-# shellcheck source=./lcommon
-. "$NETKIT_HOME/bin/lcommon"
 
 # Print lab information
 bold_print "======================== Halting lab ============================"
@@ -223,12 +215,8 @@ done
 
 bold_print "Removing readyfor.test..."
 rm -f "$LAB_DIRECTORY/readyfor.test"
-
 bold_print "Lab has been halted."
 bold_print "================================================================="
 
 # Show a list of running virtual machines, if asked to
-if [ -n "$LISTVM" ]; then
-   echo
-   vlist
-fi
+[ -n "$LISTVM" ] && vlist

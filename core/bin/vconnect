@@ -1,68 +1,5 @@
 #!/usr/bin/env bash
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-# Allow nesting of tmux sessions
-unset TMUX
-
-###############################################################################
-# Attach to a machine's tmux session in the current terminal.
-# Usage:
-#   tmux_connect MACHINE
-# Globals:
-#   None
-# Arguments:
-#   $1 - virtual machine name
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-tmux_connect() {
-   tmux -L netkit attach -t="$1"
-}
-
-###############################################################################
-# Open a new terminal window attached to a machine's tmux session.
-# Usage:
-#   open_terminal MACHINE
-# Globals:
-#   r- NETKIT_HOME
-#   r- TERM_TYPE
-# Arguments:
-#   $1 - virtual machine name
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-open_terminal() {
-   vm=$1
-
-   case $TERM_TYPE in
-      alacritty)     term_cmd=( "alacritty" "-e" );;
-      kitty)         term_cmd=( "kitty" );;
-      konsole)       term_cmd=( "konsole" "--nofork" "-e" );;
-      konsole-tab)   term_cmd=( "$NETKIT_HOME/bin/konsole-tabs.sh" "-e" );;
-      xterm)         term_cmd=( "xterm" "-e" );;
-      wsl)           term_cmd=( "cmd.exe" "/c" "start" "wsl.exe" );;
-      wt)            term_cmd=( "cmd.exe" "/c" "wt.exe" "-p" "netkit" "wsl.exe" );;
-      *)
-         echo "Terminal '$TERM_TYPE' not supported, defaulting to xterm."
-         term_cmd=( "xterm" "-e" );;
-   esac
-   
-   nohup "${term_cmd[@]}" tmux -L netkit attach -t "$vm" > /dev/null 2>&1 &
-}
-
 
 ###############################################################################
 # Write vconnect's usage line to standard output.
@@ -129,6 +66,75 @@ END_OF_HELP
 }
 
 
+###############################################################################
+# Attach to a machine's tmux session in the current terminal.
+# Usage:
+#   tmux_connect MACHINE
+# Globals:
+#   None
+# Arguments:
+#   $1 - virtual machine name
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+tmux_connect() {
+   tmux -L netkit attach -t="$1"
+}
+
+###############################################################################
+# Open a new terminal window attached to a machine's tmux session.
+# Usage:
+#   open_terminal MACHINE
+# Globals:
+#   r- NETKIT_HOME
+#   r- TERM_TYPE
+# Arguments:
+#   $1 - virtual machine name
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+open_terminal() {
+   vm=$1
+
+   case $TERM_TYPE in
+      alacritty)     term_cmd=( "alacritty" "-e" );;
+      kitty)         term_cmd=( "kitty" );;
+      konsole)       term_cmd=( "konsole" "--nofork" "-e" );;
+      konsole-tab)   term_cmd=( "$NETKIT_HOME/bin/konsole-tabs.sh" "-e" );;
+      xterm)         term_cmd=( "xterm" "-e" );;
+      wsl)           term_cmd=( "cmd.exe" "/c" "start" "wsl.exe" );;
+      wt)            term_cmd=( "cmd.exe" "/c" "wt.exe" "-p" "netkit" "wsl.exe" );;
+      *)
+         echo "Terminal '$TERM_TYPE' not supported, defaulting to xterm."
+         term_cmd=( "xterm" "-e" );;
+   esac
+   
+   nohup "${term_cmd[@]}" tmux -L netkit attach -t "$vm" > /dev/null 2>&1 &
+}
+
+
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+
+RETRY_COUNT=1
+RETRY_INTERVAL=5
+
+# Allow nesting of tmux sessions
+unset TMUX
+
+
 # Get command line options
 LONG_OPTS="interval:,list,machine:,retry-count,terminal"
 SHORT_OPTS="lm:n:r:t"
@@ -137,9 +143,6 @@ if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longopt
    # getopt will output the errorneous command-line argument
    usage 1
 fi
-
-RETRY_COUNT=1
-RETRY_INTERVAL=5
 
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$GETOPT_OPTS"

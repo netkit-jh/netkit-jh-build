@@ -19,19 +19,6 @@
 
 # This is the Netkit vdump script, which is used to start uml_dump.
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-# Write to the vcommands log
-log_write "$0 $*"
-
 
 ###############################################################################
 # Write vdump's usage line to standard output.
@@ -89,6 +76,20 @@ END_OF_HELP
 }
 
 
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
 # Get command line options
 LONG_OPTS="help,version"
 SHORT_OPTS=""
@@ -132,16 +133,15 @@ elif [ $# -gt 1 ]; then
 fi
 
 hub_name=$1
+shift
+
 if string_contains " " "$hub_name"; then
    echo 1>&2 "$SCRIPTNAME: Collision domain name cannot contain whitespace"
    exit 1
 fi
-shift
 
 
-# check if file exist and if a pipe file
 hub_socket="${HUB_SOCKET_DIR}/${HUB_SOCKET_PREFIX}_${USER_ID}_${hub_name}${HUB_SOCKET_EXTENSION}"
-
 if [ ! -e "$hub_socket" ]; then
    echo 1>&2 "$SCRIPTNAME: $hub_socket: No such file or directory. Does the '$hub_name' domain exist?"
    usage 1
@@ -150,7 +150,5 @@ elif [ ! -S "$hub_socket" ]; then
    usage 1
 fi
 
-DUMP_COMMAND="uml_dump $hub_name"
-COMPLETE_COMMAND=( "uml_dump" "$hub_socket" )
 
-run_command "" "$DUMP_COMMAND" "${COMPLETE_COMMAND[@]}"
+run_command "" "" "${COMPLETE_COMMAND[@]}"

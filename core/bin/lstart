@@ -20,23 +20,6 @@
 
 # This script can be used to start a Netkit lab or a subportion of it.
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-
-# Write to the vcommands log
-log_write "$0 $*"
-
-# Used later on to return the status of the lab test
-EXIT_VALUE=0
-
 
 ###############################################################################
 # Write lstart/ltest's usage line to standard output.
@@ -190,6 +173,74 @@ END_OF_HELP
 
    exit "$status"
 }
+
+
+###############################################################################
+# Check for update status via GitHub's API and write the new release's URL to
+# standard output if out-of-date.
+# Usage:
+#   update_available
+# Globals:
+#   r- CHECK_FOR_UPDATES
+#   r- NETKIT_HOME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+update_available() {
+   if [ "$CHECK_FOR_UPDATES" = "yes" ]; then
+      # Check whether we have polled in the last UPDATE_CHECK_PERIOD days
+      touch "$NETKIT_HOME/.new-version"
+
+      if [ -f "$NETKIT_HOME/.last-update-check" ]; then
+         last_update_check=$(cat "$NETKIT_HOME/.last-update-check")
+      else
+         last_update_check=0
+      fi
+
+      # Next check = date of the last one + UPDATE_CHECK_PERIOD (in seconds)
+      next_update_check=$((last_update_check + UPDATE_CHECK_PERIOD * 86400))
+   
+      now=$(date +%s)
+
+      if [ "$now" -gt "$next_update_check" ]; then
+         # We haven't checked in the past UPDATE_CHECK_PERIOD days, check now
+         echo "$now" > "$NETKIT_HOME/.last-update-check"
+
+         # Get the latest release number from the GitHub API.
+         # NOTE: we assume the GitHub API will always return JSON formatted as
+         # a key-value pair per line. The relevant line should be:
+         # "tag_name": "1.2.3",
+         curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"
+      fi
+
+      latest_version=$(cat "$NETKIT_HOME/.new-version")
+      current_version=$(sed "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
+
+      if [ "$latest_version" != "$current_version" ]; then
+         echo "https://github.com/netkit-jh/netkit-jh-build/releases/$latest_version"
+      fi
+   fi
+}
+
+
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./lcommon
+. "$NETKIT_HOME/bin/lcommon"
+
+# Write to the vcommands log
+log_write "$0 $*"
 
 
 # Get command line options
@@ -352,10 +403,6 @@ if string_contains " " "$LAB_DIRECTORY"; then
 fi
 
 
-# shellcheck source=./lcommon
-. "$NETKIT_HOME/bin/lcommon"
-
-
 # Check whether parallel startup and -f are being used together
 if [ -f "$LAB_DIRECTORY/lab.dep" ] && [ -n "$FASTMODE" ] && [ -z "$BE_SEQUENTIAL" ]; then
    echo 1>&2 "$SCRIPTNAME: Fast mode is ignored when using parallel startup"
@@ -393,43 +440,6 @@ if [ ! -f "$LAB_DIRECTORY/lab.conf" ] && [ ! -f "$LAB_DIRECTORY/lab.dep" ] && [ 
    echo 1>&2 "$SCRIPTNAME: This does not appear to be a lab directory. Use option '-F' to ignore this error"
    exit 1
 fi
-
-
-update_available() {
-   if [ "$CHECK_FOR_UPDATES" = "yes" ]; then
-      # Check whether we have polled in the last UPDATE_CHECK_PERIOD days
-      touch "$NETKIT_HOME/.new-version"
-
-      if [ -f "$NETKIT_HOME/.last-update-check" ]; then
-         last_update_check=$(cat "$NETKIT_HOME/.last-update-check")
-      else
-         last_update_check=0
-      fi
-
-      # Next check = date of the last one + UPDATE_CHECK_PERIOD (in seconds)
-      next_update_check=$((last_update_check + UPDATE_CHECK_PERIOD * 86400))
-   
-      now=$(date +%s)
-
-      if [ "$now" -gt "$next_update_check" ]; then
-         # We haven't checked in the past UPDATE_CHECK_PERIOD days, check now
-         echo "$now" > "$NETKIT_HOME/.last-update-check"
-
-         # Get the latest release number from the GitHub API.
-         # NOTE: we assume the GitHub API will always return JSON formatted as
-         # a key-value pair per line. The relevant line should be:
-         # "tag_name": "1.2.3",
-         curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"
-      fi
-
-      latest_version=$(cat "$NETKIT_HOME/.new-version")
-      current_version=$(sed "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
-
-      if [ "$latest_version" != "$current_version" ]; then
-         echo "https://github.com/netkit-jh/netkit-jh-build/releases/$latest_version"
-      fi
-   fi
-}
 
 
 # Get ready to start the lab
@@ -490,6 +500,7 @@ else
 fi
 
 
+# TODO: put in lcommon
 COLOR_YELLOW='\033[33;1m'
 COLOR_RED='\033[31;1m'
 COLOR_GREEN='\033[32;1m'
@@ -503,6 +514,9 @@ if [ -z "$SCRIPTMODE" ]; then
 else
    echo -n "Testing... "
 fi
+
+# Return the status of the lab test
+EXIT_VALUE=0
 
 if [ -n "$TESTMODE" ]; then
    # Wait for the test to finish

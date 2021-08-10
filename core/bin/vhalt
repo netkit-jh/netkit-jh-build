@@ -21,19 +21,6 @@
 # This is the Netkit vhalt script, which is used to gracefully shut down a
 # virtual machine.
 
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-# Write to the vcommands log
-log_write "$0 $*"
-
 
 ###############################################################################
 # Write vhalt's usage line to standard output.
@@ -104,6 +91,20 @@ END_OF_HELP
 }
 
 
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
 # Get command line options
 LONG_OPTS="help,quick,quiet,remove-fs,user:,version"
 SHORT_OPTS="qru:"
@@ -112,9 +113,6 @@ if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longopt
    # getopt will output the errorneous command-line argument
    usage 1
 fi
-
-# USER_ID is set in script_utils
-target_user=$USER_ID
 
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$GETOPT_OPTS"

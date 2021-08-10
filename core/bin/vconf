@@ -18,25 +18,12 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This is the Netkit vconfig script, which allows to attach virtual
-# machine interfaces on the fly. Interface detaching is not supported,
-# because the release function for uml-netdev0 is still under development.
-# This script already supports interface removal, which can be achieved by
-# using an empty collision domain name for an interface. Yet, this feature
-# is currently hidden by a check on the presence of a valid collision domain name.
-
-SCRIPTNAME=$(basename "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
-# shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
-
-# Write to the vcommands log
-log_write "$0 $*"
+# This is the Netkit vconfig script, which allows to attach virtual machine
+# interfaces on the fly. Interface detaching is not supported, because the
+# release function for uml-netdev0 is still under development. This script
+# already supports interface removal, which can be achieved by using an empty
+# collision domain name for an interface. Yet, this feature is currently hidden
+# by a check on the presence of a valid collision domain name.
 
 
 ###############################################################################
@@ -136,103 +123,6 @@ END_OF_HELP
 
    exit "$status"
 }
-
-
-# Get command line options
-LONG_OPTS="help,print,quiet,version,user:"
-SHORT_OPTS="pqu:"
-
-i=0
-while [ "$i" -lt "$MAX_INTERFACES" ]; do
-   LONG_OPTS="$LONG_OPTS,eth$i:"
-   i=$((i + 1))
-done
-
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
-   # getopt will output the errorneous command-line argument
-   usage 1
-fi
-
-target_user=$USER_ID
-
-# (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
-
-while true; do
-   case $1 in
-      --eth*)
-         interface=${1#--}
-         DOMAIN=$2
-         shift
-
-         if string_contains "_" "$DOMAIN"; then
-            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - underscores are not allowed"
-            usage 1
-         fi
-
-         if string_contains "," "$DOMAIN" || string_contains "." "$DOMAIN"; then
-            # If not a tap specification, but its name contains a comma
-            if [ "${DOMAIN#tap,}" = "$DOMAIN" ]; then
-               echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - commas and periods are only valid for tap interface specification"
-               usage 1
-            fi
-         fi
-
-         if string_contains " " "$DOMAIN"; then
-            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Collision domain name cannot contain whitespace"
-            exit 1
-         fi
-
-         # Construct array of ethN=DOMAIN
-         network_interfaces+=( "$interface=$DOMAIN" )
-         ;;
-      --help)
-         usage 0
-         ;;
-      -p|--print)
-         JUST_PRINT=1
-         ;;
-      -q|--quiet)
-         BE_QUIET=1
-         ;;
-      -u|--user)
-         target_user=$2
-         [ "$target_user" = "-" ] && unset target_user
-         shift
-         ;;
-      --version)
-         show_version
-         exit 0
-         ;;
-      --)
-         shift
-         break
-         ;;
-      *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
-         usage 1
-         ;;
-   esac
-
-   shift
-done
-
-
-if [ $# -eq 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: Missing machine name"
-   usage 1
-elif [ $# -gt 1 ]; then
-   echo 1>&2 "$SCRIPTNAME: Can only specify one machine"
-   usage 1
-fi
-
-# Parse virtual machine name
-VM_ID=$1
-if string_contains " " "$VM_ID"; then
-   echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
-   exit 1
-fi
-shift
 
 
 ###############################################################################
@@ -365,7 +255,118 @@ invoke_mconsole() {
 }
 
 
-############################# Configure interfaces ############################
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
+target_user=$USER_ID
+
+
+# Get command line options
+LONG_OPTS="help,print,quiet,version,user:"
+SHORT_OPTS="pqu:"
+
+i=0
+while [ "$i" -lt "$MAX_INTERFACES" ]; do
+   LONG_OPTS="$LONG_OPTS,eth$i:"
+   i=$((i + 1))
+done
+
+if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
+fi
+
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$GETOPT_OPTS"
+
+while true; do
+   case $1 in
+      --eth*)
+         interface=${1#--}
+         DOMAIN=$2
+         shift
+
+         if string_contains "_" "$DOMAIN"; then
+            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - underscores are not allowed"
+            usage 1
+         fi
+
+         if string_contains "," "$DOMAIN" || string_contains "." "$DOMAIN"; then
+            # If not a tap specification, but its name contains a comma
+            if [ "${DOMAIN#tap,}" = "$DOMAIN" ]; then
+               echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - commas and periods are only valid for tap interface specification"
+               usage 1
+            fi
+         fi
+
+         if string_contains " " "$DOMAIN"; then
+            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Collision domain name cannot contain whitespace"
+            exit 1
+         fi
+
+         # Construct array of ethN=DOMAIN
+         network_interfaces+=( "$interface=$DOMAIN" )
+         ;;
+      --help)
+         usage 0
+         ;;
+      -p|--print)
+         JUST_PRINT=1
+         ;;
+      -q|--quiet)
+         BE_QUIET=1
+         ;;
+      -u|--user)
+         target_user=$2
+         [ "$target_user" = "-" ] && unset target_user
+         shift
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
+
+# Parse virtual machine name
+if [ $# -eq 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: Missing machine name"
+   usage 1
+elif [ $# -gt 1 ]; then
+   echo 1>&2 "$SCRIPTNAME: Can only specify one machine"
+   usage 1
+fi
+
+VM_ID=$1
+shift
+
+if string_contains " " "$VM_ID"; then
+   echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
+   exit 1
+fi
+
+
 if ! get_machine_state "$target_user" "$VM_ID"; then
    echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$VM_ID' exists"
    [ -n "$target_user" ] && echo " for user $target_user." || echo "."
@@ -373,20 +374,19 @@ if ! get_machine_state "$target_user" "$VM_ID"; then
 fi
 
 
+# Setup network interfaces
 if [ -z "$BE_QUIET" ]; then
    echo "============= Configuring virtual machine '$VM_ID' (PID $(get_vm_pid_by_name "$user" "$vm")) ============="
    echo "   Virtual machine owner: $target_user"
 fi
 
-
-##### Setup network interfaces
 if [ ${#network_interfaces[@]} -gt 0 ]; then
    [ -z "$BE_QUIET" ] && echo -n "   Interfaces: "
    setup_interfaces "${network_interfaces[@]}"
 fi
 
-##### Start network hubs
+# Start network hubs
 run_hubs "${HUBLIST[@]}"
 
-##### Attach/remove network interfaces
+# Attach/remove network interfaces
 invoke_mconsole "${MCONSOLE_CMD[@]}"

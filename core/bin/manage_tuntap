@@ -19,8 +19,7 @@
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
 # This is a support script that configures a TUN/TAP interface for connecting
-# a virtual machine to the Internet.
-# It is not intended for standalone usage.
+# a virtual machine to the Internet. It is not intended for standalone usage.
 
 
 ACTION=$1         # either "start" or "stop"
