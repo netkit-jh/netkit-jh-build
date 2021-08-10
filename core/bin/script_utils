@@ -74,7 +74,7 @@ string_contains() {
 #   log_write ...
 # Globals:
 #   r- LOGFILENAME
-#   r- USERID
+#   r- USER_ID
 # Arguments:
 #  ... Log message
 # Returns:
@@ -84,7 +84,7 @@ string_contains() {
 #   None
 ###############################################################################
 log_write() {
-   echo "$(date --iso-8601=seconds) $USERID $*" 2> /dev/null >> "$LOGFILENAME"
+   echo "$(date --iso-8601=seconds) $USER_ID $*" 2> /dev/null >> "$LOGFILENAME"
 }
 
 
@@ -148,7 +148,9 @@ version_option() {
 # Usage:
 #   show_version
 # Globals:
-#   None
+#   r- NETKIT_HOME
+#   r- VM_KERNEL
+#   r- VM_MODEL_FS
 # Arguments:
 #   None
 # Returns:
@@ -160,7 +162,7 @@ show_version() {
    local netkit_version
    local kernel_filepath kernel_filename kernel_version
    local filesystem_filepath filesystem_filename filesystem_version
-   
+
    # Netkit version information
    echo -n "Netkit version:            "
 
@@ -242,18 +244,15 @@ show_version() {
 run_command() {
    local dry_run=$1
    local printed_cmd=$2
-   shift
-   shift
-
-   local cmd=( "$@" )
+   local cmd=( "${@:3}" )
 
    # If the command to print has not been explicitly given, we print the one
    # being executed.
-   [ -z "$printed_cmd" ] && printed_cmd=$*
+   [ -z "$printed_cmd" ] && printed_cmd=${cmd[*]}
 
    if [ -n "$dry_run" ] && [ -z "$BE_QUIET" ]; then
       echo "Not running ==> $printed_cmd"
-      return
+      return 0
    fi
 
    [ -z "$BE_QUIET" ] && echo "Running ==> $printed_cmd"
@@ -287,11 +286,11 @@ file_in_use() {
 # Usage:
 #   start_inet_hub HUB ADDR
 # Globals:
+#   r- BE_QUIET
 #   r- HUB_LOG
 #   r- JUST_PRINT
 #   r- NETKIT_HOME
-#   r- USER
-#   r- USERID
+#   r- USER_ID
 # Arguments:
 #   $1 - hub socket filepath
 #   $2 - address of the tap interface on the host
@@ -301,39 +300,38 @@ file_in_use() {
 #   None
 ###############################################################################
 start_inet_hub() {
-   local TAP_DEVICE TUNTAP_COMMAND
-
    local hub_socket=$1
    local tap_address=$2
 
+   local tuntap_cmd hub_cmd
+
    if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
       # Either socket does not exist yet or it is still unused
-      TUNTAP_COMMAND=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER" "$tap_address" )
+      tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER_ID" "$tap_address" )
 
       if [ -z "$BE_QUIET" ]; then
          echo "******** Starting Internet connected virtual hub ********"
          echo "   (host) $tap_address"
          echo "********     (root privileges are required)      ********"
 
-         if ! run_command "$JUST_PRINT" "${TUNTAP_COMMAND[*]}" "${TUNTAP_COMMAND[@]}"; then
+         if ! run_command "$JUST_PRINT" "${tuntap_cmd[*]}" "${tuntap_cmd[@]}"; then
             echo 1>&2 "Error while configuring the tunnel."
             exit 1
          fi
 
          echo "************** Abandoning root privileges ***************"
       else
-         if ! run_command "$JUST_PRINT" "${TUNTAP_COMMAND[*]}" "${TUNTAP_COMMAND[@]}" > /dev/null; then
+         if ! run_command "$JUST_PRINT" "${tuntap_cmd[*]}" "${tuntap_cmd[@]}" > /dev/null; then
             echo 1>&2 "Error while configuring the tunnel."
             exit 1
          fi
       fi
 
-      TAP_DEVICE="nk_tap_$USER"
-      hub_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "$TAP_DEVICE" "-hub" "-unix" "$hub_socket" )
+      hub_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "nk_tap_$USER_ID" "-hub" "-unix" "$hub_socket" )
       
       # TODO: implement hub logging that's better (i.e. it works) than the
       # original.
-      run_command "$JUST_PRINT" "${hub_cmd[*]} < /dev/null &" "${hub_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USERID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
+      run_command "$JUST_PRINT" "${hub_cmd[*]} < /dev/null &" "${hub_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USER_ID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
@@ -351,7 +349,7 @@ start_inet_hub() {
 #   r- HUB_LOG
 #   r- JUST_PRINT
 #   r- NETKIT_HOME
-#   r- USERID
+#   r- USER_ID
 # Arguments:
 #   $1 - hub socket filepath
 # Returns:
@@ -368,7 +366,7 @@ start_hub() {
 
       # TODO: implement hub logging that's better (i.e. it works) than the
       # original.
-      run_command "$JUST_PRINT" "${hub_cmd[*]} < /dev/null &" "${hub_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USERID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
+      run_command "$JUST_PRINT" "${hub_cmd[*]} < /dev/null &" "${hub_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USER_ID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
@@ -386,7 +384,7 @@ start_hub() {
 #   r- HUB_LOG
 #   r- JUST_PRINT
 #   r- NETKIT_HOME
-#   r- USERID
+#   r- USER_ID
 # Arguments:
 #  ... - list of hub names optionally paired with an IP address (for a tap
 #        interface).
@@ -401,7 +399,7 @@ run_hubs() {
    for hub_specification in "${hub_specifications[@]}"; do
       IFS=, read -r hub_name tap_address <<< "$hub_specification"
 
-      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USERID}_$hub_name$HUB_SOCKET_EXTENSION"
+      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
 
       if [ -n "$tap_address" ]; then
          start_inet_hub "$hub_socket" "$tap_address"
@@ -421,7 +419,7 @@ clean_hubs() {
    for hub_specification in "${hub_specifications[@]}"; do
       IFS=, read -r hub_name tap_address <<< "$hub_specification"
 
-      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USERID}_$hub_name$HUB_SOCKET_EXTENSION"
+      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
 
       # Avoid attempting to kill hubs for which the socket file does not exist
       # any more. Such situation may occur if user accidentally deleted it
@@ -432,7 +430,7 @@ clean_hubs() {
 
       if file_in_use "$hub_socket"; then
          # We get the oldest process to limit output to a single PID
-         hub_pid=$(pgrep --oldest --euid="$USERID" --full "^$NETKIT_HOME/bin/uml_switch.*$hub_socket")
+         hub_pid=$(pgrep --oldest --euid="$USER_ID" --full "^$NETKIT_HOME/bin/uml_switch.*$hub_socket")
          if [ "$(lsof -a -U -p "$hub_pid" -Fn | grep -c "^n$hub_socket")" -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
             kill "$hub_pid" && rm -f "$hub_socket"
@@ -858,5 +856,5 @@ netkit_dir_check "$HUB_SOCKET_DIR"
 netkit_dir_check "$MCONSOLE_DIR"
 
 
-USERID=$(id -un)
+USER_ID=$(id -un)
 

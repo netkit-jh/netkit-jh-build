@@ -139,7 +139,7 @@ if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longopt
    usage 1
 fi
 
-USER=$USERID
+target_user=$USER_ID
 
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$GETOPT_OPTS"
@@ -164,10 +164,10 @@ while true; do
          TEST_MODE=1
          ;;
       -u|--user)
-         USER=$2
-         [ "$USER" = "-" ] && unset USER
+         target_user=$2
+         [ "$target_user" = "-" ] && unset target_user
          # TODO: change to username regex
-         if string_contains " " "$USER"; then
+         if string_contains " " "$target_user"; then
             echo 1>&2 "$SCRIPTNAME: Username cannot contain whitespace"
             exit 1
          fi
@@ -223,7 +223,7 @@ kill_by_signaling() {
 
    # Signalling processes twice ensures they stop even if they need to be
    # killed in a certain order
-   IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$USER" "$vm")"
+   IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vm")"
 
    if [ "${#pids[@]}" -eq 0 ]; then
       kill -TERM "${pids[@]}" > /dev/null
@@ -233,11 +233,11 @@ kill_by_signaling() {
    if [ -z "$BE_QUIET" ]; then
       sleep 1
 
-      if get_machine_state "$USER" "$vm"; then
+      if get_machine_state "$target_user" "$vm"; then
          [ -z "$BE_QUIET" ] && echo -n "killing harder... "
          # Recompute PID list (some threads may have been launched in the
          # meantime).
-         IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$USER" "$vm")"
+         IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vm")"
 
          if [ "${#pids[@]}" -eq 0 ]; then
             kill -KILL "${pids[@]}" > /dev/null
@@ -246,7 +246,7 @@ kill_by_signaling() {
 
          sleep 1
 
-         if get_machine_state "$USER" "$vm"; then
+         if get_machine_state "$target_user" "$vm"; then
             [ -z "$BE_QUIET" ] && echo "failed!"
             echo 1>&2 "Failed to crash virtual machine '$vm'"
             return 1
@@ -305,7 +305,7 @@ kill_by_mconsole() {
    # the above command ensures that the uml_mconsole process has ended.
    if [ -z "$BE_QUIET" ]; then
       # Make a second attempt if machine is still running
-      if get_machine_state "$USER" "$vm"; then
+      if get_machine_state "$target_user" "$vm"; then
          echo -n "retrying... "
          sleep 1
 
@@ -318,7 +318,7 @@ kill_by_mconsole() {
             # time and is only necessary if mconsole does not work.
             kill_by_signaling "$vm"
             return $?
-         elif get_machine_state "$USER" "$vm"; then
+         elif get_machine_state "$target_user" "$vm"; then
             # Attempt to kill virtual machine processes
             kill_by_signaling "$vm"
             return $?
@@ -336,14 +336,14 @@ kill_by_mconsole() {
 
 for vm in "${vm_ids[@]}"; do
    # Check whether the current machine exists
-   if get_machine_state "$USER" "$vm"; then
-      get_vm_info_by_name "$USER" "$vm"
+   if get_machine_state "$target_user" "$vm"; then
+      get_vm_info_by_name "$target_user" "$vm"
 
       if [ -z "$BE_QUIET" ]; then
          echo "============= Crashing virtual machine '$vm' (PID ${vm_info[pid]}) ========="
-         echo "Virtual machine owner: $USER"
+         echo "Virtual machine owner: $target_user"
          echo "Virtual machine mconsole socket: ${vm_info[mconsole]}"
-         echo "Virtual machine PIDs: $(get_vm_all_pids_by_name "$USER" "$vm")"
+         echo "Virtual machine PIDs: $(get_vm_all_pids_by_name "$target_user" "$vm")"
       fi
    
       [ -n "$TEST_MODE" ] && continue

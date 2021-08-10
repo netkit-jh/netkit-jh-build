@@ -24,12 +24,12 @@
 
 
 ACTION=$1         # either "start" or "stop"
-USER_NAME=$2      # name of the user the tunnel is being configured for
+target_user=$2      # name of the user the tunnel is being configured for
 TAP_ADDRESS=$3    # address of the (host side) tap interface
 
 
 # TODO: use tun/tap regex
-TAP_DEVICE="nk_tap_$USER_NAME"
+TAP_DEVICE="nk_tap_$target_user"
 
 
 case $ACTION in
@@ -54,7 +54,7 @@ case $ACTION in
       echo "done."
 
       printf "Setting up tunnel...\t\t\t"
-      if ! sudo "$NETKIT_HOME/bin/tunctl" -u "$USER_NAME" -t "$TAP_DEVICE" > /dev/null; then
+      if ! sudo "$NETKIT_HOME/bin/tunctl" -u "$target_user" -t "$TAP_DEVICE" > /dev/null; then
          echo "failed."
          exit 1
       fi
@@ -133,7 +133,7 @@ case $ACTION in
          uid=$(cat "$sys_class_net_entry/user/owner")
 
          # Ignore tuntap devices not owned by the user (if specified)
-         [ -n "$USER_NAME" ] && [ "$(id -u "$USER_NAME")" != "$uid" ] && continue
+         [ -n "$target_user" ] && [ "$(id -u "$target_user")" != "$uid" ] && continue
 
          interface=$(basename "$sys_class_net_entry")
 

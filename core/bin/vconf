@@ -153,6 +153,8 @@ if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longopt
    usage 1
 fi
 
+target_user=$USER_ID
+
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$GETOPT_OPTS"
 
@@ -194,8 +196,8 @@ while true; do
          BE_QUIET=1
          ;;
       -u|--user)
-         USER=$2
-         [ "$USER" = "-" ] && unset USER
+         target_user=$2
+         [ "$target_user" = "-" ] && unset target_user
          shift
          ;;
       --version)
@@ -245,7 +247,7 @@ shift
 #   r- HUB_SOCKET_PREFIX
 #   r- MCONSOLE_CMD
 #   r- SCRIPTNAME
-#   r- USERID
+#   r- USER_ID
 # Arguments:
 #  ... - array of interface specifications (ethN=DOMAIN)
 # Returns:
@@ -295,7 +297,7 @@ setup_interfaces() {
          hub_name=$hub_specification
       fi
       
-      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USERID}_$hub_name$HUB_SOCKET_EXTENSION"
+      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
 
       if [ -n "$tap_address" ]; then
          HUBLIST+=( "$hub_name,$tap_address" )
@@ -364,16 +366,16 @@ invoke_mconsole() {
 
 
 ############################# Configure interfaces ############################
-if ! get_machine_state "$USER" "$VM_ID"; then
+if ! get_machine_state "$target_user" "$VM_ID"; then
    echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$VM_ID' exists"
-   [ -n "$USER" ] && echo " for user $USER." || echo "."
+   [ -n "$target_user" ] && echo " for user $target_user." || echo "."
    exit 1
 fi
 
 
 if [ -z "$BE_QUIET" ]; then
    echo "============= Configuring virtual machine '$VM_ID' (PID $(get_vm_pid_by_name "$user" "$vm")) ============="
-   echo "   Virtual machine owner: $USER"
+   echo "   Virtual machine owner: $target_user"
 fi
 
 

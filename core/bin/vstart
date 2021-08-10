@@ -487,7 +487,7 @@ check_filesystem() {
 #   r- HUB_SOCKET_PREFIX
 #   r- KERNELCMD
 #   r- SCRIPTNAME
-#   r- USERID
+#   r- USER_ID
 # Arguments:
 #  ... - list of interfaces
 # Returns:
@@ -533,7 +533,7 @@ setup_interfaces() {
          hub_name=$hub_specification
       fi
       
-      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USERID}_$hub_name$HUB_SOCKET_EXTENSION"
+      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
 
       KERNELCMD="$KERNELCMD $device=daemon,,,$hub_socket"
       
@@ -649,7 +649,7 @@ fi
 
 
 ##### Check whether virtual machine already exists
-if [ -z "$JUST_PRINT" ] && get_machine_state "$USERID" "$VM_NAME"; then
+if [ -z "$JUST_PRINT" ] && get_machine_state "$USER_ID" "$VM_NAME"; then
    echo 1>&2 "$SCRIPTNAME: Virtual machine '$VM_NAME' is already running. Please halt it before starting a new one or use a different virtual machine name"
    exit 1
 fi

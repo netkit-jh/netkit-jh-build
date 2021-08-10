@@ -144,8 +144,8 @@ if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longopt
    usage 1
 fi
 
-# USERID is set in script_utils
-USER=$USERID
+# USER_ID is set in script_utils
+target_user=$USER_ID
 
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$GETOPT_OPTS"
@@ -176,8 +176,8 @@ while true; do
          TEST_MODE=1
          ;;
       --user|-u)
-         USER=$2
-         [ "$USER" = "-" ] && unset USER
+         target_user=$2
+         [ "$target_user" = "-" ] && unset target_user
          shift
          ;;
       --version)
@@ -338,12 +338,12 @@ kill_hubs() {
 
 
 
-if [ -z "$USER" ]; then
+if [ -z "$target_user" ]; then
    USER_STRING="all users"
 else
    # We need the euid option for pgrep to filter by user
    pgrep_euid="--euid"
-   USER_STRING=$USER
+   USER_STRING=$target_user
 fi
 
 
@@ -365,7 +365,7 @@ if [ -n "$KILL_MACHINES" ]; then
    # Kill all running virtual machine kernels and all virtual hubs
    [ -z "$BE_QUIET" ] && echo "Killing virtual machines owned by $USER_STRING:"
 
-   kill_all_vms "$USER"
+   kill_all_vms "$target_user"
 
    [ -z "$BE_QUIET" ] && echo "Killing virtual hubs owned by $USER_STRING:"
 

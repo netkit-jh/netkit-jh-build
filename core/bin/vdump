@@ -140,7 +140,7 @@ shift
 
 
 # check if file exist and if a pipe file
-hub_socket="${HUB_SOCKET_DIR}/${HUB_SOCKET_PREFIX}_${USERID}_${hub_name}${HUB_SOCKET_EXTENSION}"
+hub_socket="${HUB_SOCKET_DIR}/${HUB_SOCKET_PREFIX}_${USER_ID}_${hub_name}${HUB_SOCKET_EXTENSION}"
 
 if [ ! -e "$hub_socket" ]; then
    echo 1>&2 "$SCRIPTNAME: $hub_socket: No such file or directory. Does the '$hub_name' domain exist?"
