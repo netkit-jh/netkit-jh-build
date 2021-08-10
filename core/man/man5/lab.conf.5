@@ -74,11 +74,6 @@ the .disk file for virtual machine \fBpc1\fR.
 
 .PP
 
-The special assignment "machines=\fImachine\-list\fR" can be used to explicitly
-define the set of virtual machines that are part of the lab. This also allows to start
-a virtual machine even if the corresponding subdirectory does not exist.
-\fImachine\-list\fR is a space separated list of virtual machine names.
-
 
 It is also possible to provide descriptive information about a lab by using
 one of the following special assignments:
@@ -224,12 +219,7 @@ Virtual machines are usually launched in arbitrary order. However, there are
 several ways of influencing the order in which they are started up.
 
 .IP \(en 2
-The first way is to insert a "machines=\fImachine\-list\fR" assignment
-inside \fIlab.conf\fR. If such an assignment exists, \fIlstart\fR launches
-virtual machines in the same order in which they appear in the \fImachine\-list\fR.
-
-.IP \(en 2
-Another possibility is to provide a list of \fIMACHINE\-NAME\fRs as argument to
+The first way is to provide a list of \fIMACHINE\-NAME\fRs as argument to
 \fIlstart\fR. This ensures that virtual machines are started in the same order
 in which they are listed on the \fIlstart\fR command line. This method overrides
 ordering information obtained from \fIlab.conf\fR.
@@ -258,7 +248,6 @@ lab/
 +- lab.dep
 +- pc1/
 +- pc2/
-+- pc3/
 \\- router/
    |
    \\- etc/
@@ -273,7 +262,6 @@ The file lab.conf is made up as follows:
 
 .RS 3
 .nf
-machines="pc1 pc2 router"
 pc1[0]=CD1
 pc2[0]=CD2
 router[0]=CD1
@@ -322,11 +310,6 @@ Since a lab.dep file has been created, this lab supports parallel startup.
 Because of the contents of the lab.dep file, \fBrouter\fR and \fBpc1\fR will be
 started simultaneously, while \fBpc2\fR will only be launched after they have
 completed their boot phase.
-
-Notice that, even if there exists a subdirectory '/home/foo/lab/pc3/', the
-corresponding machine is not actually started. This happens because lab.conf
-contains an entry (the 'machines=' assignment) stating that \fBpc3\fR does
-not belong to the lab.
 
 
 \" ########################################

@@ -25,33 +25,6 @@
 # by Stefano Pettini <spettini@users.sourceforge.net>, Fabio Ricci, and Massimo
 # Rimondini
 
-# Regular expression for a Debian-approved (and RFC-compliant) hostname
-# label. This expression can be substituted directly into most Linux utility
-# commands, such as egrep (grep -E).
-#
-# Debian standard for hostname 'labels' (hostname(7) man page):
-#   - May consist of A-Z, a-z, 0-9, and - (hyphen)
-#   - Cannot start or end with a - (hyphen)
-#   - Are case-insensitive
-#   - Can be 1 to 63 characters long
-hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,62}[a-zA-Z0-9])"
-
-# ANSI color escape sequences
-COLOR_HIGHLIGHT='\033[34;1m'
-COLOR_NORMAL='\033[0m'
-COLOR_BOLD='\033[1m'
-
-if [ -f "${LAB_DIRECTORY}/lab.conf" ]; then
-   # Set some lab variables from lab.conf.
-   # Here we filter out array assignments (e.g. assignment of
-   # network interfaces to collision domains) because they
-   # are not supported by some shells. They will be handled
-   # separately later on.
-
-   LAB_VARIABLE_ASSIGNMENTS="$(grep -E '(^[ ]*LAB_[A-Z]+=(([^ ]*[ ]*$)|(.*)))|(^[ ]*machines=((.*)|(\\".*\\"[ ]*$)))' ${LAB_DIRECTORY}/lab.conf | sed -r 's/machines=([^\"])/machines=\"\1/; /machines=/ s/([^\"])[ ]*$/\1\"/' | sed -r 's/LAB_([A-Z]+)=([^\"])/LAB_\1=\"\2/; /LAB_([A-Z]+)=/ s/([^\"])[ ]*$/\1\"/')"
-   eval "$LAB_VARIABLE_ASSIGNMENTS"
-fi
-
 
 ###############################################################################
 # Print a string with bold formatting.
@@ -102,14 +75,13 @@ array_contains() {
 
 
 ###############################################################################
-# Set VHOSTLIST to a list of machines in the lab taken from lab.conf or the
-# directory listing. If VHOSTLIST is already set (such as by the user on the
-# command line), machines not present in the lab are removed from the array.
+# Set VHOSTLIST to a list of machines in the lab taken from the directory
+# listing. If VHOSTLIST is already set (such as by the user on the command
+# line), machines not present in the lab are removed from the array.
 # Usage:
 #   build_vhostlist
 # Globals:
 #   rw VHOSTLIST
-#   -w machines
 # Arguments:
 #   None
 # Returns:
@@ -118,25 +90,20 @@ array_contains() {
 #   None
 ###############################################################################
 build_vhostlist() {
-   if [ -n "$machines" ]; then
-      # Assume list of virtual machines is the one documented inside lab.conf
-      lab_hosts=( "$machines" )
-   else
-      # Build list of virtual machines that are part of the lab
-      for LAB_ITEM in "${LAB_DIRECTORY}"/*/; do
-         dir=$(basename "$LAB_ITEM")
+   # Build list of virtual machines that are part of the lab
+   for LAB_ITEM in "${LAB_DIRECTORY}"/*/; do
+      dir=$(basename "$LAB_ITEM")
 
-         # Handle error if no directories exist (the for loop will still run
-         # once). Also avoid the shared and _test directories (if exist).
-         if [ ! -e "$LAB_ITEM" ] || [ "$dir" = "shared" ] || [ "$dir" = "_test" ]; then
-            continue
-         fi
+      # Handle error if no directories exist (the for loop will still run
+      # once). Also avoid the shared and _test directories (if exist).
+      if [ ! -e "$LAB_ITEM" ] || [ "$dir" = "shared" ] || [ "$dir" = "_test" ]; then
+         continue
+      fi
 
-         lab_hosts+=( "$LAB_ITEM" )
-      done
-   fi
+      lab_hosts+=( "$LAB_ITEM" )
+   done
 
-   # Check that virtual machines passed by command line are in the lab
+   # Verify that virtual machines passed by command line are in the lab
    if [ "${#VHOSTLIST[@]}" -gt 0 ]; then
       ORIGINAL_VHOSTLIST=( "${VHOSTLIST[@]}" )
       unset VHOSTLIST
@@ -176,19 +143,20 @@ build_vhostlist() {
 #   None
 ###############################################################################
 lab_welcome() {
-   [ -z "$LAB_VERSION" ] &&     LAB_VERSION="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_AUTHOR" ] &&      LAB_AUTHOR="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_EMAIL" ] &&       LAB_EMAIL="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_WEB" ] &&         LAB_WEB="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_DESCRIPTION" ] && LAB_DESCRIPTION="${COLOR_NORMAL}<unknown>"
+   # Set defaults if unset
+   : "${LAB_VERSION:="$COLOR_NORMAL<unknown>"}"
+   : "${LAB_AUTHOR="$COLOR_NORMAL<unknown>"}"
+   : "${LAB_EMAIL="$COLOR_NORMAL<unknown>"}"
+   : "${LAB_WEB="$COLOR_NORMAL<unknown>"}"
+   : "${LAB_DESCRIPTION="$COLOR_NORMAL<unknown>"}"
 
-   echo "${COLOR_BOLD}Lab directory${COLOR_NORMAL}:    ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Version(s)${COLOR_NORMAL}:       ${COLOR_HIGHLIGHT}${LAB_VERSION}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Author(s)${COLOR_NORMAL}:        ${COLOR_HIGHLIGHT}${LAB_AUTHOR}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Email(s)${COLOR_NORMAL}:         ${COLOR_HIGHLIGHT}${LAB_EMAIL}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Web(s)${COLOR_NORMAL}:           ${COLOR_HIGHLIGHT}${LAB_WEB}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Description(s)${COLOR_NORMAL}:"
-   echo "${COLOR_HIGHLIGHT}${LAB_DESCRIPTION}${COLOR_NORMAL}"
+   echo "${COLOR_BOLD}Lab directory$COLOR_NORMAL:    $COLOR_HIGHLIGHT$LAB_DIRECTORY$COLOR_NORMAL"
+   echo "${COLOR_BOLD}Version(s)$COLOR_NORMAL:       $COLOR_HIGHLIGHT$LAB_VERSION$COLOR_NORMAL"
+   echo "${COLOR_BOLD}Author(s)$COLOR_NORMAL:        $COLOR_HIGHLIGHT$LAB_AUTHOR$COLOR_NORMAL"
+   echo "${COLOR_BOLD}Email(s)$COLOR_NORMAL:         $COLOR_HIGHLIGHT$LAB_EMAIL$COLOR_NORMAL"
+   echo "${COLOR_BOLD}Web(s)$COLOR_NORMAL:           $COLOR_HIGHLIGHT$LAB_WEB$COLOR_NORMAL"
+   echo "${COLOR_BOLD}Description(s)$COLOR_NORMAL:"
+   echo "$COLOR_HIGHLIGHT$LAB_DESCRIPTION$COLOR_NORMAL"
 }
 
 
@@ -439,9 +407,6 @@ lab_start_parallel() {
    # a second dollar sign.
    escaped_cmd=${escaped_cmd//$/\$$}
 
-   # Tabs are required for Makefile indentations
-   tab=$(printf '\t')
-
    # Labs are started in parallel with GNU Make, which automatically handles
    # lab.dep (which is formatted as Makefile targets).
    #
@@ -458,6 +423,7 @@ lab_start_parallel() {
    # 
    # The Makefile must use Bash as the shell for correct handling of ANSI-C
    # expansions present after the previous Q-operator array expansion.
+   tab=$(printf '\t')
    IFS='' read -r -d '' makefile_contents << EOF
 SHELL := /bin/bash
 
@@ -601,3 +567,38 @@ lab_map() {
 
    generate_dot_graph "${lab_confs[@]}" | "$GRAPH_GENERATOR" -Tpng -o"$map_file"
 }
+
+
+# Regular expression for a Debian-approved (and RFC-compliant) hostname
+# label. This expression can be substituted directly into most Linux utility
+# commands, such as egrep (grep -E).
+#
+# Debian standard for hostname 'labels' (hostname(7) man page):
+#   - May consist of A-Z, a-z, 0-9, and - (hyphen)
+#   - Cannot start or end with a - (hyphen)
+#   - Are case-insensitive
+#   - Can be 1 to 63 characters long
+hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,62}[a-zA-Z0-9])"
+
+
+# ANSI color escape sequences
+COLOR_HIGHLIGHT='\033[34;1m'
+COLOR_NORMAL='\033[0m'
+COLOR_BOLD='\033[1m'
+
+
+lab_conf="$LAB_DIRECTORY/lab.conf"
+
+if [ -f "$lab_conf" ]; then
+   # Set lab variables from lab.conf. The sed expression prints only the first
+   # matching line and deletes the variable name and equals sign.
+   # TODO: create 'LAB_MACHINES' variable, similar to the old 'machines'
+   # variable.
+   LAB_VERSION=$(sed -n '0,/^[[:blank:]]*LAB_VERSION=/s///p' "$lab_conf")
+   LAB_AUTHOR=$(sed -n '0,/^[[:blank:]]*LAB_AUTHOR=/s///p' "$lab_conf")
+   LAB_EMAIL=$(sed -n '0,/^[[:blank:]]*LAB_EMAIL=/s///p' "$lab_conf")
+   LAB_WEB=$(sed -n '0,/^[[:blank:]]*LAB_WEB=/s///p' "$lab_conf")
+   LAB_DESCRIPTION=$(sed -n '0,/^[[:blank:]]*LAB_DESCRIPTION=/s///p' "$lab_conf")
+fi
+
+unset lab_conf
