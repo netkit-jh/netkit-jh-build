@@ -136,16 +136,16 @@ unset TMUX
 
 
 # Get command line options
-LONG_OPTS="interval:,list,machine:,retry-count,terminal"
-SHORT_OPTS="lm:n:r:t"
+long_opts="interval:,list,machine:,retry-count,terminal"
+short_opts="lm:n:r:t"
 
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
    usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
+eval set -- "$getopt_opts"
 
 while true; do
    case $1 in

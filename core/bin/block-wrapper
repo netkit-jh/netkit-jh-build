@@ -15,11 +15,9 @@
 
 
 # We shift the argument list for assignment of kernel_cmd
-TERM_TYPE=$1
-shift
-VM_NAME=$1
-shift
-kernel_cmd=( "$@" )
+terminal_emulator=$1
+vm=$2
+kernel_cmd=( "${@:3}" )
 
 
 # The PID of the current terminal process is stored in a temporary file. This
@@ -42,28 +40,28 @@ bash_cmd=( "bash" "-c" "$pid_cmd; ${kernel_cmd[*]@Q}" )
 wt_safe_bash_cmd=( "bash" "-c" "$pid_cmd\\; ${kernel_cmd[*]@Q}" )
 
 
-case $TERM_TYPE in
-    alacritty)      alacritty                                                    -e "${bash_cmd[@]}";;
-    gnome)          gnome-terminal --title "$VM_NAME"                            -- "${bash_cmd[@]}";;
-    kitty)          kitty --title "$VM_NAME"                                        "${bash_cmd[@]}";;
-    konsole)        konsole --nofork --title "$VM_NAME"                          -e "${bash_cmd[@]}";;
-    konsole-tab)    "$NETKIT_HOME/bin/konsole-tabs.sh"                           -e "${bash_cmd[@]}";;
-    wsl)            cmd.exe /c start wsl.exe                                        "${bash_cmd[@]}";;
-    wt)             wt.exe --suppressApplicationTitle --title "$VM_NAME" wsl.exe -e "${wt_safe_bash_cmd[@]}";;
-    xterm)          xterm -xrm 'XTerm*allowTitleOps: false' -T "$VM_NAME"        -e "${bash_cmd[@]}";;
+case $terminal_emulator in
+    alacritty)      alacritty                                               -e "${bash_cmd[@]}";;
+    gnome)          gnome-terminal --title "$vm"                            -- "${bash_cmd[@]}";;
+    kitty)          kitty --title "$vm"                                        "${bash_cmd[@]}";;
+    konsole)        konsole --nofork --title "$vm"                          -e "${bash_cmd[@]}";;
+    konsole-tab)    "$NETKIT_HOME/bin/konsole-tabs.sh"                      -e "${bash_cmd[@]}";;
+    wsl)            cmd.exe /c start wsl.exe                                   "${bash_cmd[@]}";;
+    wt)             wt.exe --suppressApplicationTitle --title "$vm" wsl.exe -e "${wt_safe_bash_cmd[@]}";;
+    xterm)          xterm -xrm 'XTerm*allowTitleOps: false' -T "$vm"        -e "${bash_cmd[@]}";;
     tmux)
         # Check if tmux session already exists
-        if tmux -L netkit has-session -t "$VM_NAME" > /dev/null 2>&1; then
+        if tmux -L netkit has-session -t "$vm" > /dev/null 2>&1; then
             while true; do
-                read -rp "tmux session already exists for machine $VM_NAME. Kill session [y/N]? " response
+                read -rp "tmux session already exists for machine $vm. Kill session [y/N]? " response
                 case $response in
                     [Yy]|[Yy][Ee][Ss])
                         # Kill existing tmux session
-                        tmux -L netkit kill-session -t "$VM_NAME"
+                        tmux -L netkit kill-session -t "$vm"
                         break
                         ;;
                     [Nn]|[Nn][Oo])
-                        echo "tmux session in use - not starting $VM_NAME."
+                        echo "tmux session in use - not starting $vm."
                         exit
                         ;;
                     *)
@@ -73,12 +71,12 @@ case $TERM_TYPE in
         fi
 
         # Start detached tmux session
-        tmux -L netkit -f "$NETKIT_HOME/tools/tmux.conf" new-session -d -s "$VM_NAME" "${bash_cmd[@]}"
+        tmux -L netkit -f "$NETKIT_HOME/tools/tmux.conf" new-session -d -s "$vm" "${bash_cmd[@]}"
         ;;
 
     *)
-        echo "Terminal $TERM_TYPE not supported, defaulting to xterm."
-        xterm -xrm 'XTerm*allowTitleOps: false' -T "$VM_NAME" -e "${bash_cmd[@]}";;
+        echo "Terminal $terminal_emulator not supported, defaulting to xterm."
+        xterm -xrm 'XTerm*allowTitleOps: false' -T "$vm" -e "${bash_cmd[@]}";;
 esac
 
 

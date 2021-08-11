@@ -106,16 +106,16 @@ log_write "$0 $*"
 
 
 # Get command line options
-LONG_OPTS="help,quick,quiet,remove-fs,user:,version"
-SHORT_OPTS="qru:"
+long_opts="help,quick,quiet,remove-fs,user:,version"
+short_opts="qru:"
 
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
    usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
+eval set -- "$getopt_opts"
 
 while true; do
    case $1 in

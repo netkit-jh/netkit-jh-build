@@ -56,7 +56,7 @@ usage_line() {
 #   None
 ###############################################################################
 usage() {
-   status=$1
+   local status=$1
 
    if [ "$status" -ne 0 ]; then
       usage_line 1>&2
@@ -114,16 +114,16 @@ log_write "$0 $*"
 
 
 # Get command line options
-LONG_OPTS="help,version,verbose"
-SHORT_OPTS="d:v"
+long_opts="help,version,verbose"
+short_opts="d:v"
 
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
    usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
+eval set -- "$getopt_opts"
 
 while true; do
    case $1 in

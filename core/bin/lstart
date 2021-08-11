@@ -244,29 +244,29 @@ log_write "$0 $*"
 
 
 # Get command line options
-COMMON_LONG_OPTS="force-lab,help,list,makefile,pass:,sequential,tmux-attached,tmux-detached,verbose,version,wait:"
-COMMON_SHORT_OPTS="d:Flo:p::svw:"
+common_long_opts="force-lab,help,list,makefile,pass:,sequential,tmux-attached,tmux-detached,verbose,version,wait:"
+common_short_opts="d:Flo:p::svw:"
 
-LTEST_LONG_OPTS="$COMMON_LONG_OPTS,script-mode,rebuild-signature,verify:"
-LTEST_SHORT_OPTS="${COMMON_SHORT_OPTS}RS"
+ltest_long_opts="$common_long_opts,script-mode,rebuild-signature,verify:"
+ltest_short_opts="${common_short_opts}RS"
 
-LSTART_LONG_OPTS="$COMMON_LONG_OPTS,fast"
-LSTART_SHORT_OPTS="${COMMON_SHORT_OPTS}f"
+lstart_long_opts="$common_long_opts,fast"
+lstart_short_opts="${common_short_opts}f"
 
 if [ "$SCRIPTNAME" = "ltest" ]; then
-   if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$LTEST_SHORT_OPTS" --longoptions "$LTEST_LONG_OPTS" -- "$@"); then
+   if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$ltest_short_opts" --longoptions "$ltest_long_opts" -- "$@"); then
       # getopt will output the errorneous command-line argument
       usage 1
    fi
 else
-   if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$LSTART_SHORT_OPTS" --longoptions "$LSTART_LONG_OPTS" -- "$@"); then
+   if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$lstart_short_opts" --longoptions "$lstart_long_opts" -- "$@"); then
       # getopt will output the errorneous command-line argument
       usage 1
    fi
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
+eval set -- "$getopt_opts"
 
 while true; do
    case $1 in

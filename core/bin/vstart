@@ -405,22 +405,22 @@ log_write "$0 $*"
 
 
 # Get command line options
-LONG_OPTS="append:,con0:,con1:,debug,exec:,filesystem:,foreground,help,\
+long_opts="append:,con0:,con1:,debug,exec:,filesystem:,foreground,help,\
 hide-disk-file,hostlab:,hostwd:,kernel:,mem:,model-fs:,no-cow,no-hosthome,\
 print,quiet,test,tmux-attached,tmux-detached,verbose,version,xterm:"
-SHORT_OPTS="De:Ff:Hk:Ll:M:m:pqvWw:"
+short_opts="De:Ff:Hk:Ll:M:m:pqvWw:"
 
 for i in $(seq 0 $MAX_INTERFACES); do
-   LONG_OPTS="$LONG_OPTS,eth$i:"
+   long_opts="$long_opts,eth$i:"
 done
 
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
    usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
+eval set -- "$getopt_opts"
 
 while true; do
    case $1 in

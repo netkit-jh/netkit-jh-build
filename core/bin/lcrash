@@ -135,16 +135,16 @@ VERBOSE=1
 
 
 # Get command line options
-LONG_OPTS="help,version,keep-fs,kill,list,quiet,quick"
-SHORT_OPTS="d:Fklq"
+long_opts="help,version,keep-fs,kill,list,quiet,quick"
+short_opts="d:Fklq"
 
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
    usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
+eval set -- "$getopt_opts"
 
 while true; do
    case $1 in

@@ -254,16 +254,16 @@ target_user=$USER_ID
 
 
 # Get command line options
-LONG_OPTS="clean-all,help,kill-machines,quick,quiet,remove-hubs,remove-tunnels,test,user:,version"
-SHORT_OPTS="HKTu:q"
+long_opts="clean-all,help,kill-machines,quick,quiet,remove-hubs,remove-tunnels,test,user:,version"
+short_opts="HKTu:q"
 
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
    usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
+eval set -- "$getopt_opts"
 
 while true; do
    case $1 in

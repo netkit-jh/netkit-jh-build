@@ -273,22 +273,22 @@ target_user=$USER_ID
 
 
 # Get command line options
-LONG_OPTS="help,print,quiet,version,user:"
-SHORT_OPTS="pqu:"
+long_opts="help,print,quiet,version,user:"
+short_opts="pqu:"
 
 i=0
 while [ "$i" -lt "$MAX_INTERFACES" ]; do
-   LONG_OPTS="$LONG_OPTS,eth$i:"
+   long_opts="$long_opts,eth$i:"
    i=$((i + 1))
 done
 
-if ! GETOPT_OPTS=$(getopt --name "$SCRIPTNAME" --options "$SHORT_OPTS" --longoptions "$LONG_OPTS" -- "$@"); then
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
    usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
-eval set -- "$GETOPT_OPTS"
+eval set -- "$getopt_opts"
 
 while true; do
    case $1 in
