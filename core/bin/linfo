@@ -115,6 +115,11 @@ END_OF_HELP
 generate_info_str() {
    local -n lab_info=$1
 
+   local lab value
+   local lab_info_str separator
+
+   declare -A collated_lab_info_values
+
    # For each directory chosen, add its lab information value as a key to an
    # array with a value of directory listings. For example, for a lab_info
    # array of version numbers:
@@ -129,37 +134,31 @@ generate_info_str() {
    #     collated_lab_info_values["1.0"]="lab3a, lab3c"
    #     collated_lab_info_values["1.1"]="lab3b"
    #     collated_lab_info_values["2.0"]="lab3d"
-   declare -A collated_lab_info_values
+   for lab in "${!lab_info[@]}"; do
+      value=${lab_info[$lab]}
 
-   for dir in "${!lab_info[@]}"; do
-      value=${lab_info[$dir]}
-
-      # Check if the value has been seen before
+      # Append the lab name to its relevant value's list if the value has been
+      # seen before (exists as a key in the array). If not, start the list.
       if array_contains "$value" "${!collated_lab_info_values[@]}"; then
-         collated_lab_info_values[$value]="${collated_lab_info_values[$value]}, $dir"
+         collated_lab_info_values[$value]="${collated_lab_info_values[$value]}, $lab"
       else
-         collated_lab_info_values[$value]=$dir
+         collated_lab_info_values[$value]=$lab
       fi
    done
 
    # collated_lab_info_values is then flattened into a string to display in the
    # lab_welcome dialog.
    if [ ${#collated_lab_info_values[@]} -gt 1 ]; then
-      first_iteration=1
-      for value in "${collated_lab_info_values[@]}"; do
-         if [ -z "$first_iteration" ]; then
-            lab_info_str+=", "
-         else
-            unset first_iteration
-         fi
-
-         lab_info_str+="$value (${collated_lab_info_values[$value]})"
+      for value in "${!collated_lab_info_values[@]}"; do
+         lab_info_str+="$separator$value (${collated_lab_info_values[$value]})"
+         separator=", "
       done
    elif [ ${#collated_lab_info_values[@]} -eq 1 ]; then
-      # If all directories share the same value, it is not necessary to display
-      # the directory names.
-      lab_info_str=$value
+      # If all labs share the same value, it is not necessary to display the
+      # lab names.
+      lab_info_str=${!collated_lab_info_values[*]}
    else
+      # If no lab has the parameter defined.
       lab_info_str="<unknown>"
    fi
 
@@ -259,25 +258,20 @@ for LAB_DIRECTORY in "${LAB_DIRECTORIES[@]}"; do
 
    # We use associative arrays for printing the values with their respective
    # directory basename. SC2034 (variable appears unused) must be ignored
-   # because the array is only referenced by name.
+   # because the arrays are only referenced by name.
    # shellcheck disable=SC2034
-   [ -n "$LAB_VERSION" ] &&     LAB_VERSIONS[$dir]=$LAB_VERSION
+   LAB_VERSIONS[$dir]=${LAB_VERSION:-"<unknown>"}
    # shellcheck disable=SC2034
-   [ -n "$LAB_AUTHOR" ] &&      LAB_AUTHORS[$dir]=$LAB_AUTHOR
+   LAB_AUTHORS[$dir]=${LAB_AUTHOR:-"<unknown>"}
    # shellcheck disable=SC2034
-   [ -n "$LAB_EMAIL" ] &&       LAB_EMAILS[$dir]=$LAB_EMAIL
+   LAB_EMAILS[$dir]=${LAB_EMAIL:-"<unknown>"}
    # shellcheck disable=SC2034
-   [ -n "$LAB_WEB" ] &&         LAB_WEBS[$dir]=$LAB_WEB
+   LAB_WEBS[$dir]=${LAB_WEB:-"<unknown>"}
    # shellcheck disable=SC2034
-   [ -n "$LAB_DESCRIPTION" ] && LAB_DESCRIPTIONS[$dir]=$LAB_DESCRIPTION
-
-   # Check whether path to the lab directory contains spaces
-   if string_contains " " "$LAB_DIRECTORY"; then
-      echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Path contains whitespace"
-      exit 1
-   fi
+   LAB_DESCRIPTIONS[$dir]=${LAB_DESCRIPTION:-"<unknown>"}
 
    build_vhostlist
+   cum_vhostlist+=( "${VHOSTLIST[@]}" )
 done
 
 
@@ -291,14 +285,14 @@ LAB_EMAIL=$(generate_info_str LAB_EMAIL)
 LAB_WEB=$(generate_info_str LAB_WEB)
 LAB_DESCRIPTION=$(generate_info_str LAB_DESCRIPTION)
 
-printf -v HOSTLIST '%s, ' "${VHOSTLIST[@]}"
-HOSTLIST=${HOSTLIST%", "}
+printf -v cum_vhostlist_str '%s, ' "${cum_vhostlist[@]}"
+cum_vhostlist_str=${cum_vhostlist_str%", "}
 
 
 # Print lab information
 bold_print "======================== Lab information ========================"
 lab_welcome
-bold_print "The lab is made up of ${#VHOSTLIST[@]} virtual machines ($HOSTLIST)."
+bold_print "The lab is made up of ${#cum_vhostlist_str[@]} virtual machines ($cum_vhostlist_str)."
 
 for dir in "${LAB_DIRECTORIES[@]}"; do
    [ -f "$dir/lab.dep" ] && bold_print "The lab part $dir supports parallel startup."
