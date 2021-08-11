@@ -197,21 +197,19 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -a|--auto)
-         # TODO: Remove or make better.
-         for LAB_DIRECTORY in "${PWD%?}"*/; do
-            LAB_DIRECTORIES+=( "$LAB_DIRECTORY" )
-         done
+         # TODO: remove or make better.
+         # TODO: use shopt -s nullglob (and for other glob examples) 
+         lab_directories+=( "${PWD%?}"*/ )
          ;;
       -d)
-         LAB_DIRECTORY=$(readlink --canonicalize-missing "$2")
-         LAB_DIRECTORIES+=( "$LAB_DIRECTORY" )
+         lab_directories+=( "$(readlink --canonicalize-missing "$2")" )
          shift
          ;;
       --help)
          usage 0
          ;;
       -m|--map)
-         MAP_FILE=$2
+         map_file=$2
          shift
          ;;
       --version)
@@ -238,15 +236,15 @@ fi
 
 
 # If no lab directory has been given, assume current directory
-[ "${#LAB_DIRECTORIES[@]}" -eq 0 ] && LAB_DIRECTORIES=( "$PWD" )
+[ "${#lab_directories[@]}" -eq 0 ] && lab_directories=( "$PWD" )
 
 
-declare -A LAB_VERSIONS LAB_AUTHORS LAB_EMAILS LAB_WEBS LAB_DESCRIPTIONS
+declare -A lab_versions lab_authors lab_emails lab_webs lab_descriptions
 
-for LAB_DIRECTORY in "${LAB_DIRECTORIES[@]}"; do
+for dir in "${lab_directories[@]}"; do
    # Check that the lab directory exists
-   if [ ! -d "$LAB_DIRECTORY" ]; then
-      echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: No such directory"
+   if [ ! -d "$dir" ]; then
+      echo 1>&2 "$SCRIPTNAME: $dir: No such directory"
       exit 1
    fi
 
@@ -254,36 +252,36 @@ for LAB_DIRECTORY in "${LAB_DIRECTORIES[@]}"; do
    # shellcheck source=./lcommon
    . "$NETKIT_HOME/bin/lcommon"
 
-   dir=$(basename "$LAB_DIRECTORY")
+   lab=$(basename "$dir")
 
    # We use associative arrays for printing the values with their respective
    # directory basename. SC2034 (variable appears unused) must be ignored
    # because the arrays are only referenced by name.
    # shellcheck disable=SC2034
-   LAB_VERSIONS[$dir]=${LAB_VERSION:-"<unknown>"}
+   lab_versions[$lab]=${LAB_VERSION:-"<unknown>"}
    # shellcheck disable=SC2034
-   LAB_AUTHORS[$dir]=${LAB_AUTHOR:-"<unknown>"}
+   lab_authors[$lab]=${LAB_AUTHOR:-"<unknown>"}
    # shellcheck disable=SC2034
-   LAB_EMAILS[$dir]=${LAB_EMAIL:-"<unknown>"}
+   lab_emails[$lab]=${LAB_EMAIL:-"<unknown>"}
    # shellcheck disable=SC2034
-   LAB_WEBS[$dir]=${LAB_WEB:-"<unknown>"}
+   lab_webs[$lab]=${LAB_WEB:-"<unknown>"}
    # shellcheck disable=SC2034
-   LAB_DESCRIPTIONS[$dir]=${LAB_DESCRIPTION:-"<unknown>"}
+   lab_descriptions[$lab]=${LAB_DESCRIPTION:-"<unknown>"}
 
    build_vhostlist
    cum_vhostlist+=( "${VHOSTLIST[@]}" )
 done
 
 
-printf -v LAB_DIRECTORY '%s, ' "${LAB_DIRECTORIES[@]}"
+printf -v LAB_DIRECTORY '%s, ' "${lab_directories[@]}"
 LAB_DIRECTORY=${LAB_DIRECTORY%", "}
 
 # Convert the multi-lab arrays to flat lists for lab_welcome
-LAB_VERSION=$(generate_info_str LAB_VERSIONS)
-LAB_AUTHOR=$(generate_info_str LAB_AUTHOR)
-LAB_EMAIL=$(generate_info_str LAB_EMAIL)
-LAB_WEB=$(generate_info_str LAB_WEB)
-LAB_DESCRIPTION=$(generate_info_str LAB_DESCRIPTION)
+LAB_VERSION=$(generate_info_str lab_versions)
+LAB_AUTHOR=$(generate_info_str lab_authors)
+LAB_EMAIL=$(generate_info_str lab_emails)
+LAB_WEB=$(generate_info_str lab_webs)
+LAB_DESCRIPTION=$(generate_info_str lab_descriptions)
 
 printf -v cum_vhostlist_str '%s, ' "${cum_vhostlist[@]}"
 cum_vhostlist_str=${cum_vhostlist_str%", "}
@@ -294,12 +292,12 @@ bold_print "======================== Lab information ========================"
 lab_welcome
 bold_print "The lab is made up of ${#cum_vhostlist_str[@]} virtual machines ($cum_vhostlist_str)."
 
-for dir in "${LAB_DIRECTORIES[@]}"; do
+for dir in "${lab_directories[@]}"; do
    [ -f "$dir/lab.dep" ] && bold_print "The lab part $dir supports parallel startup."
 done
 
-if [ -n "$MAP_FILE" ]; then
-   for dir in "${LAB_DIRECTORIES[@]}"; do
+if [ -n "$map_file" ]; then
+   for dir in "${lab_directories[@]}"; do
       lab_conf="${dir%/}/lab.conf"
       
       if [ ! -f "$lab_conf" ]; then
@@ -315,8 +313,8 @@ if [ -n "$MAP_FILE" ]; then
       exit 1
    fi
 
-   if lab_map "$MAP_FILE" "${lab_confs[@]}"; then
-      bold_print "Link-level topology map saved into $MAP_FILE."
+   if lab_map "$map_file" "${lab_confs[@]}"; then
+      bold_print "Link-level topology map saved into $map_file."
    fi
 fi
 
