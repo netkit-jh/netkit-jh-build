@@ -169,14 +169,14 @@ fi
 [ "${#lab_directories[@]}" -eq 0 ] && lab_directories=( "$PWD" )
 
 
-for dir in "${lab_directories[@]}"; do
+for lab_directory in "${lab_directories[@]}"; do
    # Check that the lab directory exists
    if [ ! -d "$dir" ]; then
       echo 1>&2 "$SCRIPTNAME: $dir: No such directory"
       exit 1
    fi
 
-   build_vhostlist
+   build_vhostlist "$lab_directory"
    cum_vhostlist+=( "${VHOSTLIST[@]}" )
 done
 

@@ -76,44 +76,46 @@ array_contains() {
 # listing. If VHOSTLIST is already set (such as by the user on the command
 # line), machines not present in the lab are removed from the array.
 # Usage:
-#   build_vhostlist
+#   build_vhostlist DIR
 # Globals:
 #   rw VHOSTLIST
 # Arguments:
-#   None
+#   $1 - lab directory
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 build_vhostlist() {
-   # Build list of virtual machines that are part of the lab
-   for LAB_ITEM in "${LAB_DIRECTORY}"/*/; do
-      dir=$(basename "$LAB_ITEM")
+   local lab_directory=$1
 
-      # Handle error if no directories exist (the for loop will still run
-      # once). Also avoid the shared and _test directories (if exist).
-      if [ ! -e "$LAB_ITEM" ] || [ "$dir" = "shared" ] || [ "$dir" = "_test" ]; then
+   # Build list of virtual machines that are part of the lab
+   for dir in "$lab_directory"/*/; do
+      vhost=$(basename "$dir")
+
+      # Avoid the shared and _test directories
+      if [ "$vhost" = "shared" ] || [ "$vhost" = "_test" ]; then
          continue
       fi
 
-      lab_hosts+=( "$LAB_ITEM" )
+      vhosts+=( "$vhost" )
    done
 
-   # Verify that virtual machines passed by command line are in the lab
+   # If VHOSTLIST has already been set (typically explicitly by the user on the
+   # command line), verify that the machines are in the lab.
    if [ "${#VHOSTLIST[@]}" -gt 0 ]; then
-      ORIGINAL_VHOSTLIST=( "${VHOSTLIST[@]}" )
+      vhostlist_bak=( "${VHOSTLIST[@]}" )
       unset VHOSTLIST
 
-      for host in "${ORIGINAL_VHOSTLIST[@]}"; do
-         if array_contains "$host" "${lab_hosts[@]}"; then
-            VHOSTLIST+=( "$host" )
+      for vhost in "${vhostlist_bak[@]}"; do
+         if array_contains "$vhost" "${vhosts[@]}"; then
+            VHOSTLIST+=( "$vhost" )
          else
-            echo 1>&2 "Warning: '$CURRENT_HOST' is not part of the lab in '$LAB_DIRECTORY'"
+            echo 1>&2 "Warning: '$vhost' is not part of the lab in '$lab_directory'"
          fi
       done
    else
-      VHOSTLIST=( "${lab_hosts[@]}" )
+      VHOSTLIST=( "${vhosts[@]}" )
    fi
 }
 
@@ -278,31 +280,31 @@ lab_welcome() {
 ###############################################################################
 # Remove temporary files from the lab directory and .netkit.
 # Usage:
-#   lab_clean
+#   lab_clean DIR
 # Globals:
+#   r- MCONSOLE_DIR
 #   rw VHOSTLIST
-#   r- LAB_DIRECTORY
 # Arguments:
-#   None
+#   $1 - lab directory
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 lab_clean() {
-   build_vhostlist
+   local lab_directory=$1
 
-   bold_print "Cleaning up lab inside '$LAB_DIRECTORY'..."
+   build_vhostlist "$lab_directory"
 
-   [ -n "$VERBOSE" ] && rm_verbose="--verbose"
+   bold_print "Cleaning up lab inside '$lab_directory'..."
 
-   for host in "${VHOSTLIST[@]}"; do
+   for vhost in "${VHOSTLIST[@]}"; do
       # Remove files from the lab directory
-      rm "${rm_verbose:+"$rm_verbose"}" -r "${MCONSOLE_DIR:?}/$host"
-      rm "${rm_verbose:+"$rm_verbose"}" "$LAB_DIRECTORY/$host."{"ready","disk","log","testdone"}
+      rm "${VERBOSE:+"--verbose"}" -r "${MCONSOLE_DIR:?}/$vhost"
+      rm "${VERBOSE:+"--verbose"}" "$lab_directory/$vhost."{"ready","disk","log","testdone"}
    done
 
-   rm "${rm_verbose:+"$rm_verbose"}" "$LAB_DIRECTORY/readyfor.test"
+   rm "${VERBOSE:+"--verbose"}" "$lab_directory/readyfor.test"
 }
 
 
@@ -326,7 +328,7 @@ lab_clean() {
 lab_crash() {
    local VCRASH_OPTIONS
 
-   build_vhostlist
+   build_vhostlist "$LAB_DIRECTORY"
 
    [ -z "$VERBOSE" ]         && VCRASH_OPTIONS+=( "-q" )
    [ -z "$KEEP_FILESYSTEM" ] && VCRASH_OPTIONS+=( "-r" )
@@ -449,7 +451,7 @@ single_lab_vm_start() {
 lab_start() {
    local BASE_VSTART_OPTIONS
 
-   build_vhostlist
+   build_vhostlist "$LAB_DIRECTORY"
 
    [ -z "$VERBOSE" ] && BASE_VSTART_OPTIONS+=( "-q" )
    BASE_VSTART_OPTIONS+=( "${PASSTHROUGH_OPTIONS[@]}" )
@@ -487,7 +489,7 @@ lab_start() {
 #   None
 ###############################################################################
 lab_start_parallel() {
-   build_vhostlist
+   build_vhostlist "$LAB_DIRECTORY"
    
    if [ "${#VHOSTLIST[@]}" -eq 0 ]; then
       echo 1>&2 "Warning: there are no virtual machines to be started."

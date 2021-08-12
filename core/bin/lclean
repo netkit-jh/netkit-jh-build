@@ -157,9 +157,9 @@ done
 # Non-option arguments are machine names
 VHOSTLIST=( "$@" )
 
-for host in "${VHOSTLIST[@]}"; do
+for vhost in "${VHOSTLIST[@]}"; do
    # TODO: change to validate against hostname regex
-   if string_contains " " "$host"; then
+   if string_contains " " "$vhost"; then
       echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
       exit 1
    fi
@@ -167,21 +167,21 @@ done
 
 
 # If no lab directory has been given, assume current directory
-LAB_DIRECTORY=${LAB_DIRECTORY:-$PWD}
+lab_directory=${lab_directory:-$PWD}
 
 # Check that the lab directory exists
-if [ ! -d "$LAB_DIRECTORY" ]; then
-   echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Directory does not exist"
+if [ ! -d "$lab_directory" ]; then
+   echo 1>&2 "$SCRIPTNAME: $lab_directory: Directory does not exist"
    exit 1
 fi
 
 
 # Print lab information
 bold_print "====================== Cleaning up lab =========================="
-lab_welcome "$LAB_DIRECTORY"
+lab_welcome "$lab_directory"
 bold_print "================================================================="
 
 # Clean up the lab directory
-lab_clean
+lab_clean "$lab_directory"
 bold_print "Cleaning completed."
 bold_print "================================================================="

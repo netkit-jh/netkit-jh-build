@@ -203,7 +203,7 @@ lab_welcome "$LAB_DIRECTORY"
 bold_print "================================================================="
 
 # Halt virtual machines
-build_vhostlist
+build_vhostlist "$LAB_DIRECTORY"
 
 [ -z "$VERBOSE" ] && lhalt_quiet="-q"
 [ -n "$REMOVE_FILESYSTEM" ] && lhalt_rm_fs="-r"

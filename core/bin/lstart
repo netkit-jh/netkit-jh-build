@@ -471,7 +471,7 @@ if [ -n "$TESTMODE" ]; then
    : "${NETKIT_CON1:=none}"
    
    # Clean up the lab directory before starting
-   lab_clean > /dev/null
+   lab_clean "$LAB_DIRECTORY" > /dev/null
 fi
 
 [ -n "$SCRIPTMODE" ] && echo -n "Starting lab... "
@@ -538,7 +538,7 @@ if [ -n "$TESTMODE" ]; then
    fi
 
    lab_crash > /dev/null
-   lab_clean > /dev/null
+   lab_clean "$LAB_DIRECTORY" > /dev/null
 
    # Check whether we need to build a test signature or to verify the test
    # outcome.
