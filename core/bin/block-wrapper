@@ -41,53 +41,53 @@ wt_safe_bash_cmd=( "bash" "-c" "$pid_cmd\\; ${kernel_cmd[*]@Q}" )
 
 
 case $terminal_emulator in
-    alacritty)      alacritty                                               -e "${bash_cmd[@]}";;
-    gnome)          gnome-terminal --title "$vm"                            -- "${bash_cmd[@]}";;
-    kitty)          kitty --title "$vm"                                        "${bash_cmd[@]}";;
-    konsole)        konsole --nofork --title "$vm"                          -e "${bash_cmd[@]}";;
-    konsole-tab)    "$NETKIT_HOME/bin/konsole-tabs.sh"                      -e "${bash_cmd[@]}";;
-    wsl)            cmd.exe /c start wsl.exe                                   "${bash_cmd[@]}";;
-    wt)             wt.exe --suppressApplicationTitle --title "$vm" wsl.exe -e "${wt_safe_bash_cmd[@]}";;
-    xterm)          xterm -xrm 'XTerm*allowTitleOps: false' -T "$vm"        -e "${bash_cmd[@]}";;
-    tmux)
-        # Check if tmux session already exists
-        if tmux -L netkit has-session -t "$vm" > /dev/null 2>&1; then
-            while true; do
-                read -rp "tmux session already exists for machine $vm. Kill session [y/N]? " response
-                case $response in
-                    [Yy]|[Yy][Ee][Ss])
-                        # Kill existing tmux session
-                        tmux -L netkit kill-session -t "$vm"
-                        break
-                        ;;
-                    [Nn]|[Nn][Oo])
-                        echo "tmux session in use - not starting $vm."
-                        exit
-                        ;;
-                    *)
-                        ;;
-                esac
-            done
-        fi
+   alacritty)     alacritty                                               -e "${bash_cmd[@]}";;
+   gnome)         gnome-terminal --title "$vm"                            -- "${bash_cmd[@]}";;
+   kitty)         kitty --title "$vm"                                        "${bash_cmd[@]}";;
+   konsole)       konsole --nofork --title "$vm"                          -e "${bash_cmd[@]}";;
+   konsole-tab)   "$NETKIT_HOME/bin/konsole-tabs.sh"                      -e "${bash_cmd[@]}";;
+   wsl)           cmd.exe /c start wsl.exe                                   "${bash_cmd[@]}";;
+   wt)            wt.exe --suppressApplicationTitle --title "$vm" wsl.exe -e "${wt_safe_bash_cmd[@]}";;
+   xterm)         xterm -xrm 'XTerm*allowTitleOps: false' -T "$vm"        -e "${bash_cmd[@]}";;
+   tmux)
+      # Check if tmux session already exists
+      if tmux -L netkit has-session -t "$vm" > /dev/null 2>&1; then
+         while true; do
+            read -rp "tmux session already exists for machine $vm. Kill session [y/N]? " response
+            case $response in
+               [Yy]|[Yy][Ee][Ss])
+                  # Kill existing tmux session
+                  tmux -L netkit kill-session -t "$vm"
+                  break
+                  ;;
+               [Nn]|[Nn][Oo])
+                  echo "tmux session in use - not starting $vm."
+                  exit
+                  ;;
+               *)
+                  ;;
+            esac
+         done
+      fi
 
-        # Start detached tmux session
-        tmux -L netkit -f "$NETKIT_HOME/tools/tmux.conf" new-session -d -s "$vm" "${bash_cmd[@]}"
-        ;;
+      # Start detached tmux session
+      tmux -L netkit -f "$NETKIT_HOME/tools/tmux.conf" new-session -d -s "$vm" "${bash_cmd[@]}"
+      ;;
 
-    *)
-        echo "Terminal $terminal_emulator not supported, defaulting to xterm."
-        xterm -xrm 'XTerm*allowTitleOps: false' -T "$vm" -e "${bash_cmd[@]}";;
+   *)
+      echo "Terminal $terminal_emulator not supported, defaulting to xterm."
+      xterm -xrm 'XTerm*allowTitleOps: false' -T "$vm" -e "${bash_cmd[@]}";;
 esac
 
 
 # Wait until the PID file has been written to
 until [ -s "$pidfile" ]; do
-    sleep 1s
+   sleep 1s
 done
 
 # Wait until this process is dead
 while ps --pid "$(cat "$pidfile")" > /dev/null; do
-    sleep 1s
+   sleep 1s
 done
 
 rm "$pidfile"
