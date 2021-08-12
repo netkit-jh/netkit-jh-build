@@ -199,7 +199,7 @@ fi
 
 # Print lab information
 bold_print "======================== Halting lab ============================"
-lab_welcome
+lab_welcome "$LAB_DIRECTORY"
 bold_print "================================================================="
 
 # Halt virtual machines

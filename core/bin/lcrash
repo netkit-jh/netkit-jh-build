@@ -213,7 +213,7 @@ fi
 
 # Print lab information
 bold_print "========================== Crashing lab ========================="
-lab_welcome
+lab_welcome "$LAB_DIRECTORY"
 bold_print "================================================================="
 
 # Crash virtual machines

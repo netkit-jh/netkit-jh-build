@@ -453,7 +453,7 @@ else
 fi
 
 if [ -z "$SCRIPTMODE" ]; then
-   lab_welcome
+   lab_welcome "$LAB_DIRECTORY"
    echo
    bold_print "Having issues starting the lab? Run 'lclean' before running 'lstart'."
    [ -n "$update_url" ] && bold_print "Update available for Netkit-JH - download at $update_url"

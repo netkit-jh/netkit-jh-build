@@ -178,7 +178,7 @@ fi
 
 # Print lab information
 bold_print "====================== Cleaning up lab =========================="
-lab_welcome
+lab_welcome "$LAB_DIRECTORY"
 bold_print "================================================================="
 
 # Clean up the lab directory

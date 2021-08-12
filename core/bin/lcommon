@@ -119,41 +119,159 @@ build_vhostlist() {
 
 
 ###############################################################################
-# Print out information about the lab.
+# From a lab info associative array (key is directory basename, value is the
+# relevant attribute's value) construct a formatted list suitable for
+# lab_welcome output (i.e. value1 (dir1, dir2, ...), value2 (dir3, dir4, ...),
+# ...) and write to standard output.
 # Usage:
-#   lab_welcome
+#   generate_lab_info_str LAB_INFO
 # Globals:
-#   rw LAB_VERSION
-#   rw LAB_AUTHOR
-#   rw LAB_EMAIL
-#   rw LAB_WEB
-#   rw LAB_DESCRIPTION
-#   r- LAB_DIRECTORY
-#   r- COLOR_NORMAL
+#   None
+# Arguments:
+#   $1 - lab information associative array name reference
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+generate_info_str() {
+   local -n lab_info=$1
+
+   local lab value
+   local lab_info_str separator
+
+   declare -A collated_lab_info_values
+
+   # For each directory chosen, add its lab information value as a key to an
+   # array with a value of directory listings. For example, for a lab_info
+   # array of version numbers:
+   #
+   #     lab_info["lab3a"]="1.0"
+   #     lab_info["lab3b"]="1.1"
+   #     lab_info["lab3c"]="1.0"
+   #     lab_info["lab3d"]="2.0"
+   #
+   # This would be transformed into collated_lab_info_values:
+   #
+   #     collated_lab_info_values["1.0"]="lab3a, lab3c"
+   #     collated_lab_info_values["1.1"]="lab3b"
+   #     collated_lab_info_values["2.0"]="lab3d"
+   for lab in "${!lab_info[@]}"; do
+      value=${lab_info[$lab]:-"<unknown>"}
+
+      # Append the lab name to its relevant value's list if the value has been
+      # seen before (exists as a key in the array). If not, start the list.
+      if array_contains "$value" "${!collated_lab_info_values[@]}"; then
+         collated_lab_info_values[$value]="${collated_lab_info_values[$value]}, $lab"
+      else
+         collated_lab_info_values[$value]=$lab
+      fi
+   done
+
+   # collated_lab_info_values is then flattened into a string to display in the
+   # lab_welcome dialog.
+   if [ ${#collated_lab_info_values[@]} -gt 1 ]; then
+      for value in "${!collated_lab_info_values[@]}"; do
+         lab_info_str+="$separator$value (${collated_lab_info_values[$value]})"
+         separator=", "
+      done
+   elif [ ${#collated_lab_info_values[@]} -eq 1 ]; then
+      # If all labs share the same value, it is not necessary to display the
+      # lab names.
+      lab_info_str=${!collated_lab_info_values[*]}
+   else
+      # If no lab has the parameter defined.
+      lab_info_str="<unknown>"
+   fi
+
+   echo "$lab_info_str"
+}
+
+
+###############################################################################
+# Get the value of a parameter set in a lab's lab.conf file and write to
+# standard output.
+# Usage:
+#   get_lab_variable DIRECTORY
+# Globals:
+#   None
+# Arguments:
+#   $1 - lab directory
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+get_lab_variable() {
+   local variable=$1
+   local lab_conf="$2/lab.conf"
+
+   # Set lab variables from lab.conf. The sed expression prints only the first
+   # matching line and deletes the variable name and equals sign.
+   sed -n "0,/^[[:blank:]]*$variable=/s///p" "$lab_conf"
+}
+
+
+###############################################################################
+# Print out information about the labs in the given directories. Unset values
+# will be outputted as "<unknown>".
+# Usage:
+#   lab_welcome [DIRECTORY]...
+# Globals:
 #   r- COLOR_BOLD
 #   r- COLOR_HIGHLIGHT
+#   r- COLOR_NORMAL
+#   r- SCRIPTNAME
 # Arguments:
-#   None
+#  ... - list of lab directories
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 lab_welcome() {
-   # Set defaults if unset
-   : "${LAB_VERSION:="$COLOR_NORMAL<unknown>"}"
-   : "${LAB_AUTHOR="$COLOR_NORMAL<unknown>"}"
-   : "${LAB_EMAIL="$COLOR_NORMAL<unknown>"}"
-   : "${LAB_WEB="$COLOR_NORMAL<unknown>"}"
-   : "${LAB_DESCRIPTION="$COLOR_NORMAL<unknown>"}"
+   local lab_directories=( "$@" )
 
-   echo "${COLOR_BOLD}Lab directory(ies)$COLOR_NORMAL: $COLOR_HIGHLIGHT$LAB_DIRECTORY$COLOR_NORMAL"
-   echo "${COLOR_BOLD}Version(s)$COLOR_NORMAL:         $COLOR_HIGHLIGHT$LAB_VERSION$COLOR_NORMAL"
-   echo "${COLOR_BOLD}Author(s)$COLOR_NORMAL:          $COLOR_HIGHLIGHT$LAB_AUTHOR$COLOR_NORMAL"
-   echo "${COLOR_BOLD}Email(s)$COLOR_NORMAL:           $COLOR_HIGHLIGHT$LAB_EMAIL$COLOR_NORMAL"
-   echo "${COLOR_BOLD}Web(s)$COLOR_NORMAL:             $COLOR_HIGHLIGHT$LAB_WEB$COLOR_NORMAL"
+   local dir lab lab_directories_str
+   declare -A lab_versions lab_authors lab_emails lab_webs lab_descriptions
+
+   printf -v lab_directories_str '%s, ' "${lab_directories[@]}"
+   lab_directories_str=${lab_directories_str%", "}
+
+   for dir in "${lab_directories[@]}"; do
+         # Check that the lab directory exists
+      if [ ! -d "$dir" ]; then
+         echo 1>&2 "$SCRIPTNAME: $dir: No such directory"
+         exit 1
+      fi
+
+      lab=$(basename "$dir")
+
+      # We use associative arrays for printing the values with their respective
+      # directory basename. SC2034 (variable appears unused) must be ignored
+      # because the arrays are only referenced by name.
+      # TODO: create 'LAB_MACHINES' variable, similar to the old 'machines'
+      # variable.
+      # shellcheck disable=SC2034
+      lab_versions[$lab]=$(get_lab_variable "LAB_VERSION" "$dir")
+      # shellcheck disable=SC2034
+      lab_authors[$lab]=$(get_lab_variable "LAB_AUTHOR" "$dir")
+      # shellcheck disable=SC2034
+      lab_emails[$lab]=$(get_lab_variable "LAB_EMAIL" "$dir")
+      # shellcheck disable=SC2034
+      lab_webs[$lab]=$(get_lab_variable "LAB_WEB" "$dir")
+      # shellcheck disable=SC2034
+      lab_descriptions[$lab]=$(get_lab_variable "LAB_DESCRIPTION" "$dir")
+   done
+
+   # Convert the multi-lab arrays to flat, comma-separated lists and print
+   echo "${COLOR_BOLD}Lab directory(ies)$COLOR_NORMAL: $COLOR_HIGHLIGHT$lab_directories_str$COLOR_NORMAL"
+   echo "${COLOR_BOLD}Version(s)$COLOR_NORMAL:         $COLOR_HIGHLIGHT$(generate_info_str lab_versions)$COLOR_NORMAL"
+   echo "${COLOR_BOLD}Author(s)$COLOR_NORMAL:          $COLOR_HIGHLIGHT$(generate_info_str lab_authors)$COLOR_NORMAL"
+   echo "${COLOR_BOLD}Email(s)$COLOR_NORMAL:           $COLOR_HIGHLIGHT$(generate_info_str lab_emails)$COLOR_NORMAL"
+   echo "${COLOR_BOLD}URL(s)$COLOR_NORMAL:             $COLOR_HIGHLIGHT$(generate_info_str lab_webs)$COLOR_NORMAL"
    echo "${COLOR_BOLD}Description(s)$COLOR_NORMAL:"
-   echo "$COLOR_HIGHLIGHT$LAB_DESCRIPTION$COLOR_NORMAL"
+   echo "$COLOR_HIGHLIGHT$(generate_info_str lab_descriptions)$COLOR_NORMAL"
 }
 
 
@@ -582,20 +700,3 @@ hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,62}[a-zA-Z0-9])"
 COLOR_HIGHLIGHT='\033[34;1m'
 COLOR_NORMAL='\033[0m'
 COLOR_BOLD='\033[1m'
-
-
-lab_conf="$LAB_DIRECTORY/lab.conf"
-
-if [ -f "$lab_conf" ]; then
-   # Set lab variables from lab.conf. The sed expression prints only the first
-   # matching line and deletes the variable name and equals sign.
-   # TODO: create 'LAB_MACHINES' variable, similar to the old 'machines'
-   # variable.
-   LAB_VERSION=$(sed -n '0,/^[[:blank:]]*LAB_VERSION=/s///p' "$lab_conf")
-   LAB_AUTHOR=$(sed -n '0,/^[[:blank:]]*LAB_AUTHOR=/s///p' "$lab_conf")
-   LAB_EMAIL=$(sed -n '0,/^[[:blank:]]*LAB_EMAIL=/s///p' "$lab_conf")
-   LAB_WEB=$(sed -n '0,/^[[:blank:]]*LAB_WEB=/s///p' "$lab_conf")
-   LAB_DESCRIPTION=$(sed -n '0,/^[[:blank:]]*LAB_DESCRIPTION=/s///p' "$lab_conf")
-fi
-
-unset lab_conf
