@@ -311,63 +311,85 @@ lab_clean() {
 ###############################################################################
 # Crash virtual machines of a Netkit lab.
 # Usage:
-#   lab_crash
+#   lab_crash DIR KEEP_FS KILL
 # Globals:
-#   r- KEEP_FILESYSTEM
-#   r- KILL_MODE
-#   r- LAB_DIRECTORY
 #   r- VERBOSE
 #   rw VHOSTLIST
 # Arguments:
-#   None
+#   $1 - lab directory
+#   $2 - set to 1 to keep the filesystem, empty string for otherwise
+#   $3 - set to 1 to kill machine process, empty string for otherwise
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 lab_crash() {
+   local lab_directory=$1
+   local keep_fs=$2
+   local kill_mode=$2
+
    local VCRASH_OPTIONS
 
-   build_vhostlist "$LAB_DIRECTORY"
+   build_vhostlist "$lab_directory"
 
-   [ -z "$VERBOSE" ]         && VCRASH_OPTIONS+=( "-q" )
-   [ -z "$KEEP_FILESYSTEM" ] && VCRASH_OPTIONS+=( "-r" )
-   [ -n "$KILL_MODE" ]       && VCRASH_OPTIONS+=( "-k" )
+   [ -z "$VERBOSE" ]   && VCRASH_OPTIONS+=( "-q" )
+   [ -z "$keep_fs" ]   && VCRASH_OPTIONS+=( "-r" )
+   [ -n "$kill_mode" ] && VCRASH_OPTIONS+=( "-k" )
    
    for VM in "${VHOSTLIST[@]}"; do
       [ -z "$VERBOSE" ] && bold_print "Crashing '$VM'..."
-      vcrash "${VCRASH_OPTIONS[@]}" "$VM" && rm -f "$LAB_DIRECTORY/$VM.ready"
+      vcrash "${VCRASH_OPTIONS[@]}" "$VM" && rm -f "$lab_directory/$VM.ready"
    done
    
    bold_print "Removing readyfor.test..."
-   rm -f "$LAB_DIRECTORY/readyfor.test"
+   rm -f "$lab_directory/readyfor.test"
 }
 
 
 ###############################################################################
 # Start a single virtual machine within a lab.
 # Usage:
-#   single_lab_vm_start MACHINE
+#   single_lab_vm_start FAST_MODE TEST_MODE MAKEFILE DIR MACHINE [VSTART_OPT]...
 # Globals:
-#   r- BASE_VSTART_OPTIONS
-#   r- FASTMODE
 #   r- GRACE_TIME
-#   r- LAB_DIRECTORY
-#   r- TESTMODE
 #   r- VERBOSE
 # Arguments:
-#   $1 - machine to start up
+#   $1 - set to 1 for fast mode, empty string otherwise
+#   $2 - set to 1 for test mode, empty string otherwise
+#   $3 - used internally when lstart is invoked with Make
+#   $4 - lab directory
+#   $5 - machine to start up
+#  ... - options to passthrough to vstart (appended on)
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 single_lab_vm_start() {
-   local VSTART_OPTIONS
-   local VM=$1
+   local fast_mode=$1
+   local test_mode=$2
+   local makefile=$3
+   local lab_directory=$4
+   local VM=$5
+   local passthrough_opts=( "${@:6}" )
+
+   # Add host lab and working directory, and place filesystem inside the lab
+   # directory.
+   local VSTART_OPTIONS=( "--hostlab" "$lab_directory" "--hostwd" "$PWD" "--filesystem" "$lab_directory/$VM.disk" )
+
+   if [ -n "$test_mode" ]; then
+      VSTART_OPTIONS+=( "--test" )
+
+      if [ -z "$makefile" ]; then
+         # If invoked via Make, there should already be these options
+         # passed through
+         VSTART_OPTIONS+=( "--con0" "none" "--con1" "none" )
+      fi
+   fi
 
    # Generate vstart argument list
-   if [ -e "$LAB_DIRECTORY/lab.conf" ]; then
+   if [ -e "$lab_directory/lab.conf" ]; then
       while IFS= read -r configuration; do
          # The [][] is ][ inside a bracket expression to match an opening or
          # closing square bracket. We know the machine name cannot contain
@@ -391,39 +413,30 @@ single_lab_vm_start() {
          # appending the argument must be made (an '=' is required for long
          # options, no delimiter for short ones).
          [ -n "$value" ] && VSTART_OPTIONS+=( "$value" )
-      done < <(grep "^[[:blank:]]*$VM\[.*\][[:blank:]]*=" "$LAB_DIRECTORY/lab.conf")
+      done < <(grep "^[[:blank:]]*$VM\[.*\][[:blank:]]*=" "$lab_directory/lab.conf")
    fi
-      
-   # Add host lab and working directory
-   VSTART_OPTIONS+=( "--hostlab" "$LAB_DIRECTORY" "--hostwd" "$PWD" )
-
-   # Place virtual machine filesystem inside the lab directory
-   VSTART_OPTIONS+=( "--filesystem" "$LAB_DIRECTORY/$VM.disk" )
-
-   # Check if is a testing phase
-   [ -n "$TESTMODE" ] && VSTART_OPTIONS+=( "--test" )
    
    # Remove .ready file, if existing
-   [ -e "$LAB_DIRECTORY/$VM.ready" ] && rm -f "$LAB_DIRECTORY/$VM.ready"
+   [ -e "$lab_directory/$VM.ready" ] && rm -f "$lab_directory/$VM.ready"
 
    if [ -z "$VERBOSE" ]; then
       bold_print "Starting '$VM'..."
    else
-      bold_print "Starting '$VM' with options '$BASE_VSTART_OPTIONS ${VSTART_OPTIONS[*]}'... "
+      bold_print "Starting '$VM' with options '${VSTART_OPTIONS[*]} ${passthrough_opts[*]}'... "
    fi
 
-   if ! vstart "${BASE_VSTART_OPTIONS[@]}" "${VSTART_OPTIONS[@]}" "$VM"; then
+   if ! vstart "${VSTART_OPTIONS[@]}" "${passthrough_opts[@]}" "$VM"; then
       echo 2>&1 "Error while starting virtual machine '$VM'"
       exit 1
    fi
 
    # Wait for virtual host startup script to create .ready file
-   if [ -z "$FASTMODE" ]; then
-      while [ ! -e "$LAB_DIRECTORY/$VM.ready" ]; do
+   if [ -z "$fast_mode" ]; then
+      while [ ! -e "$lab_directory/$VM.ready" ]; do
          sleep 1
       done
 
-      rm -f "$LAB_DIRECTORY/$VM.ready"
+      rm -f "$lab_directory/$VM.ready"
    fi
    
    # Wait for a specified amount of time before returning
@@ -434,31 +447,37 @@ single_lab_vm_start() {
 ###############################################################################
 # Start virtual machines of a Netkit lab sequentially.
 # Usage:
-#   lab_start
+#   lab_start FAST_MODE TEST_MODE MAKEFILE DIR [PASSTHROUGH]...
 # Globals:
-#   r- LAB_DIRECTORY
-#   r- MAKEFILE
-#   r- PASSTHROUGH_OPTIONS
-#   r- TESTMODE
 #   rw VHOSTLIST
 # Arguments:
-#   None
+#   $1 - set to 1 for fast mode, empty string otherwise
+#   $2 - set to 1 for test mode, empty string otherwise
+#   $3 - used internally when lstart is invoked with Make
+#   $4 - lab directory
+#  ... - array of options to pass through into vstart
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 lab_start() {
+   local fast_mode=$1
+   local test_mode=$2
+   local makefile=$3
+   local lab_directory=$4
+   local passthrough_opts=( "${@:5}" )
+
    local BASE_VSTART_OPTIONS
 
-   build_vhostlist "$LAB_DIRECTORY"
+   build_vhostlist "$lab_directory"
 
    [ -z "$VERBOSE" ] && BASE_VSTART_OPTIONS+=( "-q" )
-   BASE_VSTART_OPTIONS+=( "${PASSTHROUGH_OPTIONS[@]}" )
+   BASE_VSTART_OPTIONS+=( "${passthrough_opts[@]}" )
    
    if [ "${#VHOSTLIST[@]}" -gt 0 ]; then
       for VM in "${VHOSTLIST[@]}"; do
-         single_lab_vm_start "$VM"
+         single_lab_vm_start "$fast_mode" "$test_mode" "$makefile" "$lab_directory" "$VM"
       done
    else
       echo 1>&2 "Warning: there are no virtual machines to be started."
@@ -466,30 +485,32 @@ lab_start() {
    
    # The readyfor.test file should not be created if we have been invoked
    # with the --makefile option (=launch a single machine and exit).
-   [ -n "$TESTMODE" ] && [ -z "$MAKEFILE" ] && : > "$LAB_DIRECTORY/readyfor.test"
+   [ -n "$test_mode" ] && [ -z "$makefile" ] && : > "$lab_directory/readyfor.test"
 }
 
 
 ###############################################################################
 # Start virtual machines of a Netkit lab simultaneously with GNU Make.
 # Usage:
-#   lab_start_parallel
+#   lab_start_parallel TEST_MODE DIR [PASSTHROUGH]...
 # Globals:
-#   r- LAB_DIRECTORY
-#   r- MAKEFILE
 #   r- MAX_SIMULTANEOUS_VMS
-#   r- PASSTHROUGH_OPTIONS
-#   r- TESTMODE
 #   rw VHOSTLIST
 # Arguments:
-#   None
+#   $1 - set to 1 for test mode, empty string otherwise
+#   $2 - lab directory
+#  ... - array of options to pass through into vstart
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 lab_start_parallel() {
-   build_vhostlist "$LAB_DIRECTORY"
+   local test_mode=$1
+   local lab_directory=$2
+   local passthrough_opts=( "${@:3}" )
+
+   build_vhostlist "$lab_directory"
    
    if [ "${#VHOSTLIST[@]}" -eq 0 ]; then
       echo 1>&2 "Warning: there are no virtual machines to be started."
@@ -498,13 +519,17 @@ lab_start_parallel() {
    
    # Pass "passthrough" options on to further invocations of this script
    [ -n "$VERBOSE" ] && PASSTHROUGH_STUFF+=( "-v" )
-   for CURRENT_OPTION in "${PASSTHROUGH_OPTIONS[@]}"; do
+   for CURRENT_OPTION in "${passthrough_opts[@]}"; do
       PASSTHROUGH_STUFF+=( "-o" "$CURRENT_OPTION" )
    done
 
    # Pass testmode along subsequent invocations of this script
-   if [ -n "$TESTMODE" ]; then
+   if [ -n "$test_mode" ]; then
       COMMAND_NAME="ltest"
+
+      # The default console is "none" for ltest. By prepending to passthrough
+      # options, we allow the user to override this with further conX options.
+      PASSTHROUGH_STUFF=( "-o" "--con0=none" "-o" "--con1=none" "${PASSTHROUGH_STUFF[@]}" )
    else
       COMMAND_NAME="lstart"
    fi
@@ -514,7 +539,7 @@ lab_start_parallel() {
    [ "$MAX_SIMULTANEOUS_VMS" -eq 0 ] && MAX_SIMULTANEOUS_VMS=""
 
 
-   cmd=( "$COMMAND_NAME" "-d" "$LAB_DIRECTORY" "${PASSTHROUGH_STUFF[@]}" "--makefile" )
+   cmd=( "$COMMAND_NAME" "-d" "$lab_directory" "--makefile" "${PASSTHROUGH_STUFF[@]}" )
 
    # We expand this array with the Q operator when writing to the Makefile.
    # This ensures escaping sufficient for reuse in a shell command.
@@ -550,16 +575,16 @@ ${tab}[ '\$*' != "lab.dep" ] && $escaped_cmd '\$*'
 dummy-prerequisite-to-force-remaking:
 ${tab}# Dummy line. Unuseful, yet necessary
 
-$(cat "$LAB_DIRECTORY/lab.dep" 2> /dev/null)
+$(cat "$lab_directory/lab.dep" 2> /dev/null)
 EOF
 
    # Read the Makefile from stdin without implicit rules, and hide the output. It
    # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
-   make -irsC "$LAB_DIRECTORY" -f - -j "$MAX_SIMULTANEOUS_VMS" "${VHOSTLIST[@]}" <<< "$makefile_contents"
+   make -irsC "$lab_directory" -f - -j "$MAX_SIMULTANEOUS_VMS" "${VHOSTLIST[@]}" <<< "$makefile_contents"
 
    
    # Signal that every machine is ready for testing once booted.
-   [ -n "$TESTMODE" ] && : > "$LAB_DIRECTORY/readyfor.test"
+   [ -n "$test_mode" ] && : > "$lab_directory/readyfor.test"
 }
 
 

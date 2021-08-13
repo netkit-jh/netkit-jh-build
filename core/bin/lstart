@@ -183,14 +183,19 @@ END_OF_HELP
 # Globals:
 #   r- CHECK_FOR_UPDATES
 #   r- NETKIT_HOME
+#   r- UPDATE_CHECK_PERIOD
 # Arguments:
 #   None
 # Returns:
-#   None
+#   0 when an update is available, non-zero otherwise
 # Example:
 #   None
 ###############################################################################
 update_available() {
+   local last_update_check next_update_check
+   local current_date
+   local current_version latest_version
+
    if [ "$CHECK_FOR_UPDATES" = "yes" ]; then
       # Check whether we have polled in the last UPDATE_CHECK_PERIOD days
       touch "$NETKIT_HOME/.new-version"
@@ -204,11 +209,11 @@ update_available() {
       # Next check = date of the last one + UPDATE_CHECK_PERIOD (in seconds)
       next_update_check=$((last_update_check + UPDATE_CHECK_PERIOD * 86400))
    
-      now=$(date +%s)
+      current_date=$(date +%s)
 
-      if [ "$now" -gt "$next_update_check" ]; then
+      if [ "$current_date" -gt "$next_update_check" ]; then
          # We haven't checked in the past UPDATE_CHECK_PERIOD days, check now
-         echo "$now" > "$NETKIT_HOME/.last-update-check"
+         echo "$current_date" > "$NETKIT_HOME/.last-update-check"
 
          # Get the latest release number from the GitHub API.
          # NOTE: we assume the GitHub API will always return JSON formatted as
@@ -217,13 +222,17 @@ update_available() {
          curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"
       fi
 
-      latest_version=$(cat "$NETKIT_HOME/.new-version")
       current_version=$(sed "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
+      latest_version=$(cat "$NETKIT_HOME/.new-version")
 
       if [ "$latest_version" != "$current_version" ]; then
          echo "https://github.com/netkit-jh/netkit-jh-build/releases/$latest_version"
+         return 0
       fi
    fi
+
+   # Return 1 if not checking for updates or an update doesn't exist
+   return 1
 }
 
 
@@ -271,14 +280,14 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -d)
-         LAB_DIRECTORY=$(readlink --canonicalize-missing "$2")
+         lab_directory=$(readlink --canonicalize-missing "$2")
          shift
          ;;
       -F|--force-lab)
-         FORCE_LAB=1
+         force_lab=1
          ;;
       -f|--fast)
-         FASTMODE=1
+         fast_mode=1
          ;;
       --help)
          usage 0
@@ -289,10 +298,10 @@ while true; do
       --makefile)
          # This is a hidden option which is used by lstart/ltest itself when
          # parallel startup is enabled.
-         MAKEFILE=1
+         makefile=1
          ;;
       -o|--pass)
-         PASSTHROUGH_OPTIONS+=( "$2" )
+         passthrough_opts+=( "$2" )
          shift
          ;;
       -p)
@@ -310,23 +319,23 @@ while true; do
                ;;
          esac
 
-         # TODO: Maybe merge with BE_SEQUENTIAL into a Boolean?
-         FORCE_PARALLEL_MODE=1
+         # TODO: Maybe merge with sequential into a Boolean?
+         force_parallel_mode=1
          ;;
       -R|--rebuild-signature)
          CREATE_SIGNATURE=1
          ;;
       -S|--script-mode)
-         SCRIPTMODE=1
+         script_mode=1
          ;;
       -s|--sequential)
-         BE_SEQUENTIAL=1
+         sequential=1
          ;;
       --tmux-attached)
-         PASSTHROUGH_OPTIONS+=( "$1" )
+         passthrough_opts+=( "$1" )
          ;;
       --tmux-detached)
-         PASSTHROUGH_OPTIONS+=( "$1" )
+         passthrough_opts+=( "$1" )
          ;;
       -v|--verbose)
          VERBOSE=1
@@ -379,8 +388,8 @@ done
 # Non-option arguments are machine names
 VHOSTLIST=( "$@" )
 
-for host in "${VHOSTLIST[@]}"; do
-   if string_contains " " "$host"; then
+for vhost in "${VHOSTLIST[@]}"; do
+   if string_contains " " "$vhost"; then
       echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
       exit 1
    fi
@@ -388,29 +397,23 @@ done
 
 
 # If no lab directory has been given, assume current directory
-LAB_DIRECTORY=${LAB_DIRECTORY:-$PWD}
+lab_directory=${lab_directory:-$PWD}
 
 # Check that the lab directory exists
-if [ ! -d "$LAB_DIRECTORY" ]; then
-   echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: No such directory"
-   exit 1
-fi
-
-# Check whether path to the lab directory contains spaces
-if string_contains " " "$LAB_DIRECTORY"; then
-   echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Path contains whitespace"
+if [ ! -d "$lab_directory" ]; then
+   echo 1>&2 "$SCRIPTNAME: $lab_directory: No such directory"
    exit 1
 fi
 
 
 # Check whether parallel startup and -f are being used together
-if [ -f "$LAB_DIRECTORY/lab.dep" ] && [ -n "$FASTMODE" ] && [ -z "$BE_SEQUENTIAL" ]; then
+if [ -f "$lab_directory/lab.dep" ] && [ -n "$fast_mode" ] && [ -z "$sequential" ]; then
    echo 1>&2 "$SCRIPTNAME: Fast mode is ignored when using parallel startup"
 fi
 
-# TODO: Maybe merge FORCE_PARALLEL_MODE with BE_SEQUENTIAL into a Boolean?
+# TODO: Maybe merge force_parallel_mode with sequential into a Boolean?
 # Check if -p and -s options are being used together
-if [ -n "$FORCE_PARALLEL_MODE" ] && [ -n "$BE_SEQUENTIAL" ]; then
+if [ -n "$force_parallel_mode" ] && [ -n "$sequential" ]; then
    echo 1>&2 "$SCRIPTNAME: Options '-s' and '-p' cannot be used together"
    exit 1
 fi
@@ -418,73 +421,64 @@ fi
 
 # Check if the script has been invoked for testing
 if [ "$SCRIPTNAME" = "ltest" ]; then
-   TESTMODE=1
+   test_mode=1
 
    # Hide .disk files when running tests
-   PASSTHROUGH_OPTIONS+=( "-D" )
+   passthrough_opts+=( "-D" )
 fi
 
 
 # Quickly start a virtual machine and exit, if asked to
-if [ -n "$MAKEFILE" ]; then
+if [ -n "$makefile" ]; then
    # Make sure to wait for .ready files to appear. Otherwise, no dependencies
    # would be satisfied!
-   unset FASTMODE
-
-   lab_start
+   unset fast_mode
+   lab_start "$fast_mode" "$test_mode" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
    exit 0
 fi
 
 
-if [ ! -f "$LAB_DIRECTORY/lab.conf" ] && [ ! -f "$LAB_DIRECTORY/lab.dep" ] && [ -z "$FORCE_LAB" ]; then
+if [ ! -f "$lab_directory/lab.conf" ] && [ ! -f "$lab_directory/lab.dep" ] && [ -z "$force_lab" ]; then
    echo 1>&2 "$SCRIPTNAME: This does not appear to be a lab directory. Use option '-F' to ignore this error"
    exit 1
 fi
 
 
-# Get ready to start the lab
-update_url=$(update_available)
-
 # Print lab information
-if [ -n "$TESTMODE" ]; then
-   [ -z "$SCRIPTMODE" ] && bold_print "========================== Testing lab =========================="
+if [ -n "$test_mode" ] && [ -z "$script_mode" ]; then
+   bold_print "========================== Testing lab =========================="
 else
    bold_print "========================== Starting lab ========================="
 fi
 
-if [ -z "$SCRIPTMODE" ]; then
-   lab_welcome "$LAB_DIRECTORY"
+if [ -z "$script_mode" ]; then
+   lab_welcome "$lab_directory"
    echo
    bold_print "Having issues starting the lab? Run 'lclean' before running 'lstart'."
-   [ -n "$update_url" ] && bold_print "Update available for Netkit-JH - download at $update_url"
+
+   # Get ready to start the lab
+   if update_url=$(update_available); then
+      bold_print "Update available for Netkit-JH - download at $update_url"
+   fi
+
    bold_print "================================================================="
 fi
 
 
-if [ -n "$TESTMODE" ]; then
-   # By default, virtual machines are run without terminals during the tests.
-   # We impose this by setting environment variables for vstart, if not alredy
-   # set. This still allows the user to override the setting by using an option
-   # like --pass=--con0=xterm.
-   export NETKIT_CON0 NETKIT_CON1
-   : "${NETKIT_CON0:=none}"
-   : "${NETKIT_CON1:=none}"
-   
-   # Clean up the lab directory before starting
-   lab_clean "$LAB_DIRECTORY" > /dev/null
-fi
+# Clean up the lab directory before starting
+[ -n "$test_mode" ] && lab_clean "$lab_directory" > /dev/null
 
-[ -n "$SCRIPTMODE" ] && echo -n "Starting lab... "
+[ -n "$script_mode" ] && echo -n "Starting lab... "
 
 # Check whether a lab.dep file exists. If so, enable parallel startup of
 # virtual machines.
-if [ -f "$LAB_DIRECTORY/lab.dep" ] && [ -z "$BE_SEQUENTIAL" ] || [ -n "$FORCE_PARALLEL_MODE" ]; then
+if [ -f "$lab_directory/lab.dep" ] && [ -z "$sequential" ] || [ -n "$force_parallel_mode" ]; then
    # Use parallel startup
-   if [ -z "$SCRIPTMODE" ]; then
+   if [ -z "$script_mode" ]; then
       bold_print "You chose to use parallel startup."
-      lab_start_parallel
+      lab_start_parallel "$test_mode" "$lab_directory" "${passthrough_opts[@]}"
    else
-      lab_start_parallel > /dev/null
+      lab_start_parallel "$test_mode" "$lab_directory" "${passthrough_opts[@]}" > /dev/null
    fi
 else
    # Use sequential startup
@@ -492,10 +486,10 @@ else
    # If VHOSTLIST is not empty, then lab_start takes care of starting only the
    # machines listed in VHOSTLIST; those appearing in VHOSTLIST but that are
    # not part in the lab will simply be skipped.
-   if [ -z "$SCRIPTMODE" ]; then
-      lab_start
+   if [ -z "$script_mode" ]; then
+      lab_start "$fast_mode" "$test_mode" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
    else
-      lab_start > /dev/null
+      lab_start "$fast_mode" "$test_mode" "$makefile" "$lab_directory" "${passthrough_opts[@]}" > /dev/null
    fi
 fi
 
@@ -507,7 +501,7 @@ COLOR_GREEN='\033[32;1m'
 COLOR_NORMAL='\033[0m'
 
 
-if [ -z "$SCRIPTMODE" ]; then
+if [ -z "$script_mode" ]; then
    echo
    bold_print "The lab has been started."
    bold_print "================================================================="
@@ -518,36 +512,36 @@ fi
 # Return the status of the lab test
 EXIT_VALUE=0
 
-if [ -n "$TESTMODE" ]; then
+if [ -n "$test_mode" ]; then
    # Wait for the test to finish
    MACHINES_COUNT=${#VHOSTLIST[@]}
 
    testdone_count=0
    until [ "$testdone_count" -ge "$MACHINES_COUNT" ]; do
-      testdone_files=( "$LAB_DIRECTORY"/*.testdone )
+      testdone_files=( "$lab_directory"/*.testdone )
       testdone_count=${#testdone_files[@]}
 
       sleep 1
    done
 
    # Test finished: now crash the lab
-   if [ -z "$SCRIPTMODE" ]; then
+   if [ -z "$script_mode" ]; then
       bold_print "Stopping lab..."
    else
       echo -n "Stopping lab... "
    fi
 
-   lab_crash > /dev/null
-   lab_clean "$LAB_DIRECTORY" > /dev/null
+   lab_crash "$lab_directory" > /dev/null
+   lab_clean "$lab_directory" > /dev/null
 
    # Check whether we need to build a test signature or to verify the test
    # outcome.
-   if [ ! -d "$LAB_DIRECTORY/_test/signature" ] || [ -n "$CREATE_SIGNATURE" ]; then
+   if [ ! -d "$lab_directory/_test/signature" ] || [ -n "$CREATE_SIGNATURE" ]; then
       # (Re)create the test signature
-      rm -rf "$LAB_DIRECTORY/_test/signature" > /dev/null
-      mv "$LAB_DIRECTORY/_test/results" "$LAB_DIRECTORY/_test/signature"
+      rm -rf "$lab_directory/_test/signature" > /dev/null
+      mv "$lab_directory/_test/results" "$lab_directory/_test/signature"
 
-      if [ -z "$SCRIPTMODE" ]; then
+      if [ -z "$script_mode" ]; then
          bold_print "Test signature created."
       else
          printf "test completed.\t\t[ %bSIGN%b ]" "$COLOR_YELLOW" "$COLOR_NORMAL"
@@ -556,27 +550,27 @@ if [ -n "$TESTMODE" ]; then
       # Verify the test outcome against the signature
       case $VERIFY in
          user)
-            diff -qEbB "$LAB_DIRECTORY/_test/signature/"*.user --to-file "$LAB_DIRECTORY/_test/results" > /dev/null
+            diff -qEbB "$lab_directory/_test/signature/"*.user --to-file "$lab_directory/_test/results" > /dev/null
             EXIT_VALUE=$?
             ;;
          builtin)
-            diff -qEbB "$LAB_DIRECTORY/_test/signature/"*.default --to-file "$LAB_DIRECTORY/_test/results" > /dev/null
+            diff -qEbB "$lab_directory/_test/signature/"*.default --to-file "$lab_directory/_test/results" > /dev/null
             EXIT_VALUE=$?
             ;;
          both)
-            diff -qEbBr "$LAB_DIRECTORY/_test/signature" --to-file "$LAB_DIRECTORY/_test/results" > /dev/null
+            diff -qEbBr "$lab_directory/_test/signature" --to-file "$lab_directory/_test/results" > /dev/null
             EXIT_VALUE=$?
             ;;
          *)
             # VERIFY has not been set
             EXIT_VALUE=0
             for CURRENT_VHOST in "${VHOSTLIST[@]}"; do
-               if [ -f "$LAB_DIRECTORY/_test/signature/$CURRENT_VHOST.user" ]; then
-                  diff -qEbB "$LAB_DIRECTORY/_test/signature/$CURRENT_VHOST.user" --to-file "$LAB_DIRECTORY/_test/results" > /dev/null
+               if [ -f "$lab_directory/_test/signature/$CURRENT_VHOST.user" ]; then
+                  diff -qEbB "$lab_directory/_test/signature/$CURRENT_VHOST.user" --to-file "$lab_directory/_test/results" > /dev/null
                   EXIT_VALUE=$((EXIT_VALUE + $?))
                else
-                  if [ -f "$LAB_DIRECTORY/_test/signature/$CURRENT_VHOST.default" ]; then
-                     diff -qEbB "$LAB_DIRECTORY/_test/signature/$CURRENT_VHOST.default" --to-file "$LAB_DIRECTORY/_test/results" > /dev/null
+                  if [ -f "$lab_directory/_test/signature/$CURRENT_VHOST.default" ]; then
+                     diff -qEbB "$lab_directory/_test/signature/$CURRENT_VHOST.default" --to-file "$lab_directory/_test/results" > /dev/null
                      EXIT_VALUE=$((EXIT_VALUE + $?))
                   fi
                fi
@@ -584,7 +578,7 @@ if [ -n "$TESTMODE" ]; then
             ;;
       esac
 
-      if [ -z "$SCRIPTMODE" ]; then
+      if [ -z "$script_mode" ]; then
          if [ "$EXIT_VALUE" -eq 0 ]; then
             bold_print "Test succeeded."
          else
@@ -606,5 +600,5 @@ if [ -n "$LISTVM" ]; then
    vlist
 fi
 
-[ -z "$SCRIPTMODE" ] && echo
+[ -z "$script_mode" ] && echo
 exit $EXIT_VALUE
