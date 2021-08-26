@@ -15,7 +15,7 @@
 #   None
 ###############################################################################
 usage_line() {
-   echo "Usage: $SCRIPTNAME [OPTION]..."
+   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE"
 }
 
 
@@ -45,13 +45,12 @@ usage() {
 
    cat << END_OF_HELP
 $(usage_line)
-Connect to the tmux session of a Netkit virtual machine.
+Connect to the tmux session of a Netkit MACHINE.
 
   -l, --list          list all running sessions on the tmux 'netkit' server
   -t, --terminal      connect to the tmux session from a new terminal. The
                         terminal opened is dependent on the TERM_TYPE set in
                         netkit.conf
-  -m, --machine=MACHINE  name of the machine to connect to
   -r, --retry-count=N  number of times to attempt to connect to a tmux session
   -n, --interval=N    sleep duration between attempts to connect to a tmux
                         session
@@ -98,7 +97,9 @@ tmux_connect() {
 #   None
 ###############################################################################
 open_terminal() {
-   vm=$1
+   local vm=$1
+
+   local term_cmd
 
    case $TERM_TYPE in
       alacritty)     term_cmd=( "alacritty" "-e" );;
@@ -128,8 +129,8 @@ fi
 . "$NETKIT_HOME/bin/script_utils"
 
 
-RETRY_COUNT=1
-RETRY_INTERVAL=5
+retry_count=1
+retry_interval=5
 
 # Allow nesting of tmux sessions
 unset TMUX
@@ -153,22 +154,18 @@ while true; do
          usage 0
          ;;
       -l|--list)
-         LIST_ONLY=1
-         ;;
-      -m|--machine)
-         MACHINE_NAME=$2
-         shift
+         list_only=1
          ;;
       -n|--interval)
-         RETRY_INTERVAL=$2
+         retry_interval=$2
          shift
          ;;
       -r|--retry-count)
-         RETRY_COUNT=$2
+         retry_count=$2
          shift
          ;;
       -t|--terminal)
-         OPEN_TERM=1
+         open_term=1
          ;;
       --version)
          show_version
@@ -187,33 +184,50 @@ while true; do
    shift
 done
 
+# Parse virtual machine name
+if [ $# -eq 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: Missing machine name"
+   usage 1
+elif [ $# -gt 1 ]; then
+   echo 1>&2 "$SCRIPTNAME: Can only specify one machine"
+   usage 1
+fi
+
+vm=$1
+shift
+
+if string_contains " " "$vm"; then
+   echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
+   exit 1
+fi
+
 
 # Do not connect to the tmux session, just list available ones.
-if [ -n "$LIST_ONLY" ]; then
+if [ -n "$list_only" ]; then
    tmux -L netkit list-sessions
    exit 0
 fi
 
 
-echo -n "Connecting to '$MACHINE_NAME'."
+echo -n "Connecting to '$vm'."
 
-# Test that the tmux session exists RETRY_COUNT number of times.
-ATTEMPTS=0
-while ! tmux -L netkit has-session -t="$MACHINE_NAME" 2> /dev/null; do
-   ATTEMPTS=$((ATTEMPTS + 1))
+# Test that the tmux session exists retry_count number of times.
+attempts=0
+while ! tmux -L netkit has-session -t="$vm" 2> /dev/null; do
+   ((++attempts))
 
-   if [ "$ATTEMPTS" -eq "$RETRY_COUNT" ]; then
+   if [ "$attempts" -eq "$retry_count" ]; then
       echo
-      echo 1>&2 "Could not connect to '$MACHINE_NAME'."
+      echo 1>&2 "Could not connect to '$vm'."
       exit 1
    fi
 
-   sleep "$RETRY_INTERVAL"
+   sleep "$retry_interval"
    echo -n "."
 done
 
-if [ -n "$OPEN_TERM" ]; then
-   open_terminal "$MACHINE_NAME"
+if [ -n "$open_term" ]; then
+   open_terminal "$vm"
 else
-   tmux_connect "$MACHINE_NAME"
+   tmux_connect "$vm"
 fi

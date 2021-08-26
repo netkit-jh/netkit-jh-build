@@ -128,7 +128,7 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -d)
-         LAB_DIRECTORY=$(readlink --canonicalize-missing "$2")
+         lab_directory=$(readlink --canonicalize-missing "$2")
          shift
          ;;
       --help)

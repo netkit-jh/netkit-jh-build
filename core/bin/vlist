@@ -109,10 +109,14 @@ END_OF_HELP
 #   None
 ###############################################################################
 print_vm_summary() {
-   no_header=$1
-   user=$2
+   local no_header=$1
+   local target_user=$2
 
-   [ -n "$user" ] && pgrep_euid="--euid"
+   local machine_count
+   local pid pgid
+   local total_memory_usage
+   local i separator
+   local socket_filename hub_name_and_ext hub_name
 
    # Column spacing:
    #   USER    20
@@ -127,14 +131,14 @@ print_vm_summary() {
    # The process hierarchy (relevance of the PGID) is documented in
    # scripts_utils.
    machine_count=0
-   for pid in $(pgrep ${pgrep_euid:+"$pgrep_euid"} ${user:+"$user"} --full "^$NETKIT_HOME/kernel/netkit-kernel"); do
+   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/kernel/netkit-kernel"); do
       # Get the process group ID (PGID)
       pgid=$(ps --no-headers --format pgid --pid "$pid")
 
       # Ignore if not a process leader
       [ "$pgid" -ne "$pid" ] && continue
    
-      machine_count=$((machine_count + 1))
+      ((++machine_count))
 
       get_vm_info_by_pid "$pid"
 
@@ -143,27 +147,21 @@ print_vm_summary() {
       # however in practice just taking the value of the parent process is
       # enough. The value should equate to roughly the size of the machine's
       # memory.
-      total_memory_usage=$((total_memory_usage + vm_info[memory_usage]))
+      ((total_memory_usage += vm_info[memory_usage]))
 
       # No column will be truncated on a value that is too long
       printf "%-20s %-20s %5d %9d   " "${vm_info[owner]}" "${vm_info[umid]}" "${vm_info[pid]}" "${vm_info[memory_usage]}"
 
-      first_iteration=true
       for i in "${!vm_uml_sockets[@]}"; do
-         filepath=${vm_uml_sockets[$i]}
-         filename=$(basename "$filepath")
+         socket_filename=$(basename "${vm_uml_sockets[$i]}")
 
-         collision_domain_and_ext=${filename#"$HUB_SOCKET_PREFIX"_*_}
-         collision_domain=${collision_domain_and_ext%"$HUB_SOCKET_EXTENSION"}
+         hub_name_and_ext=${socket_filename#${HUB_SOCKET_PREFIX}_*_}
+         hub_name=${hub_name_and_ext%$HUB_SOCKET_EXTENSION}
 
+         echo -n "${separator}eth$i @ $hub_name"
+         
          # Comma-separate subsequent interfaces
-         if $first_iteration; then
-            first_iteration=false
-         else
-            echo -n ", "
-         fi
-
-         echo -n "eth$i @ $collision_domain"
+         separator=", "
       done
 
       echo
@@ -194,10 +192,14 @@ print_vm_summary() {
 #   None
 ###############################################################################
 print_vm_info_by_name() {
-   user=$1
-   vm=$2
+   local target_user=$1
+   local vm=$2
 
-   get_vm_info_by_name "$user" "$vm"
+   local i indent
+   local socket_filepath socket_filename hub_name_and_ext hub_name   
+
+   # Fill vm_info and vm_uml_sockets global arrays
+   get_vm_info_by_name "$target_user" "$vm"
 
    # Output the machine details in a structured format
    echo "============= Information for virtual machine '$vm' ============="
@@ -214,22 +216,17 @@ print_vm_info_by_name() {
 
    echo -n "   Interfaces:        "
 
-   first_iteration=true
    for i in "${!vm_uml_sockets[@]}"; do
-      filepath=${vm_uml_sockets[$i]}
-      filename=$(basename "$filepath")
+      socket_filepath=${vm_uml_sockets[$i]}
+      socket_filename=$(basename "$socket_filepath")
 
-      collision_domain_and_ext=${filename#"$HUB_SOCKET_PREFIX"_*_}
-      collision_domain=${collision_domain_and_ext%"$HUB_SOCKET_EXTENSION"}
+      hub_name_and_ext=${socket_filename#$HUB_SOCKET_PREFIX_*_}
+      hub_name=${hub_name_and_ext%$HUB_SOCKET_EXTENSION}
+
+      echo "${indent}eth$i @ $hub_name ($socket_filepath)"
 
       # Indent subsequent lines
-      if $first_iteration; then
-         first_iteration=false
-      else
-         echo -n "                      "
-      fi
-
-      echo "eth$i @ $collision_domain ($filepath)"
+      indent="                      "
    done
 
    echo "   Hostlab:           ${vm_info[hostlab]:-"-"}"
@@ -243,7 +240,7 @@ print_vm_info_by_name() {
       xterm)   echo "terminal emulator";;
       this)    echo "stdin/stdout";;
       pty)     echo "pty";;
-      port:*)  echo "port ${con0#"port:"}"
+      port:*)  echo "port ${vm_info[con0]#"port:"}"
    esac
 
    echo -n "   Console 2:         "
@@ -252,7 +249,7 @@ print_vm_info_by_name() {
       xterm)   echo "terminal emulator";;
       this)    echo "stdin/stdout";;
       pty)     echo "pty";;
-      port:*)  echo "port ${con1#"port:"}"
+      port:*)  echo "port ${vm_info[con1]#"port:"}"
    esac
 
    echo "   Other arguments:   ${vm_info[other]:-"-"}"

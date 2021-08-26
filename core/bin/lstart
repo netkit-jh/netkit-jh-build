@@ -293,7 +293,7 @@ while true; do
          usage 0
          ;;
       -l|--list)
-         LISTVM=1
+         list_vm=1
          ;;
       --makefile)
          # This is a hidden option which is used by lstart/ltest itself when
@@ -305,17 +305,20 @@ while true; do
          shift
          ;;
       -p)
-         # Argument is optional - it will be an empty string if omitted.
-         OPT_ARG=$2
+         parallelisation=$2
          shift
 
-         case $OPT_ARG in
-            ""|*[!0-9]*)
+         # Argument is optional - it will be an empty string if omitted.
+         case $parallelisation in
+            "")
+               # No argument implies MAX_SIMULTAENEOUS_VMS will be the 
+               ;;
+            *[!0-9]*)
                echo 1>&2 "$SCRIPTNAME: Argument to option '-p' must be a positive integer or 0"
                usage 1
                ;;
             *)
-               MAX_SIMULTANEOUS_VMS=$OPT_ARG
+               MAX_SIMULTANEOUS_VMS=$parallelisation
                ;;
          esac
 
@@ -323,7 +326,7 @@ while true; do
          force_parallel_mode=1
          ;;
       -R|--rebuild-signature)
-         CREATE_SIGNATURE=1
+         rebuild_signature=1
          ;;
       -S|--script-mode)
          script_mode=1
@@ -341,12 +344,10 @@ while true; do
          VERBOSE=1
          ;;
       --verify)
-         OPT_ARG=$2
-         shift
-
-         case $OPT_ARG in
+         case $2 in
             user|builtin|both)
-               VERIFY=$OPT_ARG
+               test_type=$2
+               shift
                ;;
             *)
                echo 1>&2 "$SCRIPTNAME: Invalid argument to option '--verify'"
@@ -359,16 +360,14 @@ while true; do
          exit 0
          ;;
       -w|--wait)
-         OPT_ARG=$2
-         shift
-
-         case $OPT_ARG in
+         case $2 in
             ""|*[!0-9]*)
                echo 1>&2 "$SCRIPTNAME: Argument to option '-w' must be a positive integer or 0"
                usage 1
                ;;
             *)
-               GRACE_TIME=$OPT_ARG
+               GRACE_TIME=$2
+               shift
                ;;
          esac
          ;;
@@ -422,6 +421,10 @@ fi
 # Check if the script has been invoked for testing
 if [ "$SCRIPTNAME" = "ltest" ]; then
    test_mode=1
+
+   # Default console is "none" for ltest. By prepending, we allow other
+   # passthrough options to override this.
+   passthrough_opts=( "--con0" "none" "--con1" "none" "${passthrough_opts[@]}" )
 
    # Hide .disk files when running tests
    passthrough_opts+=( "-D" )
@@ -494,13 +497,6 @@ else
 fi
 
 
-# TODO: put in lcommon
-COLOR_YELLOW='\033[33;1m'
-COLOR_RED='\033[31;1m'
-COLOR_GREEN='\033[32;1m'
-COLOR_NORMAL='\033[0m'
-
-
 if [ -z "$script_mode" ]; then
    echo
    bold_print "The lab has been started."
@@ -510,17 +506,16 @@ else
 fi
 
 # Return the status of the lab test
-EXIT_VALUE=0
+exit_code=0
 
 if [ -n "$test_mode" ]; then
    # Wait for the test to finish
-   MACHINES_COUNT=${#VHOSTLIST[@]}
+   vhost_count=${#VHOSTLIST[@]}
 
-   testdone_count=0
-   until [ "$testdone_count" -ge "$MACHINES_COUNT" ]; do
+   tests_completed=0
+   while [ "$tests_completed" -lt "$vhost_count" ]; do
       testdone_files=( "$lab_directory"/*.testdone )
-      testdone_count=${#testdone_files[@]}
-
+      tests_completed=${#testdone_files[@]}
       sleep 1
    done
 
@@ -531,74 +526,67 @@ if [ -n "$test_mode" ]; then
       echo -n "Stopping lab... "
    fi
 
-   lab_crash "$lab_directory" > /dev/null
+   lab_crash "$lab_directory" "" "" > /dev/null
    lab_clean "$lab_directory" > /dev/null
 
    # Check whether we need to build a test signature or to verify the test
    # outcome.
-   if [ ! -d "$lab_directory/_test/signature" ] || [ -n "$CREATE_SIGNATURE" ]; then
+   if [ ! -d "$lab_directory/_test/signature" ] || [ -n "$rebuild_signature" ]; then
       # (Re)create the test signature
-      rm -rf "$lab_directory/_test/signature" > /dev/null
+      rm -rf "$lab_directory/_test/signature"
       mv "$lab_directory/_test/results" "$lab_directory/_test/signature"
 
       if [ -z "$script_mode" ]; then
          bold_print "Test signature created."
       else
-         printf "test completed.\t\t[ %bSIGN%b ]" "$COLOR_YELLOW" "$COLOR_NORMAL"
+         printf "test completed.\t\t[ %bSIGN%b ]\n" "$color_yellow" "$color_normal"
       fi
    else
       # Verify the test outcome against the signature
-      case $VERIFY in
+      case $test_type in
          user)
-            diff -qEbB "$lab_directory/_test/signature/"*.user --to-file "$lab_directory/_test/results" > /dev/null
-            EXIT_VALUE=$?
+            diff -qEbB "$lab_directory/_test/signature/"*.user    --to-file "$lab_directory/_test/results" > /dev/null
+            exit_code=$?
             ;;
          builtin)
             diff -qEbB "$lab_directory/_test/signature/"*.default --to-file "$lab_directory/_test/results" > /dev/null
-            EXIT_VALUE=$?
+            exit_code=$?
             ;;
          both)
-            diff -qEbBr "$lab_directory/_test/signature" --to-file "$lab_directory/_test/results" > /dev/null
-            EXIT_VALUE=$?
+            diff -qEbBr "$lab_directory/_test/signature"          --to-file "$lab_directory/_test/results" > /dev/null
+            exit_code=$?
             ;;
          *)
-            # VERIFY has not been set
-            EXIT_VALUE=0
-            for CURRENT_VHOST in "${VHOSTLIST[@]}"; do
-               if [ -f "$lab_directory/_test/signature/$CURRENT_VHOST.user" ]; then
-                  diff -qEbB "$lab_directory/_test/signature/$CURRENT_VHOST.user" --to-file "$lab_directory/_test/results" > /dev/null
-                  EXIT_VALUE=$((EXIT_VALUE + $?))
-               else
-                  if [ -f "$lab_directory/_test/signature/$CURRENT_VHOST.default" ]; then
-                     diff -qEbB "$lab_directory/_test/signature/$CURRENT_VHOST.default" --to-file "$lab_directory/_test/results" > /dev/null
-                     EXIT_VALUE=$((EXIT_VALUE + $?))
-                  fi
+            # test_type has not been set
+            for vhost in "${VHOSTLIST[@]}"; do
+               if [ -f "$lab_directory/_test/signature/$vhost.user" ]; then
+                  diff -qEbB "$lab_directory/_test/signature/$vhost.user" --to-file "$lab_directory/_test/results" > /dev/null
+                  exit_code=$((exit_code + $?))
+               elif [ -f "$lab_directory/_test/signature/$vhost.default" ]; then
+                  diff -qEbB "$lab_directory/_test/signature/$vhost.default" --to-file "$lab_directory/_test/results" > /dev/null
+                  exit_code=$((exit_code + $?))
                fi
             done
             ;;
       esac
 
       if [ -z "$script_mode" ]; then
-         if [ "$EXIT_VALUE" -eq 0 ]; then
+         if [ "$exit_code" -eq 0 ]; then
             bold_print "Test succeeded."
          else
             bold_print "Test FAILED!"
          fi
       else
-         if [ "$EXIT_VALUE" -eq 0 ]; then
-            printf "test completed.\t\t[ %b OK %b ]" "$COLOR_GREEN" "$COLOR_NORMAL"
+         if [ "$exit_code" -eq 0 ]; then
+            printf "test completed.\t\t[ %b OK %b ]\n" "$color_green" "$color_normal"
          else
-            printf "test completed.\t\t[ %bFAIL%b ]" "$COLOR_RED" "$COLOR_NORMAL"
+            printf "test completed.\t\t[ %bFAIL%b ]\n" "$color_red" "$color_normal"
          fi
       fi
    fi
 fi
 
 # Show a list of running virtual machines, if asked to
-if [ -n "$LISTVM" ]; then
-   echo
-   vlist
-fi
+[ -n "$list_vm" ] && vlist
 
-[ -z "$script_mode" ] && echo
-exit $EXIT_VALUE
+exit $exit_code

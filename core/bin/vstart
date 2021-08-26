@@ -207,9 +207,12 @@ END_OF_HELP
 #   None
 ###############################################################################
 check_filesystem() {
-   file=$1
+   local filepath=$1
 
-   fs_type=$(stat -f "$file" | grep -w Type)
+   local fs_type
+
+   # Get the host filesystem type
+   fs_type=$(stat -f "$filepath" | grep -w Type)
    fs_type=${fs_type#*Type: }
 
    if [[ "$fs_type" =~ ^(ext[2-4]|ntfs|ntfs-3g|fuse|reiser|jfs|xfs)$ ]]; then
@@ -224,11 +227,11 @@ check_filesystem() {
 #   setup_interfaces [INTERFACE]...
 # Globals:
 #   r- BE_QUIET
-#   -w HUBLIST
+#   -w HUB_LIST
 #   r- HUB_SOCKET_DIR
 #   r- HUB_SOCKET_EXTENSION
 #   r- HUB_SOCKET_PREFIX
-#   r- KERNELCMD
+#   r- kernel_cmd
 #   r- SCRIPTNAME
 #   r- USER_ID
 # Arguments:
@@ -239,22 +242,28 @@ check_filesystem() {
 #   None
 ###############################################################################
 setup_interfaces() {
-   local device hub_name hub_socket tap_address
-   local guest_address enabled_default_route used_devices
-   
-   first_iteration=true
-   while [ $# -gt 0 ]; do
-      device=${1%%=*}
-      hub_specification=${1#*=}
+   local interface_specifications=( "$@" )
+
+   local interface_specification
+   local hub_specification hub_name tap_address guest_address hub_socket
+   local device used_devices
+   local enabled_default_route indent
+
+   enabled_default_route=false
+
+   for interface_specification in "${interface_specifications[@]}"; do
+      device=${interface_specification%%=*}
+      hub_specification=${interface_specification#*=}
 
       # Check if interface has already been configured
-      if [[ " $used_devices " == *" $device "* ]]; then
+      # TODO: is this check really necessary?
+      if array_contains "$device" "${used_devices[@]}"; then
          echo 1>&2 "$SCRIPTNAME: $device: Duplicate interface"
          usage 1
       fi
 
       # Remember that this network interface has been configured
-      used_devices="$used_devices $device"
+      used_devices+=( "$device" )
 
       # Check if tap interface (regular hubs cannot be named with commas)
       if [[ "$hub_specification" == tap,* ]]; then
@@ -278,32 +287,26 @@ setup_interfaces() {
       
       hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
 
-      KERNELCMD="$KERNELCMD $device=daemon,,,$hub_socket"
+      kernel_cmd+=( "$device=daemon,,,$hub_socket" )
       
       if [ -n "$tap_address" ]; then
-         HUBLIST+=( "$hub_name,$tap_address" )
+         HUB_LIST+=( "$hub_name,$tap_address" )
 
-         KERNELCMD="$KERNELCMD autoconf_$device=$guest_address"
+         kernel_cmd+=( "autoconf_$device=$guest_address" )
 
-         # TODO: KERNELCMD is an array now
          # Ensure the default route is specified only once
-         if [ -z "$enabled_default_route" ]; then
-            KERNELCMD="$KERNELCMD def_route=$tap_address"
-            enabled_default_route=1
+         if ! $enabled_default_route; then
+            kernel_cmd+=( "def_route=$tap_address" )
+            enabled_default_route=true
          fi
       else
-         HUBLIST+=( "$hub_name" )
+         HUB_LIST+=( "$hub_name" )
       fi
 
-      if $first_iteration; then
-         first_iteration=false
-      elif [ -z "$BE_QUIET" ]; then
-         echo -n "               "
-      fi
+      [ -z "$BE_QUIET" ] && echo "$indent$device @ $hub_name ($hub_socket)"
 
-      [ -z "$BE_QUIET" ] && echo "$device @ $hub_name ($hub_socket)"
-
-      shift
+      # Indent subsequent lines
+      indent="               "
    done
 }
 
@@ -311,42 +314,46 @@ setup_interfaces() {
 ###############################################################################
 # Invoke uml_mconsole to "wake up" port-helper in the event that it hangs.
 # Usage:
-#   wakeup_porthelper
+#   wakeup_porthelper MACHINE
 # Globals:
 #   r- NETKIT_HOME
-#   r- VM_NAME
 # Arguments:
-#   None
+#   $1 - machine name
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 wakeup_porthelper() {
+   local vm=$1
+
    sleep 5
-   "$NETKIT_HOME/bin/uml_mconsole" "$VM_NAME" help > /dev/null 2>&1 &
+   "$NETKIT_HOME/bin/uml_mconsole" "$vm" help > /dev/null 2>&1 &
 }
 
 
 ###############################################################################
 # Delete .disk file as soon as it is created by the UML instance.
+# TODO: rename or remove to eliminate ambiguity against rm_filesystem.
 # Usage:
-#   remove_fs_command
+#   remove_fs_command FILE
 # Globals:
-#   r- VM_FS
-# Arguments:
 #   None
+# Arguments:
+#   $1 - filepath of filesystem (.disk file) to remove
 # Returns:
 #   None
 # Example:
-#   remove_fs_command &
+#   remove_fs_command "$filepath" &
 ###############################################################################
 remove_fs_command() {
-   while [ ! -f "$VM_FS" ]; do
+   local filepath=$1
+
+   while [ ! -f "$filepath" ]; do
       sleep 1
    done
    
-   rm -f "$VM_FS" 
+   rm -f "$filepath"
 }
 
 
@@ -354,39 +361,41 @@ remove_fs_command() {
 # Run relevant kernel invocation setup functions and then invoke the UML kernel
 # instance. Upon return, clean up redundant network hubs.
 # Usage:
-#   run_kernel_command
+#   run_kernel FILE MACHINE
 # Globals:
 #   r- CON0_PORTHELPER
-#   r- HUBLIST
+#   r- HUB_LIST
 #   r- JUST_PRINT
-#   r- KERNELCMD
-#   r- REMOVE_FS
+#   r- kernel_cmd
 # Arguments:
-#   None
+#   $1 - filesystem (.disk) file to remove. Empty string to not remove it
+#   $2 - machine name
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
-run_kernel_command() {
+run_kernel() {
+   local filesystem=$1
+   local vm=$2
+
    # If doing a dry run, we want to skip all four commands here.
    if [ -n "$JUST_PRINT" ]; then
-      run_command "$JUST_PRINT" "${KERNELCMD[*]}" "${KERNELCMD[@]}"
+      run_command "$JUST_PRINT" "" "${kernel_cmd[@]}"
       return
    fi
 
    # Invocation of uml_mconsole is needed in order to "wake up" port-helper if
    # it ever hangs when booting the virtual machine.
-   [ "$CON0_PORTHELPER" = "yes" ] && wakeup_porthelper
+   # TODO: remove port helper
+   [ "$CON0_PORTHELPER" = "yes" ] && wakeup_porthelper "$vm"
    
    # Remove .disk file, if requested
-   if [ -n "$REMOVE_FS" ]; then
-      remove_fs_command &
-   fi
+   [ -n "$filesystem" ] && remove_fs_command "$filesystem" &
 
-   run_command "$JUST_PRINT" "${KERNELCMD[*]}" "${KERNELCMD[@]}"
+   run_command "$JUST_PRINT" "" "${kernel_cmd[@]}"
 
-   clean_hubs "${HUBLIST[@]}"
+   clean_hubs "${HUB_LIST[@]}"
 }
 
 
@@ -425,78 +434,77 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       --append)
-         KERNEL_APPEND+=( "$2" )
+         kernel_cmd_append+=( "$2" )
          shift
          ;;
       --con0|--con1)
-         OPT=$1
-         CON=$2
+         option=$1
+         console=$2
+         shift
 
-         case $CON in
+         case $console in
             xterm|this|pty|port:*|none)
-               [ "$OPT" = "--con0" ] && VM_CON0=$CON || VM_CON1=$CON
+               [ "$option" = "--con0" ] && VM_CON0=$console || VM_CON1=$console
                ;;
             *)
-               echo 1>&2 "$SCRIPTNAME: $CON: Unrecognized console"
+               echo 1>&2 "$SCRIPTNAME: $console: Unrecognized console"
                usage 1
                ;;
          esac
-
-         shift
          ;;
       -D|--hide-disk-file)
-         REMOVE_FS=1
+         remove_fs=1
          ;;
       --debug)
-         DEBUG=1
+         debug=1
          ;;
       -e|--exec)
-         VM_EXEC=$2
+         exec_cmd=$2
          shift
          ;;
       --eth*)
-         OPT="$1"
-         DOMAIN="$2"
+         device=${1#--}
+         hub_name=$2
+         shift
 
-         if string_contains "_" "$DOMAIN"; then
-            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - underscores are not allowed"
+         if string_contains "_" "$hub_name"; then
+            echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid collision domain - underscores are not allowed"
             usage 1
          fi
 
-         if string_contains "," "$DOMAIN" || string_contains "." "$DOMAIN"; then
+         if string_contains "," "$hub_name" || string_contains "." "$hub_name"; then
             # If not a tap specification, but its name contains a comma
-            if [ "${DOMAIN#tap,}" = "$DOMAIN" ]; then
-               echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - commas and periods are only valid for tap interface specification"
+            if [ "${hub_name#tap,}" = "$hub_name" ]; then
+               echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid collision domain - commas and periods are only valid for tap interface specification"
                usage 1
             fi
          fi
 
-         # TODO: double-check checkSpaces and maybe change ETH_INTERFACES to
-         # array.
-         if string_contains " " "$DOMAIN"; then
-            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Collision domain name cannot contain whitespace"
+         # TODO: double-check checkSpaces
+         if string_contains " " "$hub_name"; then
+            echo 1>&2 "$SCRIPTNAME: $hub_name: Collision domain name cannot contain whitespace"
             exit 1
          fi
-         ETH_INTERFACES="$ETH_INTERFACES ${OPT#--}=$DOMAIN"
-         shift
+
+         interface_specifications+=( "$device=$hub_name" )
          ;;
       -F|--foreground)
-         RUN_IN_FOREGROUND=1
+         foreground=1
          ;;
       -f|--filesystem)
-         VM_FS=$2
+         filesystem=$2
+         shift
 
-         if string_contains "," "$VM_FS"; then
-            echo 1>&2 "$SCRIPTNAME: $VM_FS: Invalid filesystem - commas are not allowed"
+         if string_contains "," "$filesystem"; then
+            echo 1>&2 "$SCRIPTNAME: $filesystem: Invalid filesystem - commas are not allowed"
             usage 1
          fi
 
-         # TODO: double-check udb0 argument allows spaces
-         VM_FS=$(readlink --canonicalize-missing "$VM_FS")
-         shift
+         # TODO: double-check udb0 argument allows spaces and commas
+         filesystem=$(readlink --canonicalize-missing "$filesystem")
          ;;
       -H|--no-hosthome)
-         NO_HOSTHOME=1
+         no_hosthome=1
          ;;
       --help)
          usage 0
@@ -506,7 +514,7 @@ while true; do
          shift
          ;;
       -l|--hostlab)
-         VM_HOSTLAB=$2
+         hostlab_dir=$2
          shift
          ;;
       -M|--mem)
@@ -538,7 +546,7 @@ while true; do
          BE_QUIET=1
          ;;
       --test)
-         KERNEL_APPEND+=( "test" )
+         kernel_cmd_append+=( "test" )
          ;;
       --tmux-attached)
          VM_CON0="tmux"
@@ -556,10 +564,10 @@ while true; do
          exit 0
          ;;
       -W|--no-cow)
-         USE_MODEL_FS=1
+         no_cow=1
          ;;
       -w|--hostwd)
-         VM_HOSTWD=$2
+         host_working_dir=$2
          shift
          ;;
       --xterm)
@@ -593,10 +601,10 @@ elif [ $# -gt 1 ]; then
    usage 1
 fi
 
-VM_NAME=$1
+vm=$1
 shift
 
-if string_contains " " "$VM_NAME"; then
+if string_contains " " "$vm"; then
    echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
    exit 1
 fi
@@ -609,13 +617,13 @@ if [ "$VM_CON0" = "this" ] && [ "$VM_CON1" = "this" ]; then
 fi
 
 # Check whether a COW filesystem has been explictly provided when using the --no-cow option
-if [ -n "$USE_MODEL_FS" ] && [ -n "$VM_FS" ]; then
+if [ -n "$no_cow" ] && [ -n "$filesystem" ]; then
    echo 1>&2 "$SCRIPTNAME: Cannot provide a filesystem name with --no-cow"
    usage 1
 fi   
 
 # Check whether the user asked to hide the virtual machine filesystem while using the --no-cow option
-if [ -n "$REMOVE_FS" ] && [ -n "$USE_MODEL_FS" ]; then
+if [ -n "$remove_fs" ] && [ -n "$no_cow" ]; then
    echo 1>&2 "$SCRIPTNAME: Cannot hide the filesystem when using --no-cow"
    usage 1
 fi
@@ -631,145 +639,145 @@ if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "
    # Some xterm option arguments are not their relevant executable's name. We
    # hence map these edge cases here.
    case $TERM_TYPE in
-      gnome)         TERM_EXE="gnome-terminal";;
-      konsole-tab)   TERM_EXE="konsole";;
-      wsl)           TERM_EXE="wsl.exe";;
-      wt)            TERM_EXE="wt.exe";;
-      *)             TERM_EXE=$TERM_TYPE;;
+      gnome)         term_executable="gnome-terminal";;
+      konsole-tab)   term_executable="konsole";;
+      wsl)           term_executable="wsl.exe";;
+      wt)            term_executable="wt.exe";;
+      *)             term_executable=$TERM_TYPE;;
    esac
 
-   if ! command -v "$TERM_EXE" > /dev/null 2>&1; then
-      echo 1>&2 "$SCRIPTNAME: $TERM_EXE: Terminal emulator not found"
+   if ! command -v "$term_executable" > /dev/null 2>&1; then
+      echo 1>&2 "$SCRIPTNAME: $term_executable: Terminal emulator not found"
       exit 1
    fi
 fi
 
 
 # Start building the kernel command line
-KERNELCMD=( "$VM_KERNEL" )
+kernel_cmd=( "$VM_KERNEL" )
 
 
 # Check if model fs or cow fs are on a filesystem supporting sparse files
-: "${VM_FS:="$PWD/$VM_NAME.disk"}"
+: "${filesystem:="$PWD/$vm.disk"}"
 
-if [ -z "$USE_MODEL_FS" ]; then
-   check_filesystem "$VM_MODEL_FS"
+if [ -n "$no_cow" ]; then
+   check_filesystem "$filesystem"
 else
-   check_filesystem "$VM_FS"
+   check_filesystem "$VM_MODEL_FS"
 fi
 
 if [ -z "$BE_QUIET" ]; then
-   echo "============= Starting virtual machine '$VM_NAME' ============="
+   echo "============= Starting virtual machine '$vm' ============="
    echo "   Kernel:     $VM_KERNEL"
 fi
 
 
 # Setup kernel modules directory
-KERNEL_MODULES_DIRECTORY=$(dirname "$VM_KERNEL")/modules
+kernel_modules_dir="$(dirname "$VM_KERNEL")/modules"
 
-if [ -d "$KERNEL_MODULES_DIRECTORY" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Modules:    $KERNEL_MODULES_DIRECTORY"
-   KERNELCMD+=( "modules=$KERNEL_MODULES_DIRECTORY" )
+if [ -d "$kernel_modules_dir" ]; then
+   [ -z "$BE_QUIET" ] && echo "   Modules:    $kernel_modules_dir"
+   kernel_cmd+=( "modules=$kernel_modules_dir" )
 fi
 
 
 # Set virtual machine name
-KERNELCMD+=( "name=$VM_NAME" "title=$VM_NAME" "umid=$VM_NAME" )
+kernel_cmd+=( "name=$vm" "title=$vm" "umid=$vm" )
 
 
 # Set memory amount
 [ -z "$BE_QUIET" ] && echo "   Memory:     $VM_MEMORY MB"
-VM_MEMORY=$((VM_MEMORY + VM_MEMORY_SKEW))
-KERNELCMD+=( "mem=${VM_MEMORY}M" )
+((VM_MEMORY += VM_MEMORY_SKEW))
+kernel_cmd+=( "mem=${VM_MEMORY}M" )
 
 
 # Filesystem settings
 [ -z "$BE_QUIET" ] && echo "   Model fs:   $VM_MODEL_FS"
 
-if [ -n "$USE_MODEL_FS" ]; then
+if [ -n "$no_cow" ]; then
    [ -z "$BE_QUIET" ] && echo "   Filesystem: using model fs (no COW)"
 
    # Use model fs as virtual machine filesystem (do not use COW)
-   KERNELCMD+=( "ubd0=$VM_MODEL_FS" )
+   kernel_cmd+=( "ubd0=$VM_MODEL_FS" )
 
-   VM_FS=$VM_MODEL_FS
+   filesystem=$VM_MODEL_FS
 else
-   [ -z "$BE_QUIET" ] && echo -n "   Filesystem: $VM_FS"
+   [ -z "$BE_QUIET" ] && echo -n "   Filesystem: $filesystem"
 
    # Explicitly declaring the model fs name is redundant after the COW file has
    # been created. Nevertheless, this is needed in order to later get
    # information about the virtual machine (i.e., by using vlist).
-   KERNELCMD+=( "ubd0=$VM_FS,$VM_MODEL_FS" )
+   kernel_cmd+=( "ubd0=$filesystem,$VM_MODEL_FS" )
 
-   [ -z "$BE_QUIET" ] && [ ! -f "$VM_FS" ] && echo " (new)" || echo
+   [ -z "$BE_QUIET" ] && [ ! -f "$filesystem" ] && echo " (new)" || echo
 fi
 
 
 # Append a boot option that specifies the root filesystem.
 # NOTE: The following root= options should also be valid: /dev/ubda1 and
 # /dev/ubd/disc0/part1.
-KERNELCMD+=( "root=98:0" )
+kernel_cmd+=( "root=98:0" )
 
 
 # Setup mconsole directory
-KERNELCMD+=( "uml_dir=$MCONSOLE_DIR" )
+kernel_cmd+=( "uml_dir=$MCONSOLE_DIR" )
 
 
 # Setup network interfaces
-if [ -n "$ETH_INTERFACES" ]; then
+if [ "${#interface_specifications[@]}" -gt 0 ]; then
    [ -z "$BE_QUIET" ] && echo -n "   Interfaces: "
-   # TODO: Fix SC2086
-   setup_interfaces $ETH_INTERFACES
+   setup_interfaces "${interface_specifications[@]}"
 fi
 
 
 # Set host home directory path
-if [ -z "$NO_HOSTHOME" ]; then
+if [ -z "$no_hosthome" ]; then
    [ -z "$BE_QUIET" ] && echo "   Hostfs at:  $HOME"
-   KERNELCMD+=( "hosthome=$HOME" )
+   kernel_cmd+=( "hosthome=$HOME" )
 fi
 
 
 # Check whether the virtual machine already exists
-if [ -z "$JUST_PRINT" ] && get_machine_state "$USER_ID" "$VM_NAME"; then
-   echo 1>&2 "$SCRIPTNAME: Virtual machine '$VM_NAME' is already running. Please halt it before starting a new one or use a different virtual machine name"
+if [ -z "$JUST_PRINT" ] && get_machine_state "$USER_ID" "$vm"; then
+   echo 1>&2 "$SCRIPTNAME: Virtual machine '$vm' is already running. Please halt it before starting a new one or use a different virtual machine name"
    exit 1
 fi
 
 
 # Check whether filesystem is already in use
-if [ -z "$JUST_PRINT" ] && file_in_use "$VM_FS"; then
-   echo 1>&2 "$SCRIPTNAME: Filesystem '$VM_FS' is already in use. Please use a different filesystem or virtual machine name"
+if [ -z "$JUST_PRINT" ] && file_in_use "$filesystem"; then
+   echo 1>&2 "$SCRIPTNAME: Filesystem '$filesystem' is already in use. Please use a different filesystem or virtual machine name"
    exit 1
 fi
 
 
 # Append exec, hostlab and hostwd parameters, if any
-if [ -n "$VM_EXEC" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Boot cmd:   '$VM_EXEC'"
-   KERNELCMD+=( "exec=$VM_EXEC" )
+if [ -n "$exec_cmd" ]; then
+   [ -z "$BE_QUIET" ] && echo "   Boot cmd:   '$exec_cmd'"
+   kernel_cmd+=( "exec=$exec_cmd" )
 fi
 
-if [ -n "$VM_HOSTLAB" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Hostlab at: $VM_HOSTLAB"
-   KERNELCMD+=( "hostlab=$VM_HOSTLAB" )
+if [ -n "$hostlab_dir" ]; then
+   [ -z "$BE_QUIET" ] && echo "   Hostlab at: $hostlab_dir"
+   kernel_cmd+=( "hostlab=$hostlab_dir" )
 fi
 
-if [ -n "$VM_HOSTWD" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Host WD at: $VM_HOSTWD"
-   KERNELCMD+=( "hostwd=$VM_HOSTWD" )
+if [ -n "$host_working_dir" ]; then
+   [ -z "$BE_QUIET" ] && echo "   Host WD at: $host_working_dir"
+   kernel_cmd+=( "hostwd=$host_working_dir" )
 fi
 
 
 # Set verbosity parameter (is 'verbose' by default)
-if [ -n "$DEBUG" ]; then
-   KERNELCMD=( "gdb --args" "${KERNELCMD[@]}" )
+if [ -n "$debug" ]; then
+   kernel_cmd=( "gdb --args" "${kernel_cmd[@]}" )
 elif [ -z "$VERBOSE" ]; then
-   KERNELCMD+=( "quiet" )
+   kernel_cmd+=( "quiet" )
 fi
 
 
 # Bypass port helper, if required (only allowed for the primary terminal)
+# TODO: remove port helper
 if [ $VM_CON0 = "xterm" ] && [ "$CON0_PORTHELPER" != "yes" ]; then
    VM_CON0="this_noporthelper"
 fi
@@ -777,38 +785,38 @@ fi
 
 # Attach terminals
 case $VM_CON0 in
-   none)                      KERNELCMD+=( "con0=null" );;
-   xterm)                     KERNELCMD+=( "con0=xterm" );;
-   this|this_noporthelper)    KERNELCMD+=( "con0=fd:0,fd:1" );;
-   pty)                       KERNELCMD+=( "con0=pty" );;
-   port:*)                    KERNELCMD+=( "con0=$VM_CON0" );;
+   none)                   kernel_cmd+=( "con0=null" );;
+   xterm)                  kernel_cmd+=( "con0=xterm" );;
+   this|this_noporthelper) kernel_cmd+=( "con0=fd:0,fd:1" );;
+   pty)                    kernel_cmd+=( "con0=pty" );;
+   port:*)                 kernel_cmd+=( "con0=$VM_CON0" );;
 esac
 
 case $VM_CON1 in
-   none)    KERNELCMD+=( "con1=null" );;
-   xterm)   KERNELCMD+=( "con1=xterm" );;
-   this)    KERNELCMD+=( "con1=fd:0,fd:1" );;
-   pty)     KERNELCMD+=( "con1=pty" );;
-   port:*)  KERNELCMD+=( "con1=$VM_CON1" );;
+   none)    kernel_cmd+=( "con1=null" );;
+   xterm)   kernel_cmd+=( "con1=xterm" );;
+   this)    kernel_cmd+=( "con1=fd:0,fd:1" );;
+   pty)     kernel_cmd+=( "con1=pty" );;
+   port:*)  kernel_cmd+=( "con1=$VM_CON1" );;
 esac
 
 
 # Disable SELinux
-KERNELCMD+=( "SELINUX_INIT=0" )
+kernel_cmd+=( "SELINUX_INIT=0" )
 
 
 # Setup a proper terminal emulator
 case $TERM_TYPE in
-   gnome)         KERNELCMD+=( "xterm=gnome-terminal,-t,-x" );;
-   konsole)       KERNELCMD+=( "xterm=konsole,-T,-e" );;
-   konsole-tab)   KERNELCMD+=( "xterm=$NETKIT_HOME/bin/konsole-tabs.sh,-T,-e" );;
+   gnome)         kernel_cmd+=( "xterm=gnome-terminal,-t,-x" );;
+   konsole)       kernel_cmd+=( "xterm=konsole,-T,-e" );;
+   konsole-tab)   kernel_cmd+=( "xterm=$NETKIT_HOME/bin/konsole-tabs.sh,-T,-e" );;
 esac
 
 
 # Append any other user provided parameters
-if [ ${#KERNEL_APPEND[@]} -gt 0 ]; then
-   [ -z "$BE_QUIET" ] && echo "   Other args: ${KERNEL_APPEND[*]}"
-   KERNELCMD+=( "${KERNEL_APPEND[@]}" )
+if [ ${#kernel_cmd_append[@]} -gt 0 ]; then
+   [ -z "$BE_QUIET" ] && echo "   Other args: ${kernel_cmd_append[*]}"
+   kernel_cmd+=( "${kernel_cmd_append[@]}" )
 fi
 
 
@@ -817,35 +825,34 @@ fi
 
 # Add our blocking script to the execution order
 if [ "$VM_CON0" = "xterm" ] || [ "$VM_CON0" = "this_noporthelper" ]; then
-   KERNELCMD=( "$NETKIT_HOME/bin/block-wrapper" "$TERM_TYPE" "$VM_NAME" "${KERNELCMD[@]}" )
+   kernel_cmd=( "$NETKIT_HOME/bin/block-wrapper" "$TERM_TYPE" "$vm" "${kernel_cmd[@]}" )
 elif [ "$VM_CON0" = "tmux" ]; then
-   KERNELCMD=( "$NETKIT_HOME/bin/block-wrapper" "tmux" "$VM_NAME" "${KERNELCMD[@]}" )
+   kernel_cmd=( "$NETKIT_HOME/bin/block-wrapper" "tmux" "$vm" "${kernel_cmd[@]}" )
 fi
 
 
 # Actually start network hubs
-run_hubs "${HUBLIST[@]}"
+run_hubs "${HUB_LIST[@]}"
 
 
 # Completely hide primary console, if requested to
 if [ "$VM_CON0" = "none" ]; then
    # Start machine in background unless otherwise requested
-   if [ -z "$RUN_IN_FOREGROUND" ] && [ "$VM_CON1" != "this" ]; then
-      run_kernel_command > /dev/null 2>&1 &
+   if [ -n "$foreground" ] || [ "$VM_CON1" = "this" ]; then
+      run_kernel ${remove_fs:+"$filesystem"} "$vm" > /dev/null 2>&1
    else
-      run_kernel_command > /dev/null 2>&1
+      run_kernel ${remove_fs:+"$filesystem"} "$vm" > /dev/null 2>&1 &
    fi
 else
-   # Start machine in background unless otherwise requested
-   if [ -z "$RUN_IN_FOREGROUND" ] && [ "$VM_CON0" != "this" ] && [ "$VM_CON1" != "this" ]; then
-      run_kernel_command &
+   if [ -n "$foreground" ] || [ "$VM_CON1" = "this" ]; then
+      run_kernel ${remove_fs:+"$filesystem"} "$vm"
    else
-      run_kernel_command
+      run_kernel ${remove_fs:+"$filesystem"} "$vm" &
    fi
 fi
 
 
 # Connect to the tmux session if TMUX_OPEN_TERMS is set
 if [ "$TMUX_OPEN_TERMS" = "yes" ] && [ "$VM_CON0" = "tmux" ]; then
-    vconnect -m "$VM_NAME" --terminal --interval 5 --retry-count 20 &> /dev/null &
+    vconnect -m "$vm" --terminal --interval 5 --retry-count 20 &> /dev/null &
 fi

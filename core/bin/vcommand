@@ -15,7 +15,7 @@
 #   None
 ###############################################################################
 usage_line() {
-   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE"
+   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE [COMMAND]"
 }
 
 
@@ -45,10 +45,11 @@ usage() {
 
    cat << END_OF_HELP
 $(usage_line)
-Send a command to MACHINE through its tmux session.
+Send a COMMAND to MACHINE through its tmux session. The COMMAND is sent as a
+string literal to the tmux session with send-keys, making the user responsible
+for relevant quoting and escaping.
 
   -n, --timeout=N     set how long to wait before grabbing the command output
-  -c, --command=CMD   command to send to the machine
 
 
 Miscellaneous:
@@ -66,11 +67,14 @@ END_OF_HELP
 # Enter command to tmux session via send-keys and return the output to standard
 # output.
 # Usage:
-#   tmux_command SESSION TIMEOUT COMMAND
+#   tmux_command SESSION TIMEOUT [COMMAND]
 # Globals:
-#   r- SCRIPTNAME
+#   r- VERBOSE
 # Arguments:
-#   $1 - tmux session name
+#   $1 - tmux session name (machine hostname)
+#   $2 - seconds to wait after sending the command to tmux before reading the
+#        output.
+#   $3 - command string to send to the tmux session
 # Returns:
 #   None
 # Example:
@@ -80,6 +84,8 @@ tmux_command() {
    local session=$1
    local timeout=$2
    local cmd=$3
+
+   local cmd_uuid
 
    local target="$session:netkit-vm.0"
 
@@ -127,7 +133,7 @@ fi
 log_write "$0 $*"
 
 
-COMMAND_TIMEOUT="1"
+command_timeout=1
 
 
 # Get command line options
@@ -144,15 +150,11 @@ eval set -- "$getopt_opts"
 
 while true; do
    case $1 in
-      # TODO: make command or machine last command line option
-      -c|--command)
-         PARAMS=$2
-         ;;
       --help)
          usage 0
          ;;
       -n|--timeout)
-         COMMAND_TIMEOUT=$2
+         command_timeout=$2
          shift
          ;;
       -v|--verbose)
@@ -179,12 +181,10 @@ done
 if [ $# -eq 0 ]; then
    echo 1>&2 "$SCRIPTNAME: Missing machine name"
    usage 1
-elif [ $# -gt 1 ]; then
-   echo 1>&2 "$SCRIPTNAME: Can only specify one machine"
-   usage 1
 fi
 
-MACHINE_NAME=$1
+vm=$1
+cmd=${*:2}
 
 
-tmux_command "$MACHINE_NAME" "$COMMAND_TIMEOUT" "$PARAMS"
+tmux_command "$vm" "$command_timeout" "$cmd"

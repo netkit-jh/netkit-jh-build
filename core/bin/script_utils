@@ -244,11 +244,11 @@ show_version() {
 run_command() {
    local dry_run=$1
    local printed_cmd=$2
-   local cmd=( "${@:3}" )
+   local run_cmd=( "${@:3}" )
 
    # If the command to print has not been explicitly given, we print the one
    # being executed.
-   [ -z "$printed_cmd" ] && printed_cmd=${cmd[*]}
+   [ -z "$printed_cmd" ] && printed_cmd=${run_cmd[*]}
 
    if [ -n "$dry_run" ] && [ -z "$BE_QUIET" ]; then
       echo "Not running ==> $printed_cmd"
@@ -256,7 +256,7 @@ run_command() {
    fi
 
    [ -z "$BE_QUIET" ] && echo "Running ==> $printed_cmd"
-   "${cmd[@]}"
+   "${run_cmd[@]}"
 }
 
 
@@ -382,6 +382,9 @@ start_hub() {
 #   run_hubs [HUB[,ADDR]]...
 # Globals:
 #   r- HUB_LOG
+#   r- HUB_SOCKET_DIR
+#   r- HUB_SOCKET_EXTENSION
+#   r- HUB_SOCKET_PREFIX
 #   r- JUST_PRINT
 #   r- NETKIT_HOME
 #   r- USER_ID
@@ -395,6 +398,8 @@ start_hub() {
 ###############################################################################
 run_hubs() {
    local hub_specifications=( "$@" )
+
+   local hub_specification hub_name tap_address hub_socket
 
    for hub_specification in "${hub_specifications[@]}"; do
       IFS=, read -r hub_name tap_address <<< "$hub_specification"
@@ -410,14 +415,35 @@ run_hubs() {
 }
 
 
-# This function takes as argument a list of sockets used by virtual hubs, stops
-# those that are not used by any virtual machine and deletes the corresponding
-# sockets.
+###############################################################################
+# Stop and remove all unused virtual hubs.
+# Usage:
+#   run_hubs [HUB[,ADDR]]...
+# Globals:
+#   r- HUB_LOG
+#   r- HUB_SOCKET_DIR
+#   r- HUB_SOCKET_EXTENSION
+#   r- HUB_SOCKET_PREFIX
+#   r- JUST_PRINT
+#   r- NETKIT_HOME
+#   r- USER_ID
+# Arguments:
+#  ... - list of hub names optionally paired with an IP address (address goes
+#        unused but exists as an option if reusing a list used as input to
+#        run_hubs).
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
 clean_hubs() {
    local hub_specifications=( "$@" )
 
+   local hub_specification hub_name hub_socket
+   local hub_pid
+
    for hub_specification in "${hub_specifications[@]}"; do
-      IFS=, read -r hub_name tap_address <<< "$hub_specification"
+      IFS=, read -r hub_name _ <<< "$hub_specification"
 
       hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
 
@@ -446,7 +472,7 @@ clean_hubs() {
 ###############################################################################
 # Remove the filesystem of a virtual machine.
 # Usage:
-#   remove_fs FILE
+#   rm_filesystem FILE
 # Globals:
 #   None
 # Arguments:
@@ -456,7 +482,7 @@ clean_hubs() {
 # Example:
 #   None
 ###############################################################################
-remove_fs() {
+rm_filesystem() {
    rm --verbose "$1"
 }
 
@@ -476,9 +502,9 @@ remove_fs() {
 #   None
 ###############################################################################
 get_machine_state() {
-   user=$1
-   name=$2
-   get_vm_pid_by_name "$user" "$name" > /dev/null
+   local target_user=$1
+   local vm=$2
+   get_vm_pid_by_name "$target_user" "$vm" > /dev/null
 }
 
 
@@ -497,16 +523,19 @@ get_machine_state() {
 #   None
 ###############################################################################
 get_vm_pid_by_name() {
-   user=$1
-   name=$2
+   local target_user=$1
+   local name=$2
 
-   [ -n "$user" ] && pgrep_euid="--euid"
+   local full_command_regex
+   local pid pgid full_command
+   local first_iteration argument umid
+
 
    # Quick filter for pgrep. It is not 100% accurate, returning multiple
    # instances if there is a machine called "foo" and "foo bar". We hence do
    # further processing - this filter just removes processes which definitely
    # are not matches.
-   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel.*[[:blank:]]umid=${name}(\$|[[:blank:]])"
+   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel.*[[:blank:]]umid=$name(\$|[[:blank:]])"
 
    # The process hierarchy looks like this:
    #
@@ -531,7 +560,7 @@ get_vm_pid_by_name() {
 
    # Iterate over the PIDs of running Netkit instances with name matches.
    # TODO: Sort out quoting of arguments
-   for pid in $(pgrep ${pgrep_euid:+"$pgrep_euid"} ${user:+"$user"} --full "$full_command_regex"); do
+   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$full_command_regex"); do
       # Get the process group ID (PGID)
       pgid=$(ps --no-headers --format pgid --pid "$pid")
 
@@ -584,23 +613,24 @@ get_vm_pid_by_name() {
 #   for pid in $(get_vm_all_pids_by_name "" "foobar"); do echo $pid; done
 ###############################################################################
 get_vm_all_pids_by_name() {
-   local vm_pids
+   local target_user=$1
+   local name=$2
 
-   user=$1
-   name=$2
+   local full_command_regex
+   local pid full_command
+   local first_iteration argument umid pids
 
-   [ -n "$user" ] && pgrep_euid="--euid"
 
    # Quick filter for pgrep. It is not 100% accurate, returning multiple
    # instances if there is a machine called "foo" and "foo bar". We hence do
    # further processing - this filter just removes processes which definitely
    # are not matches.
-   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel.*[[:blank:]]umid=${name}(\$|[[:blank:]])"
+   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel.*[[:blank:]]umid=$name(\$|[[:blank:]])"
 
    # See get_vm_pid_by_name for a process hierarchy explanation.
 
    # Iterate over the PIDs of running Netkit instances with name matches.
-   for pid in $(pgrep ${pgrep_euid:+"$pgrep_euid"} ${user:+"$user"} --full "$full_command_regex"); do
+   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$full_command_regex"); do
       # Full command used to invoke the process
       full_command=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
 
@@ -616,7 +646,7 @@ get_vm_all_pids_by_name() {
             umid=${argument#*=}
 
             if [ "$umid" = "$name" ]; then
-               vm_pids+=( "$pid" )
+               pids+=( "$pid" )
             fi
 
             break
@@ -624,9 +654,9 @@ get_vm_all_pids_by_name() {
       done <<< "$full_command"
    done
 
-   echo "${vm_pids[*]}"
+   echo "${pids[*]}"
 
-   [ "${#vm_pids[@]}" -gt 0 ] && return 0 || return 1
+   [ "${#pids[@]}" -gt 0 ] && return 0 || return 1
 }
 
 
@@ -636,6 +666,7 @@ get_vm_all_pids_by_name() {
 # Usage:
 #   get_vm_info_by_pid PID
 # Globals:
+#   r- MCONSOLE_DIR
 #   rw vm_info
 #   rw vm_uml_sockets
 # Arguments:
@@ -646,11 +677,12 @@ get_vm_all_pids_by_name() {
 #   None
 ###############################################################################
 get_vm_info_by_pid() {
-   local argument first_iteration key n pid uml_socket value
+   local pid=$1
 
-   pid=$1
+   local first_iteration argument value
+   local device device_id
 
-   # Unset the globals incase the
+   # Unset the globals
    unset vm_info
    unset vm_uml_sockets
 
@@ -674,6 +706,7 @@ get_vm_info_by_pid() {
    # present in a Linux filepath. This will still break if a newline is present
    # in the command, but if a user is doing that then they are just asking for
    # an error somewhere down the line to be honest.
+   # TODO: https://unix.stackexchange.com/a/658549
    vm_info["full_command"]=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
 
    first_iteration=true
@@ -684,26 +717,24 @@ get_vm_info_by_pid() {
          continue
       fi
 
-      # As per the manual, UML options are key=value pairs.
-      # ${argument#*=} removes the key= prefix from argument (the single #
-      # permits usage of further equals signs in the argument).
+      # UML options are key=value pairs. ${argument#*=} removes the key= prefix
+      # from argument (the single # permits usage of further equals signs in
+      # the argument).
+      value=${argument#*=}
 
       # Edge-cases that can only be matched with regular expressions (or with
       # extglob enabled, which cannot be done.)
       if [[ "$argument" =~ ^eth([0-9]|[1-9][0-9]+)=.*$ ]]; then
-         key=${argument%%=*}
-         value=${argument#*=}
-
          # Interface number
-         n=${key#eth}
+         device=${argument%%=*}
+         device_id=${device#eth}
 
-         # UML socket filepath (assuming transport mode is daemon)
-         uml_socket=${value#daemon,,,*}
-
-         # Array of UML sockets indexed by the interface number.
-         # Disable SC2034 check (unused variable) - it is used eslewhere.
+         # Array of UML socket filepaths indexed by the interface number.
+         # NOTE: we assume transport mode is 'daemon'
+         # Disable SC2034 check (unused variable) - it is used eslewhere as a
+         # global.
          # shellcheck disable=SC2034
-         vm_uml_sockets[$n]=$uml_socket
+         vm_uml_sockets[$device_id]=${value#daemon,,,}
          continue
       fi
 
@@ -711,7 +742,6 @@ get_vm_info_by_pid() {
       # matching:
       case $argument in
          con0=* )
-            value=${argument#*=}
             case $value in
                xterm)      vm_info["con0"]=$value;;
                fd:0,fd:1)  vm_info["con0"]="this";;
@@ -721,7 +751,6 @@ get_vm_info_by_pid() {
             esac
             ;;
          con1=*)
-            value=${argument#*=}
             case $value in
                xterm)      vm_info["con1"]=$value;;
                fd:0,fd:1)  vm_info["con1"]="this";;
@@ -730,18 +759,16 @@ get_vm_info_by_pid() {
                null)       vm_info["con1"]="none";;
             esac
             ;;
-         exec=*)     vm_info["boot_cmd"]=${argument#*=};;
-         hosthome=*) vm_info["hosthome"]=${argument#*=};;
-         hostlab=*)  vm_info["hostlab"]=${argument#*=};;
-         hostwd=*)   vm_info["hostwd"]=${argument#*=};;
+         exec=*)     vm_info["boot_cmd"]=$value;;
+         hosthome=*) vm_info["hosthome"]=$value;;
+         hostlab=*)  vm_info["hostlab"]=$value;;
+         hostwd=*)   vm_info["hostwd"]=$value;;
          # Memory is NOT adjusted by the skew here
-         mem=*)      vm_info["mem"]=${argument#*=};;
-         modules=*)  vm_info["modules"]=${argument#*=};;
-         name=*)     vm_info["name"]=${argument#*=};;
-         title=*)    vm_info["title"]=${argument#*=};;
+         mem=*)      vm_info["mem"]=$value;;
+         modules=*)  vm_info["modules"]=$value;;
+         name=*)     vm_info["name"]=$value;;
+         title=*)    vm_info["title"]=$value;;
          udb0=*)
-            value=${argument#*=}
-
             # The udb0 value is disk,fs or fs
             vm_info["disk"]=${value%%,*}
             vm_info["fs"]=${value#*,}
@@ -750,13 +777,13 @@ get_vm_info_by_pid() {
             # shared filesystem is used.
             [ "${vm_info["disk"]}" = "${vm_info["fs"]}" ] && unset vm_info["disk"]
             ;;
-         umid=*)     vm_info["umid"]=${argument#*=};;
-         *)          vm_info["other"]="${vm_info["$other"]} $argument"
+         umid=*)     vm_info["umid"]=$value;;
+         *)          vm_info["other"]="${vm_info[$other]} $argument"
       esac
-   done <<< "${vm_info["full_command"]}"
+   done <<< "${vm_info[full_command]}"
 
    # The UML console socket filepath
-   vm_info["mconsole"]="$MCONSOLE_DIR/${vm_info["umid"]}/mconsole"
+   vm_info["mconsole"]="$MCONSOLE_DIR/${vm_info[umid]}/mconsole"
 }
 
 
@@ -777,10 +804,12 @@ get_vm_info_by_pid() {
 #   None
 ###############################################################################
 get_vm_info_by_name() {
-   user=$1
-   vm=$2
+   local target_user=$1
+   local vm=$2
 
-   if ! pid=$(get_vm_pid_by_name "$user" "$vm"); then
+   local pid
+
+   if ! pid=$(get_vm_pid_by_name "$target_user" "$vm"); then
       return 1
    fi
 
@@ -789,15 +818,29 @@ get_vm_info_by_name() {
 }
 
 
-# This function creates a directory and sets global permissions for it.
-# If the directory already exists, an error is issued.
+###############################################################################
+# Create a directory with 777 permissions. If a file with the same path already
+# exists, an error is thrown.
+# Usage:
+#   netkit_dir_check DIR
+# Globals:
+#   None
+# Arguments:
+#   $1 - directory filepath
+# Returns:
+#   None. Function exits with non-zero code on failure.
+# Example:
+#   None
+###############################################################################
 netkit_dir_check() {
    local dir=$1
+
    if [ ! -e "$dir" ]; then
       mkdir "$dir"
+      # TODO: fix the sus directory permissions
       chmod 777 "$dir"
    elif [ ! -d "$dir" ]; then
-      echo 1>&2 "File '$1' exists: unable to create directory '$1'"
+      echo 1>&2 "File '$dir' exists: unable to create directory '$dir'"
       exit 1
    fi
 }
@@ -848,10 +891,11 @@ export LANG=C
 [ -n "$NETKIT_TERM" ] &&       TERM_TYPE=$NETKIT_TERM
 
 
+# Set the global USER_ID variable
+USER_ID=$(id -un)
+
+
 # Ensure critical directories exist
 netkit_dir_check "$HOME/.netkit"
 netkit_dir_check "$HUB_SOCKET_DIR"
 netkit_dir_check "$MCONSOLE_DIR"
-
-
-USER_ID=$(id -un)

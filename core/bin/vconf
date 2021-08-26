@@ -131,7 +131,7 @@ END_OF_HELP
 #   setup_interfaces [INTERFACE]...
 # Globals:
 #   r- BE_QUIET
-#   -w HUBLIST
+#   -w HUB_LIST
 #   r- HUB_SOCKET_DIR
 #   r- HUB_SOCKET_EXTENSION
 #   r- HUB_SOCKET_PREFIX
@@ -146,12 +146,12 @@ END_OF_HELP
 #   None
 ###############################################################################
 setup_interfaces() {
-   local interface_specification interface_specifications
-   local device hub_name hub_socket tap_address
-   local guest_address used_devices
-   local first_iteration
+   local interface_specifications=( "$@" )
 
-   interface_specifications=( "$@" )
+   local first_iteration
+   local interface_specification device hub_specification used_devices
+   local hub_name tap_address guest_address hub_socket
+   
 
    first_iteration=true
    for interface_specification in "${interface_specifications[@]}"; do
@@ -159,13 +159,14 @@ setup_interfaces() {
       hub_specification=${interface_specification#*=}
 
       # Check if interface has already been configured
-      if [[ " $used_devices " == *" $device "* ]]; then
+      # TODO: is this check really necessary?
+      if array_contains "$device" "${used_devices[@]}"; then
          echo 1>&2 "$SCRIPTNAME: $device: Duplicate interface"
          usage 1
       fi
 
       # Remember that this network interface has been configured
-      used_devices="$used_devices $device"
+      used_devices+=( "$device" )
 
       # Check if tap interface (regular hubs cannot be named with commas)
       if [[ "$hub_specification" == tap,* ]]; then
@@ -187,12 +188,13 @@ setup_interfaces() {
          hub_name=$hub_specification
       fi
       
+      # TODO: should USER_ID or target_user be used here?
       hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
 
       if [ -n "$tap_address" ]; then
-         HUBLIST+=( "$hub_name,$tap_address" )
+         HUB_LIST+=( "$hub_name,$tap_address" )
       elif [ -n "$hub_name" ]; then
-         HUBLIST+=( "$hub_name" )
+         HUB_LIST+=( "$hub_name" )
       fi
 
       if $first_iteration; then
@@ -215,21 +217,26 @@ setup_interfaces() {
 ###############################################################################
 # Attach/remove network interfaces from running machines with mconsole.
 # Usage:
-#   invoke_mconsole MCONSOLE_CMD
+#   invoke_mconsole MACHINE [MCONSOLE_CMD]...
 # Globals:
+#   r- JUST_PRINT
 #   r- NETKIT_HOME
-#   r- VM_ID
 # Arguments:
-#   $1 - list of mconsole commands
+#   $1 - machine name
+#  ... - list of mconsole commands. To remove an interface: 'ethN', to add an
+#        interface: 'ethN=daemon,,,path/to/socket'.
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 invoke_mconsole() {
-   local action action_desc arg device hub_specification mconsole_cmd
+   local vm=$1
+   local mconsole_cmd=( "${@:2}" )
 
-   mconsole_cmd=( "$@" )
+   local arg device hub_specification
+   local action action_desc
+
 
    for arg in "${mconsole_cmd[@]}"; do
       # Format is either:
@@ -248,7 +255,7 @@ invoke_mconsole() {
          action_desc="remove"
       fi
 
-      if ! run_command "$JUST_PRINT" "" "$NETKIT_HOME/bin/uml_mconsole" "$VM_ID" "$action" "$device" 2>&1; then
+      if ! run_command "$JUST_PRINT" "" "$NETKIT_HOME/bin/uml_mconsole" "$vm" "$action" "$device" 2>&1; then
          echo 2>&1 "Failed to $action_desc interface '$device'"
       fi
    done
@@ -276,10 +283,9 @@ target_user=$USER_ID
 long_opts="help,print,quiet,version,user:"
 short_opts="pqu:"
 
-i=0
-while [ "$i" -lt "$MAX_INTERFACES" ]; do
-   long_opts="$long_opts,eth$i:"
-   i=$((i + 1))
+# Append a new long option for each network interface that can be configured
+for ((i = 0; i < MAX_INTERFACES; ++i)); do
+   long_opts+=",eth$i:"
 done
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -293,30 +299,28 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       --eth*)
-         interface=${1#--}
-         DOMAIN=$2
+         device=${1#--}
+         hub_name=$2
          shift
 
-         if string_contains "_" "$DOMAIN"; then
-            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - underscores are not allowed"
-            usage 1
-         fi
+         # Check if tap interface (regular hubs cannot be named with commas)
+         if [[ "$hub_name" == tap,* ]]; then
+            # Format: tap,tap_address,guest_address
+            IFS=, read -r _ tap_address guest_address <<< "$hub_name"
 
-         if string_contains "," "$DOMAIN" || string_contains "." "$DOMAIN"; then
-            # If not a tap specification, but its name contains a comma
-            if [ "${DOMAIN#tap,}" = "$DOMAIN" ]; then
-               echo 1>&2 "$SCRIPTNAME: $DOMAIN: Invalid collision domain - commas and periods are only valid for tap interface specification"
+            if ! is_inet_addr "$tap_address"; then
+               echo 1>&2 "$SCRIPTNAME: $tap_address: Invalid tap address"
+               usage 1
+            fi
+
+            if ! is_inet_addr "$guest_address"; then
+               echo 1>&2 "$SCRIPTNAME: $guest_address: Invalid guest address"
                usage 1
             fi
          fi
 
-         if string_contains " " "$DOMAIN"; then
-            echo 1>&2 "$SCRIPTNAME: $DOMAIN: Collision domain name cannot contain whitespace"
-            exit 1
-         fi
-
-         # Construct array of ethN=DOMAIN
-         network_interfaces+=( "$interface=$DOMAIN" )
+         # Construct array of ethN=hub_name
+         network_interfaces+=( "$device=$hub_name" )
          ;;
       --help)
          usage 0
@@ -358,17 +362,17 @@ elif [ $# -gt 1 ]; then
    usage 1
 fi
 
-VM_ID=$1
+vm=$1
 shift
 
-if string_contains " " "$VM_ID"; then
+if string_contains " " "$vm"; then
    echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
    exit 1
 fi
 
 
-if ! get_machine_state "$target_user" "$VM_ID"; then
-   echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$VM_ID' exists"
+if ! get_machine_state "$target_user" "$vm"; then
+   echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$vm' exists"
    [ -n "$target_user" ] && echo " for user $target_user." || echo "."
    exit 1
 fi
@@ -376,7 +380,7 @@ fi
 
 # Setup network interfaces
 if [ -z "$BE_QUIET" ]; then
-   echo "============= Configuring virtual machine '$VM_ID' (PID $(get_vm_pid_by_name "$user" "$vm")) ============="
+   echo "============= Configuring virtual machine '$vm' (PID $(get_vm_pid_by_name "$target_user" "$vm")) ============="
    echo "   Virtual machine owner: $target_user"
 fi
 
@@ -386,7 +390,7 @@ if [ ${#network_interfaces[@]} -gt 0 ]; then
 fi
 
 # Start network hubs
-run_hubs "${HUBLIST[@]}"
+run_hubs "${HUB_LIST[@]}"
 
 # Attach/remove network interfaces
-invoke_mconsole "${MCONSOLE_CMD[@]}"
+invoke_mconsole "$vm" "${MCONSOLE_CMD[@]}"

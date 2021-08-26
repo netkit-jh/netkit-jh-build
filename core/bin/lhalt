@@ -138,17 +138,17 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -d)
-         LAB_DIRECTORY=$(readlink --canonicalize-missing "$2")
+         lab_directory=$(readlink --canonicalize-missing "$2")
          shift
          ;;
       --help)
          usage 0
          ;;
       -r|--remove-fs)
-         REMOVE_FILESYSTEM=1
+         remove_filesystem=1
          ;;
       -l|--list)
-         LISTVM=1
+         list_vm=1
          ;;
       -q|--quick|--quiet)
          unset VERBOSE
@@ -173,8 +173,8 @@ done
 # Non-option arguments are machine names
 VHOSTLIST=( "$@" )
 
-for host in "${VHOSTLIST[@]}"; do
-   if string_contains " " "$host"; then
+for vhost in "${VHOSTLIST[@]}"; do
+   if string_contains " " "$vhost"; then
       echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
       exit 1
    fi
@@ -182,16 +182,16 @@ done
 
 
 # If no lab directory has been given, assume current directory
-LAB_DIRECTORY=${LAB_DIRECTORY:-$PWD}
+lab_directory=${lab_directory:-$PWD}
 
 # Check that the lab directory exists
-if [ ! -d "$LAB_DIRECTORY" ]; then
-   echo 1>&2 "$SCRIPTNAME: $LAB_DIRECTORY: Directory does not exist"
+if [ ! -d "$lab_directory" ]; then
+   echo 1>&2 "$SCRIPTNAME: $lab_directory: Directory does not exist"
    exit 1
 fi
 
 # Filesystem cannot be removed if we are working in quiet mode
-if [ -z "$VERBOSE" ] && [ -n "$REMOVE_FILESYSTEM" ]; then
+if [ -z "$VERBOSE" ] && [ -n "$remove_filesystem" ]; then
    echo 1>&2 "$SCRIPTNAME: Filesystems cannot be removed (-r) when working in quiet mode (-q)"
    exit 1
 fi
@@ -199,24 +199,21 @@ fi
 
 # Print lab information
 bold_print "======================== Halting lab ============================"
-lab_welcome "$LAB_DIRECTORY"
+lab_welcome "$lab_directory"
 bold_print "================================================================="
 
 # Halt virtual machines
-build_vhostlist "$LAB_DIRECTORY"
+build_vhostlist "$lab_directory"
 
-[ -z "$VERBOSE" ] && lhalt_quiet="-q"
-[ -n "$REMOVE_FILESYSTEM" ] && lhalt_rm_fs="-r"
-
-for host in "${VHOSTLIST[@]}"; do
-   [ -z "$VERBOSE" ] && bold_print "Halting '$host'... "
-   vhalt "${lhalt_quiet:+"$lhalt_quiet"}" "${lhalt_rm_fs:+"$lhalt_rm_fs"}" "$host" && rm -f "$LAB_DIRECTORY/$host.ready"
+for vhost in "${VHOSTLIST[@]}"; do
+   [ -z "$VERBOSE" ] && bold_print "Halting '$vhost'... "
+   vhalt ${VERBOSE:+"-q"} ${remove_filesystem:+"-r"} "$vhost" && rm -f "$lab_directory/$vhost.ready"
 done
 
 bold_print "Removing readyfor.test..."
-rm -f "$LAB_DIRECTORY/readyfor.test"
+rm -f "$lab_directory/readyfor.test"
 bold_print "Lab has been halted."
 bold_print "================================================================="
 
 # Show a list of running virtual machines, if asked to
-[ -n "$LISTVM" ] && vlist
+[ -n "$list_vm" ] && vlist

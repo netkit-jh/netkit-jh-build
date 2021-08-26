@@ -26,10 +26,10 @@
 ###############################################################################
 # Print a string with bold formatting.
 # Usage:
-#   bold_print $1
+#   bold_print MESSAGE
 # Globals:
-#   r- COLOR_BOLD
-#   r- COLOR_NORMAL
+#   r- color_bold
+#   r- color_normal
 # Arguments:
 #   $1 - string to print
 # Returns:
@@ -38,7 +38,7 @@
 #   None
 ###############################################################################
 bold_print() {
-   printf "%b%s%b\n" "$COLOR_BOLD" "$1" "$COLOR_NORMAL"
+   printf "%b%s%b\n" "$color_bold" "$1" "$color_normal"
 }
 
 
@@ -58,10 +58,10 @@ bold_print() {
 #   if array_contains "a" "${bar[@]}"; then echo "Found!"; fi
 ###############################################################################
 array_contains() {
-   query=$1
-   shift
+   local query=$1
+   local array=( "${@:2}" )
 
-   array=( "$@" )
+   local item
 
    for item in "${array[@]}"; do
       [ "$query" = "$item" ] && return 0
@@ -88,6 +88,8 @@ array_contains() {
 ###############################################################################
 build_vhostlist() {
    local lab_directory=$1
+
+   local dir vhost vhosts vhostlist_bak
 
    # Build list of virtual machines that are part of the lab
    for dir in "$lab_directory"/*/; do
@@ -175,6 +177,8 @@ generate_info_str() {
    if [ ${#collated_lab_info_values[@]} -gt 1 ]; then
       for value in "${!collated_lab_info_values[@]}"; do
          lab_info_str+="$separator$value (${collated_lab_info_values[$value]})"
+
+         # Comma-separate subsequent interfaces
          separator=", "
       done
    elif [ ${#collated_lab_info_values[@]} -eq 1 ]; then
@@ -194,11 +198,12 @@ generate_info_str() {
 # Get the value of a parameter set in a lab's lab.conf file and write to
 # standard output.
 # Usage:
-#   get_lab_variable DIRECTORY
+#   get_lab_variable VARIABLE DIR
 # Globals:
 #   None
 # Arguments:
-#   $1 - lab directory
+#   $1 - lab variable name
+#   $2 - lab directory
 # Returns:
 #   None
 # Example:
@@ -220,9 +225,9 @@ get_lab_variable() {
 # Usage:
 #   lab_welcome [DIRECTORY]...
 # Globals:
-#   r- COLOR_BOLD
-#   r- COLOR_HIGHLIGHT
-#   r- COLOR_NORMAL
+#   r- color_blue
+#   r- color_bold
+#   r- color_normal
 #   r- SCRIPTNAME
 # Arguments:
 #  ... - list of lab directories
@@ -234,7 +239,9 @@ get_lab_variable() {
 lab_welcome() {
    local lab_directories=( "$@" )
 
-   local dir lab lab_directories_str
+   local lab_directories_str
+   local dir lab
+
    declare -A lab_versions lab_authors lab_emails lab_webs lab_descriptions
 
    printf -v lab_directories_str '%s, ' "${lab_directories[@]}"
@@ -267,13 +274,14 @@ lab_welcome() {
    done
 
    # Convert the multi-lab arrays to flat, comma-separated lists and print
-   echo "${COLOR_BOLD}Lab directory(ies)$COLOR_NORMAL: $COLOR_HIGHLIGHT$lab_directories_str$COLOR_NORMAL"
-   echo "${COLOR_BOLD}Version(s)$COLOR_NORMAL:         $COLOR_HIGHLIGHT$(generate_info_str lab_versions)$COLOR_NORMAL"
-   echo "${COLOR_BOLD}Author(s)$COLOR_NORMAL:          $COLOR_HIGHLIGHT$(generate_info_str lab_authors)$COLOR_NORMAL"
-   echo "${COLOR_BOLD}Email(s)$COLOR_NORMAL:           $COLOR_HIGHLIGHT$(generate_info_str lab_emails)$COLOR_NORMAL"
-   echo "${COLOR_BOLD}URL(s)$COLOR_NORMAL:             $COLOR_HIGHLIGHT$(generate_info_str lab_webs)$COLOR_NORMAL"
-   echo "${COLOR_BOLD}Description(s)$COLOR_NORMAL:"
-   echo "$COLOR_HIGHLIGHT$(generate_info_str lab_descriptions)$COLOR_NORMAL"
+   # TODO: echo -e (or similar) for this and all other output
+   echo "${color_bold}Lab directory(ies)$color_normal: $color_blue$lab_directories_str$color_normal"
+   echo "${color_bold}Version(s)$color_normal:         $color_blue$(generate_info_str lab_versions)$color_normal"
+   echo "${color_bold}Author(s)$color_normal:          $color_blue$(generate_info_str lab_authors)$color_normal"
+   echo "${color_bold}Email(s)$color_normal:           $color_blue$(generate_info_str lab_emails)$color_normal"
+   echo "${color_bold}URL(s)$color_normal:             $color_blue$(generate_info_str lab_webs)$color_normal"
+   echo "${color_bold}Description(s)$color_normal:"
+   echo "$color_blue$(generate_info_str lab_descriptions)$color_normal"
 }
 
 
@@ -294,17 +302,19 @@ lab_welcome() {
 lab_clean() {
    local lab_directory=$1
 
+   local vhost
+
    build_vhostlist "$lab_directory"
 
    bold_print "Cleaning up lab inside '$lab_directory'..."
 
    for vhost in "${VHOSTLIST[@]}"; do
       # Remove files from the lab directory
-      rm "${VERBOSE:+"--verbose"}" -r "${MCONSOLE_DIR:?}/$vhost"
-      rm "${VERBOSE:+"--verbose"}" "$lab_directory/$vhost."{"ready","disk","log","testdone"}
+      rm ${VERBOSE:+"--verbose"} -r "${MCONSOLE_DIR:?}/$vhost"
+      rm ${VERBOSE:+"--verbose"} "$lab_directory/$vhost."{"ready","disk","log","testdone"}
    done
 
-   rm "${VERBOSE:+"--verbose"}" "$lab_directory/readyfor.test"
+   rm ${VERBOSE:+"--verbose"} "$lab_directory/readyfor.test"
 }
 
 
@@ -327,19 +337,19 @@ lab_clean() {
 lab_crash() {
    local lab_directory=$1
    local keep_fs=$2
-   local kill_mode=$2
+   local kill_mode=$3
 
-   local VCRASH_OPTIONS
+   local vcrash_args vhost
 
    build_vhostlist "$lab_directory"
 
-   [ -z "$VERBOSE" ]   && VCRASH_OPTIONS+=( "-q" )
-   [ -z "$keep_fs" ]   && VCRASH_OPTIONS+=( "-r" )
-   [ -n "$kill_mode" ] && VCRASH_OPTIONS+=( "-k" )
+   [ -z "$VERBOSE" ]   && vcrash_args+=( "-q" )
+   [ -z "$keep_fs" ]   && vcrash_args+=( "-r" )
+   [ -n "$kill_mode" ] && vcrash_args+=( "-k" )
    
-   for VM in "${VHOSTLIST[@]}"; do
-      [ -z "$VERBOSE" ] && bold_print "Crashing '$VM'..."
-      vcrash "${VCRASH_OPTIONS[@]}" "$VM" && rm -f "$lab_directory/$VM.ready"
+   for vhost in "${VHOSTLIST[@]}"; do
+      [ -n "$VERBOSE" ] && bold_print "Crashing '$vhost'..."
+      vcrash "${vcrash_args[@]}" "$vhost" && rm -f "$lab_directory/$vhost.ready"
    done
    
    bold_print "Removing readyfor.test..."
@@ -350,16 +360,14 @@ lab_crash() {
 ###############################################################################
 # Start a single virtual machine within a lab.
 # Usage:
-#   single_lab_vm_start FAST_MODE TEST_MODE MAKEFILE DIR MACHINE [VSTART_OPT]...
+#   single_lab_vm_start FAST_MODE DIR MACHINE [PASSTHROUGH]...
 # Globals:
 #   r- GRACE_TIME
 #   r- VERBOSE
 # Arguments:
 #   $1 - set to 1 for fast mode, empty string otherwise
-#   $2 - set to 1 for test mode, empty string otherwise
-#   $3 - used internally when lstart is invoked with Make
-#   $4 - lab directory
-#   $5 - machine to start up
+#   $2 - lab directory
+#   $3 - machine to start up
 #  ... - options to passthrough to vstart (appended on)
 # Returns:
 #   None
@@ -368,25 +376,15 @@ lab_crash() {
 ###############################################################################
 single_lab_vm_start() {
    local fast_mode=$1
-   local test_mode=$2
-   local makefile=$3
-   local lab_directory=$4
-   local VM=$5
-   local passthrough_opts=( "${@:6}" )
+   local lab_directory=$2
+   local vm=$3
+   local passthrough_args=( "${@:4}" )
+
+   local configuration option value
 
    # Add host lab and working directory, and place filesystem inside the lab
    # directory.
-   local VSTART_OPTIONS=( "--hostlab" "$lab_directory" "--hostwd" "$PWD" "--filesystem" "$lab_directory/$VM.disk" )
-
-   if [ -n "$test_mode" ]; then
-      VSTART_OPTIONS+=( "--test" )
-
-      if [ -z "$makefile" ]; then
-         # If invoked via Make, there should already be these options
-         # passed through
-         VSTART_OPTIONS+=( "--con0" "none" "--con1" "none" )
-      fi
-   fi
+   local vstart_args=( "--hostlab" "$lab_directory" "--hostwd" "$PWD" "--filesystem" "$lab_directory/$vm.disk" )
 
    # Generate vstart argument list
    if [ -e "$lab_directory/lab.conf" ]; then
@@ -403,40 +401,40 @@ single_lab_vm_start() {
          [[ "$option" =~ ^([0-9]|[1-9][0-9]+)$ ]] && option="eth$option"
 
          if [ "${#option}" -eq 1 ]; then
-            VSTART_OPTIONS+=( "-$option" )
+            vstart_args+=( "-$option" )
          else
-            VSTART_OPTIONS+=( "--$option" )
+            vstart_args+=( "--$option" )
          fi
 
          # NOTE: if vstart is ever changed to have an option with an optional
          # argument (denoted with '::' in the option string), an exception when
          # appending the argument must be made (an '=' is required for long
          # options, no delimiter for short ones).
-         [ -n "$value" ] && VSTART_OPTIONS+=( "$value" )
-      done < <(grep "^[[:blank:]]*$VM\[.*\][[:blank:]]*=" "$lab_directory/lab.conf")
+         [ -n "$value" ] && vstart_args+=( "$value" )
+      done < <(grep "^[[:blank:]]*$vm\[.*\][[:blank:]]*=" "$lab_directory/lab.conf")
    fi
    
    # Remove .ready file, if existing
-   [ -e "$lab_directory/$VM.ready" ] && rm -f "$lab_directory/$VM.ready"
+   [ -e "$lab_directory/$vm.ready" ] && rm -f "$lab_directory/$vm.ready"
 
    if [ -z "$VERBOSE" ]; then
-      bold_print "Starting '$VM'..."
+      bold_print "Starting '$vm'..."
    else
-      bold_print "Starting '$VM' with options '${VSTART_OPTIONS[*]} ${passthrough_opts[*]}'... "
+      bold_print "Starting '$vm' with options '${vstart_args[*]} ${passthrough_args[*]}'... "
    fi
 
-   if ! vstart "${VSTART_OPTIONS[@]}" "${passthrough_opts[@]}" "$VM"; then
-      echo 2>&1 "Error while starting virtual machine '$VM'"
+   if ! vstart "${vstart_args[@]}" "${passthrough_args[@]}" "$vm"; then
+      echo 2>&1 "Error while starting virtual machine '$vm'"
       exit 1
    fi
 
    # Wait for virtual host startup script to create .ready file
    if [ -z "$fast_mode" ]; then
-      while [ ! -e "$lab_directory/$VM.ready" ]; do
+      while [ ! -e "$lab_directory/$vm.ready" ]; do
          sleep 1
       done
 
-      rm -f "$lab_directory/$VM.ready"
+      rm -f "$lab_directory/$vm.ready"
    fi
    
    # Wait for a specified amount of time before returning
@@ -466,22 +464,24 @@ lab_start() {
    local test_mode=$2
    local makefile=$3
    local lab_directory=$4
-   local passthrough_opts=( "${@:5}" )
+   local passthrough_args=( "${@:5}" )
 
-   local BASE_VSTART_OPTIONS
+   local vhost
 
    build_vhostlist "$lab_directory"
 
-   [ -z "$VERBOSE" ] && BASE_VSTART_OPTIONS+=( "-q" )
-   BASE_VSTART_OPTIONS+=( "${passthrough_opts[@]}" )
-   
-   if [ "${#VHOSTLIST[@]}" -gt 0 ]; then
-      for VM in "${VHOSTLIST[@]}"; do
-         single_lab_vm_start "$fast_mode" "$test_mode" "$makefile" "$lab_directory" "$VM"
-      done
-   else
+   if [ "${#VHOSTLIST[@]}" -eq 0 ]; then
       echo 1>&2 "Warning: there are no virtual machines to be started."
+      return
    fi
+
+   # We prepend so passthrough_args can override 
+   [ -z "$VERBOSE" ] && passthrough_args=( "-q" "${passthrough_args[@]}" )
+
+   # TODO: global rename of vhost to vm? Or vice-versa
+   for vhost in "${VHOSTLIST[@]}"; do
+      single_lab_vm_start "$fast_mode" "$lab_directory" "$vhost" "${passthrough_args[@]}"
+   done
    
    # The readyfor.test file should not be created if we have been invoked
    # with the --makefile option (=launch a single machine and exit).
@@ -508,7 +508,11 @@ lab_start() {
 lab_start_parallel() {
    local test_mode=$1
    local lab_directory=$2
-   local passthrough_opts=( "${@:3}" )
+   local passthrough_args=( "${@:3}" )
+
+   local lstart_args arg
+   local lstart_cmd escaped_lstart_cmd
+   local tab makefile_contents
 
    build_vhostlist "$lab_directory"
    
@@ -517,37 +521,34 @@ lab_start_parallel() {
       return
    fi
    
-   # Pass "passthrough" options on to further invocations of this script
-   [ -n "$VERBOSE" ] && PASSTHROUGH_STUFF+=( "-v" )
-   for CURRENT_OPTION in "${passthrough_opts[@]}"; do
-      PASSTHROUGH_STUFF+=( "-o" "$CURRENT_OPTION" )
+   # Pass "passthrough" options on to the second invocation of lstart/ltest
+   [ -n "$VERBOSE" ] && lstart_args+=( "-v" )
+
+   for arg in "${passthrough_args[@]}"; do
+      lstart_args+=( "-o" "$arg" )
    done
 
    # Pass testmode along subsequent invocations of this script
    if [ -n "$test_mode" ]; then
-      COMMAND_NAME="ltest"
-
-      # The default console is "none" for ltest. By prepending to passthrough
-      # options, we allow the user to override this with further conX options.
-      PASSTHROUGH_STUFF=( "-o" "--con0=none" "-o" "--con1=none" "${PASSTHROUGH_STUFF[@]}" )
+      program_name="ltest"
    else
-      COMMAND_NAME="lstart"
+      program_name="lstart"
    fi
    
-   # The make utility expects an empty argument when infinitely many jobs
+   # The make utility expects an empty argument to -j when infinitely many jobs
    # should be used.
-   [ "$MAX_SIMULTANEOUS_VMS" -eq 0 ] && MAX_SIMULTANEOUS_VMS=""
+   [ "$MAX_SIMULTANEOUS_VMS" -eq 0 ] && unset MAX_SIMULTANEOUS_VMS
 
 
-   cmd=( "$COMMAND_NAME" "-d" "$lab_directory" "--makefile" "${PASSTHROUGH_STUFF[@]}" )
+   lstart_cmd=( "$program_name" "-d" "$lab_directory" "--makefile" "${lstart_args[@]}" )
 
    # We expand this array with the Q operator when writing to the Makefile.
    # This ensures escaping sufficient for reuse in a shell command.
-   escaped_cmd=${cmd[*]@Q}
+   escaped_lstart_cmd=${lstart_cmd[*]@Q}
 
    # Make requires all dollar signs (whether quoted or not) to be escaped with
    # a second dollar sign.
-   escaped_cmd=${escaped_cmd//$/\$$}
+   escaped_lstart_cmd=${escaped_lstart_cmd//$/\$$}
 
    # Labs are started in parallel with GNU Make, which automatically handles
    # lab.dep (which is formatted as Makefile targets).
@@ -570,7 +571,7 @@ lab_start_parallel() {
 SHELL := /bin/bash
 
 %: dummy-prerequisite-to-force-remaking
-${tab}[ '\$*' != "lab.dep" ] && $escaped_cmd '\$*'
+${tab}[ '\$*' != "lab.dep" ] && $escaped_lstart_cmd '\$*'
 
 dummy-prerequisite-to-force-remaking:
 ${tab}# Dummy line. Unuseful, yet necessary
@@ -580,7 +581,7 @@ EOF
 
    # Read the Makefile from stdin without implicit rules, and hide the output. It
    # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
-   make -irsC "$lab_directory" -f - -j "$MAX_SIMULTANEOUS_VMS" "${VHOSTLIST[@]}" <<< "$makefile_contents"
+   make -irsC "$lab_directory" -f - -j ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} "${VHOSTLIST[@]}" <<< "$makefile_contents"
 
    
    # Signal that every machine is ready for testing once booted.
@@ -605,6 +606,11 @@ EOF
 generate_dot_graph() {
    local lab_confs=( "$@" )
 
+   local configuration vm option value
+   local hub_name hub_names
+
+   declare -A device_ids options
+
    # Global map parameters
    cat << EOF
 graph netkit_jh_graph {
@@ -613,8 +619,6 @@ graph netkit_jh_graph {
    resolution=400.0;
    splines="line";
 EOF
-
-   declare -A device_ids options
 
    while IFS= read -r configuration; do
       # The [][] is ][ inside a bracket expression to match an opening or
@@ -649,7 +653,7 @@ EOF
    ];'
 EOF
 
-         domains+=( "$value" )
+         hub_names+=( "$value" )
 
          # Device IDs cannot have whitespace, so a space-separated list is
          # safe.
@@ -679,9 +683,9 @@ EOF
    done
 
    # Remove bounding box from collision domain labels (just text)
-   for domain in "${domains[@]}"; do
+   for hub_name in "${hub_names[@]}"; do
       cat << EOF
-   "$domain" [
+   "$hub_name" [
       shape=plaintext,
       width=0,
       height=0,
@@ -700,14 +704,15 @@ lab_map() {
    local map_file=$1
    local lab_confs=( "${@:2}" )
 
-   GRAPH_GENERATOR=$(which neato)
-   if [ -z "$GRAPH_GENERATOR" ]; then
-      echo 1>&2 "Error: the GraphViz library does not appear to be installed."
-      echo 1>&2 "Please install the GraphViz library."
-      return 1
+   # TODO: check for its existence in setup scripts
+   local graph_generator="neato"
+
+   if ! command -v "$graph_generator" > /dev/null 2>&1; then
+      echo 1>&2 "$SCRIPTNAME: $graph_generator: Graphviz graph generator not found"
+      exit 1
    fi
 
-   generate_dot_graph "${lab_confs[@]}" | "$GRAPH_GENERATOR" -Tpng -o"$map_file"
+   generate_dot_graph "${lab_confs[@]}" | "$graph_generator" -Tpng -o"$map_file"
 }
 
 
@@ -724,6 +729,9 @@ hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,62}[a-zA-Z0-9])"
 
 
 # ANSI color escape sequences
-COLOR_HIGHLIGHT='\033[34;1m'
-COLOR_NORMAL='\033[0m'
-COLOR_BOLD='\033[1m'
+color_normal='\033[0m'
+color_bold='\033[1m'
+color_red='\033[31;1m'
+color_green='\033[32;1m'
+color_yellow='\033[33;1m'
+color_blue='\033[34;1m'

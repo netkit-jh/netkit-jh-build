@@ -118,16 +118,14 @@ END_OF_HELP
 
 
 ###############################################################################
-# Kill a virtual machine by signaling the corresponding processes. It is
-# assumed that vm_info will be populated for disk removal.
+# Kill a virtual machine by signaling the corresponding processes.
 # Usage:
-#   kill_by_signaling MACHINE
+#   kill_by_signaling USER MACHINE
 # Globals:
 #   r- BE_QUIET
-#   r- REMOVE_FS
-#   r- vm_info
 # Arguments:
-#   $1 - machine to kill
+#   $1 - owner of machine
+#   $2 - machine to kill
 # Returns:
 #   Returns zero on success, non-zero if there was an issue with killing the
 #   machine.
@@ -135,7 +133,10 @@ END_OF_HELP
 #   None
 ###############################################################################
 kill_by_signaling() {
-   vm=$1
+   local target_user=$1
+   local vm=$2
+
+   local pids
 
    [ -z "$BE_QUIET" ] && echo -n "Killing... "
 
@@ -174,23 +175,18 @@ kill_by_signaling() {
       [ -z "$BE_QUIET" ] && echo "done."
    fi
 
-   # Virtual machine filesystem is removed only if it has been successfully crashed
-   [ -n "$REMOVE_FS" ] && [ -n "${vm_info[disk]}" ] && remove_fs "${vm_info[disk]}"
-   
    return 0
 }
 
 
 ###############################################################################
-# Use uml_mconsole to crash a machine. It is assumed that vm_info will be
-# populated for the mconsole directory.
-# NOTE: we can remove the reliance on vm_info by building the dir path here.
+# Use uml_mconsole to crash a machine.
+# TODO: we can remove the reliance on vm_info by building the dir path here.
 # Usage:
-#   mconsole_halt
+#   mconsole_halt MCONSOLE
 # Globals:
 #   r- BE_QUIET
 #   r- NETKIT_HOME
-#   r- vm_info
 # Arguments:
 #   None
 # Returns:
@@ -200,15 +196,17 @@ kill_by_signaling() {
 #   None
 ###############################################################################
 mconsole_halt() {
-   "$NETKIT_HOME/bin/uml_mconsole" "${vm_info[mconsole]}" halt > /dev/null &
+   local mconsole=$1
+
+   local uml_mconsole_pid
+
+   "$NETKIT_HOME/bin/uml_mconsole" "$mconsole" halt > /dev/null &
    uml_mconsole_pid=$!
 
    # Check whether the mconsole process is hanging forever
-   i=0
-   while [ $i -le 5 ]; do
+   for _ in {0..5}; do
       [ ! -e "/proc/$uml_mconsole_pid" ] && return 0
-      [ $i -lt 5 ] && sleep 1
-      i=$((i + 1))
+      sleep 1
    done
 
    [ -z "$BE_QUIET" ] && echo "hangup detected... "
@@ -219,18 +217,15 @@ mconsole_halt() {
 
 
 ###############################################################################
-# Use mconsole_halt to crash a machine and, if BE_QUIET is empty, upon failure
-# twice, resort to kill_by_signaling. It is assumed that vm_info will be
-# populated.
+# Use mconsole_halt to crash a machine.
 # Usage:
-#   kill_by_mconsole MACHINE
+#   kill_by_mconsole MCONSOLE USER MACHINE
 # Globals:
 #   r- BE_QUIET
-#   r- REMOVE_FS
-#   r- target_user
-#   r- vm_info
 # Arguments:
-#   None
+#   $1 - mconsole socket
+#   $2 - owner of machine
+#   $3 - machine to kill
 # Returns:
 #   Returns zero on success, non-zero if there was an issue with killing the
 #   machine.
@@ -238,44 +233,25 @@ mconsole_halt() {
 #   None
 ###############################################################################
 kill_by_mconsole() {
-   vm=$1
+   local mconsole=$1
+   local target_user=$2
+   local vm=$3
 
    [ -z "$BE_QUIET" ] && echo -n "Crashing... "
 
-   mconsole_halt
+   mconsole_halt "$mconsole"
 
    # When the above command exits, an attempt via the mconsole has been
    # performed. Regardless of whether the virtual machine has actually halted,
    # the above command ensures that the uml_mconsole process has ended.
-   if [ -z "$BE_QUIET" ]; then
+   if [ -z "$BE_QUIET" ] && get_machine_state "$target_user" "$vm"; then
       # Make a second attempt if machine is still running
-      if get_machine_state "$target_user" "$vm"; then
-         echo -n "retrying... "
-         sleep 1
-
-         if ! mconsole_halt; then
-            # uml_mconsole is hanging forever
-            
-            # The two lines below are necessary in order to retrieve the
-            # virtual machine PIDs, which are required by kill_by_signaling.
-            # We chose not to retrieve them immediately because this requires
-            # time and is only necessary if mconsole does not work.
-            kill_by_signaling "$vm"
-            return $?
-         elif get_machine_state "$target_user" "$vm"; then
-            # Attempt to kill virtual machine processes
-            kill_by_signaling "$vm"
-            return $?
-         else
-            echo "done."
-         fi
-      else
-         echo "done."
-      fi
+      echo -n "retrying... "
+      sleep 1
+      mconsole_halt "$mconsole" || return 1
    fi
 
-   # kill_by_signaling will handle filesystem removal, hence it exits early
-   [ -n "$REMOVE_FS" ] && [ -n "${vm_info[disk]}" ] && remove_fs "${vm_info[disk]}"
+   [ -z "$BE_QUIET" ] && echo "done."
 
    return 0
 }
@@ -299,7 +275,7 @@ target_user=$USER_ID
 
 
 # Get command line options
-long_opts="force,help,kill,quiet,remove-fs,root,test,user:,version"
+long_opts="help,kill,quiet,remove-fs,root,test,user:,version"
 short_opts="kqru:"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -315,19 +291,19 @@ while true; do
       --help)
          usage 0
          ;;
+      # TODO: change to --force or something
       -k|--kill)
-         DO_KILL=1
+         force=1
          ;;
-
       # TODO: Remove --quiet. Have --verbose and --quick (independent).
       -q|--quick|--quiet)
          BE_QUIET=1
          ;;
       -r|--remove-fs)
-         REMOVE_FS=1
+         remove_fs=1
          ;;
       --test)
-         TEST_MODE=1
+         test_mode=1
          ;;
       -u|--user)
          target_user=$2
@@ -363,6 +339,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Non-option arguments are machine names
+# TODO: sort out vhostlist vs vm_ids
 vm_ids=( "$@" )
 
 for host in "${vm_ids[@]}"; do
@@ -374,7 +351,7 @@ done
 
 
 # Test mode is senseless if working in quiet mode
-if [ -n "$TEST_MODE" ] && [ -n "$BE_QUIET" ]; then
+if [ -n "$test_mode" ] && [ -n "$BE_QUIET" ]; then
    echo 1>&2 "$SCRIPTNAME: Option --test cannot be used when working in quiet mode"
    usage 1
 fi
@@ -392,15 +369,20 @@ for vm in "${vm_ids[@]}"; do
          echo "Virtual machine PIDs: $(get_vm_all_pids_by_name "$target_user" "$vm")"
       fi
    
-      [ -n "$TEST_MODE" ] && continue
+      [ -n "$test_mode" ] && continue
 
-      if [ -n "$DO_KILL" ]; then
+      if [ -n "$force" ]; then
          # Crash virtual machines by simply killing their processes
-         kill_by_signaling "$vm"
+         kill_by_signaling "$target_user" "$vm" || continue
       else
          # Crash virtual machines via uml_mconsole
-         kill_by_mconsole "$vm"
+         if ! kill_by_mconsole "${vm_info[mconsole]}" "$target_user" "$vm"; then
+            kill_by_signaling "$target_user" "$vm" || continue
+         fi
       fi
+
+      # Filesystem and tmux session removal only occurs if the machine
+      # successfully shut down (if the previous commands returned 0).
 
       # Kill tmux Sessions
       [ -z "$BE_QUIET" ] && echo "Checking for '$vm' tmux session"
@@ -416,6 +398,9 @@ for vm in "${vm_ids[@]}"; do
          [ -z "$BE_QUIET" ] && echo "Killing tmux session '$vm-dead'"
          tmux -L netkit kill-session -t="$vm-dead"
       fi
+
+      # Remove filesystem (.disk file)
+      [ -n "$remove_fs" ] && [ -n "${vm_info[disk]}" ] && rm_filesystem "${vm_info[disk]}"
    fi
 
 done

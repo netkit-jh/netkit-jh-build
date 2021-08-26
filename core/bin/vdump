@@ -135,13 +135,8 @@ fi
 hub_name=$1
 shift
 
-if string_contains " " "$hub_name"; then
-   echo 1>&2 "$SCRIPTNAME: Collision domain name cannot contain whitespace"
-   exit 1
-fi
 
-
-hub_socket="${HUB_SOCKET_DIR}/${HUB_SOCKET_PREFIX}_${USER_ID}_${hub_name}${HUB_SOCKET_EXTENSION}"
+hub_socket="${HUB_SOCKET_DIR}/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
 if [ ! -e "$hub_socket" ]; then
    echo 1>&2 "$SCRIPTNAME: $hub_socket: No such file or directory. Does the '$hub_name' domain exist?"
    usage 1
@@ -151,4 +146,6 @@ elif [ ! -S "$hub_socket" ]; then
 fi
 
 
-run_command "" "" "${COMPLETE_COMMAND[@]}"
+uml_dump_cmd=( "uml_dump" "$hub_socket" )
+
+run_command "" "" "${uml_dump_cmd[@]}"

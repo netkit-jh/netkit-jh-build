@@ -127,7 +127,7 @@ while true; do
          BE_QUIET=1
          ;;
       -r|--remove-fs)
-         REMOVE_FS=1
+         remove_fs=1
          ;;
       -u|--user)
          target_user=$2
@@ -152,9 +152,9 @@ while true; do
 done
 
 # Non-option arguments are machine names
-vm_hostnames=( "$@" )
+vm_ids=( "$@" )
 
-for host in "${vm_hostnames[@]}"; do
+for host in "${vm_ids[@]}"; do
    if string_contains " " "$host"; then
       echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
       exit 1
@@ -163,7 +163,7 @@ done
 
 
 # Check whether virtual machine name is missing
-if [ "${#vm_hostnames[@]}" -eq 0 ]; then
+if [ "${#vm_ids[@]}" -eq 0 ]; then
    echo 1>&2 "$SCRIPTNAME: Missing virtual machine name"
    exit 1
 fi
@@ -171,13 +171,15 @@ fi
 
 # Virtual machine filesystem cannot be removed in quiet mode because the
 # machine may write files during shutdown
-if [ -n "$REMOVE_FS" ] && [ -n "$BE_QUIET" ]; then
+# TODO: weird requirement - should only be for --quick? See note on
+# -q|--quick|--quiet entry.
+if [ -n "$remove_fs" ] && [ -n "$BE_QUIET" ]; then
    echo 1>&2 "$SCRIPTNAME: Filesystem cannot be removed in quiet mode"
    exit 1
 fi
 
 
-for vm in "${vm_hostnames[@]}"; do
+for vm in "${vm_ids[@]}"; do
    if ! get_vm_info_by_name "$target_user" "$vm"; then
       echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$vm' exists"
       [ -n "$target_user" ] && echo " for user $target_user." || echo "."
@@ -221,13 +223,10 @@ for vm in "${vm_hostnames[@]}"; do
    "$NETKIT_HOME/bin/uml_mconsole" "$vm" sysrq o > /dev/null
 
    if [ -z "$BE_QUIET" ]; then
-      ATTEMPTS=1
-      while get_machine_state "$target_user" "$vm"; do
+      for _ in {1..21}; do
+         get_machine_state "$target_user" "$vm" || break
          sleep 1
          echo -n "."
-
-         [ $ATTEMPTS -eq 20 ] && break
-         ATTEMPTS=$((ATTEMPTS + 1))
       done
 
       echo
@@ -236,9 +235,8 @@ for vm in "${vm_hostnames[@]}"; do
       if get_machine_state "$target_user" "$vm"; then
          echo 1>&2 "$SCRIPTNAME: could not shut down '$vm'."
       else
-         if [ -n "$REMOVE_FS" ] && [ -n "${vm_info[disk]}" ]; then
-            remove_fs "${vm_info[disk]}"
-         fi
+         # Remove filesystem (.disk file)
+         [ -n "$remove_fs" ] && [ -n "${vm_info[disk]}" ] && rm_filesystem "${vm_info[disk]}"
       fi
    fi
 done
