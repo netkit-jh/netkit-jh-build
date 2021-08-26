@@ -12,6 +12,10 @@
     6. `SCRIPTNAME` set, `NETKIT_HOME` check, and `script_utils` and/or `lcommon` source
     7. `getopt` argument parsing
     8. Remainder of script
+- `vcommand` usage signature is now `vcommand [OPTION]... MACHINE [COMMAND]`
+- `vconnect` usage signature is now `vconnect [OPTION]... MACHINE`
 
 # Removed
-Remove 'machines' lab.conf variable
+- `machines` lab.conf variable
+- `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))
+- `--machine` switch in `vconnect` (see [Modified](#modified))
