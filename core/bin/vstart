@@ -251,12 +251,13 @@ setup_interfaces() {
 
    enabled_default_route=false
 
+   unset HUB_LIST
+
    for interface_specification in "${interface_specifications[@]}"; do
       device=${interface_specification%%=*}
       hub_specification=${interface_specification#*=}
 
       # Check if interface has already been configured
-      # TODO: is this check really necessary?
       if array_contains "$device" "${used_devices[@]}"; then
          echo 1>&2 "$SCRIPTNAME: $device: Duplicate interface"
          usage 1
