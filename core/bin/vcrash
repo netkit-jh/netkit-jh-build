@@ -341,13 +341,7 @@ fi
 # Non-option arguments are machine names
 # TODO: sort out vhostlist vs vm_ids
 vm_ids=( "$@" )
-
-for host in "${vm_ids[@]}"; do
-   if string_contains " " "$host"; then
-      echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
-      exit 1
-   fi
-done
+validate_hostnames "${vm_ids[@]}"
 
 
 # Test mode is senseless if working in quiet mode

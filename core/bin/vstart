@@ -603,12 +603,7 @@ elif [ $# -gt 1 ]; then
 fi
 
 vm=$1
-shift
-
-if string_contains " " "$vm"; then
-   echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
-   exit 1
-fi
+validate_hostnames "$vm"
 
 
 # Check whether user is trying to attach more than one console to stdin/stdout

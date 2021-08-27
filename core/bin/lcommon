@@ -119,6 +119,8 @@ build_vhostlist() {
    else
       VHOSTLIST=( "${vhosts[@]}" )
    fi
+
+   validate_hostnames "${VHOSTLIST[@]}"
 }
 
 
@@ -714,18 +716,6 @@ lab_map() {
 
    generate_dot_graph "${lab_confs[@]}" | "$graph_generator" -Tpng -o"$map_file"
 }
-
-
-# Regular expression for a Debian-approved (and RFC-compliant) hostname
-# label. This expression can be substituted directly into most Linux utility
-# commands, such as egrep (grep -E).
-#
-# Debian standard for hostname 'labels' (hostname(7) man page):
-#   - May consist of A-Z, a-z, 0-9, and - (hyphen)
-#   - Cannot start or end with a - (hyphen)
-#   - Are case-insensitive
-#   - Can be 1 to 63 characters long
-hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,62}[a-zA-Z0-9])"
 
 
 # ANSI color escape sequences

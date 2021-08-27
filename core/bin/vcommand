@@ -184,6 +184,8 @@ if [ $# -eq 0 ]; then
 fi
 
 vm=$1
+validate_hostnames "$vm"
+
 cmd=${*:2}
 
 

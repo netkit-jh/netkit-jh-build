@@ -186,13 +186,7 @@ done
 
 # Non-option arguments are machine names
 VHOSTLIST=( "$@" )
-
-for vhost in "${VHOSTLIST[@]}"; do
-   if string_contains " " "$vhost"; then
-      echo 1>&2 "$SCRIPTNAME: Hostname cannot contain whitespace"
-      exit 1
-   fi
-done
+validate_hostnames "${VHOSTLIST[@]}"
 
 
 # If no lab directory has been given, assume current directory

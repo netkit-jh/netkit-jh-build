@@ -45,6 +45,31 @@ is_inet_addr() {
 
 
 ###############################################################################
+# Validate a list of hostnames against the hostname_regex pattern.
+# Usage:
+#   validate_hostnames [HOSTNAME]...
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#  ... - list of hostnames to validate
+# Returns:
+#   None. Exits with a non-zero code on an invalid hostname.
+# Example:
+#   None
+###############################################################################
+validate_hostnames() {
+   local hostnames=( "$@" )
+
+   for hostname in "${hostnames[@]}"; do
+      if [[ $hostname =~ $hostname_regex ]]; then
+         echo 1>&2 "$SCRIPTNAME: $hostname: Invalid hostname"
+         exit 1
+      fi
+   done
+}
+
+
+###############################################################################
 # Check if a string contains a sub-string.
 # Usage:
 #   string_contains QUERY STRING
@@ -848,6 +873,18 @@ netkit_dir_check() {
 
 # force language to avoid localization errors
 export LANG=C
+
+
+# Regular expression for a Debian-approved (and RFC-compliant) hostname
+# label. This expression can be substituted directly into most Linux utility
+# commands, such as egrep (grep -E).
+#
+# Debian standard for hostname 'labels' (hostname(7) man page):
+#   - May consist of A-Z, a-z, 0-9, and - (hyphen)
+#   - Cannot start or end with a - (hyphen)
+#   - Are case-insensitive
+#   - Can be 1 to 63 characters long
+hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,62}[a-zA-Z0-9])"
 
 
 # Read Netkit configuration in order of file localisation (per system, per
