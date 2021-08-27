@@ -72,7 +72,7 @@ usage() {
 $(usage_line)
 Attach network interfaces to running virtual machines.
 
-      --ethN=DOMAIN   equip virtual machine with a network interface ethN,
+      --ethN=[DOMAIN] equip virtual machine with a network interface ethN,
                         where N is a number between 0 and $((MAX_INTERFACES - 1)). DOMAIN is the
                         name of the collision domain the interface should be
                         connected to. Using an empty DOMAIN name (e.g.,
@@ -135,7 +135,7 @@ END_OF_HELP
 #   r- HUB_SOCKET_DIR
 #   r- HUB_SOCKET_EXTENSION
 #   r- HUB_SOCKET_PREFIX
-#   r- MCONSOLE_CMD
+#   r- VCONF_DEVICES
 #   r- SCRIPTNAME
 #   r- USER_ID
 # Arguments:
@@ -148,18 +148,18 @@ END_OF_HELP
 setup_interfaces() {
    local interface_specifications=( "$@" )
 
-   local first_iteration
    local interface_specification device hub_specification used_devices
    local hub_name tap_address guest_address hub_socket
+   local indent
    
+   unset HUB_LIST
+   unset VCONF_DEVICES
 
-   first_iteration=true
    for interface_specification in "${interface_specifications[@]}"; do
       device=${interface_specification%%=*}
       hub_specification=${interface_specification#*=}
 
       # Check if interface has already been configured
-      # TODO: is this check really necessary?
       if array_contains "$device" "${used_devices[@]}"; then
          echo 1>&2 "$SCRIPTNAME: $device: Duplicate interface"
          usage 1
@@ -187,29 +187,25 @@ setup_interfaces() {
          unset tap_address guest_address
          hub_name=$hub_specification
       fi
-      
-      # TODO: should USER_ID or target_user be used here?
-      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
-
-      if [ -n "$tap_address" ]; then
-         HUB_LIST+=( "$hub_name,$tap_address" )
-      elif [ -n "$hub_name" ]; then
-         HUB_LIST+=( "$hub_name" )
-      fi
-
-      if $first_iteration; then
-         first_iteration=false
-      elif [ -z "$BE_QUIET" ]; then
-         echo -n "               "
-      fi
 
       if [ -n "$hub_name" ]; then
-         MCONSOLE_CMD+=( "$device=daemon,,,$hub_socket" )
-         [ -z "$BE_QUIET" ] && echo "$device @ $hub_name ($hub_socket)"
+         if [ -n "$tap_address" ]; then
+            HUB_LIST+=( "$hub_name,$tap_address" )
+         else
+            HUB_LIST+=( "$hub_name" )
+         fi
+
+         hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
+         
+         VCONF_DEVICES+=( "$device=daemon,,,$hub_socket" )
+         [ -z "$BE_QUIET" ] && echo "$indent$device @ $hub_name ($hub_socket)"
       else
-         MCONSOLE_CMD+=( "$device" )
-         [ -z "$BE_QUIET" ] && echo "$device removed"
+         VCONF_DEVICES+=( "$device" )
+         [ -z "$BE_QUIET" ] && echo "$indent$device removed"
       fi
+
+      # Indent subsequent lines
+      indent="               "
    done
 }
 
@@ -217,14 +213,14 @@ setup_interfaces() {
 ###############################################################################
 # Attach/remove network interfaces from running machines with mconsole.
 # Usage:
-#   invoke_mconsole MACHINE [MCONSOLE_CMD]...
+#   invoke_mconsole MACHINE [VCONF_DEVICES]...
 # Globals:
 #   r- JUST_PRINT
 #   r- NETKIT_HOME
 # Arguments:
 #   $1 - machine name
-#  ... - list of mconsole commands. To remove an interface: 'ethN', to add an
-#        interface: 'ethN=daemon,,,path/to/socket'.
+#  ... - list of devices to configure. To remove an interface: 'ethN', to add
+#        an interface: 'ethN=daemon,,,path/to/socket'.
 # Returns:
 #   None
 # Example:
@@ -232,20 +228,20 @@ setup_interfaces() {
 ###############################################################################
 invoke_mconsole() {
    local vm=$1
-   local mconsole_cmd=( "${@:2}" )
+   local vconf_devices=( "${@:2}" )
 
-   local arg device hub_specification
+   local device_specification device hub_specification
    local action action_desc
+   local uml_mconsole_cmd
 
-
-   for arg in "${mconsole_cmd[@]}"; do
+   for device_specification in "${vconf_devices[@]}"; do
       # Format is either:
       #   To add an interface:
       #     ethN=daemon,,,path/to/socket
       #   To remove an interface:
       #     ethN
-      device=${arg%%=*}
-      hub_specification=${arg#*=}
+      device=${device_specification%%=*}
+      hub_specification=${device_specification#*=}
 
       if [ -n "$hub_specification" ]; then
          action="config"
@@ -255,7 +251,9 @@ invoke_mconsole() {
          action_desc="remove"
       fi
 
-      if ! run_command "$JUST_PRINT" "" "$NETKIT_HOME/bin/uml_mconsole" "$vm" "$action" "$device" 2>&1; then
+      uml_mconsole_cmd=( "$NETKIT_HOME/bin/uml_mconsole" "$vm" "$action" "$device" )
+
+      if ! run_command "$JUST_PRINT" "" "${uml_mconsole_cmd[@]}" 2>&1; then
          echo 2>&1 "Failed to $action_desc interface '$device'"
       fi
    done
@@ -393,4 +391,4 @@ fi
 run_hubs "${HUB_LIST[@]}"
 
 # Attach/remove network interfaces
-invoke_mconsole "$vm" "${MCONSOLE_CMD[@]}"
+invoke_mconsole "$vm" "${VCONF_DEVICES[@]}"
