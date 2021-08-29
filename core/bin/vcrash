@@ -386,11 +386,11 @@ for vhost in "${vm_ids[@]}"; do
          tmux -L netkit kill-session -t="$vhost"
       fi
 
-      [ -z "$BE_QUIET" ] && echo "Checking for '$vm-dead' tmux session"
+      [ -z "$BE_QUIET" ] && echo "Checking for '$vhost-dead' tmux session"
 
-      if tmux -L netkit has-session -t="$vm-dead" 2>/dev/null; then
-         [ -z "$BE_QUIET" ] && echo "Killing tmux session '$vm-dead'"
-         tmux -L netkit kill-session -t="$vm-dead"
+      if tmux -L netkit has-session -t="$vhost-dead" 2>/dev/null; then
+         [ -z "$BE_QUIET" ] && echo "Killing tmux session '$vhost-dead'"
+         tmux -L netkit kill-session -t="$vhost-dead"
       fi
 
       # Remove filesystem (.disk file)
