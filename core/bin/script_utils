@@ -704,8 +704,8 @@ get_vm_all_pids_by_name() {
 get_vhost_info_by_pid() {
    local pid=$1
 
-   local first_iteration argument value
-   local device device_id
+   local first_iteration argument option value
+   local device_id
 
    # Unset the globals
    unset vhost_info
@@ -745,14 +745,14 @@ get_vhost_info_by_pid() {
       # UML options are key=value pairs. ${argument#*=} removes the key= prefix
       # from argument (the single # permits usage of further equals signs in
       # the argument).
+      option=${argument%%=*}
       value=${argument#*=}
 
       # Edge-cases that can only be matched with regular expressions (or with
       # extglob enabled, which cannot be done.)
-      if [[ "$argument" =~ ^eth([0-9]|[1-9][0-9]+)=.*$ ]]; then
+      if [[ "$option" =~ ^eth([0-9]|[1-9][0-9]+)$ ]]; then
          # Interface number
-         device=${argument%%=*}
-         device_id=${device#eth}
+         device_id=${option#eth}
 
          # Array of UML socket filepaths indexed by the interface number.
          # NOTE: we assume transport mode is 'daemon'
@@ -765,8 +765,8 @@ get_vhost_info_by_pid() {
 
       # Most of the command-line options can be matched with basic pattern
       # matching:
-      case $argument in
-         con0=* )
+      case $option in
+         con0)
             case $value in
                xterm)      vhost_info["con0"]=$value;;
                fd:0,fd:1)  vhost_info["con0"]="this";;
@@ -775,7 +775,7 @@ get_vhost_info_by_pid() {
                null)       vhost_info["con0"]="none";;
             esac
             ;;
-         con1=*)
+         con1)
             case $value in
                xterm)      vhost_info["con1"]=$value;;
                fd:0,fd:1)  vhost_info["con1"]="this";;
@@ -784,16 +784,16 @@ get_vhost_info_by_pid() {
                null)       vhost_info["con1"]="none";;
             esac
             ;;
-         exec=*)     vhost_info["boot_cmd"]=$value;;
-         hosthome=*) vhost_info["hosthome"]=$value;;
-         hostlab=*)  vhost_info["hostlab"]=$value;;
-         hostwd=*)   vhost_info["hostwd"]=$value;;
+         exec)       vhost_info["boot_cmd"]=$value;;
+         hosthome)   vhost_info["hosthome"]=$value;;
+         hostlab)    vhost_info["hostlab"]=$value;;
+         hostwd)     vhost_info["hostwd"]=$value;;
          # Memory is NOT adjusted by the skew here
-         mem=*)      vhost_info["mem"]=$value;;
-         modules=*)  vhost_info["modules"]=$value;;
-         name=*)     vhost_info["name"]=$value;;
-         title=*)    vhost_info["title"]=$value;;
-         udb0=*)
+         mem)        vhost_info["mem"]=$value;;
+         modules)    vhost_info["modules"]=$value;;
+         name)       vhost_info["name"]=$value;;
+         title)      vhost_info["title"]=$value;;
+         udb0)
             # The udb0 value is disk,fs or fs
             vhost_info["disk"]=${value%%,*}
             vhost_info["fs"]=${value#*,}
@@ -802,7 +802,7 @@ get_vhost_info_by_pid() {
             # shared filesystem is used.
             [ "${vhost_info["disk"]}" = "${vhost_info["fs"]}" ] && unset vhost_info["disk"]
             ;;
-         umid=*)     vhost_info["umid"]=$value;;
+         umid)       vhost_info["umid"]=$value;;
          *)          vhost_info["other"]="${vhost_info[$other]} $argument"
       esac
    done <<< "${vhost_info[full_command]}"
