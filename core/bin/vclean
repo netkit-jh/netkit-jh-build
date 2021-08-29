@@ -125,7 +125,7 @@ END_OF_HELP
 ###############################################################################
 # Kill all running VMs.
 # Usage:
-#   kill_all_vms TEST_MODE USER
+#   kill_all_vhosts TEST_MODE USER
 # Globals:
 #   r- BE_QUIET
 #   r- NETKIT_HOME
@@ -137,7 +137,7 @@ END_OF_HELP
 # Example:
 #   None
 ###############################################################################
-kill_all_vms() {
+kill_all_vhosts() {
    local test_mode=$1
    local target_user=$2
 
@@ -365,7 +365,7 @@ if [ -n "$kill_machines" ]; then
    # Kill all running virtual machine kernels and all virtual hubs
    [ -z "$BE_QUIET" ] && echo "Killing virtual machines owned by $user_str:"
 
-   kill_all_vms "$test_mode" "$target_user"
+   kill_all_vhosts "$test_mode" "$target_user"
 
    [ -z "$BE_QUIET" ] && echo "Killing virtual hubs owned by $user_str:"
 

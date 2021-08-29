@@ -529,14 +529,14 @@ rm_filesystem() {
 get_machine_state() {
    local target_user=$1
    local vhost=$2
-   get_vm_pid_by_name "$target_user" "$vhost" > /dev/null
+   get_vhost_pid_by_name "$target_user" "$vhost" > /dev/null
 }
 
 
 ###############################################################################
 # Get the process ID of a machine by its name and, optionally, owner.
 # Usage:
-#   get_vm_pid_by_name USER MACHINE
+#   get_vhost_pid_by_name USER MACHINE
 # Globals:
 #   r- NETKIT_HOME
 # Arguments:
@@ -547,7 +547,7 @@ get_machine_state() {
 # Example:
 #   None
 ###############################################################################
-get_vm_pid_by_name() {
+get_vhost_pid_by_name() {
    local target_user=$1
    local name=$2
 
@@ -625,7 +625,7 @@ get_vm_pid_by_name() {
 # Get a list of all of the process IDs of a machine by its name and,
 # optionally, owner.
 # Usage:
-#   get_vm_all_pids_by_name USER MACHINE
+#   get_vhost_all_pids_by_name USER MACHINE
 # Globals:
 #   r- NETKIT_HOME
 # Arguments:
@@ -635,9 +635,9 @@ get_vm_pid_by_name() {
 #   Prints an IFS separated list of PIDs related to MACHINE to stdout. Returns
 #   0 if the machine exists, non-zero otherwise.
 # Example:
-#   for pid in $(get_vm_all_pids_by_name "" "foobar"); do echo $pid; done
+#   for pid in $(get_vhost_all_pids_by_name "" "foobar"); do echo $pid; done
 ###############################################################################
-get_vm_all_pids_by_name() {
+get_vhost_all_pids_by_name() {
    local target_user=$1
    local name=$2
 
@@ -652,7 +652,7 @@ get_vm_all_pids_by_name() {
    # are not matches.
    full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel.*[[:blank:]]umid=$name(\$|[[:blank:]])"
 
-   # See get_vm_pid_by_name for a process hierarchy explanation.
+   # See get_vhost_pid_by_name for a process hierarchy explanation.
 
    # Iterate over the PIDs of running Netkit instances with name matches.
    for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$full_command_regex"); do
@@ -834,7 +834,7 @@ get_vhost_info_by_name() {
 
    local pid
 
-   if ! pid=$(get_vm_pid_by_name "$target_user" "$vhost"); then
+   if ! pid=$(get_vhost_pid_by_name "$target_user" "$vhost"); then
       return 1
    fi
 

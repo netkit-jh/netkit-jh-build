@@ -377,7 +377,7 @@ lab_crash() {
 ###############################################################################
 # Start a single virtual machine within a lab.
 # Usage:
-#   single_lab_vm_start FAST_MODE DIR MACHINE [PASSTHROUGH]...
+#   single_lab_vhost_start FAST_MODE DIR MACHINE [PASSTHROUGH]...
 # Globals:
 #   r- GRACE_TIME
 #   r- VERBOSE
@@ -391,7 +391,7 @@ lab_crash() {
 # Example:
 #   None
 ###############################################################################
-single_lab_vm_start() {
+single_lab_vhost_start() {
    local fast_mode=$1
    local lab_directory=$2
    local vhost=$3
@@ -496,7 +496,7 @@ lab_start() {
    [ -z "$VERBOSE" ] && passthrough_args=( "-q" "${passthrough_args[@]}" )
 
    for vhost in "${VHOSTLIST[@]}"; do
-      single_lab_vm_start "$fast_mode" "$lab_directory" "$vhost" "${passthrough_args[@]}"
+      single_lab_vhost_start "$fast_mode" "$lab_directory" "$vhost" "${passthrough_args[@]}"
    done
    
    # The readyfor.test file should not be created if we have been invoked

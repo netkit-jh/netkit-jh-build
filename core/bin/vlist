@@ -93,7 +93,7 @@ END_OF_HELP
 ###############################################################################
 # Summarise all running machines for a specific user.
 # Usage:
-#   print_vm_summary NO_HEADER USER
+#   print_vhost_summary NO_HEADER USER
 # Globals:
 #   r- HUB_SOCKET_PREFIX
 #   r- HUB_SOCKET_EXTENSION
@@ -108,7 +108,7 @@ END_OF_HELP
 # Example:
 #   None
 ###############################################################################
-print_vm_summary() {
+print_vhost_summary() {
    local no_header=$1
    local target_user=$2
 
@@ -332,7 +332,7 @@ fi
 
 # Display summary of virtual machines
 if [ "${#vm_ids[@]}" -eq 0 ]; then
-   print_vm_summary "$no_header" "$target_user"
+   print_vhost_summary "$no_header" "$target_user"
 fi
 
 

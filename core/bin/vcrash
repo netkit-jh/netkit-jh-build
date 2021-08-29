@@ -142,7 +142,7 @@ kill_by_signaling() {
 
    # Signalling processes twice ensures they stop even if they need to be
    # killed in a certain order
-   IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vhost")"
+   IFS=" " read -r -a pids <<< "$(get_vhost_all_pids_by_name "$target_user" "$vhost")"
 
    if [ "${#pids[@]}" -eq 0 ]; then
       kill -TERM "${pids[@]}" > /dev/null
@@ -156,7 +156,7 @@ kill_by_signaling() {
          [ -z "$BE_QUIET" ] && echo -n "killing harder... "
          # Recompute PID list (some threads may have been launched in the
          # meantime).
-         IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vhost")"
+         IFS=" " read -r -a pids <<< "$(get_vhost_all_pids_by_name "$target_user" "$vhost")"
 
          if [ "${#pids[@]}" -eq 0 ]; then
             kill -KILL "${pids[@]}" > /dev/null
@@ -360,7 +360,7 @@ for vhost in "${vm_ids[@]}"; do
          echo "============= Crashing virtual machine '$vhost' (PID ${vhost_info[pid]}) ========="
          echo "Virtual machine owner: $target_user"
          echo "Virtual machine mconsole socket: ${vhost_info[mconsole]}"
-         echo "Virtual machine PIDs: $(get_vm_all_pids_by_name "$target_user" "$vhost")"
+         echo "Virtual machine PIDs: $(get_vhost_all_pids_by_name "$target_user" "$vhost")"
       fi
    
       [ -n "$test_mode" ] && continue

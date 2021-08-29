@@ -373,7 +373,7 @@ fi
 
 # Setup network interfaces
 if [ -z "$BE_QUIET" ]; then
-   echo "============= Configuring virtual machine '$vhost' (PID $(get_vm_pid_by_name "$target_user" "$vhost")) ============="
+   echo "============= Configuring virtual machine '$vhost' (PID $(get_vhost_pid_by_name "$target_user" "$vhost")) ============="
    echo "   Virtual machine owner: $target_user"
 fi
 
