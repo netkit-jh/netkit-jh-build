@@ -533,7 +533,7 @@ if [ -n "$test_mode" ]; then
       if [ -z "$script_mode" ]; then
          bold_print "Test signature created."
       else
-         printf "test completed.\t\t[ %bSIGN%b ]\n" "$color_yellow" "$color_normal"
+         echo -e "test completed.\t\t[ ${color_bold_yellow}SIGN$color_normal ]"
       fi
    else
       # Verify the test outcome against the signature
@@ -572,9 +572,9 @@ if [ -n "$test_mode" ]; then
          fi
       else
          if [ "$exit_code" -eq 0 ]; then
-            printf "test completed.\t\t[ %b OK %b ]\n" "$color_green" "$color_normal"
+            echo -e "test completed.\t\t[ $color_bold_green OK $color_normal ]"
          else
-            printf "test completed.\t\t[ %bFAIL%b ]\n" "$color_red" "$color_normal"
+            echo -e "test completed.\t\t[ ${color_bold_red}FAIL$color_normal ]"
          fi
       fi
    fi

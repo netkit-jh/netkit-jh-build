@@ -38,7 +38,7 @@
 #   None
 ###############################################################################
 bold_print() {
-   printf "%b%s%b\n" "$color_bold" "$1" "$color_normal"
+   echo -e "$color_bold$1$color_normal"
 }
 
 
@@ -291,14 +291,13 @@ lab_welcome() {
    done
 
    # Convert the multi-lab arrays to flat, comma-separated lists and print
-   # TODO: echo -e (or similar) for this and all other output
-   echo "${color_bold}Lab directory(ies)$color_normal: $color_blue$lab_directories_str$color_normal"
-   echo "${color_bold}Version(s)$color_normal:         $color_blue$(generate_info_str lab_versions)$color_normal"
-   echo "${color_bold}Author(s)$color_normal:          $color_blue$(generate_info_str lab_authors)$color_normal"
-   echo "${color_bold}Email(s)$color_normal:           $color_blue$(generate_info_str lab_emails)$color_normal"
-   echo "${color_bold}URL(s)$color_normal:             $color_blue$(generate_info_str lab_webs)$color_normal"
-   echo "${color_bold}Description(s)$color_normal:"
-   echo "$color_blue$(generate_info_str lab_descriptions)$color_normal"
+   bold_print "Lab directory(ies): $color_blue$lab_directories_str"
+   bold_print "Version(s):         $color_blue$(generate_info_str lab_versions)"
+   bold_print "Author(s):          $color_blue$(generate_info_str lab_authors)"
+   bold_print "Email(s):           $color_blue$(generate_info_str lab_emails)"
+   bold_print "URL(s):             $color_blue$(generate_info_str lab_webs)"
+   bold_print "Description(s):"
+   bold_print "$color_blue$(generate_info_str lab_descriptions)"
 }
 
 
@@ -735,7 +734,9 @@ lab_map() {
 # ANSI color escape sequences
 color_normal='\033[0m'
 color_bold='\033[1m'
-color_red='\033[31;1m'
-color_green='\033[32;1m'
-color_yellow='\033[33;1m'
-color_blue='\033[34;1m'
+
+color_blue='\033[34m'
+
+color_bold_red='\033[31;1m'
+color_bold_green='\033[32;1m'
+color_bold_yellow='\033[33;1m'
