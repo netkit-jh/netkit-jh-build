@@ -484,11 +484,11 @@ clean_hubs() {
          hub_pid=$(pgrep --oldest --euid="$USER_ID" --full "^$NETKIT_HOME/bin/uml_switch.*$hub_socket")
          if [ "$(lsof -a -U -p "$hub_pid" -Fn | grep -c "^n$hub_socket")" -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
-            kill "$hub_pid" && rm -f "$hub_socket"
+            kill "$hub_pid" && rm "$hub_socket"
          fi
       else
          # There are no switches connected to this socket - remove it
-         rm -f "$hub_socket"
+         rm "$hub_socket"
       fi
    done
 }
