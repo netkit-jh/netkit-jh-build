@@ -99,7 +99,7 @@ END_OF_HELP
 #   r- HUB_SOCKET_EXTENSION
 #   r- NETKIT_HOME
 #   rw vhost_info
-#   rw vm_uml_sockets
+#   rw vhost_sockets
 # Arguments:
 #   $1 - do not display column headers; pass an empty string to show them
 #   $2 - user; pass an empty string for all users
@@ -152,8 +152,8 @@ print_vm_summary() {
       # No column will be truncated on a value that is too long
       printf "%-20s %-20s %5d %9d   " "${vhost_info[owner]}" "${vhost_info[umid]}" "${vhost_info[pid]}" "${vhost_info[memory_usage]}"
 
-      for i in "${!vm_uml_sockets[@]}"; do
-         socket_filename=$(basename "${vm_uml_sockets[$i]}")
+      for i in "${!vhost_sockets[@]}"; do
+         socket_filename=$(basename "${vhost_sockets[$i]}")
 
          hub_name_and_ext=${socket_filename#${HUB_SOCKET_PREFIX}_*_}
          hub_name=${hub_name_and_ext%$HUB_SOCKET_EXTENSION}
@@ -180,7 +180,7 @@ print_vm_summary() {
 # Globals:
 #   r- NETKIT_HOME
 #   rw vhost_info
-#   rw vm_uml_sockets
+#   rw vhost_sockets
 #   r- VM_MEMORY_SKEW
 # Arguments:
 #   $1 - owner of the machine; pass an empty string for all users
@@ -198,7 +198,7 @@ print_vhost_info_by_name() {
    local i indent
    local socket_filepath socket_filename hub_name_and_ext hub_name   
 
-   # Fill vhost_info and vm_uml_sockets global arrays
+   # Fill vhost_info and vhost_sockets global arrays
    get_vhost_info_by_name "$target_user" "$vhost"
 
    # Output the machine details in a structured format
@@ -216,8 +216,8 @@ print_vhost_info_by_name() {
 
    echo -n "   Interfaces:        "
 
-   for i in "${!vm_uml_sockets[@]}"; do
-      socket_filepath=${vm_uml_sockets[$i]}
+   for i in "${!vhost_sockets[@]}"; do
+      socket_filepath=${vhost_sockets[$i]}
       socket_filename=$(basename "$socket_filepath")
 
       hub_name_and_ext=${socket_filename#$HUB_SOCKET_PREFIX_*_}

@@ -686,14 +686,14 @@ get_vm_all_pids_by_name() {
 
 
 ###############################################################################
-# Fill the vhost_info and vm_uml_sockets global arrays with information about a
+# Fill the vhost_info and vhost_sockets global arrays with information about a
 # running virtual machine.
 # Usage:
 #   get_vhost_info_by_pid PID
 # Globals:
 #   r- MCONSOLE_DIR
 #   rw vhost_info
-#   rw vm_uml_sockets
+#   rw vhost_sockets
 # Arguments:
 #   $1 - process ID of the machine
 # Returns:
@@ -709,7 +709,7 @@ get_vhost_info_by_pid() {
 
    # Unset the globals
    unset vhost_info
-   unset vm_uml_sockets
+   unset vhost_sockets
 
    declare -A vhost_info
 
@@ -756,10 +756,10 @@ get_vhost_info_by_pid() {
 
          # Array of UML socket filepaths indexed by the interface number.
          # NOTE: we assume transport mode is 'daemon'
-         # Disable SC2034 check (unused variable) - it is used eslewhere as a
+         # Disable SC2034 check (unused variable) - it is used elsewhere as a
          # global.
          # shellcheck disable=SC2034
-         vm_uml_sockets[$device_id]=${value#daemon,,,}
+         vhost_sockets[$device_id]=${value#daemon,,,}
          continue
       fi
 
@@ -813,13 +813,13 @@ get_vhost_info_by_pid() {
 
 
 ###############################################################################
-# Fill the vhost_info and vm_uml_sockets global arrays with information about a
+# Fill the vhost_info and vhost_sockets global arrays with information about a
 # running virtual machine by machine name and, optionally, user.
 # Usage:
 #   get_vhost_info_by_name USER VM
 # Globals:
 #   rw vhost_info
-#   rw vm_uml_sockets
+#   rw vhost_sockets
 # Arguments:
 #   $1 - owner of the machine; pass an empty string for all users
 #   $2 - machine name
