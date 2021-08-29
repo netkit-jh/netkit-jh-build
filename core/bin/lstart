@@ -293,7 +293,7 @@ while true; do
          usage 0
          ;;
       -l|--list)
-         list_vm=1
+         list_vhosts=1
          ;;
       --makefile)
          # This is a hidden option which is used by lstart/ltest itself when
@@ -581,6 +581,6 @@ if [ -n "$test_mode" ]; then
 fi
 
 # Show a list of running virtual machines, if asked to
-[ -n "$list_vm" ] && vlist
+[ -n "$list_vhosts" ] && vlist
 
 exit $exit_code

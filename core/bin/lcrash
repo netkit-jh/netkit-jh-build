@@ -162,7 +162,7 @@ while true; do
          kill_mode=1
          ;;
       -l|--list)
-         list_vm=1
+         list_vhosts=1
          ;;
       -q|--quick|--quiet)
          unset VERBOSE
@@ -210,4 +210,4 @@ bold_print "Lab has been crashed."
 bold_print "================================================================="
 
 # Show a list of running virtual machines, if asked to
-[ -n "$list_vm" ] && vlist
+[ -n "$list_vhosts" ] && vlist
