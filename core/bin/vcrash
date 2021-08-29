@@ -181,7 +181,7 @@ kill_by_signaling() {
 
 ###############################################################################
 # Use uml_mconsole to crash a machine.
-# TODO: we can remove the reliance on vm_info by building the dir path here.
+# TODO: we can remove the reliance on vhost_info by building the dir path here.
 # Usage:
 #   mconsole_halt MCONSOLE
 # Globals:
@@ -354,12 +354,12 @@ fi
 for vhost in "${vm_ids[@]}"; do
    # Check whether the current machine exists
    if get_machine_state "$target_user" "$vhost"; then
-      get_vm_info_by_name "$target_user" "$vhost"
+      get_vhost_info_by_name "$target_user" "$vhost"
 
       if [ -z "$BE_QUIET" ]; then
-         echo "============= Crashing virtual machine '$vhost' (PID ${vm_info[pid]}) ========="
+         echo "============= Crashing virtual machine '$vhost' (PID ${vhost_info[pid]}) ========="
          echo "Virtual machine owner: $target_user"
-         echo "Virtual machine mconsole socket: ${vm_info[mconsole]}"
+         echo "Virtual machine mconsole socket: ${vhost_info[mconsole]}"
          echo "Virtual machine PIDs: $(get_vm_all_pids_by_name "$target_user" "$vhost")"
       fi
    
@@ -370,7 +370,7 @@ for vhost in "${vm_ids[@]}"; do
          kill_by_signaling "$target_user" "$vhost" || continue
       else
          # Crash virtual machines via uml_mconsole
-         if ! kill_by_mconsole "${vm_info[mconsole]}" "$target_user" "$vhost"; then
+         if ! kill_by_mconsole "${vhost_info[mconsole]}" "$target_user" "$vhost"; then
             kill_by_signaling "$target_user" "$vhost" || continue
          fi
       fi
@@ -394,7 +394,7 @@ for vhost in "${vm_ids[@]}"; do
       fi
 
       # Remove filesystem (.disk file)
-      [ -n "$remove_fs" ] && [ -n "${vm_info[disk]}" ] && rm_filesystem "${vm_info[disk]}"
+      [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] && rm_filesystem "${vhost_info[disk]}"
    fi
 
 done

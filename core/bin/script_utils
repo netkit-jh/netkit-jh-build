@@ -686,13 +686,13 @@ get_vm_all_pids_by_name() {
 
 
 ###############################################################################
-# Fill the vm_info and vm_uml_sockets global arrays with information about a
+# Fill the vhost_info and vm_uml_sockets global arrays with information about a
 # running virtual machine.
 # Usage:
-#   get_vm_info_by_pid PID
+#   get_vhost_info_by_pid PID
 # Globals:
 #   r- MCONSOLE_DIR
-#   rw vm_info
+#   rw vhost_info
 #   rw vm_uml_sockets
 # Arguments:
 #   $1 - process ID of the machine
@@ -701,28 +701,28 @@ get_vm_all_pids_by_name() {
 # Example:
 #   None
 ###############################################################################
-get_vm_info_by_pid() {
+get_vhost_info_by_pid() {
    local pid=$1
 
    local first_iteration argument value
    local device device_id
 
    # Unset the globals
-   unset vm_info
+   unset vhost_info
    unset vm_uml_sockets
 
-   declare -A vm_info
+   declare -A vhost_info
 
-   vm_info["pid"]=$pid
+   vhost_info["pid"]=$pid
 
    # Effective user ID of the process (full username if not too long)
-   vm_info["owner"]=$(ps --no-headers --format euser --pid "$pid")
+   vhost_info["owner"]=$(ps --no-headers --format euser --pid "$pid")
 
    # Total virtual memory usage of the process.
    # Logically this should be the sum of every process in the group (PGID),
    # however in practice just taking the value of the parent process is enough.
    # The value should equate to roughly the size of the machine's memory.
-   vm_info["memory_usage"]=$(ps --no-headers --format vsize --pid "$pid")
+   vhost_info["memory_usage"]=$(ps --no-headers --format vsize --pid "$pid")
 
    # Full command used to invoke the process.
    # Why not parse the output of ps? Whitespace in the program name or
@@ -732,12 +732,12 @@ get_vm_info_by_pid() {
    # in the command, but if a user is doing that then they are just asking for
    # an error somewhere down the line to be honest.
    # TODO: https://unix.stackexchange.com/a/658549
-   vm_info["full_command"]=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
+   vhost_info["full_command"]=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
 
    first_iteration=true
    while IFS="" read -r argument; do
       if $first_iteration; then
-         vm_info["kernel"]=$argument
+         vhost_info["kernel"]=$argument
          first_iteration=false
          continue
       fi
@@ -768,57 +768,57 @@ get_vm_info_by_pid() {
       case $argument in
          con0=* )
             case $value in
-               xterm)      vm_info["con0"]=$value;;
-               fd:0,fd:1)  vm_info["con0"]="this";;
-               pty)        vm_info["con0"]=$value;;
-               port:*)     vm_info["con0"]=$value;;
-               null)       vm_info["con0"]="none";;
+               xterm)      vhost_info["con0"]=$value;;
+               fd:0,fd:1)  vhost_info["con0"]="this";;
+               pty)        vhost_info["con0"]=$value;;
+               port:*)     vhost_info["con0"]=$value;;
+               null)       vhost_info["con0"]="none";;
             esac
             ;;
          con1=*)
             case $value in
-               xterm)      vm_info["con1"]=$value;;
-               fd:0,fd:1)  vm_info["con1"]="this";;
-               pty)        vm_info["con1"]=$value;;
-               port:*)     vm_info["con1"]=$value;;
-               null)       vm_info["con1"]="none";;
+               xterm)      vhost_info["con1"]=$value;;
+               fd:0,fd:1)  vhost_info["con1"]="this";;
+               pty)        vhost_info["con1"]=$value;;
+               port:*)     vhost_info["con1"]=$value;;
+               null)       vhost_info["con1"]="none";;
             esac
             ;;
-         exec=*)     vm_info["boot_cmd"]=$value;;
-         hosthome=*) vm_info["hosthome"]=$value;;
-         hostlab=*)  vm_info["hostlab"]=$value;;
-         hostwd=*)   vm_info["hostwd"]=$value;;
+         exec=*)     vhost_info["boot_cmd"]=$value;;
+         hosthome=*) vhost_info["hosthome"]=$value;;
+         hostlab=*)  vhost_info["hostlab"]=$value;;
+         hostwd=*)   vhost_info["hostwd"]=$value;;
          # Memory is NOT adjusted by the skew here
-         mem=*)      vm_info["mem"]=$value;;
-         modules=*)  vm_info["modules"]=$value;;
-         name=*)     vm_info["name"]=$value;;
-         title=*)    vm_info["title"]=$value;;
+         mem=*)      vhost_info["mem"]=$value;;
+         modules=*)  vhost_info["modules"]=$value;;
+         name=*)     vhost_info["name"]=$value;;
+         title=*)    vhost_info["title"]=$value;;
          udb0=*)
             # The udb0 value is disk,fs or fs
-            vm_info["disk"]=${value%%,*}
-            vm_info["fs"]=${value#*,}
+            vhost_info["disk"]=${value%%,*}
+            vhost_info["fs"]=${value#*,}
 
             # The parameter expansions result in equal values if a single,
             # shared filesystem is used.
-            [ "${vm_info["disk"]}" = "${vm_info["fs"]}" ] && unset vm_info["disk"]
+            [ "${vhost_info["disk"]}" = "${vhost_info["fs"]}" ] && unset vhost_info["disk"]
             ;;
-         umid=*)     vm_info["umid"]=$value;;
-         *)          vm_info["other"]="${vm_info[$other]} $argument"
+         umid=*)     vhost_info["umid"]=$value;;
+         *)          vhost_info["other"]="${vhost_info[$other]} $argument"
       esac
-   done <<< "${vm_info[full_command]}"
+   done <<< "${vhost_info[full_command]}"
 
    # The UML console socket filepath
-   vm_info["mconsole"]="$MCONSOLE_DIR/${vm_info[umid]}/mconsole"
+   vhost_info["mconsole"]="$MCONSOLE_DIR/${vhost_info[umid]}/mconsole"
 }
 
 
 ###############################################################################
-# Fill the vm_info and vm_uml_sockets global arrays with information about a
+# Fill the vhost_info and vm_uml_sockets global arrays with information about a
 # running virtual machine by machine name and, optionally, user.
 # Usage:
-#   get_vm_info_by_name USER VM
+#   get_vhost_info_by_name USER VM
 # Globals:
-#   rw vm_info
+#   rw vhost_info
 #   rw vm_uml_sockets
 # Arguments:
 #   $1 - owner of the machine; pass an empty string for all users
@@ -828,7 +828,7 @@ get_vm_info_by_pid() {
 # Example:
 #   None
 ###############################################################################
-get_vm_info_by_name() {
+get_vhost_info_by_name() {
    local target_user=$1
    local vhost=$2
 
@@ -838,7 +838,7 @@ get_vm_info_by_name() {
       return 1
    fi
 
-   get_vm_info_by_pid "$pid"
+   get_vhost_info_by_pid "$pid"
    return 0
 }
 

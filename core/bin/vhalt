@@ -174,13 +174,13 @@ fi
 
 
 for vhost in "${vm_ids[@]}"; do
-   if ! get_vm_info_by_name "$target_user" "$vhost"; then
+   if ! get_vhost_info_by_name "$target_user" "$vhost"; then
       echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$vhost' exists"
       [ -n "$target_user" ] && echo " for user $target_user." || echo "."
       exit 1
    fi
 
-   [ -z "$BE_QUIET" ] && echo -e -n "Halting '$vhost' (PID ${vm_info[pid]}) owned by \
+   [ -z "$BE_QUIET" ] && echo -e -n "Halting '$vhost' (PID ${vhost_info[pid]}) owned by \
    $target_user [                    ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
 
    # Old method uses CTRL-ALT-DEL. This yields the error
@@ -230,7 +230,7 @@ for vhost in "${vm_ids[@]}"; do
          echo 1>&2 "$SCRIPTNAME: could not shut down '$vhost'."
       else
          # Remove filesystem (.disk file)
-         [ -n "$remove_fs" ] && [ -n "${vm_info[disk]}" ] && rm_filesystem "${vm_info[disk]}"
+         [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] && rm_filesystem "${vhost_info[disk]}"
       fi
    fi
 done

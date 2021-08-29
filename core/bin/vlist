@@ -98,7 +98,7 @@ END_OF_HELP
 #   r- HUB_SOCKET_PREFIX
 #   r- HUB_SOCKET_EXTENSION
 #   r- NETKIT_HOME
-#   rw vm_info
+#   rw vhost_info
 #   rw vm_uml_sockets
 # Arguments:
 #   $1 - do not display column headers; pass an empty string to show them
@@ -140,17 +140,17 @@ print_vm_summary() {
    
       ((++machine_count))
 
-      get_vm_info_by_pid "$pid"
+      get_vhost_info_by_pid "$pid"
 
       # Total virtual memory usage of the process.
       # Logically this should be the sum of every process in the group (PGID),
       # however in practice just taking the value of the parent process is
       # enough. The value should equate to roughly the size of the machine's
       # memory.
-      ((total_memory_usage += vm_info[memory_usage]))
+      ((total_memory_usage += vhost_info[memory_usage]))
 
       # No column will be truncated on a value that is too long
-      printf "%-20s %-20s %5d %9d   " "${vm_info[owner]}" "${vm_info[umid]}" "${vm_info[pid]}" "${vm_info[memory_usage]}"
+      printf "%-20s %-20s %5d %9d   " "${vhost_info[owner]}" "${vhost_info[umid]}" "${vhost_info[pid]}" "${vhost_info[memory_usage]}"
 
       for i in "${!vm_uml_sockets[@]}"; do
          socket_filename=$(basename "${vm_uml_sockets[$i]}")
@@ -176,10 +176,10 @@ print_vm_summary() {
 ###############################################################################
 # Print complete information about a machine.
 # Usage:
-#   print_vm_info_by_name USER VM
+#   print_vhost_info_by_name USER VM
 # Globals:
 #   r- NETKIT_HOME
-#   rw vm_info
+#   rw vhost_info
 #   rw vm_uml_sockets
 #   r- VM_MEMORY_SKEW
 # Arguments:
@@ -191,28 +191,28 @@ print_vm_summary() {
 # Example:
 #   None
 ###############################################################################
-print_vm_info_by_name() {
+print_vhost_info_by_name() {
    local target_user=$1
    local vhost=$2
 
    local i indent
    local socket_filepath socket_filename hub_name_and_ext hub_name   
 
-   # Fill vm_info and vm_uml_sockets global arrays
-   get_vm_info_by_name "$target_user" "$vhost"
+   # Fill vhost_info and vm_uml_sockets global arrays
+   get_vhost_info_by_name "$target_user" "$vhost"
 
    # Output the machine details in a structured format
    echo "============= Information for virtual machine '$vhost' ============="
    echo " --- Accounting information ---"
-   echo "   PID:               ${vm_info[pid]}"
-   echo "   Owner:             ${vm_info[owner]}"
-   echo "   Used mem:          ${vm_info[memory_usage]} KB"
+   echo "   PID:               ${vhost_info[pid]}"
+   echo "   Owner:             ${vhost_info[owner]}"
+   echo "   Used mem:          ${vhost_info[memory_usage]} KB"
    echo " --- Emulation parameters ---"
-   echo "   Kernel:            ${vm_info[kernel]}"
-   echo "   Modules:           ${vm_info[modules]:-"-"}"
-   echo "   Memory:            $((vm_info[mem] - VM_MEMORY_SKEW)) MB (+$VM_MEMORY_SKEW MB skew)"
-   echo "   Model fs:          ${vm_info[fs]}"
-   echo "   Filesystem:        ${vm_info[disk]:-"-"}"
+   echo "   Kernel:            ${vhost_info[kernel]}"
+   echo "   Modules:           ${vhost_info[modules]:-"-"}"
+   echo "   Memory:            $((vhost_info[mem] - VM_MEMORY_SKEW)) MB (+$VM_MEMORY_SKEW MB skew)"
+   echo "   Model fs:          ${vhost_info[fs]}"
+   echo "   Filesystem:        ${vhost_info[disk]:-"-"}"
 
    echo -n "   Interfaces:        "
 
@@ -229,31 +229,31 @@ print_vm_info_by_name() {
       indent="                      "
    done
 
-   echo "   Hostlab:           ${vm_info[hostlab]:-"-"}"
-   echo "   Hosthome:          ${vm_info[hosthome]:-"-"}"
-   echo "   Working directory: ${vm_info[hostwd]:-"-"}"
-   echo "   Boot command:      ${vm_info[boot_cmd]:-"-"}"
+   echo "   Hostlab:           ${vhost_info[hostlab]:-"-"}"
+   echo "   Hosthome:          ${vhost_info[hosthome]:-"-"}"
+   echo "   Working directory: ${vhost_info[hostwd]:-"-"}"
+   echo "   Boot command:      ${vhost_info[boot_cmd]:-"-"}"
 
    echo -n "   Console 1:         "
-   case ${vm_info[con0]} in
+   case ${vhost_info[con0]} in
       none)    echo "disabled";;
       xterm)   echo "terminal emulator";;
       this)    echo "stdin/stdout";;
       pty)     echo "pty";;
-      port:*)  echo "port ${vm_info[con0]#"port:"}"
+      port:*)  echo "port ${vhost_info[con0]#"port:"}"
    esac
 
    echo -n "   Console 2:         "
-   case ${vm_info[con1]} in
+   case ${vhost_info[con1]} in
       none)    echo "disabled";;
       xterm)   echo "terminal emulator";;
       this)    echo "stdin/stdout";;
       pty)     echo "pty";;
-      port:*)  echo "port ${vm_info[con1]#"port:"}"
+      port:*)  echo "port ${vhost_info[con1]#"port:"}"
    esac
 
-   echo "   Other arguments:   ${vm_info[other]:-"-"}"
-   echo "   Console socket:    ${vm_info[mconsole]}"
+   echo "   Other arguments:   ${vhost_info[other]:-"-"}"
+   echo "   Console socket:    ${vhost_info[mconsole]}"
 }
 
 
@@ -339,7 +339,7 @@ fi
 # Get verbose information for specific virtual machines
 for vhost in "${vm_ids[@]}"; do
    if get_machine_state "$target_user" "$vhost"; then
-      print_vm_info_by_name "$target_user" "$vhost"
+      print_vhost_info_by_name "$target_user" "$vhost"
    else
       echo 1>&2 "$SCRIPTNAME: no virtual machine named '$vhost' exists for $target_user"
    fi
