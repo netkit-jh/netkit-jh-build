@@ -89,9 +89,12 @@ array_contains() {
 build_vhostlist() {
    local lab_directory=$1
 
-   local dir vhost vhosts vhostlist_bak
+   local vhost
+   local lab_dir_vhosts lab_conf_vhosts cmdline_vhosts
+   local lab_dir_vhosts_override
 
    # Build list of virtual machines that are part of the lab
+   # TODO: should LAB_MACHINES override this?
    for dir in "$lab_directory"/*/; do
       vhost=$(basename "$dir")
 
@@ -100,24 +103,38 @@ build_vhostlist() {
          continue
       fi
 
-      vhosts+=( "$vhost" )
+      lab_dir_vhosts+=( "$vhost" )
    done
 
-   # If VHOSTLIST has already been set (typically explicitly by the user on the
-   # command line), verify that the machines are in the lab.
-   if [ "${#VHOSTLIST[@]}" -gt 0 ]; then
-      vhostlist_bak=( "${VHOSTLIST[@]}" )
+   # Get machine list override from lab.conf LAB_MACHINES and the command line.
+   # If either are set, they will override the directory listing for machine
+   # names. The command-line specification takes precedence over the
+   # LAB_MACHINES variable.
+   # Note: LAB_MACHINES is a comma-separated (whitespace is not ignored) list.
+   # This means if hostname_regex allows, machine names cannot have commas in
+   # them.
+   # TODO: allow commas (if so desired) in LAB_MACHINES hostnames with quotes
+   # or escape sequences.
+   IFS="," read -r -a lab_conf_vhosts <<< "$(get_lab_variable "LAB_MACHINES" "$lab_directory")"
+   cmdline_vhosts=( "${VHOSTLIST[@]}" )
+
+   [ "${#lab_conf_vhosts[@]}" -gt 0 ] && lab_dir_vhosts_override=( "${lab_conf_vhosts[@]}" )
+   [ "${#cmdline_vhosts[@]}" -gt 0 ] &&  lab_dir_vhosts_override=( "${cmdline_vhosts[@]}" )
+
+   # If the user has explicitly provided a machine list (via command line or
+   # LAB_MACHINES), verify that the machines are in the lab.
+   if [ "${#lab_dir_vhosts_override[@]}" -gt 0 ]; then
       unset VHOSTLIST
 
-      for vhost in "${vhostlist_bak[@]}"; do
-         if array_contains "$vhost" "${vhosts[@]}"; then
+      for vhost in "${lab_dir_vhosts_override[@]}"; do
+         if array_contains "$vhost" "${lab_dir_vhosts[@]}"; then
             VHOSTLIST+=( "$vhost" )
          else
             echo 1>&2 "Warning: '$vhost' is not part of the lab in '$lab_directory'"
          fi
       done
    else
-      VHOSTLIST=( "${vhosts[@]}" )
+      VHOSTLIST=( "${lab_dir_vhosts[@]}" )
    fi
 
    validate_hostnames "${VHOSTLIST[@]}"
@@ -261,8 +278,6 @@ lab_welcome() {
       # We use associative arrays for printing the values with their respective
       # directory basename. SC2034 (variable appears unused) must be ignored
       # because the arrays are only referenced by name.
-      # TODO: create 'LAB_MACHINES' variable, similar to the old 'machines'
-      # variable.
       # shellcheck disable=SC2034
       lab_versions[$lab]=$(get_lab_variable "LAB_VERSION" "$dir")
       # shellcheck disable=SC2034

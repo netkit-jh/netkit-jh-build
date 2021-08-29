@@ -14,8 +14,9 @@
     8. Remainder of script
 - `vcommand` usage signature is now `vcommand [OPTION]... MACHINE [COMMAND]`
 - `vconnect` usage signature is now `vconnect [OPTION]... MACHINE`
+- `machines` lab.conf variable is now `LAB_MACHINES`
+- `LAB_MACHINES` does not strip whitespace. Names are comma-delimited
 
 # Removed
-- `machines` lab.conf variable
 - `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))
 - `--machine` switch in `vconnect` (see [Modified](#modified))
