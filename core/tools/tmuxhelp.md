@@ -12,7 +12,7 @@ To close this, just press <q>
 
 ## The Netkit VM Pane
 
-The Netkit VM will run under window 'netkit-vm' pane '0'. If you are not on this pane all commands will go to the host not the Netkit machine!! 
+The Netkit VM will run under window 'netkit-vhost' pane '0'. If you are not on this pane all commands will go to the host not the Netkit machine!! 
 
 To help you, the status bar should change colour depending on what pane you are in. By default this is purple if you are in a netkit vm and blue if you are in a host shell.
 

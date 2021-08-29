@@ -16,6 +16,7 @@
 - `vconnect` usage signature is now `vconnect [OPTION]... MACHINE`
 - `machines` lab.conf variable is now `LAB_MACHINES`
 - `LAB_MACHINES` does not strip whitespace. Names are comma-delimited
+- tmux sessions are now named `netkit-vhost` (orig. `netkit-vm`)
 
 # Removed
 - `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))

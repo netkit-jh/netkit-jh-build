@@ -87,7 +87,7 @@ tmux_command() {
 
    local cmd_uuid
 
-   local target="$session:netkit-vm.0"
+   local target="$session:netkit-vhost.0"
 
    if ! tmux -L netkit has-session -t "$session" > /dev/null 2>&1; then
       echo 1>&2 "tmux session does not exist for this machine"
