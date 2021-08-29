@@ -528,8 +528,8 @@ rm_filesystem() {
 ###############################################################################
 get_machine_state() {
    local target_user=$1
-   local vm=$2
-   get_vm_pid_by_name "$target_user" "$vm" > /dev/null
+   local vhost=$2
+   get_vm_pid_by_name "$target_user" "$vhost" > /dev/null
 }
 
 
@@ -830,11 +830,11 @@ get_vm_info_by_pid() {
 ###############################################################################
 get_vm_info_by_name() {
    local target_user=$1
-   local vm=$2
+   local vhost=$2
 
    local pid
 
-   if ! pid=$(get_vm_pid_by_name "$target_user" "$vm"); then
+   if ! pid=$(get_vm_pid_by_name "$target_user" "$vhost"); then
       return 1
    fi
 

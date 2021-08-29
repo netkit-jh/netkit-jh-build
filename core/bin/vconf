@@ -227,7 +227,7 @@ setup_interfaces() {
 #   None
 ###############################################################################
 invoke_mconsole() {
-   local vm=$1
+   local vhost=$1
    local vconf_devices=( "${@:2}" )
 
    local device_specification device hub_specification
@@ -251,7 +251,7 @@ invoke_mconsole() {
          action_desc="remove"
       fi
 
-      uml_mconsole_cmd=( "$NETKIT_HOME/bin/uml_mconsole" "$vm" "$action" "$device" )
+      uml_mconsole_cmd=( "$NETKIT_HOME/bin/uml_mconsole" "$vhost" "$action" "$device" )
 
       if ! run_command "$JUST_PRINT" "" "${uml_mconsole_cmd[@]}" 2>&1; then
          echo 2>&1 "Failed to $action_desc interface '$device'"
@@ -360,12 +360,12 @@ elif [ $# -gt 1 ]; then
    usage 1
 fi
 
-vm=$1
-validate_hostnames "$vm"
+vhost=$1
+validate_hostnames "$vhost"
 
 
-if ! get_machine_state "$target_user" "$vm"; then
-   echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$vm' exists"
+if ! get_machine_state "$target_user" "$vhost"; then
+   echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$vhost' exists"
    [ -n "$target_user" ] && echo " for user $target_user." || echo "."
    exit 1
 fi
@@ -373,7 +373,7 @@ fi
 
 # Setup network interfaces
 if [ -z "$BE_QUIET" ]; then
-   echo "============= Configuring virtual machine '$vm' (PID $(get_vm_pid_by_name "$target_user" "$vm")) ============="
+   echo "============= Configuring virtual machine '$vhost' (PID $(get_vm_pid_by_name "$target_user" "$vhost")) ============="
    echo "   Virtual machine owner: $target_user"
 fi
 
@@ -386,4 +386,4 @@ fi
 run_hubs "${HUB_LIST[@]}"
 
 # Attach/remove network interfaces
-invoke_mconsole "$vm" "${VCONF_DEVICES[@]}"
+invoke_mconsole "$vhost" "${VCONF_DEVICES[@]}"

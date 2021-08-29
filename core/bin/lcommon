@@ -394,14 +394,14 @@ lab_crash() {
 single_lab_vm_start() {
    local fast_mode=$1
    local lab_directory=$2
-   local vm=$3
+   local vhost=$3
    local passthrough_args=( "${@:4}" )
 
    local configuration option value
 
    # Add host lab and working directory, and place filesystem inside the lab
    # directory.
-   local vstart_args=( "--hostlab" "$lab_directory" "--hostwd" "$PWD" "--filesystem" "$lab_directory/$vm.disk" )
+   local vstart_args=( "--hostlab" "$lab_directory" "--hostwd" "$PWD" "--filesystem" "$lab_directory/$vhost.disk" )
 
    # Generate vstart argument list
    if [ -e "$lab_directory/lab.conf" ]; then
@@ -428,30 +428,30 @@ single_lab_vm_start() {
          # appending the argument must be made (an '=' is required for long
          # options, no delimiter for short ones).
          [ -n "$value" ] && vstart_args+=( "$value" )
-      done < <(grep "^[[:blank:]]*$vm\[.*\][[:blank:]]*=" "$lab_directory/lab.conf")
+      done < <(grep "^[[:blank:]]*$vhost\[.*\][[:blank:]]*=" "$lab_directory/lab.conf")
    fi
    
    # Remove .ready file, if existing
-   [ -e "$lab_directory/$vm.ready" ] && rm -f "$lab_directory/$vm.ready"
+   rm -f "$lab_directory/$vhost.ready"
 
    if [ -z "$VERBOSE" ]; then
-      bold_print "Starting '$vm'..."
+      bold_print "Starting '$vhost'..."
    else
-      bold_print "Starting '$vm' with options '${vstart_args[*]} ${passthrough_args[*]}'... "
+      bold_print "Starting '$vhost' with options '${vstart_args[*]} ${passthrough_args[*]}'... "
    fi
 
-   if ! vstart "${vstart_args[@]}" "${passthrough_args[@]}" "$vm"; then
-      echo 2>&1 "Error while starting virtual machine '$vm'"
+   if ! vstart "${vstart_args[@]}" "${passthrough_args[@]}" "$vhost"; then
+      echo 2>&1 "Error while starting virtual machine '$vhost'"
       exit 1
    fi
 
    # Wait for virtual host startup script to create .ready file
    if [ -z "$fast_mode" ]; then
-      while [ ! -e "$lab_directory/$vm.ready" ]; do
+      while [ ! -e "$lab_directory/$vhost.ready" ]; do
          sleep 1
       done
 
-      rm -f "$lab_directory/$vm.ready"
+      rm -f "$lab_directory/$vhost.ready"
    fi
    
    # Wait for a specified amount of time before returning
@@ -495,7 +495,6 @@ lab_start() {
    # We prepend so passthrough_args can override 
    [ -z "$VERBOSE" ] && passthrough_args=( "-q" "${passthrough_args[@]}" )
 
-   # TODO: global rename of vhost to vm? Or vice-versa
    for vhost in "${VHOSTLIST[@]}"; do
       single_lab_vm_start "$fast_mode" "$lab_directory" "$vhost" "${passthrough_args[@]}"
    done
@@ -623,7 +622,7 @@ EOF
 generate_dot_graph() {
    local lab_confs=( "$@" )
 
-   local configuration vm option value
+   local configuration vhost option value
    local hub_name hub_names
 
    declare -A device_ids options
@@ -641,23 +640,23 @@ EOF
       # The [][] is ][ inside a bracket expression to match an opening or
       # closing square bracket. We know the machine name cannot contain
       # square brackets, so the option is the first instance of them.
-      vm=$(awk -F"[][]" '{ print $1 }' <<< "$configuration")
+      vhost=$(awk -F"[][]" '{ print $1 }' <<< "$configuration")
       option=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
 
       # Everything after the first '='
       value=${configuration#*=}
 
       # Ignore if VM is not part of the lab
-      array_contains "$vm" "${VHOSTLIST[@]}" || continue
+      array_contains "$vhost" "${VHOSTLIST[@]}" || continue
 
       # If option is all-digit, it must be a network interface specification
       if [[ "$option" =~ ^([0-9]|[1-9][0-9]+)$ ]]; then
          # Ignore if it has already been seen
-         [[ "${device_ids[$vm]}" =~ \ $option\  ]] && continue
+         [[ "${device_ids[$vhost]}" =~ \ $option\  ]] && continue
 
          # Add an edge between the machine and its collision domain
          cat << EOF
-   "$vm" -- "$value" [
+   "$vhost" -- "$value" [
       taillabel=<
          <TABLE BGCOLOR="white" BORDER="0" CELLPADDING="1" CELLSPACING="0">
             <TR>
@@ -674,23 +673,23 @@ EOF
 
          # Device IDs cannot have whitespace, so a space-separated list is
          # safe.
-         device_ids[$vm]+=" $option "
+         device_ids[$vhost]+=" $option "
       else
-         options[$vm]+="$option = $value<BR/>"
+         options[$vhost]+="$option = $value<BR/>"
       fi
    done < <(grep --no-filename "^[[:blank:]].*\[.*\][[:blank:]]*=" "${lab_confs[@]}")
    # TODO: Replace .* in above grep (and any other similar search) with the
    # hostname regex.
 
    # Label each machine with its hostname and vstart options
-   for vm in "${VHOSTLIST[@]}"; do
+   for vhost in "${VHOSTLIST[@]}"; do
       cat << EOF
-   "$vm" [
+   "$vhost" [
       shape=box,
       label=<
-         $vm
+         $vhost
          <FONT POINT-SIZE="10">
-            <BR/>${options[$vm]}
+            <BR/>${options[$vhost]}
          </FONT>
       >,
       height=0.5,

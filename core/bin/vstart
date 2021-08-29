@@ -326,10 +326,10 @@ setup_interfaces() {
 #   None
 ###############################################################################
 wakeup_porthelper() {
-   local vm=$1
+   local vhost=$1
 
    sleep 5
-   "$NETKIT_HOME/bin/uml_mconsole" "$vm" help > /dev/null 2>&1 &
+   "$NETKIT_HOME/bin/uml_mconsole" "$vhost" help > /dev/null 2>&1 &
 }
 
 
@@ -378,7 +378,7 @@ remove_fs_command() {
 ###############################################################################
 run_kernel() {
    local filesystem=$1
-   local vm=$2
+   local vhost=$2
 
    # If doing a dry run, we want to skip all four commands here.
    if [ -n "$JUST_PRINT" ]; then
@@ -389,7 +389,7 @@ run_kernel() {
    # Invocation of uml_mconsole is needed in order to "wake up" port-helper if
    # it ever hangs when booting the virtual machine.
    # TODO: remove port helper
-   [ "$CON0_PORTHELPER" = "yes" ] && wakeup_porthelper "$vm"
+   [ "$CON0_PORTHELPER" = "yes" ] && wakeup_porthelper "$vhost"
    
    # Remove .disk file, if requested
    [ -n "$filesystem" ] && remove_fs_command "$filesystem" &
@@ -602,8 +602,8 @@ elif [ $# -gt 1 ]; then
    usage 1
 fi
 
-vm=$1
-validate_hostnames "$vm"
+vhost=$1
+validate_hostnames "$vhost"
 
 
 # Check whether user is trying to attach more than one console to stdin/stdout
@@ -654,7 +654,7 @@ kernel_cmd=( "$VM_KERNEL" )
 
 
 # Check if model fs or cow fs are on a filesystem supporting sparse files
-: "${filesystem:="$PWD/$vm.disk"}"
+: "${filesystem:="$PWD/$vhost.disk"}"
 
 if [ -n "$no_cow" ]; then
    check_filesystem "$filesystem"
@@ -663,7 +663,7 @@ else
 fi
 
 if [ -z "$BE_QUIET" ]; then
-   echo "============= Starting virtual machine '$vm' ============="
+   echo "============= Starting virtual machine '$vhost' ============="
    echo "   Kernel:     $VM_KERNEL"
 fi
 
@@ -678,7 +678,7 @@ fi
 
 
 # Set virtual machine name
-kernel_cmd+=( "name=$vm" "title=$vm" "umid=$vm" )
+kernel_cmd+=( "name=$vhost" "title=$vhost" "umid=$vhost" )
 
 
 # Set memory amount
@@ -734,8 +734,8 @@ fi
 
 
 # Check whether the virtual machine already exists
-if [ -z "$JUST_PRINT" ] && get_machine_state "$USER_ID" "$vm"; then
-   echo 1>&2 "$SCRIPTNAME: Virtual machine '$vm' is already running. Please halt it before starting a new one or use a different virtual machine name"
+if [ -z "$JUST_PRINT" ] && get_machine_state "$USER_ID" "$vhost"; then
+   echo 1>&2 "$SCRIPTNAME: Virtual machine '$vhost' is already running. Please halt it before starting a new one or use a different virtual machine name"
    exit 1
 fi
 
@@ -821,9 +821,9 @@ fi
 
 # Add our blocking script to the execution order
 if [ "$VM_CON0" = "xterm" ] || [ "$VM_CON0" = "this_noporthelper" ]; then
-   kernel_cmd=( "$NETKIT_HOME/bin/block-wrapper" "$TERM_TYPE" "$vm" "${kernel_cmd[@]}" )
+   kernel_cmd=( "$NETKIT_HOME/bin/block-wrapper" "$TERM_TYPE" "$vhost" "${kernel_cmd[@]}" )
 elif [ "$VM_CON0" = "tmux" ]; then
-   kernel_cmd=( "$NETKIT_HOME/bin/block-wrapper" "tmux" "$vm" "${kernel_cmd[@]}" )
+   kernel_cmd=( "$NETKIT_HOME/bin/block-wrapper" "tmux" "$vhost" "${kernel_cmd[@]}" )
 fi
 
 
@@ -835,20 +835,20 @@ run_hubs "${HUB_LIST[@]}"
 if [ "$VM_CON0" = "none" ]; then
    # Start machine in background unless otherwise requested
    if [ -n "$foreground" ] || [ "$VM_CON1" = "this" ]; then
-      run_kernel ${remove_fs:+"$filesystem"} "$vm" > /dev/null 2>&1
+      run_kernel ${remove_fs:+"$filesystem"} "$vhost" > /dev/null 2>&1
    else
-      run_kernel ${remove_fs:+"$filesystem"} "$vm" > /dev/null 2>&1 &
+      run_kernel ${remove_fs:+"$filesystem"} "$vhost" > /dev/null 2>&1 &
    fi
 else
    if [ -n "$foreground" ] || [ "$VM_CON1" = "this" ]; then
-      run_kernel ${remove_fs:+"$filesystem"} "$vm"
+      run_kernel ${remove_fs:+"$filesystem"} "$vhost"
    else
-      run_kernel ${remove_fs:+"$filesystem"} "$vm" &
+      run_kernel ${remove_fs:+"$filesystem"} "$vhost" &
    fi
 fi
 
 
 # Connect to the tmux session if TMUX_OPEN_TERMS is set
 if [ "$TMUX_OPEN_TERMS" = "yes" ] && [ "$VM_CON0" = "tmux" ]; then
-    vconnect -m "$vm" --terminal --interval 5 --retry-count 20 &> /dev/null &
+    vconnect -m "$vhost" --terminal --interval 5 --retry-count 20 &> /dev/null &
 fi

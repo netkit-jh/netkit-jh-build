@@ -134,7 +134,7 @@ END_OF_HELP
 ###############################################################################
 kill_by_signaling() {
    local target_user=$1
-   local vm=$2
+   local vhost=$2
 
    local pids
 
@@ -142,7 +142,7 @@ kill_by_signaling() {
 
    # Signalling processes twice ensures they stop even if they need to be
    # killed in a certain order
-   IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vm")"
+   IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vhost")"
 
    if [ "${#pids[@]}" -eq 0 ]; then
       kill -TERM "${pids[@]}" > /dev/null
@@ -152,11 +152,11 @@ kill_by_signaling() {
    if [ -z "$BE_QUIET" ]; then
       sleep 1
 
-      if get_machine_state "$target_user" "$vm"; then
+      if get_machine_state "$target_user" "$vhost"; then
          [ -z "$BE_QUIET" ] && echo -n "killing harder... "
          # Recompute PID list (some threads may have been launched in the
          # meantime).
-         IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vm")"
+         IFS=" " read -r -a pids <<< "$(get_vm_all_pids_by_name "$target_user" "$vhost")"
 
          if [ "${#pids[@]}" -eq 0 ]; then
             kill -KILL "${pids[@]}" > /dev/null
@@ -165,9 +165,9 @@ kill_by_signaling() {
 
          sleep 1
 
-         if get_machine_state "$target_user" "$vm"; then
+         if get_machine_state "$target_user" "$vhost"; then
             [ -z "$BE_QUIET" ] && echo "failed!"
-            echo 1>&2 "Failed to crash virtual machine '$vm'"
+            echo 1>&2 "Failed to crash virtual machine '$vhost'"
             return 1
          fi
       fi
@@ -235,7 +235,7 @@ mconsole_halt() {
 kill_by_mconsole() {
    local mconsole=$1
    local target_user=$2
-   local vm=$3
+   local vhost=$3
 
    [ -z "$BE_QUIET" ] && echo -n "Crashing... "
 
@@ -244,7 +244,7 @@ kill_by_mconsole() {
    # When the above command exits, an attempt via the mconsole has been
    # performed. Regardless of whether the virtual machine has actually halted,
    # the above command ensures that the uml_mconsole process has ended.
-   if [ -z "$BE_QUIET" ] && get_machine_state "$target_user" "$vm"; then
+   if [ -z "$BE_QUIET" ] && get_machine_state "$target_user" "$vhost"; then
       # Make a second attempt if machine is still running
       echo -n "retrying... "
       sleep 1
@@ -351,27 +351,27 @@ if [ -n "$test_mode" ] && [ -n "$BE_QUIET" ]; then
 fi
 
 
-for vm in "${vm_ids[@]}"; do
+for vhost in "${vm_ids[@]}"; do
    # Check whether the current machine exists
-   if get_machine_state "$target_user" "$vm"; then
-      get_vm_info_by_name "$target_user" "$vm"
+   if get_machine_state "$target_user" "$vhost"; then
+      get_vm_info_by_name "$target_user" "$vhost"
 
       if [ -z "$BE_QUIET" ]; then
-         echo "============= Crashing virtual machine '$vm' (PID ${vm_info[pid]}) ========="
+         echo "============= Crashing virtual machine '$vhost' (PID ${vm_info[pid]}) ========="
          echo "Virtual machine owner: $target_user"
          echo "Virtual machine mconsole socket: ${vm_info[mconsole]}"
-         echo "Virtual machine PIDs: $(get_vm_all_pids_by_name "$target_user" "$vm")"
+         echo "Virtual machine PIDs: $(get_vm_all_pids_by_name "$target_user" "$vhost")"
       fi
    
       [ -n "$test_mode" ] && continue
 
       if [ -n "$force" ]; then
          # Crash virtual machines by simply killing their processes
-         kill_by_signaling "$target_user" "$vm" || continue
+         kill_by_signaling "$target_user" "$vhost" || continue
       else
          # Crash virtual machines via uml_mconsole
-         if ! kill_by_mconsole "${vm_info[mconsole]}" "$target_user" "$vm"; then
-            kill_by_signaling "$target_user" "$vm" || continue
+         if ! kill_by_mconsole "${vm_info[mconsole]}" "$target_user" "$vhost"; then
+            kill_by_signaling "$target_user" "$vhost" || continue
          fi
       fi
 
@@ -379,11 +379,11 @@ for vm in "${vm_ids[@]}"; do
       # successfully shut down (if the previous commands returned 0).
 
       # Kill tmux Sessions
-      [ -z "$BE_QUIET" ] && echo "Checking for '$vm' tmux session"
+      [ -z "$BE_QUIET" ] && echo "Checking for '$vhost' tmux session"
 
-      if tmux -L netkit has-session -t="$vm" 2>/dev/null; then
-         [ -z "$BE_QUIET" ] && echo "Killing tmux session '$vm'"
-         tmux -L netkit kill-session -t="$vm"
+      if tmux -L netkit has-session -t="$vhost" 2>/dev/null; then
+         [ -z "$BE_QUIET" ] && echo "Killing tmux session '$vhost'"
+         tmux -L netkit kill-session -t="$vhost"
       fi
 
       [ -z "$BE_QUIET" ] && echo "Checking for '$vm-dead' tmux session"

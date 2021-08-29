@@ -193,16 +193,16 @@ print_vm_summary() {
 ###############################################################################
 print_vm_info_by_name() {
    local target_user=$1
-   local vm=$2
+   local vhost=$2
 
    local i indent
    local socket_filepath socket_filename hub_name_and_ext hub_name   
 
    # Fill vm_info and vm_uml_sockets global arrays
-   get_vm_info_by_name "$target_user" "$vm"
+   get_vm_info_by_name "$target_user" "$vhost"
 
    # Output the machine details in a structured format
-   echo "============= Information for virtual machine '$vm' ============="
+   echo "============= Information for virtual machine '$vhost' ============="
    echo " --- Accounting information ---"
    echo "   PID:               ${vm_info[pid]}"
    echo "   Owner:             ${vm_info[owner]}"
@@ -337,10 +337,10 @@ fi
 
 
 # Get verbose information for specific virtual machines
-for vm in "${vm_ids[@]}"; do
-   if get_machine_state "$target_user" "$vm"; then
-      print_vm_info_by_name "$target_user" "$vm"
+for vhost in "${vm_ids[@]}"; do
+   if get_machine_state "$target_user" "$vhost"; then
+      print_vm_info_by_name "$target_user" "$vhost"
    else
-      echo 1>&2 "$SCRIPTNAME: no virtual machine named '$vm' exists for $target_user"
+      echo 1>&2 "$SCRIPTNAME: no virtual machine named '$vhost' exists for $target_user"
    fi
 done

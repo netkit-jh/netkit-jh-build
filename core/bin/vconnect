@@ -97,7 +97,7 @@ tmux_connect() {
 #   None
 ###############################################################################
 open_terminal() {
-   local vm=$1
+   local vhost=$1
 
    local term_cmd
 
@@ -114,7 +114,7 @@ open_terminal() {
          term_cmd=( "xterm" "-e" );;
    esac
    
-   nohup "${term_cmd[@]}" tmux -L netkit attach -t "$vm" > /dev/null 2>&1 &
+   nohup "${term_cmd[@]}" tmux -L netkit attach -t "$vhost" > /dev/null 2>&1 &
 }
 
 
@@ -193,8 +193,8 @@ elif [ $# -gt 1 ]; then
    usage 1
 fi
 
-vm=$1
-validate_hostnames "$vm"
+vhost=$1
+validate_hostnames "$vhost"
 
 
 # Do not connect to the tmux session, just list available ones.
@@ -204,16 +204,16 @@ if [ -n "$list_only" ]; then
 fi
 
 
-echo -n "Connecting to '$vm'."
+echo -n "Connecting to '$vhost'."
 
 # Test that the tmux session exists retry_count number of times.
 attempts=0
-while ! tmux -L netkit has-session -t="$vm" 2> /dev/null; do
+while ! tmux -L netkit has-session -t="$vhost" 2> /dev/null; do
    ((++attempts))
 
    if [ "$attempts" -eq "$retry_count" ]; then
       echo
-      echo 1>&2 "Could not connect to '$vm'."
+      echo 1>&2 "Could not connect to '$vhost'."
       exit 1
    fi
 
@@ -222,7 +222,7 @@ while ! tmux -L netkit has-session -t="$vm" 2> /dev/null; do
 done
 
 if [ -n "$open_term" ]; then
-   open_terminal "$vm"
+   open_terminal "$vhost"
 else
-   tmux_connect "$vm"
+   tmux_connect "$vhost"
 fi

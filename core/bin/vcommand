@@ -183,10 +183,10 @@ if [ $# -eq 0 ]; then
    usage 1
 fi
 
-vm=$1
-validate_hostnames "$vm"
+vhost=$1
+validate_hostnames "$vhost"
 
 cmd=${*:2}
 
 
-tmux_command "$vm" "$command_timeout" "$cmd"
+tmux_command "$vhost" "$command_timeout" "$cmd"
