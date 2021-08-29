@@ -322,8 +322,8 @@ while true; do
                ;;
          esac
 
-         # TODO: Maybe merge with sequential into a Boolean?
          force_parallel_mode=1
+         unset force_sequential_mode
          ;;
       -R|--rebuild-signature)
          rebuild_signature=1
@@ -332,7 +332,8 @@ while true; do
          script_mode=1
          ;;
       -s|--sequential)
-         sequential=1
+         force_sequential_mode=1
+         unset force_parallel_mode
          ;;
       --tmux-attached)
          passthrough_opts+=( "$1" )
@@ -400,15 +401,8 @@ fi
 
 
 # Check whether parallel startup and -f are being used together
-if [ -f "$lab_directory/lab.dep" ] && [ -n "$fast_mode" ] && [ -z "$sequential" ]; then
+if [ -f "$lab_directory/lab.dep" ] && [ -n "$fast_mode" ] && [ -z "$force_sequential_mode" ]; then
    echo 1>&2 "$SCRIPTNAME: Fast mode is ignored when using parallel startup"
-fi
-
-# TODO: Maybe merge force_parallel_mode with sequential into a Boolean?
-# Check if -p and -s options are being used together
-if [ -n "$force_parallel_mode" ] && [ -n "$sequential" ]; then
-   echo 1>&2 "$SCRIPTNAME: Options '-s' and '-p' cannot be used together"
-   exit 1
 fi
 
 
@@ -469,8 +463,10 @@ fi
 
 # Check whether a lab.dep file exists. If so, enable parallel startup of
 # virtual machines.
-if [ -f "$lab_directory/lab.dep" ] && [ -z "$sequential" ] || [ -n "$force_parallel_mode" ]; then
-   # Use parallel startup
+
+if [ -z "$force_sequential_mode" ] && [ -f "$lab_directory/lab.dep" ] || [ -n "$force_parallel_mode" ]; then
+   # Use parallel startup if not forced to be sequential and either lab.dep or
+   # force_parallel_mode is enabled.
    if [ -z "$script_mode" ]; then
       bold_print "You chose to use parallel startup."
       lab_start_parallel "$test_mode" "$lab_directory" "${passthrough_opts[@]}"
