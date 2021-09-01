@@ -201,6 +201,7 @@ build_vhostlist "$lab_directory"
 
 for vhost in "${VHOSTLIST[@]}"; do
    [ -z "$VERBOSE" ] && bold_print "Halting '$vhost'... "
+   # TODO: (on all calls to other scripts) should we exit if they exit with 1?
    vhalt ${VERBOSE:+"-q"} ${remove_filesystem:+"-r"} "$vhost" && rm -f "$lab_directory/$vhost.ready"
 done
 
