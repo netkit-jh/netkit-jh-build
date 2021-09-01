@@ -234,7 +234,7 @@ get_lab_variable() {
 
    # Set lab variables from lab.conf. The sed expression prints only the first
    # matching line and deletes the variable name and equals sign.
-   sed -n "0,/^[[:blank:]]*$variable=/s///p" "$lab_conf"
+   sed -n "0,/^$variable=/s///p" "$lab_conf"
 }
 
 
@@ -406,8 +406,9 @@ single_lab_vhost_start() {
    if [ -e "$lab_directory/lab.conf" ]; then
       while IFS= read -r configuration; do
          # The [][] is ][ inside a bracket expression to match an opening or
-         # closing square bracket. We know the machine name cannot contain
-         # square brackets, so the option is the first instance of them.
+         # closing square bracket.
+         # NOTE: we assume hostname_regex does not allow square brackets, so
+         # the option string is the first instance of them.
          option=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
 
          # Everything after the first '='
@@ -427,7 +428,7 @@ single_lab_vhost_start() {
          # appending the argument must be made (an '=' is required for long
          # options, no delimiter for short ones).
          [ -n "$value" ] && vstart_args+=( "$value" )
-      done < <(grep "^[[:blank:]]*$vhost\[.*\][[:blank:]]*=" "$lab_directory/lab.conf")
+      done < <(grep "^$vhost\[.*\]=" "$lab_directory/lab.conf")
    fi
    
    # Remove .ready file, if existing
@@ -637,8 +638,9 @@ EOF
 
    while IFS= read -r configuration; do
       # The [][] is ][ inside a bracket expression to match an opening or
-      # closing square bracket. We know the machine name cannot contain
-      # square brackets, so the option is the first instance of them.
+      # closing square bracket.
+      # NOTE: we assume hostname_regex does not allow square brackets,
+      # so the option string is the first instance of them.
       vhost=$(awk -F"[][]" '{ print $1 }' <<< "$configuration")
       option=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
 
@@ -676,9 +678,7 @@ EOF
       else
          options[$vhost]+="$option = $value<BR/>"
       fi
-   done < <(grep --no-filename "^[[:blank:]].*\[.*\][[:blank:]]*=" "${lab_confs[@]}")
-   # TODO: Replace .* in above grep (and any other similar search) with the
-   # hostname regex.
+   done < <(grep --no-filename "^$hostname_regex\[.*\]=" "${lab_confs[@]}")
 
    # Label each machine with its hostname and vstart options
    for vhost in "${VHOSTLIST[@]}"; do
@@ -728,6 +728,10 @@ lab_map() {
 
    generate_dot_graph "${lab_confs[@]}" | "$graph_generator" -Tpng -o"$map_file"
 }
+
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
 
 
 # ANSI color escape sequences
