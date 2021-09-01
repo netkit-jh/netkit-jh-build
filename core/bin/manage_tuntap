@@ -36,6 +36,10 @@ tap_address=$3
 tap_device_name="nk_tap_$target_user"
 
 
+postrouting_rule=( "POSTROUTING" "!" "--out-interface" "lo" "--match" "comment" "--comment" "Netkit-JH" "--jump" "MASQUERADE" )
+forward_rule=( "FORWARD" "--in-interface" "nk_tap_+" "--match" "comment" "--comment" "Netkit-JH" "--jump" "ACCEPT" )
+
+
 case $action in
    start)
       if [ ! -c /dev/net/tun ]; then
@@ -86,9 +90,9 @@ case $action in
       echo "done."
 
       # Create a new masquerade rule if it doesn't already exist.
-      if ! sudo iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
+      if ! sudo iptables -t nat -C "${postrouting_rule[@]}" 2> /dev/null; then
          printf "Enabling masquerading...\t\t"
-         if ! sudo iptables -t nat -A POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE; then
+         if ! sudo iptables -t nat -A "${postrouting_rule[@]}"; then
             echo "failed."
             exit 1
          fi
@@ -96,9 +100,9 @@ case $action in
       fi
 
       # Create a new forwarding rule if it doesn't already exist.
-      if ! sudo iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
+      if ! sudo iptables -C "${forward_rule[@]}" 2> /dev/null; then
          printf "Opening firewall for tunnel...\t\t"
-         if ! sudo iptables -I FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT; then
+         if ! sudo iptables -I "${forward_rule[@]}"; then
             echo "failed."
             exit 1
          fi
@@ -106,18 +110,18 @@ case $action in
       fi
       ;;
    stop)
-      if sudo iptables -n -vL FORWARD | grep -q "ACCEPT.*nk_tap_+.*Netkit-JH"; then
+      if sudo iptables -C "${forward_rule[@]}" 2> /dev/null; then
          printf "Closing firewall...\t\t\t\t"
-         if ! sudo iptables -D FORWARD -i nk_tap_+ -m comment --comment "Netkit-JH" -j ACCEPT; then
+         if ! sudo iptables -D "${forward_rule[@]}"; then
             echo "failed."
             exit 1
          fi
          echo "done."
       fi
 
-      if sudo iptables -n -t nat -L POSTROUTING | grep -q "MASQUERADE.*Netkit-JH"; then
+      if sudo iptables -t nat -C "${postrouting_rule[@]}" 2> /dev/null; then
          printf "Disabling masquerading...\t\t\t"
-         if ! sudo iptables -t nat -D POSTROUTING ! -o lo -m comment --comment "Netkit-JH" -j MASQUERADE; then
+         if ! sudo iptables -t nat -D "${postrouting_rule[@]}"; then
             echo "failed."
             exit 1
          fi
