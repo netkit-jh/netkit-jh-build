@@ -215,6 +215,7 @@ check_filesystem() {
    fs_type=$(stat -f "$filepath" | grep -w Type)
    fs_type=${fs_type#*Type: }
 
+   # TODO: integrate into grep
    if [[ "$fs_type" =~ ^(ext[2-4]|ntfs|ntfs-3g|fuse|reiser|jfs|xfs)$ ]]; then
       echo 1>&2 "$SCRIPTNAME: Filesystem '$fs_type' does not seem to support sparse files, this may result in performance loss and disk space consumption"
    fi
