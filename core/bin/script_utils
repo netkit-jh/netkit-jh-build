@@ -883,7 +883,7 @@ export LANG=C
 #   - Cannot start or end with a - (hyphen)
 #   - Are case-insensitive
 #   - Can be 1 to 63 characters long
-# NOTE: must not allow [] characters
+# NOTE: must not allow [], characters
 # TODO: put hostname_regex (and related - ipv4, domain, etc.) in config file
 hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9])"
 
