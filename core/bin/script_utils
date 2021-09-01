@@ -481,7 +481,7 @@ clean_hubs() {
 
       if file_in_use "$hub_socket"; then
          # We get the oldest process to limit output to a single PID
-         hub_pid=$(pgrep --oldest --euid="$USER_ID" --full "^$NETKIT_HOME/bin/uml_switch.*$hub_socket")
+         hub_pid=$(pgrep --oldest --euid="$USER_ID" --full "^$NETKIT_HOME/bin/uml_switch[[:blank:]].*$hub_socket")
          if [ "$(lsof -a -U -p "$hub_pid" -Fn | grep -c "^n$hub_socket")" -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
             kill "$hub_pid" && rm "$hub_socket"
@@ -549,7 +549,7 @@ get_machine_state() {
 ###############################################################################
 get_vhost_pid_by_name() {
    local target_user=$1
-   local name=$2
+   local vhost=$2
 
    local full_command_regex
    local pid pgid full_command
@@ -560,7 +560,7 @@ get_vhost_pid_by_name() {
    # instances if there is a machine called "foo" and "foo bar". We hence do
    # further processing - this filter just removes processes which definitely
    # are not matches.
-   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel.*[[:blank:]]umid=$name(\$|[[:blank:]])"
+   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]].*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
 
    # The process hierarchy looks like this:
    #
@@ -584,7 +584,6 @@ get_vhost_pid_by_name() {
    # are not group leaders.
 
    # Iterate over the PIDs of running Netkit instances with name matches.
-   # TODO: Sort out quoting of arguments
    for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$full_command_regex"); do
       # Get the process group ID (PGID)
       pgid=$(ps --no-headers --format pgid --pid "$pid")
@@ -607,7 +606,7 @@ get_vhost_pid_by_name() {
          if [[ "$argument" =~ ^umid=.*$ ]]; then
             umid=${argument#*=}
 
-            if [ "$umid" = "$name" ]; then
+            if [ "$umid" = "$vhost" ]; then
                echo "$pid"
                return 0
             else
@@ -639,7 +638,7 @@ get_vhost_pid_by_name() {
 ###############################################################################
 get_vhost_all_pids_by_name() {
    local target_user=$1
-   local name=$2
+   local vhost=$2
 
    local full_command_regex
    local pid full_command
@@ -650,7 +649,7 @@ get_vhost_all_pids_by_name() {
    # instances if there is a machine called "foo" and "foo bar". We hence do
    # further processing - this filter just removes processes which definitely
    # are not matches.
-   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel.*[[:blank:]]umid=$name(\$|[[:blank:]])"
+   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]].*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
 
    # See get_vhost_pid_by_name for a process hierarchy explanation.
 
@@ -670,7 +669,7 @@ get_vhost_all_pids_by_name() {
          if [[ "$argument" =~ ^umid=.*$ ]]; then
             umid=${argument#*=}
 
-            if [ "$umid" = "$name" ]; then
+            if [ "$umid" = "$vhost" ]; then
                pids+=( "$pid" )
             fi
 
@@ -884,8 +883,9 @@ export LANG=C
 #   - Cannot start or end with a - (hyphen)
 #   - Are case-insensitive
 #   - Can be 1 to 63 characters long
+# NOTE: must not allow [] characters
 # TODO: put hostname_regex (and related - ipv4, domain, etc.) in config file
-hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,62}[a-zA-Z0-9])"
+hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9])"
 
 
 # Read Netkit configuration in order of file localisation (per system, per
