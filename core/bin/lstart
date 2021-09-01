@@ -504,7 +504,7 @@ if [ -n "$test_mode" ]; then
 
    tests_completed=0
    while [ "$tests_completed" -lt "$vhost_count" ]; do
-      testdone_files=( "$lab_directory"/*.testdone )
+      testdone_files=( "$lab_directory/"*.testdone )
       tests_completed=${#testdone_files[@]}
       sleep 1
    done
