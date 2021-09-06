@@ -19,6 +19,7 @@ debconf-utils
 dnsmasq
 dnsutils
 ebtables
+ettercap-text-only
 uml-utilities
 util-linux
 # emacs23-nox
