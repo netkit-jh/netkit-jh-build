@@ -176,6 +176,9 @@ for lab_directory in "${lab_directories[@]}"; do
       exit 1
    fi
 
+   # We must unset VHOSTLIST when calling build_vhostlist in a loop because it
+   # operates differently if already set.
+   unset VHOSTLIST
    build_vhostlist "$lab_directory"
    cum_vhostlist+=( "${VHOSTLIST[@]}" )
 done
