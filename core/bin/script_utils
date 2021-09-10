@@ -592,11 +592,10 @@ get_vhost_pid_by_name() {
       [ "$pgid" -ne "$pid" ] && continue
 
       # Full command used to invoke the process
-      # TODO: mapfile -d
-      full_command=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
+      mapfile -d "" -t full_command < "/proc/$pid/cmdline"
 
       first_iteration=true
-      while IFS="" read -r argument; do
+      for argument in "${full_command[@]}"; do
          # Skip program name
          if $first_iteration; then
             first_iteration=false
@@ -613,7 +612,7 @@ get_vhost_pid_by_name() {
                break
             fi
          fi
-      done <<< "$full_command"
+      done
    done
 
    return 1
@@ -656,10 +655,10 @@ get_vhost_all_pids_by_name() {
    # Iterate over the PIDs of running Netkit instances with name matches.
    for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$full_command_regex"); do
       # Full command used to invoke the process
-      full_command=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
+      mapfile -d "" -t full_command < "/proc/$pid/cmdline"
 
       first_iteration=true
-      while IFS="" read -r argument; do
+      for argument in "${full_command[@]}"; do
          # Skip program name
          if $first_iteration; then
             first_iteration=false
@@ -675,7 +674,7 @@ get_vhost_all_pids_by_name() {
 
             break
          fi
-      done <<< "$full_command"
+      done
    done
 
    echo "${pids[*]}"
@@ -727,14 +726,14 @@ get_vhost_info_by_pid() {
    # Why not parse the output of ps? Whitespace in the program name or
    # arguments is impossible to deal with. /proc/$pid/cmdline stores argv with
    # null-byte field separators, which is the only character that cannot be
-   # present in a Linux filepath. This will still break if a newline is present
-   # in the command, but if a user is doing that then they are just asking for
-   # an error somewhere down the line to be honest.
-   # TODO: https://unix.stackexchange.com/a/658549
-   vhost_info["full_command"]=$(xargs -0 printf "%s\n" < "/proc/$pid/cmdline")
+   # present in a Linux filepath.
+   # vhost_info[full_command] will store a quoted and escaped command string
+   # suitable for reuse as a shell command.
+   mapfile -d "" -t full_command < "/proc/$pid/cmdline"
+   vhost_info["full_command"]=${full_command[*]@Q}
 
    first_iteration=true
-   while IFS="" read -r argument; do
+   for argument in "${full_command[@]}"; do
       if $first_iteration; then
          vhost_info["kernel"]=$argument
          first_iteration=false
@@ -804,7 +803,7 @@ get_vhost_info_by_pid() {
          umid)       vhost_info["umid"]=$value;;
          *)          vhost_info["other"]="${vhost_info[$other]} $argument"
       esac
-   done <<< "${vhost_info[full_command]}"
+   done
 
    # The UML console socket filepath
    vhost_info["mconsole"]="$MCONSOLE_DIR/${vhost_info[umid]}/mconsole"
