@@ -339,9 +339,8 @@ if [ $# -eq 0 ]; then
 fi
 
 # Non-option arguments are machine names
-# TODO: sort out vhostlist vs vm_ids
-vm_ids=( "$@" )
-validate_hostnames "${vm_ids[@]}"
+vhosts=( "$@" )
+validate_hostnames "${vhosts[@]}"
 
 
 # Test mode is senseless if working in quiet mode
@@ -351,7 +350,7 @@ if [ -n "$test_mode" ] && [ -n "$BE_QUIET" ]; then
 fi
 
 
-for vhost in "${vm_ids[@]}"; do
+for vhost in "${vhosts[@]}"; do
    # Check whether the current machine exists
    if get_machine_state "$target_user" "$vhost"; then
       get_vhost_info_by_name "$target_user" "$vhost"

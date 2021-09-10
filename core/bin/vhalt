@@ -157,10 +157,9 @@ if [ $# -eq 0 ]; then
    usage 1
 fi
 
-
 # Non-option arguments are machine names
-vm_ids=( "$@" )
-validate_hostnames "${vm_ids[@]}"
+vhosts=( "$@" )
+validate_hostnames "${vhosts[@]}"
 
 
 # Virtual machine filesystem cannot be removed in quiet mode because the
@@ -173,7 +172,7 @@ if [ -n "$remove_fs" ] && [ -n "$BE_QUIET" ]; then
 fi
 
 
-for vhost in "${vm_ids[@]}"; do
+for vhost in "${vhosts[@]}"; do
    if ! get_vhost_info_by_name "$target_user" "$vhost"; then
       echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$vhost' exists"
       [ -n "$target_user" ] && echo " for user $target_user." || echo "."

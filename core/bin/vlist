@@ -264,8 +264,6 @@ if [ -z "$NETKIT_HOME" ]; then
    exit 1
 fi
 
-# shellcheck source=./lcommon
-. "$NETKIT_HOME/bin/lcommon"
 # shellcheck source=./script_utils
 . "$NETKIT_HOME/bin/script_utils"
 
@@ -319,25 +317,25 @@ while true; do
 done
 
 # Non-option arguments are machine names
-vm_ids=( "$@" )
-validate_hostnames "${vm_ids[@]}"
+vhosts=( "$@" )
+validate_hostnames "${vhosts[@]}"
 
 
 # Check whether -u - is being used together with a virtual machine ID
-if [ -z "$target_user" ] && [ "${#vm_ids[@]}" -ne 0 ]; then
+if [ -z "$target_user" ] && [ "${#vhosts[@]}" -ne 0 ]; then
    echo 1>&2 "$SCRIPTNAME: When giving VM names, a specific user ID must be provided"
    usage 1
 fi
 
 
 # Display summary of virtual machines
-if [ "${#vm_ids[@]}" -eq 0 ]; then
+if [ "${#vhosts[@]}" -eq 0 ]; then
    print_vhost_summary "$no_header" "$target_user"
 fi
 
 
 # Get verbose information for specific virtual machines
-for vhost in "${vm_ids[@]}"; do
+for vhost in "${vhosts[@]}"; do
    if get_machine_state "$target_user" "$vhost"; then
       print_vhost_info_by_name "$target_user" "$vhost"
    else
