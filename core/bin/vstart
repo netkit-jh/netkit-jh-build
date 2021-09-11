@@ -172,8 +172,6 @@ $(help_option)
                         the console mode
   -p, --print         do not start anything, just show which commands would be
                         executed
-  -q, --quiet         quiet mode (suppress any output except errors and
-                        warnings)
   --tmux-attached     run each VM in tmux and start a terminal attached to the
                         tmux session. This is equivalent to VM_CON0=tmux and
                         TMUX_OPEN_TERMS=yes in netkit.conf
@@ -225,7 +223,6 @@ check_filesystem() {
 # Usage:
 #   setup_interfaces [INTERFACE]...
 # Globals:
-#   r- BE_QUIET
 #   -w HUB_LIST
 #   r- HUB_SOCKET_DIR
 #   r- HUB_SOCKET_EXTENSION
@@ -303,7 +300,7 @@ setup_interfaces() {
          HUB_LIST+=( "$hub_name" )
       fi
 
-      [ -z "$BE_QUIET" ] && echo "$indent$device @ $hub_name ($hub_socket)"
+      echo "$indent$device @ $hub_name ($hub_socket)"
 
       # Indent subsequent lines
       indent="               "
@@ -416,8 +413,8 @@ log_write "$0 $*"
 # Get command line options
 long_opts="append:,con0:,con1:,debug,exec:,filesystem:,foreground,help,\
 hide-disk-file,hostlab:,hostwd:,kernel:,mem:,model-fs:,no-cow,no-hosthome,\
-print,quiet,test,tmux-attached,tmux-detached,verbose,version,xterm:"
-short_opts="De:Ff:Hk:Ll:M:m:pqvWw:"
+print,test,tmux-attached,tmux-detached,verbose,version,xterm:"
+short_opts="De:Ff:Hk:Ll:M:m:pvWw:"
 
 for i in $(seq 0 $MAX_INTERFACES); do
    long_opts="$long_opts,eth$i:"
@@ -542,9 +539,6 @@ while true; do
       -p|--print)
          JUST_PRINT=1
          ;;
-      -q|--quiet)
-         BE_QUIET=1
-         ;;
       --test)
          kernel_cmd_append+=( "test" )
          ;;
@@ -661,17 +655,16 @@ else
    check_filesystem "$VM_MODEL_FS"
 fi
 
-if [ -z "$BE_QUIET" ]; then
-   echo "============= Starting virtual machine '$vhost' ============="
-   echo "   Kernel:     $VM_KERNEL"
-fi
+
+echo "============= Starting virtual machine '$vhost' ============="
+echo "   Kernel:     $VM_KERNEL"
 
 
 # Setup kernel modules directory
 kernel_modules_dir="$(dirname "$VM_KERNEL")/modules"
 
 if [ -d "$kernel_modules_dir" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Modules:    $kernel_modules_dir"
+   echo "   Modules:    $kernel_modules_dir"
    kernel_cmd+=( "modules=$kernel_modules_dir" )
 fi
 
@@ -681,30 +674,30 @@ kernel_cmd+=( "name=$vhost" "title=$vhost" "umid=$vhost" )
 
 
 # Set memory amount
-[ -z "$BE_QUIET" ] && echo "   Memory:     $VM_MEMORY MB"
+echo "   Memory:     $VM_MEMORY MB"
 ((VM_MEMORY += VM_MEMORY_SKEW))
 kernel_cmd+=( "mem=${VM_MEMORY}M" )
 
 
 # Filesystem settings
-[ -z "$BE_QUIET" ] && echo "   Model fs:   $VM_MODEL_FS"
+echo "   Model fs:   $VM_MODEL_FS"
 
 if [ -n "$no_cow" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Filesystem: using model fs (no COW)"
+   echo "   Filesystem: using model fs (no COW)"
 
    # Use model fs as virtual machine filesystem (do not use COW)
    kernel_cmd+=( "ubd0=$VM_MODEL_FS" )
 
    filesystem=$VM_MODEL_FS
 else
-   [ -z "$BE_QUIET" ] && echo -n "   Filesystem: $filesystem"
+   echo -n "   Filesystem: $filesystem"
 
    # Explicitly declaring the model fs name is redundant after the COW file has
    # been created. Nevertheless, this is needed in order to later get
    # information about the virtual machine (i.e., by using vlist).
    kernel_cmd+=( "ubd0=$filesystem,$VM_MODEL_FS" )
 
-   [ -z "$BE_QUIET" ] && [ ! -f "$filesystem" ] && echo " (new)" || echo
+   [ ! -f "$filesystem" ] && echo " (new)" || echo
 fi
 
 
@@ -720,14 +713,14 @@ kernel_cmd+=( "uml_dir=$MCONSOLE_DIR" )
 
 # Setup network interfaces
 if [ "${#interface_specifications[@]}" -gt 0 ]; then
-   [ -z "$BE_QUIET" ] && echo -n "   Interfaces: "
+   echo -n "   Interfaces: "
    setup_interfaces "${interface_specifications[@]}"
 fi
 
 
 # Set host home directory path
 if [ -z "$no_hosthome" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Hostfs at:  $HOME"
+   echo "   Hostfs at:  $HOME"
    kernel_cmd+=( "hosthome=$HOME" )
 fi
 
@@ -748,17 +741,17 @@ fi
 
 # Append exec, hostlab and hostwd parameters, if any
 if [ -n "$exec_cmd" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Boot cmd:   '$exec_cmd'"
+   echo "   Boot cmd:   '$exec_cmd'"
    kernel_cmd+=( "exec=$exec_cmd" )
 fi
 
 if [ -n "$hostlab_dir" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Hostlab at: $hostlab_dir"
+   echo "   Hostlab at: $hostlab_dir"
    kernel_cmd+=( "hostlab=$hostlab_dir" )
 fi
 
 if [ -n "$host_working_dir" ]; then
-   [ -z "$BE_QUIET" ] && echo "   Host WD at: $host_working_dir"
+   echo "   Host WD at: $host_working_dir"
    kernel_cmd+=( "hostwd=$host_working_dir" )
 fi
 
@@ -810,12 +803,12 @@ esac
 
 # Append any other user provided parameters
 if [ ${#kernel_cmd_append[@]} -gt 0 ]; then
-   [ -z "$BE_QUIET" ] && echo "   Other args: ${kernel_cmd_append[*]}"
+   echo "   Other args: ${kernel_cmd_append[*]}"
    kernel_cmd+=( "${kernel_cmd_append[@]}" )
 fi
 
 
-[ -z "$BE_QUIET" ] && echo
+echo
 
 
 # Add our blocking script to the execution order

@@ -22,3 +22,4 @@
 - `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))
 - `--machine` switch in `vconnect` (see [Modified](#modified))
 - `USE_SUDO` configuration directive (default is to use `sudo` now, `su -c` has been removed)
+- `-q`|`--quiet` option from `vstart`
