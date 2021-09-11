@@ -239,14 +239,15 @@ update_available() {
 ###############################################################################
 # Start virtual machines of a Netkit lab sequentially.
 # Usage:
-#   lab_start FAST_MODE TEST_MODE MAKEFILE DIR [PASSTHROUGH]...
+#   lab_start FAST_MODE TEST_MODE VERBOSE MAKEFILE DIR [PASSTHROUGH]...
 # Globals:
 #   rw lab_vhosts
 # Arguments:
 #   $1 - set to 1 for fast mode, empty string otherwise
 #   $2 - set to 1 for test mode, empty string otherwise
-#   $3 - used internally when lstart is invoked with Make
-#   $4 - lab directory
+#   $3 - set to 1 for verbose mode, empty string otherwise
+#   $4 - used internally when lstart is invoked with Make
+#   $5 - lab directory
 #  ... - array of options to pass through into vstart
 # Returns:
 #   None
@@ -256,9 +257,10 @@ update_available() {
 lab_start() {
    local fast_mode=$1
    local test_mode=$2
-   local makefile=$3
-   local lab_directory=$4
-   local passthrough_args=( "${@:5}" )
+   local verbose=$3
+   local makefile=$4
+   local lab_directory=$5
+   local passthrough_args=( "${@:6}" )
 
    local vhost
 
@@ -269,11 +271,8 @@ lab_start() {
       return
    fi
 
-   # We prepend so passthrough_args can override 
-   [ -z "$VERBOSE" ] && passthrough_args=( "-q" "${passthrough_args[@]}" )
-
    for vhost in "${lab_vhosts[@]}"; do
-      single_lab_vhost_start "$fast_mode" "$lab_directory" "$vhost" "${passthrough_args[@]}"
+      single_lab_vhost_start "$fast_mode" "$verbose" "$lab_directory" "$vhost" "${passthrough_args[@]}"
    done
    
    # The readyfor.test file should not be created if we have been invoked
@@ -285,13 +284,14 @@ lab_start() {
 ###############################################################################
 # Start virtual machines of a Netkit lab simultaneously with GNU Make.
 # Usage:
-#   lab_start_parallel TEST_MODE DIR [PASSTHROUGH]...
+#   lab_start_parallel TEST_MODE VERBOSE DIR [PASSTHROUGH]...
 # Globals:
 #   r- MAX_SIMULTANEOUS_VMS
 #   rw lab_vhosts
 # Arguments:
 #   $1 - set to 1 for test mode, empty string otherwise
-#   $2 - lab directory
+#   $2 - set to 1 for verbose mode, empty string otherwise
+#   $3 - lab directory
 #  ... - array of options to pass through into vstart
 # Returns:
 #   None
@@ -300,8 +300,9 @@ lab_start() {
 ###############################################################################
 lab_start_parallel() {
    local test_mode=$1
-   local lab_directory=$2
-   local passthrough_args=( "${@:3}" )
+   local verbose=$2
+   local lab_directory=$3
+   local passthrough_args=( "${@:4}" )
 
    local lstart_args arg
    local lstart_cmd escaped_lstart_cmd
@@ -315,7 +316,7 @@ lab_start_parallel() {
    fi
    
    # Pass "passthrough" options on to the second invocation of lstart/ltest
-   [ -n "$VERBOSE" ] && lstart_args+=( "-v" )
+   [ -n "$verbose" ] && lstart_args+=( "-v" )
 
    for arg in "${passthrough_args[@]}"; do
       lstart_args+=( "-o" "$arg" )
@@ -385,14 +386,14 @@ EOF
 ###############################################################################
 # Start a single virtual machine within a lab.
 # Usage:
-#   single_lab_vhost_start FAST_MODE DIR MACHINE [PASSTHROUGH]...
+#   single_lab_vhost_start FAST_MODE VERBOSE DIR MACHINE [PASSTHROUGH]...
 # Globals:
 #   r- GRACE_TIME
-#   r- VERBOSE
 # Arguments:
 #   $1 - set to 1 for fast mode, empty string otherwise
-#   $2 - lab directory
-#   $3 - machine to start up
+#   $2 - set to 1 for verbose mode, empty string otherwise
+#   $3 - lab directory
+#   $4 - machine to start up
 #  ... - options to passthrough to vstart (appended on)
 # Returns:
 #   None
@@ -401,9 +402,10 @@ EOF
 ###############################################################################
 single_lab_vhost_start() {
    local fast_mode=$1
-   local lab_directory=$2
-   local vhost=$3
-   local passthrough_args=( "${@:4}" )
+   local verbose=$2
+   local lab_directory=$3
+   local vhost=$4
+   local passthrough_args=( "${@:5}" )
 
    local configuration option value
 
@@ -443,7 +445,7 @@ single_lab_vhost_start() {
    # Remove .ready file, if existing
    rm -f "$lab_directory/$vhost.ready"
 
-   if [ -z "$VERBOSE" ]; then
+   if [ -z "$verbose" ]; then
       bold_print "Starting '$vhost'..."
    else
       bold_print "Starting '$vhost' with options '${vstart_args[*]} ${passthrough_args[*]}'... "
@@ -574,7 +576,7 @@ while true; do
          passthrough_opts+=( "$1" )
          ;;
       -v|--verbose)
-         VERBOSE=1
+         verbose=1
          ;;
       --verify)
          case $2 in
@@ -656,7 +658,7 @@ if [ -n "$makefile" ]; then
    # Make sure to wait for .ready files to appear. Otherwise, no dependencies
    # would be satisfied!
    unset fast_mode
-   lab_start "$fast_mode" "$test_mode" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
+   lab_start "$fast_mode" "$test_mode" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
    exit 0
 fi
 
@@ -689,7 +691,7 @@ fi
 
 
 # Clean up the lab directory before starting
-[ -n "$test_mode" ] && lab_clean "$lab_directory" > /dev/null
+[ -n "$test_mode" ] && lab_clean "$verbose" "$lab_directory" > /dev/null
 
 [ -n "$script_mode" ] && echo -n "Starting lab... "
 
@@ -701,9 +703,9 @@ if [ -z "$force_sequential_mode" ] && [ -f "$lab_directory/lab.dep" ] || [ -n "$
    # force_parallel_mode is enabled.
    if [ -z "$script_mode" ]; then
       bold_print "You chose to use parallel startup."
-      lab_start_parallel "$test_mode" "$lab_directory" "${passthrough_opts[@]}"
+      lab_start_parallel "$test_mode" "$verbose" "$lab_directory" "${passthrough_opts[@]}"
    else
-      lab_start_parallel "$test_mode" "$lab_directory" "${passthrough_opts[@]}" > /dev/null
+      lab_start_parallel "$test_mode" "$verbose" "$lab_directory" "${passthrough_opts[@]}" > /dev/null
    fi
 else
    # Use sequential startup
@@ -712,9 +714,9 @@ else
    # machines listed in lab_vhosts; those appearing in lab_vhosts but that are
    # not part in the lab will simply be skipped.
    if [ -z "$script_mode" ]; then
-      lab_start "$fast_mode" "$test_mode" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
+      lab_start "$fast_mode" "$test_mode" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
    else
-      lab_start "$fast_mode" "$test_mode" "$makefile" "$lab_directory" "${passthrough_opts[@]}" > /dev/null
+      lab_start "$fast_mode" "$test_mode" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}" > /dev/null
    fi
 fi
 
@@ -751,7 +753,7 @@ if [ -n "$test_mode" ]; then
    fi
 
    lab_crash "" "$lab_directory" "" "" > /dev/null
-   lab_clean "$lab_directory" > /dev/null
+   lab_clean "$verbose" "$lab_directory" > /dev/null
 
    # Check whether we need to build a test signature or to verify the test
    # outcome.

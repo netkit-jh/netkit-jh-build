@@ -550,7 +550,7 @@ while true; do
          TMUX_OPEN_TERMS=no
          ;;
       -v|--verbose)
-         VERBOSE=1
+         verbose=1
          ;;
       --version)
          show_version
@@ -755,10 +755,10 @@ if [ -n "$host_working_dir" ]; then
 fi
 
 
-# Set verbosity parameter (is 'verbose' by default)
+# Set verbosity parameter (kernel is 'verbose' by default)
 if [ -n "$debug" ]; then
    kernel_cmd=( "gdb --args" "${kernel_cmd[@]}" )
-elif [ -z "$VERBOSE" ]; then
+elif [ -z "$verbose" ]; then
    kernel_cmd+=( "quiet" )
 fi
 

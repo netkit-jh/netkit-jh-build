@@ -135,7 +135,7 @@ while true; do
          usage 0
          ;;
       -v|--verbose)
-         VERBOSE=1
+         verbose=1
          ;;
       --version)
          show_version
@@ -175,6 +175,6 @@ lab_welcome "$lab_directory"
 bold_print "================================================================="
 
 # Clean up the lab directory
-lab_clean "$lab_directory"
+lab_clean "$verbose" "$lab_directory"
 bold_print "Cleaning completed."
 bold_print "================================================================="

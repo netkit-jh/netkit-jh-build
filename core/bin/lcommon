@@ -316,19 +316,21 @@ lab_welcome() {
 ###############################################################################
 # Remove temporary files from the lab directory and .netkit.
 # Usage:
-#   lab_clean DIR
+#   lab_clean VERBOSE DIR
 # Globals:
 #   r- MCONSOLE_DIR
 #   rw lab_vhosts
 # Arguments:
-#   $1 - lab directory
+#   $1 - set to 1 for verbose mode, empty string for otherwise
+#   $2 - lab directory
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 lab_clean() {
-   local lab_directory=$1
+   local verbose=$1
+   local lab_directory=$2
 
    local vhost
 
@@ -338,11 +340,11 @@ lab_clean() {
 
    for vhost in "${lab_vhosts[@]}"; do
       # Remove files from the lab directory
-      rm ${VERBOSE:+"--verbose"} -r "${MCONSOLE_DIR:?}/$vhost"
-      rm ${VERBOSE:+"--verbose"} "$lab_directory/$vhost."{"ready","disk","log","testdone"}
+      rm ${verbose:+"--verbose"} -r "${MCONSOLE_DIR:?}/$vhost"
+      rm ${verbose:+"--verbose"} "$lab_directory/$vhost."{"ready","disk","log","testdone"}
    done
 
-   rm ${VERBOSE:+"--verbose"} "$lab_directory/readyfor.test"
+   rm ${verbose:+"--verbose"} "$lab_directory/readyfor.test"
 }
 
 
