@@ -349,34 +349,35 @@ lab_clean() {
 ###############################################################################
 # Crash virtual machines of a Netkit lab.
 # Usage:
-#   lab_crash DIR KEEP_FS KILL
+#   lab_crash QUICK_MODE DIR KEEP_FS KILL
 # Globals:
-#   r- VERBOSE
 #   rw lab_vhosts
 # Arguments:
-#   $1 - lab directory
-#   $2 - set to 1 to keep the filesystem, empty string for otherwise
-#   $3 - set to 1 to kill machine process, empty string for otherwise
+#   $1 - set to 1 for quick mode on vcrash, empty string for otherwise
+#   $2 - lab directory
+#   $3 - set to 1 to keep the filesystem, empty string for otherwise
+#   $4 - set to 1 to kill machine process, empty string for otherwise
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 lab_crash() {
-   local lab_directory=$1
-   local keep_fs=$2
-   local kill_mode=$3
+   local quick_mode=$1
+   local lab_directory=$2
+   local keep_fs=$3
+   local kill_mode=$4
 
    local vcrash_args vhost
 
    get_lab_vhosts "$lab_directory"
 
-   [ -z "$VERBOSE" ]   && vcrash_args+=( "-q" )
-   [ -z "$keep_fs" ]   && vcrash_args+=( "-r" )
-   [ -n "$kill_mode" ] && vcrash_args+=( "-k" )
+   [ -z "$quick_mode" ] && vcrash_args+=( "-q" )
+   [ -z "$keep_fs" ]    && vcrash_args+=( "-r" )
+   [ -n "$kill_mode" ]  && vcrash_args+=( "-k" )
    
    for vhost in "${lab_vhosts[@]}"; do
-      [ -n "$VERBOSE" ] && bold_print "Crashing '$vhost'..."
+      bold_print "Crashing '$vhost'..."
       vcrash "${vcrash_args[@]}" "$vhost" && rm -f "$lab_directory/$vhost.ready"
    done
    

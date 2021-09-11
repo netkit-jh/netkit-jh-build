@@ -750,7 +750,7 @@ if [ -n "$test_mode" ]; then
       echo -n "Stopping lab... "
    fi
 
-   lab_crash "$lab_directory" "" "" > /dev/null
+   lab_crash "" "$lab_directory" "" "" > /dev/null
    lab_clean "$lab_directory" > /dev/null
 
    # Check whether we need to build a test signature or to verify the test

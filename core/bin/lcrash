@@ -91,13 +91,10 @@ only a subset of the virtual machines that make up the lab.
                         is generally faster
   -l, --list          show a list of running virtual machines after crashing
                         the lab.
-  -q, --quick
-      --quiet         disable checking whether virtual machines have actually
+  -q, --quick         disable checking whether virtual machines have actually
                         crashed. This results in a faster crash process, but
                         may cause some processes to hang. If this happens, try
                         crashing again without using this option or use vclean.
-                        This option slightly reduces the amount of printed
-                        information as well.
 
 Miscellaneous:
 $(help_option)
@@ -130,12 +127,8 @@ fi
 log_write "$0 $*"
 
 
-# Verbose mode tells vcrash to wait for machines to stop before returning
-VERBOSE=1
-
-
 # Get command line options
-long_opts="help,version,keep-fs,kill,list,quiet,quick"
+long_opts="help,version,keep-fs,kill,list,quick"
 short_opts="d:Fklq"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -164,8 +157,8 @@ while true; do
       -l|--list)
          list_vhosts=1
          ;;
-      -q|--quick|--quiet)
-         unset VERBOSE
+      -q|--quick)
+         quick_mode=1
          ;;
       --version)
          show_version
@@ -205,7 +198,7 @@ lab_welcome "$lab_directory"
 bold_print "================================================================="
 
 # Crash virtual machines
-lab_crash "$lab_directory" "$keep_fs" "$kill_mode"
+lab_crash "$quick_mode" "$lab_directory" "$keep_fs" "$kill_mode"
 bold_print "Lab has been crashed."
 bold_print "================================================================="
 
