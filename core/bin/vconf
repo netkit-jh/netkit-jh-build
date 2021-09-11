@@ -110,8 +110,6 @@ Miscellaneous:
 $(help_option)
   -p, --print         do not actually start anything. Just show which commands
                         would be executed
-  -q, --quiet         quiet mode (suppress any output except errors and
-                        warnings)
 $(version_option)
 
 Notice: arguments containing spaces are not allowed. Interfaces attached by
@@ -130,7 +128,6 @@ END_OF_HELP
 # Usage:
 #   setup_interfaces [INTERFACE]...
 # Globals:
-#   r- BE_QUIET
 #   -w HUB_LIST
 #   r- HUB_SOCKET_DIR
 #   r- HUB_SOCKET_EXTENSION
@@ -198,10 +195,10 @@ setup_interfaces() {
          hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
          
          VCONF_DEVICES+=( "$device=daemon,,,$hub_socket" )
-         [ -z "$BE_QUIET" ] && echo "$indent$device @ $hub_name ($hub_socket)"
+         echo "$indent$device @ $hub_name ($hub_socket)"
       else
          VCONF_DEVICES+=( "$device" )
-         [ -z "$BE_QUIET" ] && echo "$indent$device removed"
+         echo "$indent$device removed"
       fi
 
       # Indent subsequent lines
@@ -278,8 +275,8 @@ target_user=$USER_ID
 
 
 # Get command line options
-long_opts="help,print,quiet,version,user:"
-short_opts="pqu:"
+long_opts="help,print,version,user:"
+short_opts="pu:"
 
 # Append a new long option for each network interface that can be configured
 for ((i = 0; i < MAX_INTERFACES; ++i)); do
@@ -326,9 +323,6 @@ while true; do
       -p|--print)
          JUST_PRINT=1
          ;;
-      -q|--quiet)
-         BE_QUIET=1
-         ;;
       -u|--user)
          target_user=$2
          [ "$target_user" = "-" ] && unset target_user
@@ -372,13 +366,11 @@ fi
 
 
 # Setup network interfaces
-if [ -z "$BE_QUIET" ]; then
-   echo "============= Configuring virtual machine '$vhost' (PID $(get_vhost_pid_by_name "$target_user" "$vhost")) ============="
-   echo "   Virtual machine owner: $target_user"
-fi
+echo "============= Configuring virtual machine '$vhost' (PID $(get_vhost_pid_by_name "$target_user" "$vhost")) ============="
+echo "   Virtual machine owner: $target_user"
 
 if [ ${#network_interfaces[@]} -gt 0 ]; then
-   [ -z "$BE_QUIET" ] && echo -n "   Interfaces: "
+   echo -n "   Interfaces: "
    setup_interfaces "${network_interfaces[@]}"
 fi
 
