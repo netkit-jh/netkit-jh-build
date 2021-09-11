@@ -96,6 +96,131 @@ END_OF_HELP
 }
 
 
+###############################################################################
+# Generate a DOT language graph from a list of lab.conf files and virtual
+# machine names and write to standard output.
+# Usage:
+#   generate_dot_graph [LAB_CONF]...
+# Globals:
+#   r- lab_vhosts
+# Arguments:
+#  ... - list of lab.conf files to analyse
+# Returns:
+#   None
+# Example:
+#   generate_dot_graph lab.conf | dot
+###############################################################################
+generate_dot_graph() {
+   local lab_confs=( "$@" )
+
+   local configuration vhost option value
+   local hub_name hub_names
+
+   declare -A device_ids options
+
+   # Global map parameters
+   cat << EOF
+graph netkit_jh_graph {
+   overlap="prism";
+   overlap_scaling=-6.0;
+   resolution=400.0;
+   splines="line";
+EOF
+
+   while IFS= read -r configuration; do
+      # The [][] is ][ inside a bracket expression to match an opening or
+      # closing square bracket.
+      # NOTE: we assume hostname_regex does not allow square brackets,
+      # so the option string is the first instance of them.
+      vhost=$(awk -F"[][]" '{ print $1 }' <<< "$configuration")
+      option=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
+
+      # Everything after the first '='
+      value=${configuration#*=}
+
+      # Ignore if VM is not part of the lab
+      array_contains "$vhost" "${lab_vhosts[@]}" || continue
+
+      # If option is all-digit, it must be a network interface specification
+      if [[ "$option" =~ ^([0-9]|[1-9][0-9]+)$ ]]; then
+         # Ignore if it has already been seen
+         [[ "${device_ids[$vhost]}" =~ \ $option\  ]] && continue
+
+         # Add an edge between the machine and its collision domain
+         cat << EOF
+   "$vhost" -- "$value" [
+      taillabel=<
+         <TABLE BGCOLOR="white" BORDER="0" CELLPADDING="1" CELLSPACING="0">
+            <TR>
+               <TD>eth$option</TD>
+            </TR>
+         </TABLE>
+      >,
+      labeldistance=1.5,
+      labelfontsize=8.0
+   ];'
+EOF
+
+         hub_names+=( "$value" )
+
+         # Device IDs cannot have whitespace, so a space-separated list is
+         # safe.
+         device_ids[$vhost]+=" $option "
+      else
+         options[$vhost]+="$option = $value<BR/>"
+      fi
+   done < <(grep --no-filename "^$hostname_regex\[.*\]=" "${lab_confs[@]}")
+
+   # Label each machine with its hostname and vstart options
+   for vhost in "${lab_vhosts[@]}"; do
+      cat << EOF
+   "$vhost" [
+      shape=box,
+      label=<
+         $vhost
+         <FONT POINT-SIZE="10">
+            <BR/>${options[$vhost]}
+         </FONT>
+      >,
+      height=0.5,
+      width=0.5
+   ];
+EOF
+   done
+
+   # Remove bounding box from collision domain labels (just text)
+   for hub_name in "${hub_names[@]}"; do
+      cat << EOF
+   "$hub_name" [
+      shape=plaintext,
+      width=0,
+      height=0,
+      margin=0
+   ]
+EOF
+   done
+
+   echo "}"
+}
+
+
+# This function creates a link-level topology map of the lab. Its argument is
+# the name of the PNG file to save the map in.
+lab_map() {
+   local map_file=$1
+   local lab_confs=( "${@:2}" )
+
+   local graph_generator="neato"
+
+   if ! command -v "$graph_generator" > /dev/null 2>&1; then
+      echo 1>&2 "$SCRIPTNAME: $graph_generator: Graphviz graph generator not found"
+      exit 1
+   fi
+
+   generate_dot_graph "${lab_confs[@]}" | "$graph_generator" -Tpng -o"$map_file"
+}
+
+
 SCRIPTNAME=$(basename "$0")
 
 if [ -z "$NETKIT_HOME" ]; then

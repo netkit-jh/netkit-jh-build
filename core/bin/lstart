@@ -236,6 +236,238 @@ update_available() {
 }
 
 
+###############################################################################
+# Start virtual machines of a Netkit lab sequentially.
+# Usage:
+#   lab_start FAST_MODE TEST_MODE MAKEFILE DIR [PASSTHROUGH]...
+# Globals:
+#   rw lab_vhosts
+# Arguments:
+#   $1 - set to 1 for fast mode, empty string otherwise
+#   $2 - set to 1 for test mode, empty string otherwise
+#   $3 - used internally when lstart is invoked with Make
+#   $4 - lab directory
+#  ... - array of options to pass through into vstart
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+lab_start() {
+   local fast_mode=$1
+   local test_mode=$2
+   local makefile=$3
+   local lab_directory=$4
+   local passthrough_args=( "${@:5}" )
+
+   local vhost
+
+   get_lab_vhosts "$lab_directory"
+
+   if [ "${#lab_vhosts[@]}" -eq 0 ]; then
+      echo 1>&2 "Warning: there are no virtual machines to be started."
+      return
+   fi
+
+   # We prepend so passthrough_args can override 
+   [ -z "$VERBOSE" ] && passthrough_args=( "-q" "${passthrough_args[@]}" )
+
+   for vhost in "${lab_vhosts[@]}"; do
+      single_lab_vhost_start "$fast_mode" "$lab_directory" "$vhost" "${passthrough_args[@]}"
+   done
+   
+   # The readyfor.test file should not be created if we have been invoked
+   # with the --makefile option (=launch a single machine and exit).
+   [ -n "$test_mode" ] && [ -z "$makefile" ] && : > "$lab_directory/readyfor.test"
+}
+
+
+###############################################################################
+# Start virtual machines of a Netkit lab simultaneously with GNU Make.
+# Usage:
+#   lab_start_parallel TEST_MODE DIR [PASSTHROUGH]...
+# Globals:
+#   r- MAX_SIMULTANEOUS_VMS
+#   rw lab_vhosts
+# Arguments:
+#   $1 - set to 1 for test mode, empty string otherwise
+#   $2 - lab directory
+#  ... - array of options to pass through into vstart
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+lab_start_parallel() {
+   local test_mode=$1
+   local lab_directory=$2
+   local passthrough_args=( "${@:3}" )
+
+   local lstart_args arg
+   local lstart_cmd escaped_lstart_cmd
+   local tab makefile_contents
+
+   get_lab_vhosts "$lab_directory"
+   
+   if [ "${#lab_vhosts[@]}" -eq 0 ]; then
+      echo 1>&2 "Warning: there are no virtual machines to be started."
+      return
+   fi
+   
+   # Pass "passthrough" options on to the second invocation of lstart/ltest
+   [ -n "$VERBOSE" ] && lstart_args+=( "-v" )
+
+   for arg in "${passthrough_args[@]}"; do
+      lstart_args+=( "-o" "$arg" )
+   done
+
+   # Pass testmode along subsequent invocations of this script
+   if [ -n "$test_mode" ]; then
+      program_name="ltest"
+   else
+      program_name="lstart"
+   fi
+   
+   # The make utility expects an empty argument to -j when infinitely many jobs
+   # should be used.
+   [ "$MAX_SIMULTANEOUS_VMS" -eq 0 ] && unset MAX_SIMULTANEOUS_VMS
+
+
+   lstart_cmd=( "$program_name" "-d" "$lab_directory" "--makefile" "${lstart_args[@]}" )
+
+   # We expand this array with the Q operator when writing to the Makefile.
+   # This ensures escaping sufficient for reuse in a shell command.
+   escaped_lstart_cmd=${lstart_cmd[*]@Q}
+
+   # Make requires all dollar signs (whether quoted or not) to be escaped with
+   # a second dollar sign.
+   escaped_lstart_cmd=${escaped_lstart_cmd//$/\$$}
+
+   # Labs are started in parallel with GNU Make, which automatically handles
+   # lab.dep (which is formatted as Makefile targets).
+   #
+   # The script is invoked with each VM name as a target on the command line,
+   # which directs Make to run:
+   #   lstart [...] --makefile <machine>
+   # for each machine. $* is a GNU Make automatic variable that expands to the
+   # % (stem) in the target. In this usage it will expand to the machine name.
+   #
+   # The contents of lab.dep is copied in if it exists, which creates a target
+   # for each machine with dependencies ("prerequisities" in Make).
+   # NOTE: The dummy target is required, which has the unwanted side-effect
+   # that machines cannot be named "dummy-prerequisite-to-force-remaking".
+   # 
+   # The Makefile must use Bash as the shell for correct handling of ANSI-C
+   # expansions present after the previous Q-operator array expansion.
+   tab=$(printf '\t')
+   IFS='' read -r -d '' makefile_contents << EOF
+SHELL := /bin/bash
+
+%: dummy-prerequisite-to-force-remaking
+${tab}[ '\$*' != "lab.dep" ] && $escaped_lstart_cmd '\$*'
+
+dummy-prerequisite-to-force-remaking:
+${tab}# Dummy line. Unuseful, yet necessary
+
+$(cat "$lab_directory/lab.dep" 2> /dev/null)
+EOF
+
+   # Read the Makefile from stdin without implicit rules, and hide the output. It
+   # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
+   make -irsC "$lab_directory" -f - -j ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} "${lab_vhosts[@]}" <<< "$makefile_contents"
+
+   
+   # Signal that every machine is ready for testing once booted.
+   [ -n "$test_mode" ] && : > "$lab_directory/readyfor.test"
+}
+
+
+###############################################################################
+# Start a single virtual machine within a lab.
+# Usage:
+#   single_lab_vhost_start FAST_MODE DIR MACHINE [PASSTHROUGH]...
+# Globals:
+#   r- GRACE_TIME
+#   r- VERBOSE
+# Arguments:
+#   $1 - set to 1 for fast mode, empty string otherwise
+#   $2 - lab directory
+#   $3 - machine to start up
+#  ... - options to passthrough to vstart (appended on)
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+single_lab_vhost_start() {
+   local fast_mode=$1
+   local lab_directory=$2
+   local vhost=$3
+   local passthrough_args=( "${@:4}" )
+
+   local configuration option value
+
+   # Add host lab and working directory, and place filesystem inside the lab
+   # directory.
+   local vstart_args=( "--hostlab" "$lab_directory" "--hostwd" "$PWD" "--filesystem" "$lab_directory/$vhost.disk" )
+
+   # Generate vstart argument list
+   if [ -e "$lab_directory/lab.conf" ]; then
+      while IFS= read -r configuration; do
+         # The [][] is ][ inside a bracket expression to match an opening or
+         # closing square bracket.
+         # NOTE: we assume hostname_regex does not allow square brackets, so
+         # the option string is the first instance of them.
+         option=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
+
+         # Everything after the first '='
+         value=${configuration#*=}
+
+         # If option is all-digit, it must be a network interface specification
+         [[ "$option" =~ ^([0-9]|[1-9][0-9]+)$ ]] && option="eth$option"
+
+         if [ "${#option}" -eq 1 ]; then
+            vstart_args+=( "-$option" )
+         else
+            vstart_args+=( "--$option" )
+         fi
+
+         # NOTE: if vstart is ever changed to have an option with an optional
+         # argument (denoted with '::' in the option string), an exception when
+         # appending the argument must be made (an '=' is required for long
+         # options, no delimiter for short ones).
+         [ -n "$value" ] && vstart_args+=( "$value" )
+      done < <(grep "^$vhost\[.*\]=" "$lab_directory/lab.conf")
+   fi
+   
+   # Remove .ready file, if existing
+   rm -f "$lab_directory/$vhost.ready"
+
+   if [ -z "$VERBOSE" ]; then
+      bold_print "Starting '$vhost'..."
+   else
+      bold_print "Starting '$vhost' with options '${vstart_args[*]} ${passthrough_args[*]}'... "
+   fi
+
+   if ! vstart "${vstart_args[@]}" "${passthrough_args[@]}" "$vhost"; then
+      echo 2>&1 "Error while starting virtual machine '$vhost'"
+      exit 1
+   fi
+
+   # Wait for virtual host startup script to create .ready file
+   if [ -z "$fast_mode" ]; then
+      while [ ! -e "$lab_directory/$vhost.ready" ]; do
+         sleep 1
+      done
+
+      rm -f "$lab_directory/$vhost.ready"
+   fi
+   
+   # Wait for a specified amount of time before returning
+   [ "$GRACE_TIME" -gt 0 ] && sleep "$GRACE_TIME"
+}
+
+
 SCRIPTNAME=$(basename "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
