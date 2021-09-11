@@ -869,8 +869,8 @@ netkit_dir_check() {
 }
 
 
-# force language to avoid localization errors
-export LANG=C
+# Override all locale settings to avoid localisation errors
+export LC_ALL=C
 
 
 # Regular expression for a Debian-approved (and RFC-compliant) hostname
