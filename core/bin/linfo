@@ -176,23 +176,23 @@ for lab_directory in "${lab_directories[@]}"; do
       exit 1
    fi
 
-   # We must unset VHOSTLIST when calling build_vhostlist in a loop because it
+   # We must unset lab_vhosts when calling get_lab_vhosts in a loop because it
    # operates differently if already set.
-   unset VHOSTLIST
-   build_vhostlist "$lab_directory"
-   cum_vhostlist+=( "${VHOSTLIST[@]}" )
+   unset lab_vhosts
+   get_lab_vhosts "$lab_directory"
+   cum_lab_vhosts+=( "${lab_vhosts[@]}" )
 done
 
 
 # TODO: maybe just stick in lab_welcome
-printf -v cum_vhostlist_str '%s, ' "${cum_vhostlist[@]}"
-cum_vhostlist_str=${cum_vhostlist_str%", "}
+printf -v cum_lab_vhosts_str '%s, ' "${cum_lab_vhosts[@]}"
+cum_lab_vhosts_str=${cum_lab_vhosts_str%", "}
 
 
 # Print lab information
 bold_print "======================== Lab information ========================"
 lab_welcome "${lab_directories[@]}"
-bold_print "The lab is made up of ${#cum_vhostlist_str[@]} virtual machines ($cum_vhostlist_str)."
+bold_print "The lab is made up of ${#cum_lab_vhosts_str[@]} virtual machines ($cum_lab_vhosts_str)."
 
 for dir in "${lab_directories[@]}"; do
    [ -f "$dir/lab.dep" ] && bold_print "The lab part $dir supports parallel startup."

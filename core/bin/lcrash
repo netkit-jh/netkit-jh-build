@@ -185,8 +185,8 @@ while true; do
 done
 
 # Non-option arguments are machine names
-VHOSTLIST=( "$@" )
-validate_hostnames "${VHOSTLIST[@]}"
+lab_vhosts=( "$@" )
+validate_hostnames "${lab_vhosts[@]}"
 
 
 # If no lab directory has been given, assume current directory

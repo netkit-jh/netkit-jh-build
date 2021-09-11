@@ -72,13 +72,13 @@ array_contains() {
 
 
 ###############################################################################
-# Set VHOSTLIST to a list of machines in the lab taken from the directory
-# listing. If VHOSTLIST is already set (such as by the user on the command
+# Set lab_vhosts to a list of machines in the lab taken from the directory
+# listing. If lab_vhosts is already set (such as by the user on the command
 # line), machines not present in the lab are removed from the array.
 # Usage:
-#   build_vhostlist DIR
+#   get_lab_vhosts DIR
 # Globals:
-#   rw VHOSTLIST
+#   rw lab_vhosts
 # Arguments:
 #   $1 - lab directory
 # Returns:
@@ -86,24 +86,24 @@ array_contains() {
 # Example:
 #   None
 ###############################################################################
-build_vhostlist() {
+get_lab_vhosts() {
    local lab_directory=$1
 
    local vhost
-   local lab_vhosts cmdline_vhosts
+   local lab_vhosts_ref cmdline_vhosts
 
    # Get lab.conf's LAB_MACHINES variable. This will override the directory
    # listing for the machine list. If machine names are specified on the
-   # command line (existing VHOSTLIST value), they will be checked against this
-   # list as opposed to the directory listing.
+   # command line (existing lab_vhosts value), they will be checked against
+   # this list as opposed to the directory listing.
    # Note: LAB_MACHINES is a comma-separated (whitespace is not ignored) list.
    # This means if hostname_regex allows, machine names cannot have commas in
    # them.
    # TODO: allow commas (if so desired) in LAB_MACHINES hostnames with quotes
    # or escape sequences.
-   IFS="," read -r -a lab_vhosts <<< "$(get_lab_variable "LAB_MACHINES" "$lab_directory")"
+   IFS="," read -r -a lab_vhosts_ref <<< "$(get_lab_variable "LAB_MACHINES" "$lab_directory")"
 
-   if [ "${#lab_vhosts[@]}" -eq 0 ]; then
+   if [ "${#lab_vhosts_ref[@]}" -eq 0 ]; then
       # Build list of virtual machines that are part of the lab from the
       # directory listing if LAB_MACHINES is not set.
       for dir in "$lab_directory/"*/; do
@@ -114,30 +114,30 @@ build_vhostlist() {
             continue
          fi
 
-         lab_vhosts+=( "$vhost" )
+         lab_vhosts_ref+=( "$vhost" )
       done
    fi
    
    # If the user has explicitly provided a machine list via the command line
-   # (i.e. VHOSTLIST already contains values when calling the function), verify
-   # that the given machines are in the lab (either LAB_MACHINES or directory
-   # listing).
-   if [ "${#VHOSTLIST[@]}" -gt 0 ]; then
-      cmdline_vhosts=( "${VHOSTLIST[@]}" )
-      unset VHOSTLIST
+   # (i.e. lab_vhosts already contains values when calling the function),
+   # verify that the given machines are in the lab (either LAB_MACHINES or
+   # directory listing).
+   if [ "${#lab_vhosts[@]}" -gt 0 ]; then
+      cmdline_vhosts=( "${lab_vhosts[@]}" )
+      unset lab_vhosts
 
       for vhost in "${cmdline_vhosts[@]}"; do
-         if array_contains "$vhost" "${lab_vhosts[@]}"; then
-            VHOSTLIST+=( "$vhost" )
+         if array_contains "$vhost" "${lab_vhosts_ref[@]}"; then
+            lab_vhosts+=( "$vhost" )
          else
             echo 1>&2 "Warning: '$vhost' is not part of the lab in '$lab_directory'"
          fi
       done
    else
-      VHOSTLIST=( "${lab_vhosts[@]}" )
+      lab_vhosts=( "${lab_vhosts_ref[@]}" )
    fi
 
-   validate_hostnames "${VHOSTLIST[@]}"
+   validate_hostnames "${lab_vhosts[@]}"
 }
 
 
@@ -307,7 +307,7 @@ lab_welcome() {
 #   lab_clean DIR
 # Globals:
 #   r- MCONSOLE_DIR
-#   rw VHOSTLIST
+#   rw lab_vhosts
 # Arguments:
 #   $1 - lab directory
 # Returns:
@@ -320,11 +320,11 @@ lab_clean() {
 
    local vhost
 
-   build_vhostlist "$lab_directory"
+   get_lab_vhosts "$lab_directory"
 
    bold_print "Cleaning up lab inside '$lab_directory'..."
 
-   for vhost in "${VHOSTLIST[@]}"; do
+   for vhost in "${lab_vhosts[@]}"; do
       # Remove files from the lab directory
       rm ${VERBOSE:+"--verbose"} -r "${MCONSOLE_DIR:?}/$vhost"
       rm ${VERBOSE:+"--verbose"} "$lab_directory/$vhost."{"ready","disk","log","testdone"}
@@ -340,7 +340,7 @@ lab_clean() {
 #   lab_crash DIR KEEP_FS KILL
 # Globals:
 #   r- VERBOSE
-#   rw VHOSTLIST
+#   rw lab_vhosts
 # Arguments:
 #   $1 - lab directory
 #   $2 - set to 1 to keep the filesystem, empty string for otherwise
@@ -357,13 +357,13 @@ lab_crash() {
 
    local vcrash_args vhost
 
-   build_vhostlist "$lab_directory"
+   get_lab_vhosts "$lab_directory"
 
    [ -z "$VERBOSE" ]   && vcrash_args+=( "-q" )
    [ -z "$keep_fs" ]   && vcrash_args+=( "-r" )
    [ -n "$kill_mode" ] && vcrash_args+=( "-k" )
    
-   for vhost in "${VHOSTLIST[@]}"; do
+   for vhost in "${lab_vhosts[@]}"; do
       [ -n "$VERBOSE" ] && bold_print "Crashing '$vhost'..."
       vcrash "${vcrash_args[@]}" "$vhost" && rm -f "$lab_directory/$vhost.ready"
    done
@@ -464,7 +464,7 @@ single_lab_vhost_start() {
 # Usage:
 #   lab_start FAST_MODE TEST_MODE MAKEFILE DIR [PASSTHROUGH]...
 # Globals:
-#   rw VHOSTLIST
+#   rw lab_vhosts
 # Arguments:
 #   $1 - set to 1 for fast mode, empty string otherwise
 #   $2 - set to 1 for test mode, empty string otherwise
@@ -485,9 +485,9 @@ lab_start() {
 
    local vhost
 
-   build_vhostlist "$lab_directory"
+   get_lab_vhosts "$lab_directory"
 
-   if [ "${#VHOSTLIST[@]}" -eq 0 ]; then
+   if [ "${#lab_vhosts[@]}" -eq 0 ]; then
       echo 1>&2 "Warning: there are no virtual machines to be started."
       return
    fi
@@ -495,7 +495,7 @@ lab_start() {
    # We prepend so passthrough_args can override 
    [ -z "$VERBOSE" ] && passthrough_args=( "-q" "${passthrough_args[@]}" )
 
-   for vhost in "${VHOSTLIST[@]}"; do
+   for vhost in "${lab_vhosts[@]}"; do
       single_lab_vhost_start "$fast_mode" "$lab_directory" "$vhost" "${passthrough_args[@]}"
    done
    
@@ -511,7 +511,7 @@ lab_start() {
 #   lab_start_parallel TEST_MODE DIR [PASSTHROUGH]...
 # Globals:
 #   r- MAX_SIMULTANEOUS_VMS
-#   rw VHOSTLIST
+#   rw lab_vhosts
 # Arguments:
 #   $1 - set to 1 for test mode, empty string otherwise
 #   $2 - lab directory
@@ -530,9 +530,9 @@ lab_start_parallel() {
    local lstart_cmd escaped_lstart_cmd
    local tab makefile_contents
 
-   build_vhostlist "$lab_directory"
+   get_lab_vhosts "$lab_directory"
    
-   if [ "${#VHOSTLIST[@]}" -eq 0 ]; then
+   if [ "${#lab_vhosts[@]}" -eq 0 ]; then
       echo 1>&2 "Warning: there are no virtual machines to be started."
       return
    fi
@@ -597,7 +597,7 @@ EOF
 
    # Read the Makefile from stdin without implicit rules, and hide the output. It
    # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
-   make -irsC "$lab_directory" -f - -j ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} "${VHOSTLIST[@]}" <<< "$makefile_contents"
+   make -irsC "$lab_directory" -f - -j ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} "${lab_vhosts[@]}" <<< "$makefile_contents"
 
    
    # Signal that every machine is ready for testing once booted.
@@ -611,7 +611,7 @@ EOF
 # Usage:
 #   generate_dot_graph [LAB_CONF]...
 # Globals:
-#   r- VHOSTLIST
+#   r- lab_vhosts
 # Arguments:
 #  ... - list of lab.conf files to analyse
 # Returns:
@@ -648,7 +648,7 @@ EOF
       value=${configuration#*=}
 
       # Ignore if VM is not part of the lab
-      array_contains "$vhost" "${VHOSTLIST[@]}" || continue
+      array_contains "$vhost" "${lab_vhosts[@]}" || continue
 
       # If option is all-digit, it must be a network interface specification
       if [[ "$option" =~ ^([0-9]|[1-9][0-9]+)$ ]]; then
@@ -681,7 +681,7 @@ EOF
    done < <(grep --no-filename "^$hostname_regex\[.*\]=" "${lab_confs[@]}")
 
    # Label each machine with its hostname and vstart options
-   for vhost in "${VHOSTLIST[@]}"; do
+   for vhost in "${lab_vhosts[@]}"; do
       cat << EOF
    "$vhost" [
       shape=box,

@@ -171,8 +171,8 @@ while true; do
 done
    
 # Non-option arguments are machine names
-VHOSTLIST=( "$@" )
-validate_hostnames "${VHOSTLIST[@]}"
+lab_vhosts=( "$@" )
+validate_hostnames "${lab_vhosts[@]}"
 
 
 # If no lab directory has been given, assume current directory
@@ -197,9 +197,9 @@ lab_welcome "$lab_directory"
 bold_print "================================================================="
 
 # Halt virtual machines
-build_vhostlist "$lab_directory"
+get_lab_vhosts "$lab_directory"
 
-for vhost in "${VHOSTLIST[@]}"; do
+for vhost in "${lab_vhosts[@]}"; do
    [ -z "$VERBOSE" ] && bold_print "Halting '$vhost'... "
    vhalt ${VERBOSE:+"-q"} ${remove_filesystem:+"-r"} "$vhost" && rm -f "$lab_directory/$vhost.ready"
 done

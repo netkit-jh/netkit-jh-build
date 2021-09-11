@@ -386,8 +386,8 @@ while true; do
 done
    
 # Non-option arguments are machine names
-VHOSTLIST=( "$@" )
-validate_hostnames "${VHOSTLIST[@]}"
+lab_vhosts=( "$@" )
+validate_hostnames "${lab_vhosts[@]}"
 
 
 # If no lab directory has been given, assume current directory
@@ -476,8 +476,8 @@ if [ -z "$force_sequential_mode" ] && [ -f "$lab_directory/lab.dep" ] || [ -n "$
 else
    # Use sequential startup
 
-   # If VHOSTLIST is not empty, then lab_start takes care of starting only the
-   # machines listed in VHOSTLIST; those appearing in VHOSTLIST but that are
+   # If lab_vhosts is not empty, then lab_start takes care of starting only the
+   # machines listed in lab_vhosts; those appearing in lab_vhosts but that are
    # not part in the lab will simply be skipped.
    if [ -z "$script_mode" ]; then
       lab_start "$fast_mode" "$test_mode" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
@@ -500,7 +500,7 @@ exit_code=0
 
 if [ -n "$test_mode" ]; then
    # Wait for the test to finish
-   vhost_count=${#VHOSTLIST[@]}
+   vhost_count=${#lab_vhosts[@]}
 
    tests_completed=0
    while [ "$tests_completed" -lt "$vhost_count" ]; do
@@ -548,7 +548,7 @@ if [ -n "$test_mode" ]; then
             ;;
          *)
             # test_type has not been set
-            for vhost in "${VHOSTLIST[@]}"; do
+            for vhost in "${lab_vhosts[@]}"; do
                if [ -f "$lab_directory/_test/signature/$vhost.user" ]; then
                   diff -qEbB "$lab_directory/_test/signature/$vhost.user" --to-file "$lab_directory/_test/results" > /dev/null
                   exit_code=$((exit_code + $?))
