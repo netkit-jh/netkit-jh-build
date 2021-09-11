@@ -46,15 +46,10 @@ most cases. If still it does not, try using \fIvclean\fR (see \fBvclean\fR(1)).
 .TP
 .B
 --quick
-.PD 0
-.TP
-.B
---quiet
 After crashing virtual machines, \fIvcrash\fR waits a few instants to check
-whether they have actually stopped. By using the \fB\-q\fR (\fB\-\-quick\fR,
-\fB\-\-quiet\fR) option, \fIvcrash\fR exits immediately, without waiting for the
-machine to stop. This option also suppresses any kind of output except errors
-and warnings.
+whether they have actually stopped. By using the \fB\-q\fR (\fB\-\-quick\fR)
+option, \fIvcrash\fR exits immediately, without waiting for the
+machine to stop.
 .br
 Notice that, when a virtual machine is crashed via its mconsole socket (default
 if the \fB\-k\fR option is not used), \fIvcrash\fR still waits for the crash
@@ -82,8 +77,7 @@ and model filesystems.
 --test
 Instead of actually crashing virtual machines, just show what would be done
 (i.e., which processes would be killed or which socket would be used to send
-the crash directive). This option cannot be used in conjunction with \fB\-q\fR
-(or \fB\-\-quick\fR, \fB\-\-quiet\fR).
+the crash directive).
 
 .TP
 .B

@@ -81,10 +81,7 @@ virtual machine.
                         processes. By using this option, the attempt via the
                         mconsole socket is simply skipped, and virtual machine
                         processes are just killed
-  -q, --quick
-      --quiet         quiet mode (suppress any output except errors and
-                        warnings). Using this option also disables checking
-                        whether virtual machines have actually been crashed,
+  -q, --quick         disable checking if machines have actually been crashed,
                         and causes vcrash to exit (almost) immediately. The
                         'almost' is due to the fact that vcrash will still wait
                         for the crash directive to reach the virtual machine
@@ -97,8 +94,7 @@ virtual machine.
                         removed
       --test          do not actually crash virtual machines. Just show which
                         processes would be killed or which mconsole socket
-                        would be used to send the crash directive. This option
-                        cannot be used when working in quiet mode
+                        would be used to send the crash directive
   -u, --user=USERNAME  crash virtual machine(s) owned by user USERNAME. By
                         using the special user name '-' any virtual machine can
                         be crashed, regardless of its owner (this requires
@@ -120,12 +116,14 @@ END_OF_HELP
 ###############################################################################
 # Kill a virtual machine by signaling the corresponding processes.
 # Usage:
-#   kill_by_signaling USER MACHINE
+#   kill_by_signaling TEST_MODE QUICK_MODE USER MACHINE
 # Globals:
-#   r- BE_QUIET
+#   None
 # Arguments:
-#   $1 - owner of machine
-#   $2 - machine to kill
+#   $1 - set to 1 for test mode, empty string otherwise
+#   $2 - set to 1 for quick mode, empty string otherwise
+#   $3 - owner of machine
+#   $4 - machine to kill
 # Returns:
 #   Returns zero on success, non-zero if there was an issue with killing the
 #   machine.
@@ -133,47 +131,61 @@ END_OF_HELP
 #   None
 ###############################################################################
 kill_by_signaling() {
-   local target_user=$1
-   local vhost=$2
+   local test_mode=$1
+   local quick_mode=$2
+   local target_user=$3
+   local vhost=$4
 
    local pids
 
-   [ -z "$BE_QUIET" ] && echo -n "Killing... "
+   # Signalling processes twice ensures they stop even if they need to be
+   # killed in a certain order
+   # TODO: kill_all_vhosts in vclean uses mapfile
+   IFS=" " read -r -a pids <<< "$(get_vhost_all_pids_by_name "$target_user" "$vhost")"
+
+   echo "Virtual machine PIDs: ${pids[*]}"
+
+   # We are in test mode, just show which processes would be killed
+   [ -n "$test_mode" ] && return 1
+
+   echo -n "Killing... "
+
+   if [ "${#pids[@]}" -eq 0 ]; then
+      echo "done."
+      return 0
+   fi
+
+   if [ -n "$quick_mode" ]; then
+      # Just kill processes
+      kill -KILL "${pids[@]}"
+      kill -CONT "${pids[@]}"
+      return 0
+   fi
 
    # Signalling processes twice ensures they stop even if they need to be
    # killed in a certain order
+   kill -TERM "${pids[@]}"
+   kill -TERM "${pids[@]}"
+
+   sleep 1
    IFS=" " read -r -a pids <<< "$(get_vhost_all_pids_by_name "$target_user" "$vhost")"
 
-   if [ "${#pids[@]}" -eq 0 ]; then
-      kill -TERM "${pids[@]}" > /dev/null
-      kill -TERM "${pids[@]}" > /dev/null
-   fi
+   if [ "${#pids[@]}" -gt 0 ]; then
+      echo -n "killing harder... "
 
-   if [ -z "$BE_QUIET" ]; then
+      kill -KILL "${pids[@]}"
+      kill -CONT "${pids[@]}"
+
       sleep 1
 
       if get_machine_state "$target_user" "$vhost"; then
-         [ -z "$BE_QUIET" ] && echo -n "killing harder... "
-         # Recompute PID list (some threads may have been launched in the
-         # meantime).
-         IFS=" " read -r -a pids <<< "$(get_vhost_all_pids_by_name "$target_user" "$vhost")"
-
-         if [ "${#pids[@]}" -eq 0 ]; then
-            kill -KILL "${pids[@]}" > /dev/null
-            kill -CONT "${pids[@]}" > /dev/null
-         fi
-
-         sleep 1
-
-         if get_machine_state "$target_user" "$vhost"; then
-            [ -z "$BE_QUIET" ] && echo "failed!"
-            echo 1>&2 "Failed to crash virtual machine '$vhost'"
-            return 1
-         fi
+         echo "failed!"
+         echo 1>&2 "Failed to crash virtual machine '$vhost'"
+         return 1
       fi
-
-      [ -z "$BE_QUIET" ] && echo "done."
    fi
+
+   echo "done."
 
    return 0
 }
@@ -185,7 +197,6 @@ kill_by_signaling() {
 # Usage:
 #   mconsole_halt MCONSOLE
 # Globals:
-#   r- BE_QUIET
 #   r- NETKIT_HOME
 # Arguments:
 #   None
@@ -209,7 +220,7 @@ mconsole_halt() {
       sleep 1
    done
 
-   [ -z "$BE_QUIET" ] && echo "hangup detected... "
+   echo "hangup detected... "
    kill "$uml_mconsole_pid"
 
    return 1
@@ -219,13 +230,14 @@ mconsole_halt() {
 ###############################################################################
 # Use mconsole_halt to crash a machine.
 # Usage:
-#   kill_by_mconsole MCONSOLE USER MACHINE
+#   kill_by_mconsole QUICK_MODE MCONSOLE USER MACHINE
 # Globals:
-#   r- BE_QUIET
+#   None
 # Arguments:
-#   $1 - mconsole socket
-#   $2 - owner of machine
-#   $3 - machine to kill
+#   $1 - set to 1 for quick mode, empty string otherwise
+#   $2 - mconsole socket
+#   $3 - owner of machine
+#   $4 - machine to kill
 # Returns:
 #   Returns zero on success, non-zero if there was an issue with killing the
 #   machine.
@@ -233,25 +245,26 @@ mconsole_halt() {
 #   None
 ###############################################################################
 kill_by_mconsole() {
-   local mconsole=$1
-   local target_user=$2
-   local vhost=$3
+   local quick_mode=$1
+   local mconsole=$2
+   local target_user=$3
+   local vhost=$4
 
-   [ -z "$BE_QUIET" ] && echo -n "Crashing... "
+   echo -n "Crashing... "
 
    mconsole_halt "$mconsole"
 
    # When the above command exits, an attempt via the mconsole has been
    # performed. Regardless of whether the virtual machine has actually halted,
    # the above command ensures that the uml_mconsole process has ended.
-   if [ -z "$BE_QUIET" ] && get_machine_state "$target_user" "$vhost"; then
+   if [ -z "$quick_mode" ] && get_machine_state "$target_user" "$vhost"; then
       # Make a second attempt if machine is still running
       echo -n "retrying... "
       sleep 1
       mconsole_halt "$mconsole" || return 1
    fi
 
-   [ -z "$BE_QUIET" ] && echo "done."
+   echo "done."
 
    return 0
 }
@@ -275,7 +288,7 @@ target_user=$USER_ID
 
 
 # Get command line options
-long_opts="help,kill,quiet,remove-fs,root,test,user:,version"
+long_opts="help,kill,quick,remove-fs,root,test,user:,version"
 short_opts="kqru:"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -295,9 +308,8 @@ while true; do
       -k|--kill)
          force=1
          ;;
-      # TODO: Remove --quiet. Have --verbose and --quick (independent).
-      -q|--quick|--quiet)
-         BE_QUIET=1
+      -q|--quick)
+         quick_mode=1
          ;;
       -r|--remove-fs)
          remove_fs=1
@@ -343,34 +355,22 @@ vhosts=( "$@" )
 validate_hostnames "${vhosts[@]}"
 
 
-# Test mode is senseless if working in quiet mode
-if [ -n "$test_mode" ] && [ -n "$BE_QUIET" ]; then
-   echo 1>&2 "$SCRIPTNAME: Option --test cannot be used when working in quiet mode"
-   usage 1
-fi
-
-
 for vhost in "${vhosts[@]}"; do
    # Check whether the current machine exists
    if get_machine_state "$target_user" "$vhost"; then
       get_vhost_info_by_name "$target_user" "$vhost"
 
-      if [ -z "$BE_QUIET" ]; then
-         echo "============= Crashing virtual machine '$vhost' (PID ${vhost_info[pid]}) ========="
-         echo "Virtual machine owner: $target_user"
-         echo "Virtual machine mconsole socket: ${vhost_info[mconsole]}"
-         echo "Virtual machine PIDs: $(get_vhost_all_pids_by_name "$target_user" "$vhost")"
-      fi
-   
-      [ -n "$test_mode" ] && continue
+      echo "============= Crashing virtual machine '$vhost' (PID ${vhost_info[pid]}) ========="
+      echo "Virtual machine owner: $target_user"
+      echo "Virtual machine mconsole socket: ${vhost_info[mconsole]}"
 
-      if [ -n "$force" ]; then
+      if [ -n "$force" ] || [ -n "$test_mode" ]; then
          # Crash virtual machines by simply killing their processes
-         kill_by_signaling "$target_user" "$vhost" || continue
+         kill_by_signaling "$test_mode" "$quick_mode" "$target_user" "$vhost" || continue
       else
          # Crash virtual machines via uml_mconsole
          if ! kill_by_mconsole "${vhost_info[mconsole]}" "$target_user" "$vhost"; then
-            kill_by_signaling "$target_user" "$vhost" || continue
+            kill_by_signaling "" "$quick_mode" "$target_user" "$vhost" || continue
          fi
       fi
 
@@ -378,17 +378,17 @@ for vhost in "${vhosts[@]}"; do
       # successfully shut down (if the previous commands returned 0).
 
       # Kill tmux Sessions
-      [ -z "$BE_QUIET" ] && echo "Checking for '$vhost' tmux session"
+      echo "Checking for '$vhost' tmux session"
 
       if tmux -L netkit has-session -t="$vhost" 2>/dev/null; then
-         [ -z "$BE_QUIET" ] && echo "Killing tmux session '$vhost'"
+         echo "Killing tmux session '$vhost'"
          tmux -L netkit kill-session -t="$vhost"
       fi
 
-      [ -z "$BE_QUIET" ] && echo "Checking for '$vhost-dead' tmux session"
+      echo "Checking for '$vhost-dead' tmux session"
 
       if tmux -L netkit has-session -t="$vhost-dead" 2>/dev/null; then
-         [ -z "$BE_QUIET" ] && echo "Killing tmux session '$vhost-dead'"
+         echo "Killing tmux session '$vhost-dead'"
          tmux -L netkit kill-session -t="$vhost-dead"
       fi
 
