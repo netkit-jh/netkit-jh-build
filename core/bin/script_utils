@@ -504,7 +504,7 @@ clean_hubs() {
 # Usage:
 #   rm_filesystem FILE
 # Globals:
-#   None
+#   r- BE_QUIET
 # Arguments:
 #   $1 - filesystem filepath
 # Returns:
@@ -513,7 +513,11 @@ clean_hubs() {
 #   None
 ###############################################################################
 rm_filesystem() {
-   rm --verbose "$1"
+   if [ -n "$BE_QUIET" ]; then
+      rm "$1"
+   else
+      rm --verbose "$1"
+   fi
 }
 
 
