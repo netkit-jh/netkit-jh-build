@@ -214,7 +214,7 @@ check_filesystem() {
    # Get the host filesystem type
    fs_type=$(stat --file-system --format "%T" "$filepath")
 
-   if [[ ! "$fs_type" =~ ^(ext2?|ext2/ext3|ntfs|ntfs-3g|fuse|reiser|jfs|xfs)$ ]]; then
+   if [[ ! "$fs_type" =~ ^(ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|(da|e|fute|v)?xfs)$ ]]; then
       echo 1>&2 "$SCRIPTNAME: Filesystem '$fs_type' may not support sparse files, this could result in performance loss and disk space consumption"
    fi
 }
