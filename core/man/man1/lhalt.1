@@ -42,15 +42,11 @@ halted. This is useful to check whether all the hosts have been shut down.
 .TP
 .B
 \-\-quick
-.PD 0
-.TP
-.B
-\-\-quiet
 This option prevents \fIlhalt\fR from checking whether virtual machines have
 properly halted. Hence, it speeds up the halt process. Notice that, unlike
 \fBlcrash\fR (see \fBlcrash\fR(1)), a shutdown fails or succeeds regardless of
 the use of this option (i.e., no benefit is gained from retrying without this
-option). This option slightly reduces the output of \fIlhalt\fR as well.
+option).
 .br
 This option is incompatible with \fB\-r\fR or \fB\-\-remove\-fs\fR.
 
@@ -67,7 +63,7 @@ Default action is to keep the filesystems, so that the lab can be restarted whil
 preserving filesystem contents.
 .br
 Using this option never affects the model filesystem. This option is incompatible
-with \fB\-q\fR (\fB\-\-quick\fR, \fB\-\-quiet\fR).
+with \fB\-q\fR (\fB\-\-quick\fR).
 
 See the README in the Netkit filesystem package for information about COW and
 model filesystems.

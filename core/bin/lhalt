@@ -76,12 +76,10 @@ only a subset of the virtual machines that make up the lab.
                         the current directory is halted
   -l, --list          show a list of running virtual machines after halting the
                         lab
-  -q, --quick
-      --quiet         disable checking whether virtual machines have properly
+  -q, --quick         disable checking whether virtual machines have properly
                         shut down. This quickens the halt process, but no
                         warnings are raised if a virtual machine is unable to
-                        shut down. This option slightly reduces the amount of
-                        printed information as well. It cannot be used together
+                        shut down. It cannot be used together
                         with -r
   -r, --remove-fs     delete virtual machines filesystems after halting them.
                       This never impacts the model filesystem. This option
@@ -118,13 +116,8 @@ fi
 log_write "$0 $*"
 
 
-# Using verbose mode tells vcrash to wait for virtual machines to stop before
-# returning.
-VERBOSE=1
-
-
 # Get command line options
-long_opts="help,version,remove-fs,quick,quiet,list"
+long_opts="help,version,remove-fs,quick,list"
 short_opts="d:lqr"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -150,8 +143,8 @@ while true; do
       -l|--list)
          list_vhosts=1
          ;;
-      -q|--quick|--quiet)
-         unset VERBOSE
+      -q|--quick)
+         quick_mode=1
          ;;
       --version)
          show_version
@@ -184,9 +177,9 @@ if [ ! -d "$lab_directory" ]; then
    exit 1
 fi
 
-# Filesystem cannot be removed if we are working in quiet mode
-if [ -z "$VERBOSE" ] && [ -n "$remove_filesystem" ]; then
-   echo 1>&2 "$SCRIPTNAME: Filesystems cannot be removed (-r) when working in quiet mode (-q)"
+# Filesystem cannot be removed if we are working in quick mode
+if [ -n "$remove_filesystem" ] && [ -z "$quick_mode" ]; then
+   echo 1>&2 "$SCRIPTNAME: Filesystems cannot be removed (-r) when working in quick mode (-q)"
    exit 1
 fi
 
@@ -200,8 +193,8 @@ bold_print "================================================================="
 get_lab_vhosts "$lab_directory"
 
 for vhost in "${lab_vhosts[@]}"; do
-   [ -z "$VERBOSE" ] && bold_print "Halting '$vhost'... "
-   vhalt ${VERBOSE:+"-q"} ${remove_filesystem:+"-r"} "$vhost" && rm -f "$lab_directory/$vhost.ready"
+   bold_print "Halting '$vhost'... "
+   vhalt ${quick_mode:+"-q"} ${remove_filesystem:+"-r"} "$vhost" && rm -f "$lab_directory/$vhost.ready"
 done
 
 bold_print "Removing readyfor.test..."
