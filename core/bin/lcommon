@@ -23,6 +23,11 @@
 # standalone usage.
 
 
+# Guard to prevent sourcing the script multiple times
+[ -n "$LCOMMON_SRC" ] && return
+LCOMMON_SRC=1
+
+
 ###############################################################################
 # Print a string with bold formatting.
 # Usage:

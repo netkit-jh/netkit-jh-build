@@ -25,6 +25,11 @@
 # should be enforced by the calling script(s).
 
 
+# Guard to prevent sourcing the script multiple times
+[ -n "$SCRIPT_UTILS_SRC" ] && return
+SCRIPT_UTILS_SRC=1
+
+
 ###############################################################################
 # Check if string is a valid IPv4 dotted-quad address.
 # Usage:
