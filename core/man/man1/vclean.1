@@ -122,9 +122,8 @@ to be removed, regardless of the user who had requested them.
 .B
 --test
 Instead of terminating virtual hubs and/or virtual machines, just show which
-processes would be killed. This option cannot be used together with \fB-q\fR
-(\fB\-\-quick\fR, \fB\-\-quiet\fR). Action \fB\-\-remove\-tunnels\fR is not
-affected by the use of \fB\-\-test\fR.
+processes would be killed. Action \fB\-\-remove\-tunnels\fR is not affected by the
+use of \fB\-\-test\fR.
 
 .TP
 .B
@@ -163,15 +162,8 @@ Show usage information.
 .TP
 .B
 --quick
-.PD 0
-.TP
-.B
---quiet
 By default, after killing processes \fIvclean\fR checks whether they have actually
 stopped. This option disables these checks, thus quickening the execution of \fIvclean\fR.
-It also suppresses any output, except errors and warnings.
-
-This option cannot be used in conjunction with \fB\-\-test\fR.
 
 .TP
 .B

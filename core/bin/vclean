@@ -95,9 +95,8 @@ phase.
                          requires administrative privileges. The script will
                          take care of asking for the root password if required.
       --test          Do not actually stop virtual machines and hubs: just show
-                        which processes would be killed. This option cannot be
-                        used when working in quiet mode. Action
-                        --remove-tunnels is not affected by this option
+                        which processes would be killed. --remove-tunnels is
+                        not affected by this option.
   -u, --user=USERNAME  perform operations on processes and tunnels owned by
                         USERNAME. By using the special user name '-' all the
                         processes are affected, regardless of their user (this
@@ -109,11 +108,8 @@ phase.
 
 Miscellaneous:
 $(help_option)
-  -q, --quick
-      --quiet         quiet mode (suppress any output except errors and
-                        warnings). Also, do not check whether processes have been
-                        actually stopped. This option cannot be used in
-                        conjunction with --test.
+  -q, --quick         quick mode - do not check if processes have actually
+                        stopped.
 $(version_option)
 
 END_OF_HELP
@@ -125,13 +121,13 @@ END_OF_HELP
 ###############################################################################
 # Kill all running VMs.
 # Usage:
-#   kill_all_vhosts TEST_MODE USER
+#   kill_all_vhosts TEST_MODE QUICK_MODE USER
 # Globals:
-#   r- BE_QUIET
 #   r- NETKIT_HOME
 # Arguments:
 #   $1 - set to 1 for test mode, empty string otherwise
-#   $2 - owner of the machines; pass an empty string for all users
+#   $2 - set to 1 for quick mode, empty string otherwise
+#   $3 - owner of the machines; pass an empty string for all users
 # Returns:
 #   None. Returns early on test mode (only outputs PIDs without killing them).
 # Example:
@@ -139,49 +135,51 @@ END_OF_HELP
 ###############################################################################
 kill_all_vhosts() {
    local test_mode=$1
-   local target_user=$2
+   local quick_mode=$2
+   local target_user=$3
 
    local pids
 
    mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]]")
 
-   [ -z "$BE_QUIET" ] && echo "   PIDs: ${pids[*]}"
+   echo "   PIDs: ${pids[*]}"
 
    # We are in test mode, just show which processes would be killed
    [ -n "$test_mode" ] && return
 
-   if [ -z "$BE_QUIET" ]; then
-      echo -n "   Killing... "
+   echo -n "   Killing... "
 
-      # Signalling processes twice ensures they stop even if they need to be
-      # killed in a certain order
-      kill -TERM "${pids[@]}"
-      kill -TERM "${pids[@]}"
+   if [ -n "$quick_mode" ]; then
+      # Just kill processes
+      kill -KILL "${pids[@]}" > /dev/null
+      kill -CONT "${pids[@]}" > /dev/null
+      return
+   fi
+
+   # Signalling processes twice ensures they stop even if they need to be
+   # killed in a certain order
+   kill -TERM "${pids[@]}"
+   kill -TERM "${pids[@]}"
+
+   sleep 1
+   mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]]")
+
+   if [ "${#pids[@]}" -gt 0 ]; then
+      echo -n "killing harder... "
+
+      kill -KILL "${pids[@]}"
+      kill -CONT "${pids[@]}"
 
       sleep 1
       mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]]")
 
       if [ "${#pids[@]}" -gt 0 ]; then
-         echo -n "killing harder... "
-
-         kill -KILL "${pids[@]}"
-         kill -CONT "${pids[@]}"
-
-         sleep 1
-         mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]]")
-
-         if [ "${#pids[@]}" -gt 0 ]; then
-            echo "failed!"
-         else
-            echo "done."
-         fi
+         echo "failed!"
       else
          echo "done."
       fi
    else
-      # Just kill processes
-      kill -KILL "${pids[@]}" > /dev/null
-      kill -CONT "${pids[@]}" > /dev/null
+      echo "done."
    fi
 }
 
@@ -191,7 +189,7 @@ kill_all_vhosts() {
 # Usage:
 #   kill_hubs FORCE TEST_MODE [PID]...
 # Globals:
-#   r- BE_QUIET
+#   None
 # Arguments:
 #   $1 - set to 1 to kill and remove hubs even if being used, otherwise pass an
 #        empty string.
@@ -222,7 +220,7 @@ kill_hubs() {
          # to this socket
          found_unused_hub=1
 
-         [ -z "$BE_QUIET" ] && echo -n "   $hub_file (PID $hub_pid)"
+         echo -n "   $hub_file (PID $hub_pid)"
 
          if [ -z "$test_mode" ]; then
             echo -n ": Killing... "
@@ -230,11 +228,11 @@ kill_hubs() {
             echo -n "done."
          fi
 
-         [ -z "$BE_QUIET" ] && echo
+         echo
       fi
    done
 
-   [ -z "$found_unused_hub" ] && [ -z "$BE_QUIET" ] && echo "   No unused virtual hubs have been found."
+   [ -z "$found_unused_hub" ] && echo "   No unused virtual hubs have been found."
 }
 
 
@@ -256,7 +254,7 @@ target_user=$USER_ID
 
 
 # Get command line options
-long_opts="clean-all,help,kill-machines,quick,quiet,remove-hubs,remove-tunnels,test,user:,version"
+long_opts="clean-all,help,kill-machines,quick,remove-hubs,remove-tunnels,test,user:,version"
 short_opts="HKTu:q"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -282,9 +280,8 @@ while true; do
       -K|--kill-machines)
          kill_machines=1
          ;;
-      # TODO: Separate options (and use --verbose)
-      -q|--quick|--quiet)
-         BE_QUIET=1
+      -q|--quick)
+         quick_mode=1
          ;;
       -T|--remove-tunnels)
          remove_tunnels=1
@@ -322,12 +319,6 @@ if [ $# -gt 0 ]; then
 fi
 
 
-# Test mode is senseless if working in quiet mode
-if [ -n "$test_mode" ] && [ -n "$BE_QUIET" ]; then
-   echo 1>&2 "$SCRIPTNAME: test mode cannot function in quiet mode"
-   exit 1
-fi
-
 # Actions --remove-hubs and --kill-machines are incompatible
 if [ -n "$remove_hubs" ] && [ -n "$kill_machines" ]; then
    echo 1>&2 "$SCRIPTNAME: Hub removal and machine kill cannot be performed simultaneously"
@@ -350,7 +341,7 @@ fi
 # Remove unused hubs (if asked to)
 if [ -n "$remove_hubs" ]; then
    # Just remove unused switches
-   [ -z "$BE_QUIET" ] && echo "Killing unusued virtual hubs owned by $user_str:"
+   echo "Killing unusued virtual hubs owned by $user_str:"
 
    # Get the process IDs of running UML virtual hubs
    mapfile -t hub_pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/bin/uml_switch")
@@ -363,11 +354,11 @@ fi
 # Kill running virtual machines and hubs (if asked to)
 if [ -n "$kill_machines" ]; then
    # Kill all running virtual machine kernels and all virtual hubs
-   [ -z "$BE_QUIET" ] && echo "Killing virtual machines owned by $user_str:"
+   echo "Killing virtual machines owned by $user_str:"
 
-   kill_all_vhosts "$test_mode" "$target_user"
+   kill_all_vhosts "$test_mode" "$quick_mode" "$target_user"
 
-   [ -z "$BE_QUIET" ] && echo "Killing virtual hubs owned by $user_str:"
+   echo "Killing virtual hubs owned by $user_str:"
 
    # Get the process IDs of running UML virtual hubs
    mapfile -t hub_pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/bin/uml_switch")
@@ -380,27 +371,18 @@ fi
 # Remove tunnel configurations (if asked to)
 if [ -n "$remove_tunnels" ]; then
    # Remove any previously configured tunnel
-   if [ -z "$BE_QUIET" ]; then
-      echo "************* Removing tap configurations *************"
-      echo " This will affect tap configurations for $user_str."
-      echo "******* This operation requires root privileges *******"
-   fi
+   echo "************* Removing tap configurations *************"
+   echo " This will affect tap configurations for $user_str."
+   echo "******* This operation requires root privileges *******"
 
    # TODO: These commands don't run for the specified user (this is a
    # manage_tuntap limitation). 
    manage_tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "stop" )
 
-   if [ -z "$BE_QUIET" ]; then   
-      if ! run_command "" "${manage_tuntap_cmd[*]}" "${manage_tuntap_cmd[@]}"; then
-         echo 1>&2 "Error while removing tap configurations"
-         exit 1
-      fi
-   else
-      if ! run_command "" "${manage_tuntap_cmd[*]}" "${manage_tuntap_cmd[@]}" > /dev/null; then
-         echo 1>&2 "Error while removing tap configurations"
-         exit 1
-      fi
+   if ! run_command "" "${manage_tuntap_cmd[*]}" "${manage_tuntap_cmd[@]}"; then
+      echo 1>&2 "Error while removing tap configurations"
+      exit 1
    fi
 
-   [ -z "$BE_QUIET" ] && echo "************** Abandoning root privileges *************"
+   echo "************** Abandoning root privileges *************"
 fi
