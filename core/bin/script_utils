@@ -259,7 +259,7 @@ show_version() {
 # Usage:
 #   run_command DRY_RUN PRINTED_CMD CMD...
 # Globals:
-#   r- BE_QUIET
+#   None
 # Arguments:
 #   $1 - set to 1 if only doing a dry run of the command that would be ran.
 #        Otherwise pass an empty string.
@@ -280,12 +280,12 @@ run_command() {
    # being executed.
    [ -z "$printed_cmd" ] && printed_cmd=${run_cmd[*]}
 
-   if [ -n "$dry_run" ] && [ -z "$BE_QUIET" ]; then
+   if [ -n "$dry_run" ]; then
       echo "Not running ==> $printed_cmd"
       return 0
    fi
 
-   [ -z "$BE_QUIET" ] && echo "Running ==> $printed_cmd"
+   echo "Running ==> $printed_cmd"
    "${run_cmd[@]}"
 }
 
@@ -316,7 +316,6 @@ file_in_use() {
 # Usage:
 #   start_inet_hub HUB ADDR
 # Globals:
-#   r- BE_QUIET
 #   r- HUB_LOG
 #   r- JUST_PRINT
 #   r- NETKIT_HOME
@@ -339,23 +338,16 @@ start_inet_hub() {
       # Either socket does not exist yet or it is still unused
       tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER_ID" "$tap_address" )
 
-      if [ -z "$BE_QUIET" ]; then
-         echo "******** Starting Internet connected virtual hub ********"
-         echo "   (host) $tap_address"
-         echo "********     (root privileges are required)      ********"
+      echo "******** Starting Internet connected virtual hub ********"
+      echo "   (host) $tap_address"
+      echo "********     (root privileges are required)      ********"
 
-         if ! run_command "$JUST_PRINT" "${tuntap_cmd[*]}" "${tuntap_cmd[@]}"; then
-            echo 1>&2 "Error while configuring the tunnel."
-            exit 1
-         fi
-
-         echo "************** Abandoning root privileges ***************"
-      else
-         if ! run_command "$JUST_PRINT" "${tuntap_cmd[*]}" "${tuntap_cmd[@]}" > /dev/null; then
-            echo 1>&2 "Error while configuring the tunnel."
-            exit 1
-         fi
+      if ! run_command "$JUST_PRINT" "${tuntap_cmd[*]}" "${tuntap_cmd[@]}"; then
+         echo 1>&2 "Error while configuring the tunnel."
+         exit 1
       fi
+
+      echo "************** Abandoning root privileges ***************"
 
       hub_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "nk_tap_$USER_ID" "-hub" "-unix" "$hub_socket" )
       
@@ -504,7 +496,7 @@ clean_hubs() {
 # Usage:
 #   rm_filesystem FILE
 # Globals:
-#   r- BE_QUIET
+#   None
 # Arguments:
 #   $1 - filesystem filepath
 # Returns:
@@ -513,11 +505,7 @@ clean_hubs() {
 #   None
 ###############################################################################
 rm_filesystem() {
-   if [ -n "$BE_QUIET" ]; then
-      rm "$1"
-   else
-      rm --verbose "$1"
-   fi
+   rm --verbose "$1"
 }
 
 
