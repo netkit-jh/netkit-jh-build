@@ -149,10 +149,15 @@ kill_all_vhosts() {
 
    echo -n "   Killing... "
 
+   if [ "${#pids[@]}" -eq 0 ]; then
+      echo "done."
+      return
+   fi
+
    if [ -n "$quick_mode" ]; then
       # Just kill processes
-      kill -KILL "${pids[@]}" > /dev/null
-      kill -CONT "${pids[@]}" > /dev/null
+      kill -KILL "${pids[@]}"
+      kill -CONT "${pids[@]}"
       return
    fi
 
@@ -175,12 +180,13 @@ kill_all_vhosts() {
 
       if [ "${#pids[@]}" -gt 0 ]; then
          echo "failed!"
-      else
-         echo "done."
+         return 1
       fi
-   else
-      echo "done."
    fi
+
+   echo "done."
+
+   return 0
 }
 
 
