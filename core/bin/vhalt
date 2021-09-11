@@ -68,10 +68,8 @@ usage() {
 $(usage_line)
 Gracefully shutdown running MACHINE(s).
 
-  -q, --quick
-      --quiet         do not wait for virtual machines to shut down. Just issue
-                        the halt command and exit. Using this option also
-                        suppresses any output except errors and warnings
+  -q, --quick         do not wait for virtual machines to shut down. Just issue
+                        the halt command and exit
   -r, --remove-fs     delete virtual machine (COW) filesystem after halting
                         machine. Using this option has no effect on machines
                         started with the --no-cow option. Log files are not
@@ -106,7 +104,7 @@ log_write "$0 $*"
 
 
 # Get command line options
-long_opts="help,quick,quiet,remove-fs,user:,version"
+long_opts="help,quick,remove-fs,user:,version"
 short_opts="qru:"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -122,9 +120,8 @@ while true; do
       --help)
          usage 0
          ;;
-      # TODO: Remove --quiet. Have --verbose and --quick (independent).
-      -q|--quick|--quiet)
-         BE_QUIET=1
+      -q|--quick)
+         quick_mode=1
          ;;
       -r|--remove-fs)
          remove_fs=1
@@ -162,12 +159,10 @@ vhosts=( "$@" )
 validate_hostnames "${vhosts[@]}"
 
 
-# Virtual machine filesystem cannot be removed in quiet mode because the
-# machine may write files during shutdown
-# TODO: weird requirement - should only be for --quick? See note on
-# -q|--quick|--quiet entry.
-if [ -n "$remove_fs" ] && [ -n "$BE_QUIET" ]; then
-   echo 1>&2 "$SCRIPTNAME: Filesystem cannot be removed in quiet mode"
+# Virtual machine filesystem cannot be removed in quick mode because the
+# machine may write files during shutdown.
+if [ -n "$remove_fs" ] && [ -n "$quick_mode" ]; then
+   echo 1>&2 "$SCRIPTNAME: Filesystem cannot be removed in quick mode"
    exit 1
 fi
 
@@ -179,8 +174,8 @@ for vhost in "${vhosts[@]}"; do
       exit 1
    fi
 
-   [ -z "$BE_QUIET" ] && echo -e -n "Halting '$vhost' (PID ${vhost_info[pid]}) owned by \
-   $target_user [                    ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+   echo -e -n "Halting '$vhost' (PID ${vhost_info[pid]}) owned by $target_user\
+ [                    ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
 
    # Old method uses CTRL-ALT-DEL. This yields the error
    #   harddog_open - run_helper failed, errno = -2
@@ -215,7 +210,7 @@ for vhost in "${vhosts[@]}"; do
    # o: shut the system off (if configured and supported)
    "$NETKIT_HOME/bin/uml_mconsole" "$vhost" sysrq o > /dev/null
 
-   if [ -z "$BE_QUIET" ]; then
+   if [ -z "$quick_mode" ]; then
       for _ in {1..21}; do
          get_machine_state "$target_user" "$vhost" || break
          sleep 1
