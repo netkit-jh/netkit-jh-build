@@ -112,6 +112,13 @@ get_lab_vhosts() {
       # Build list of virtual machines that are part of the lab from the
       # directory listing if LAB_MACHINES is not set.
       for dir in "$lab_directory/"*/; do
+         # If there are no subdirectories, "$lab_directory/"*/ will expand to a
+         # path to a directory named *; the for loop will still run over that
+         # one string. shopt -s nullglob will avoid this issue but has global
+         # implications. Avoid having to set nullglob by simply checking if the
+         # directory exists.
+         [ ! -d "$dir" ] && continue
+
          vhost=$(basename "$dir")
 
          # Avoid the shared and _test directories

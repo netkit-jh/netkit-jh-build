@@ -138,6 +138,9 @@ case $action in
       echo "Bringing down tap devices and tunnels:"
 
       for sys_class_net_entry in /sys/class/net/nk_tap_*; do
+         # Avoids need for shopt -s nullglob
+         [ ! -f "$sys_class_net_entry" ] && continue
+
          uid=$(cat "$sys_class_net_entry/user/owner")
 
          # Ignore tuntap devices not owned by the user (if specified)

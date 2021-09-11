@@ -737,7 +737,9 @@ if [ -n "$test_mode" ]; then
    tests_completed=0
    while [ "$tests_completed" -lt "$vhost_count" ]; do
       testdone_files=( "$lab_directory/"*.testdone )
-      tests_completed=${#testdone_files[@]}
+
+      # Test avoids the need for shopt -s nullglob
+      [ -d "${testdone_files[0]}" ] && tests_completed=${#testdone_files[@]}
       sleep 1
    done
 
@@ -767,15 +769,25 @@ if [ -n "$test_mode" ]; then
       # Verify the test outcome against the signature
       case $test_type in
          user)
-            diff -qEbB "$lab_directory/_test/signature/"*.user    --to-file "$lab_directory/_test/results" > /dev/null
-            exit_code=$?
+            user_test_outcomes=( "$lab_directory/_test/signature/"*.user )
+            if [ -f "${user_test_outcomes[0]}" ]; then
+               diff -qEbB "${user_test_outcomes[@]}" --to-file "$lab_directory/_test/results" > /dev/null
+               exit_code=$?
+            else
+               exit_code=1
+            fi
             ;;
          builtin)
-            diff -qEbB "$lab_directory/_test/signature/"*.default --to-file "$lab_directory/_test/results" > /dev/null
-            exit_code=$?
+            default_test_outcomes=( "$lab_directory/_test/signature/"*.default )
+            if [ -f "${default_test_outcomes[0]}" ]; then
+               diff -qEbB "${default_test_outcomes[@]}" --to-file "$lab_directory/_test/results" > /dev/null
+               exit_code=$?
+            else
+               exit_code=1
+            fi
             ;;
          both)
-            diff -qEbBr "$lab_directory/_test/signature"          --to-file "$lab_directory/_test/results" > /dev/null
+            diff -qEbBr "$lab_directory/_test/signature" --to-file "$lab_directory/_test/results" > /dev/null
             exit_code=$?
             ;;
          *)

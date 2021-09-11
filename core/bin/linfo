@@ -252,9 +252,18 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -a|--auto)
-         # TODO: remove or make better.
-         # TODO: use shopt -s nullglob (and for other glob examples) 
-         lab_directories+=( "${PWD%?}"*/ )
+         # Remove final character from PWD and expand to a list of directories
+         # with that prefix. E.g. running in /path/to/lab3a/ will find all
+         # directories in /path/to/ starting with lab3*, such as
+         # /path/to/lab3b/. The if-statement removes the need for nullglob to
+         # be set.
+         # TODO: allow user to specify a regular expression or glob
+         dirs=( "${PWD%?}"*/ )
+         if [ -d "${dirs[0]}" ]; then
+            lab_directories+=( "${dirs[@]}" )
+         else
+            echo 1>&2 "$SCRIPTNAME: List of lab directories could not be generated"
+         fi
          ;;
       -d)
          lab_directories+=( "$(readlink --canonicalize-missing "$2")" )
