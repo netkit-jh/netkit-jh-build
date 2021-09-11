@@ -331,7 +331,6 @@ wakeup_porthelper() {
 
 ###############################################################################
 # Delete .disk file as soon as it is created by the UML instance.
-# TODO: rename or remove to eliminate ambiguity against rm_filesystem.
 # Usage:
 #   remove_fs_command FILE
 # Globals:

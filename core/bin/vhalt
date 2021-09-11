@@ -224,7 +224,7 @@ for vhost in "${vhosts[@]}"; do
          echo 1>&2 "$SCRIPTNAME: could not shut down '$vhost'."
       else
          # Remove filesystem (.disk file)
-         [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] && rm_filesystem "${vhost_info[disk]}"
+         [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] && rm --verbose "${vhost_info[disk]}"
       fi
    fi
 done

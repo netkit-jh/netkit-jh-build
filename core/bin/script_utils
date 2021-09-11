@@ -492,24 +492,6 @@ clean_hubs() {
 
 
 ###############################################################################
-# Remove the filesystem of a virtual machine.
-# Usage:
-#   rm_filesystem FILE
-# Globals:
-#   None
-# Arguments:
-#   $1 - filesystem filepath
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-rm_filesystem() {
-   rm --verbose "$1"
-}
-
-
-###############################################################################
 # Check if machine, by name, is online.
 # Usage:
 #   get_machine_state USER MACHINE
