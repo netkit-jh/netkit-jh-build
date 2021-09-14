@@ -318,7 +318,8 @@ for lab_directory in "${lab_directories[@]}"; do
 done
 
 
-# TODO: maybe just stick in lab_welcome
+# Ideally this would be in lab_welcome however it requires resetting of the
+# lab_vhosts global array.
 printf -v cum_lab_vhosts_str '%s, ' "${cum_lab_vhosts[@]}"
 cum_lab_vhosts_str=${cum_lab_vhosts_str%", "}
 
