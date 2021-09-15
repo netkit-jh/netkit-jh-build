@@ -320,11 +320,7 @@ while true; do
       -u|--user)
          target_user=$2
          [ "$target_user" = "-" ] && unset target_user
-         # TODO: change to username regex
-         if string_contains " " "$target_user"; then
-            echo 1>&2 "$SCRIPTNAME: Username cannot contain whitespace"
-            exit 1
-         fi
+         # TODO: check if target_user is valid
          shift
          ;;
       --version)
