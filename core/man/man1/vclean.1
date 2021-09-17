@@ -95,7 +95,7 @@ rules are removed:
 *nat
 -A POSTROUTING -j MASQUERADE
 *filter
--A FORWARD -i nk_tap_+ -j ACCEPT
+-A FORWARD -i netkit_+ -j ACCEPT
 .fi
 .br
 2) Kernel IP forwarding is disabled by echoing '0' to the special file

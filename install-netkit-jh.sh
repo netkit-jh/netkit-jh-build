@@ -199,10 +199,12 @@ for RC_FILE in "${RC_FILES[@]}"; do
     echo "$NK_ENV_VARS" >> "${RC_FILE}"
 done
 
-# make (for lab.dep) and net-tools (for tap) needed on ubuntu 18.04
+# make (processing lab.dep)
+# net-tools (manage_tuntap)
+# coreutils (md5sum in manage_tuntap)
 if [ "${INSTALL_APT_PACKAGES}" = true ]; then
     echo "Installing packages to run netkit..."
-    sudo apt-get update && sudo apt-get install xterm make net-tools curl
+    sudo apt-get update && sudo apt-get install xterm make net-tools curl coreutils
 fi
 
 # Restore config + handle updating config

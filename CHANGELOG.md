@@ -17,6 +17,7 @@
 - `machines` lab.conf variable is now `LAB_MACHINES`
 - `LAB_MACHINES` does not strip whitespace. Names are comma-delimited
 - tmux sessions are now named `netkit-vhost` (orig. `netkit-vm`)
+- Tap interfaces are named `netkit_$user_md5`, where `user_md5` is an 8-character (truncated) MD5 digest of the owner's username for uniqueness
 
 # Removed
 - `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))

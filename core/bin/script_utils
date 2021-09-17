@@ -310,6 +310,43 @@ file_in_use() {
 
 
 ###############################################################################
+# Write the tap interface name assigned to a user to standard output.
+# Usage:
+#   get_tap_interface USER
+# Globals:
+#   None
+# Arguments:
+#   $1 - owner of the network interface
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+get_tap_interface() {
+   local target_user=$1
+
+   local user_md5
+
+   # We name Netkit tap devices after the user who owns them. Linux network
+   # interface names are case-sensitive and:
+   #   - Must not be empty
+   #   - Must be less than 16 characters
+   #   - Must not contain '/' or whitespace
+   # Usernames in Linux have different requirements. There's a possibility, for
+   # example, where two usernames with a common prefix create Netkit tap
+   # devices. If the prefix is longer than 8 characters, their tap devices will
+   # have the same name and be indistuinguishable; for example, users
+   # 'foobarbaz_steve' and 'foobarbaz_brian' both create the tap device named
+   # 'netkit_foobarba'. Using the MD5 digest of the target user and truncating
+   # to 8 chracters will be sufficient for ensuring uniqueness on a system with
+   # many users.
+   user_md5=$(printf "%s" "$target_user" | md5sum)
+
+   echo "netkit_${user_md5:0:8}"
+}
+
+
+###############################################################################
 # Create a special 'tap' hub that can connect a guest to an interface on the
 # host. NAT rules are created to allow access to the Internet through the host
 # interface.
@@ -333,6 +370,7 @@ start_inet_hub() {
    local tap_address=$2
 
    local tuntap_cmd hub_cmd
+   local user_md5
 
    if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
       # Either socket does not exist yet or it is still unused
@@ -349,7 +387,8 @@ start_inet_hub() {
 
       echo "************** Abandoning root privileges ***************"
 
-      hub_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "nk_tap_$USER_ID" "-hub" "-unix" "$hub_socket" )
+      user_md5=$(get_tap_interface "$USER_ID")
+      hub_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "$user_md5" "-hub" "-unix" "$hub_socket" )
       
       # TODO: implement hub logging that's better (i.e. it works) than the
       # original.

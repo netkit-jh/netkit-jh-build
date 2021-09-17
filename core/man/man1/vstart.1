@@ -104,10 +104,11 @@ root:
 .br
 2) Permissions for the '/dev/net/tun' device are set to 666 (read/write for all users).
 .br
-3) Any existing network device named 'nk_tap_\fIUSERNAME\fR' is brought down and
-removed (\fIUSERNAME\fR is the name of the current user).
+3) Any existing network device named 'netkit_\fIUSERNAME_MD5\fR' is brought down and
+removed (\fIUSERNAME_MD5\fR is the MD5 digest of the current username, truncated to
+8 characters long).
 .br
-4) A tap network device named 'nk_tap_\fIUSERNAME\fR' is created and configured to
+4) A tap network device named 'netkit_\fIUSERNAME_MD5\fR' is created and configured to
 have IP address \fITAP\-ADDRESS\fR.
 .br
 5) Kernel based IP forwarding is enabled via the '/proc/sys/net/ipv4/ip_forward'
@@ -123,7 +124,7 @@ rules are added to the current iptables configuration:
 .br
 *filter
 .br
--A FORWARD -i nk_tap_+ -j ACCEPT
+-A FORWARD -i netkit_+ -j ACCEPT
 
 All these configuration settings can be easily removed by using the \fBvclean\fR
 command (see \fBvclean\fR(1)).

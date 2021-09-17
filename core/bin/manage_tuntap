@@ -22,22 +22,25 @@
 # a virtual machine to the Internet. It is not intended for standalone usage.
 
 
-# either "start" or "stop"
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+
+# Either "start" or "stop"
 action=$1
 
-# name of the user the tunnel is being configured for
+# Name of the user the tunnel is being configured for
 target_user=$2
 
-# address of the (host side) tap interface
+# Address of the (host side) tap interface
 tap_address=$3
 
-
-# TODO: use tun/tap regex
-tap_device_name="nk_tap_$target_user"
+# Get name for the user's tap interface
+tap_device_name=$(get_tap_interface "$target_user")
 
 
 postrouting_rule=( "POSTROUTING" "!" "--out-interface" "lo" "--match" "comment" "--comment" "Netkit-JH" "--jump" "MASQUERADE" )
-forward_rule=( "FORWARD" "--in-interface" "nk_tap_+" "--match" "comment" "--comment" "Netkit-JH" "--jump" "ACCEPT" )
+forward_rule=( "FORWARD" "--in-interface" "netkit_+" "--match" "comment" "--comment" "Netkit-JH" "--jump" "ACCEPT" )
 
 
 case $action in
@@ -137,7 +140,7 @@ case $action in
 
       echo "Bringing down tap devices and tunnels:"
 
-      for sys_class_net_entry in /sys/class/net/nk_tap_*; do
+      for sys_class_net_entry in /sys/class/net/netkit_*; do
          # Avoids need for shopt -s nullglob
          [ ! -f "$sys_class_net_entry" ] && continue
 
