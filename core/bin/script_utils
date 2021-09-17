@@ -369,18 +369,18 @@ start_inet_hub() {
    local hub_socket=$1
    local tap_address=$2
 
-   local tuntap_cmd hub_cmd
-   local user_md5
+   local manage_tuntap_cmd
+   local user_md5 uml_switch_cmd
 
    if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
       # Either socket does not exist yet or it is still unused
-      tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER_ID" "$tap_address" )
+      manage_tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER_ID" "$tap_address" )
 
       echo "******** Starting Internet connected virtual hub ********"
       echo "   (host) $tap_address"
       echo "********     (root privileges are required)      ********"
 
-      if ! run_command "$JUST_PRINT" "${tuntap_cmd[*]}" "${tuntap_cmd[@]}"; then
+      if ! run_command "$JUST_PRINT" "" "${manage_tuntap_cmd[@]}"; then
          echo 1>&2 "Error while configuring the tunnel."
          exit 1
       fi
@@ -388,11 +388,11 @@ start_inet_hub() {
       echo "************** Abandoning root privileges ***************"
 
       user_md5=$(get_tap_interface "$USER_ID")
-      hub_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "$user_md5" "-hub" "-unix" "$hub_socket" )
+      uml_switch_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "$user_md5" "-hub" "-unix" "$hub_socket" )
       
       # TODO: implement hub logging that's better (i.e. it works) than the
       # original.
-      run_command "$JUST_PRINT" "${hub_cmd[*]} < /dev/null &" "${hub_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USER_ID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
+      run_command "$JUST_PRINT" "${uml_switch_cmd[*]} < /dev/null &" "${uml_switch_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USER_ID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
@@ -421,13 +421,15 @@ start_inet_hub() {
 start_hub() {
    local hub_socket=$1
 
+   local uml_switch_cmd
+
    # Socket already exists but is not used
    if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
-      hub_cmd=( "$NETKIT_HOME/bin/uml_switch" "-hub" "-unix" "$hub_socket" )
+      uml_switch_cmd=( "$NETKIT_HOME/bin/uml_switch" "-hub" "-unix" "$hub_socket" )
 
       # TODO: implement hub logging that's better (i.e. it works) than the
       # original.
-      run_command "$JUST_PRINT" "${hub_cmd[*]} < /dev/null &" "${hub_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USER_ID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
+      run_command "$JUST_PRINT" "${uml_switch_cmd[*]} < /dev/null &" "${uml_switch_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USER_ID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start

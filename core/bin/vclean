@@ -385,7 +385,7 @@ if [ -n "$remove_tunnels" ]; then
    # manage_tuntap limitation). 
    manage_tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "stop" )
 
-   if ! run_command "" "${manage_tuntap_cmd[*]}" "${manage_tuntap_cmd[@]}"; then
+   if ! run_command "" "" "${manage_tuntap_cmd[@]}"; then
       echo 1>&2 "Error while removing tap configurations"
       exit 1
    fi
