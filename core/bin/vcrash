@@ -192,7 +192,6 @@ kill_by_signaling() {
 
 ###############################################################################
 # Use uml_mconsole to crash a machine.
-# TODO: we can remove the reliance on vhost_info by building the dir path here.
 # Usage:
 #   mconsole_halt MCONSOLE
 # Globals:
