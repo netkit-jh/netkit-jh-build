@@ -54,8 +54,6 @@ case $action in
          echo "done."
       fi
 
-      # TODO: check for the device existing first, and then run this command
-      # without redirecting stderr to /dev/null.
       printf "Bringing down %s (if any)...\t" "$tap_device_name"
       sudo ifconfig "$tap_device_name" down > /dev/null 2>&1
       echo "done."
