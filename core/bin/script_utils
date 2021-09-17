@@ -880,7 +880,6 @@ netkit_dir_check() {
 
    if [ ! -e "$dir" ]; then
       mkdir "$dir"
-      # TODO: fix the sus directory permissions
       chmod 777 "$dir"
    elif [ ! -d "$dir" ]; then
       echo 1>&2 "File '$dir' exists: unable to create directory '$dir'"
