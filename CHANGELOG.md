@@ -25,3 +25,4 @@
 - `USE_SUDO` configuration directive (default is to use `sudo` now, `su -c` has been removed)
 - `--quiet` option for `lcrash`, `lhalt`, `vclean`, `vcrash`, and `vhalt` (`-q`|`--quick` still exists)
 - `-q`|`--quiet` option from `vconf` and `vstart`
+- Port helper compatibility

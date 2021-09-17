@@ -309,27 +309,6 @@ setup_interfaces() {
 
 
 ###############################################################################
-# Invoke uml_mconsole to "wake up" port-helper in the event that it hangs.
-# Usage:
-#   wakeup_porthelper MACHINE
-# Globals:
-#   r- NETKIT_HOME
-# Arguments:
-#   $1 - machine name
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-wakeup_porthelper() {
-   local vhost=$1
-
-   sleep 5
-   "$NETKIT_HOME/bin/uml_mconsole" "$vhost" help > /dev/null 2>&1 &
-}
-
-
-###############################################################################
 # Delete .disk file as soon as it is created by the UML instance.
 # Usage:
 #   remove_fs_command FILE
@@ -359,7 +338,6 @@ remove_fs_command() {
 # Usage:
 #   run_kernel FILE MACHINE
 # Globals:
-#   r- CON0_PORTHELPER
 #   r- HUB_LIST
 #   r- JUST_PRINT
 #   r- kernel_cmd
@@ -380,11 +358,6 @@ run_kernel() {
       run_command "$JUST_PRINT" "" "${kernel_cmd[@]}"
       return
    fi
-
-   # Invocation of uml_mconsole is needed in order to "wake up" port-helper if
-   # it ever hangs when booting the virtual machine.
-   # TODO: remove port helper
-   [ "$CON0_PORTHELPER" = "yes" ] && wakeup_porthelper "$vhost"
    
    # Remove .disk file, if requested
    [ -n "$filesystem" ] && remove_fs_command "$filesystem" &
@@ -763,20 +736,13 @@ elif [ -z "$verbose" ]; then
 fi
 
 
-# Bypass port helper, if required (only allowed for the primary terminal)
-# TODO: remove port helper
-if [ $VM_CON0 = "xterm" ] && [ "$CON0_PORTHELPER" != "yes" ]; then
-   VM_CON0="this_noporthelper"
-fi
-
-
 # Attach terminals
 case $VM_CON0 in
-   none)                   kernel_cmd+=( "con0=null" );;
-   xterm)                  kernel_cmd+=( "con0=xterm" );;
-   this|this_noporthelper) kernel_cmd+=( "con0=fd:0,fd:1" );;
-   pty)                    kernel_cmd+=( "con0=pty" );;
-   port:*)                 kernel_cmd+=( "con0=$VM_CON0" );;
+   none)    kernel_cmd+=( "con0=null" );;
+   xterm)   kernel_cmd+=( "con0=xterm" );;
+   this)    kernel_cmd+=( "con0=fd:0,fd:1" );;
+   pty)     kernel_cmd+=( "con0=pty" );;
+   port:*)  kernel_cmd+=( "con0=$VM_CON0" );;
 esac
 
 case $VM_CON1 in
@@ -811,7 +777,7 @@ echo
 
 
 # Add our blocking script to the execution order
-if [ "$VM_CON0" = "xterm" ] || [ "$VM_CON0" = "this_noporthelper" ]; then
+if [ "$VM_CON0" = "xterm" ]; then
    kernel_cmd=( "$NETKIT_HOME/bin/block-wrapper" "$TERM_TYPE" "$vhost" "${kernel_cmd[@]}" )
 elif [ "$VM_CON0" = "tmux" ]; then
    kernel_cmd=( "$NETKIT_HOME/bin/block-wrapper" "tmux" "$vhost" "${kernel_cmd[@]}" )

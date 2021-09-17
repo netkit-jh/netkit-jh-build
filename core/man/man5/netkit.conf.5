@@ -316,35 +316,6 @@ use Windows Terminal (only available on wsl hosts with Windows Terminal installe
 
 .TP
 .B
-CON0_PORTHELPER
-This parameter should only be used in debugging issues in attaching the
-primary console of virtual machines. When the primary console is attached to a
-terminal emulator, Netkit can attempt to open the emulator in two different
-ways:
-
-.RS
-.IP \(em 3
-by directly starting the virtual machine kernel inside the terminal emulator, or
-.IP \(em 3
-by letting the virtual machine kernel open the terminal emulator on its own.
-.PP
-The second method is deemed as more standard when using User Mode Linux kernels
-(like Netkit's), but is slightly less efficient and more prone to crashes, as
-it relies on a separate software piece (the \fIport-helper\fR) for establishing
-a communication between the kernel and the terminal emulator. The first method
-is more efficient and robust and, for this reason, is currently adopted as
-default choice.
-
-No matter what the value of this parameter is, the secondary terminal will
-always be opened using the second strategy.
-
-\fISuggested value\fR: no
-.br
-\fIDefault if no setting\fR: no
-.RE
-
-.TP
-.B
 MAX_INTERFACES
 This is the maximum number of network interfaces a virtual machine can be
 equipped with. Valid interface numbers will range from 0 to \fBMAX_INTERFACES\fR\-1
@@ -518,7 +489,6 @@ VM_KERNEL="$NETKIT_HOME/kernel/netkit-kernel"
 
 VM_CON0=xterm
 VM_CON1=none
-CON0_PORTHELPER=no
 TERM_TYPE=xterm
 
 MAX_INTERFACES=40
