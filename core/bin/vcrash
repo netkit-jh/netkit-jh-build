@@ -140,7 +140,6 @@ kill_by_signaling() {
 
    # Signalling processes twice ensures they stop even if they need to be
    # killed in a certain order
-   # TODO: kill_all_vhosts in vclean uses mapfile
    IFS=" " read -r -a pids <<< "$(get_vhost_all_pids_by_name "$target_user" "$vhost")"
 
    echo "Virtual machine PIDs: ${pids[*]}"
