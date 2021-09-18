@@ -192,32 +192,30 @@ END_OF_HELP
 
 
 ###############################################################################
-# Check for invalid characters in a filepath for the ubd argument (set with the
-# --filesystem and --model-fs options).
+# Check for invalid characters in filepaths for the ubd argument (set with the
+# --filesystem and --model-fs options and also by default).
 # Usage:
-#   validate_ubd_argument FILE
+#   validate_ubd_argument [FILE]...
 # Globals:
 #   r- SCRIPTNAME
 # Arguments:
-#   $1 - filepath of COW or model filesystem
+#  ... - filepath(s) of COW or model filesystems
 # Returns:
 #   None. Exits the script with with usage 1 if invalid.
 # Example:
 #   None
 ###############################################################################
 validate_ubd_argument() {
-   local filepath=$1
+   local filepaths=( "$@" )
 
-   if string_contains "," "$filepath"; then
-      echo 1>&2 "$SCRIPTNAME: $filepath: Invalid filesystem - commas are not allowed"
-      usage 1
-   elif string_contains ":" "$filepath"; then
-      echo 1>&2 "$SCRIPTNAME: $filepath: Invalid filesystem - colons are not allowed"
-      usage 1
-   elif string_contains " " "$filepath"; then
-      echo 1>&2 "$SCRIPTNAME: $filepath: Invalid filesystem - spaces are not allowed"
-      usage 1
-   fi
+   local filepath
+
+   for filepath in "${filepaths[@]}"; do
+      if string_contains "$filepath" "," ":" " "; then
+         echo 1>&2 "$SCRIPTNAME: $filepath: Invalid character in filesystem path"
+         usage 1
+      fi
+   done
 }
 
 
@@ -466,23 +464,13 @@ while true; do
          hub_name=$2
          shift
 
-         if string_contains "_" "$hub_name"; then
-            echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid collision domain - underscores are not allowed"
+         # TODO: double-check whitespace check
+         if string_contains "$hub_name" "_" " "; then
+            echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid character in collision domain name"
             usage 1
-         fi
-
-         if string_contains "," "$hub_name" || string_contains "." "$hub_name"; then
-            # If not a tap specification, but its name contains a comma
-            if [ "${hub_name#tap,}" = "$hub_name" ]; then
-               echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid collision domain - commas and periods are only valid for tap interface specification"
-               usage 1
-            fi
-         fi
-
-         # TODO: double-check checkSpaces
-         if string_contains " " "$hub_name"; then
-            echo 1>&2 "$SCRIPTNAME: $hub_name: Collision domain name cannot contain whitespace"
-            exit 1
+         elif [ "${hub_name#tap,}" = "$hub_name" ] && string_contains "$hub_name" "," "."; then
+            echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid character in collision domain name"
+            usage 1
          fi
 
          interface_specifications+=( "$device=$hub_name" )
@@ -493,8 +481,6 @@ while true; do
       -f|--filesystem)
          filesystem=$(readlink --canonicalize-missing "$2")
          shift
-
-         validate_ubd_argument "$filesystem"
          ;;
       -H|--no-hosthome)
          no_hosthome=1
@@ -523,8 +509,6 @@ while true; do
       -m|--model-fs)
          VM_MODEL_FS=$(readlink --canonicalize-missing "$2")
          shift
-
-         validate_ubd_argument "$VM_MODEL_FS"
          ;;
       -p|--print)
          JUST_PRINT=1
@@ -607,12 +591,6 @@ if [ -n "$remove_fs" ] && [ -n "$no_cow" ]; then
    usage 1
 fi
 
-# Check whether the path to the current directory contains spaces
-if string_contains " " "$PWD"; then
-   echo 1>&2 "$SCRIPTNAME: Current working directory path contains spaces"
-   usage 1
-fi
-
 # Check whether the requested terminal emulator application exists
 if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "xterm" ] || [ "$VM_CON1" = "xterm" ]; then
    # Some xterm option arguments are not their relevant executable's name. We
@@ -634,16 +612,6 @@ fi
 
 # Start building the kernel command line
 kernel_cmd=( "$VM_KERNEL" )
-
-
-# Check if model fs or cow fs are on a filesystem supporting sparse files
-: "${filesystem:="$PWD/$vhost.disk"}"
-
-if [ -n "$no_cow" ]; then
-   check_filesystem "$filesystem"
-else
-   check_filesystem "$VM_MODEL_FS"
-fi
 
 
 echo "============= Starting virtual machine '$vhost' ============="
@@ -674,13 +642,19 @@ echo "   Model fs:   $VM_MODEL_FS"
 
 if [ -n "$no_cow" ]; then
    echo "   Filesystem: using model fs (no COW)"
+   validate_ubd_argument "$VM_MODEL_FS"
+   check_filesystem "$VM_MODEL_FS"
 
    # Use model fs as virtual machine filesystem (do not use COW)
    kernel_cmd+=( "ubd0=$VM_MODEL_FS" )
 
    filesystem=$VM_MODEL_FS
 else
+   : "${filesystem:="$PWD/$vhost.disk"}"
+
    echo -n "   Filesystem: $filesystem"
+   validate_ubd_argument "$VM_MODEL_FS" "$filesystem"
+   check_filesystem "$filesystem"
 
    # Explicitly declaring the model fs name is redundant after the COW file has
    # been created. Nevertheless, this is needed in order to later get

@@ -75,24 +75,28 @@ validate_hostnames() {
 
 
 ###############################################################################
-# Check if a string contains a sub-string.
+# Check if a string contains sub-strings.
 # Usage:
-#   string_contains QUERY STRING
+#   string_contains STRING [QUERY]...
 # Globals:
 #   None
 # Arguments:
-#   $1 - string to search for
-#   $2 - string to search
+#   $1 - string to search
+#  ... - string(s) to search for
 # Returns:
-#   0 if string contains query, non-zero if not
+#   0 if string contains at least one query, non-zero if not
 # Example:
 #   None
 ###############################################################################
 string_contains() {
-   local query=$1
-   local string=$2
+   local string=$1
+   local queries=( "${@:2}" )
 
-   [[ "$string" == *"$query"* ]] && return 0
+   local query
+
+   for query in "${queries[@]}"; do
+      [[ "$string" == *"$query"* ]] && return 0
+   done
 
    return 1
 }
