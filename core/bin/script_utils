@@ -485,7 +485,7 @@ run_hubs() {
 ###############################################################################
 # Stop and remove all unused virtual hubs.
 # Usage:
-#   run_hubs [HUB[,ADDR]]...
+#   clean_hubs [HUB[,ADDR]]...
 # Globals:
 #   r- HUB_LOG
 #   r- HUB_SOCKET_DIR
