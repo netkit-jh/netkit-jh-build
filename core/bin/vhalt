@@ -183,7 +183,7 @@ for vhost in "${vhosts[@]}"; do
    #"$NETKIT_HOME/bin/uml_mconsole" "$vhost" cad > /dev/null
 
    # TODO: Try to use the old method - it uses /sbin/shutdown and is safer and
-   # quicker.
+   # quicker. Alternatively, use vcommand with shutdown -h now.
    # New method uses the Magic SysRq key in the REISUO combination (R is not
    # included because there is no X server).
    # This method is not perfect; the timings required are rough estimates. The
