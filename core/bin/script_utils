@@ -44,7 +44,7 @@ SCRIPT_UTILS_SRC=1
 #   None
 ###############################################################################
 is_inet_addr() {
-   inet_regex="((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])"
+   local inet_regex="((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])"
    [[ "$1" =~ ^$inet_regex$ ]] && return 0 || return 1
 }
 
@@ -65,12 +65,41 @@ is_inet_addr() {
 validate_hostnames() {
    local hostnames=( "$@" )
 
+   local hostname
+
    for hostname in "${hostnames[@]}"; do
       if [[ ! "$hostname" =~ ^$hostname_regex$ ]]; then
          echo 1>&2 "$SCRIPTNAME: $hostname: Invalid hostname"
          exit 1
       fi
    done
+}
+
+
+###############################################################################
+# Validate a list of collision domain names against the
+# collision_domain_name_regex pattern.
+# Usage:
+#   validate_collision_domain_names [DOMAIN]...
+# Globals:
+#   None
+# Arguments:
+#  ... - list of collision domain names to validate
+# Returns:
+#   0 if all valid, non-zero on an invalid hostname
+# Example:
+#   None
+###############################################################################
+validate_collision_domain_names() {
+   local collision_domain_names=( "$@" )
+
+   local collision_domain_name
+
+   for collision_domain_name in "${collision_domain_names[@]}"; do
+      [[ ! "$collision_domain_name" =~ ^$collision_domain_name_regex$ ]] && return 1
+   done
+
+   return 0
 }
 
 
@@ -865,6 +894,57 @@ get_vhost_info_by_name() {
 
 
 ###############################################################################
+# Check for invalid substrings in a variable and exit with an error.
+# Usage:
+#   validate_variable VALUE VARIABLE [QUERY]...
+# Globals:
+#   None
+# Arguments:
+#   $1 - value of variable
+#   $2 - name of variable
+#  ... - list of invalid substrings to search for
+# Returns:
+#   None. Function exits with non-zero code on failure.
+# Example:
+#   None
+###############################################################################
+validate_variable() {
+   local value=$1
+   local variable=$2
+   local queries=( "${@:3}" )
+
+   if string_contains "$value" "${queries[@]}"; then
+      echo 1>&2 "$variable: Invalid character in configuration parameter"
+      exit 1
+   fi
+}
+
+
+###############################################################################
+# Check for invalid substrings in netkit.conf variable values.
+# Usage:
+#   validate_netkit_conf_variables
+# Globals:
+#   r- HUB_SOCKET_DIR
+#   r- HUB_SOCKET_PREFIX
+#   r- HUB_SOCKET_EXTENSION
+#   r- VM_MODEL_FS
+# Arguments:
+#   None
+# Returns:
+#   None. Function exits with non-zero code on failure.
+# Example:
+#   None
+###############################################################################
+validate_netkit_conf_variables() {
+   validate_variable "$HUB_SOCKET_DIR"       "HUB_SOCKET_DIR"       " " ","
+   validate_variable "$HUB_SOCKET_PREFIX"    "HUB_SOCKET_PREFIX"    " " "," "/"
+   validate_variable "$HUB_SOCKET_EXTENSION" "HUB_SOCKET_EXTENSION" " " "," "/"
+   validate_variable "$VM_MODEL_FS"          "VM_MODEL_FS"          " " "," ":"
+}
+
+
+###############################################################################
 # Create a directory with 777 permissions. If a file with the same path already
 # exists, an error is thrown.
 # Usage:
@@ -911,6 +991,12 @@ export LC_ALL=C
 # TODO: put hostname_regex (and related - ipv4, domain, etc.) in config file
 hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9])"
 
+# Regular expression for matching a collision domain name. This choice is
+# arbitrary (though some characters MUST be avoided), but should allow for all
+# reasonable use-cases.
+# NOTE: must not allow commas, forward slashes, or whitespace.
+collision_domain_name_regex="([[:alnum:]_.-]+)"
+
 
 # Read Netkit configuration in order of file localisation (per system, per
 # install, per user).
@@ -950,6 +1036,9 @@ hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9])"
 [ -n "$NETKIT_MEMORY" ] &&     VM_MEMORY=$NETKIT_MEMORY
 [ -n "$NETKIT_KERNEL" ] &&     VM_KERNEL=$NETKIT_KERNEL
 [ -n "$NETKIT_TERM" ] &&       TERM_TYPE=$NETKIT_TERM
+
+# Check for invalid values in netkit.conf variables
+validate_netkit_conf_variables
 
 
 # Set the global USER_ID variable
