@@ -381,7 +381,8 @@ get_tap_interface() {
 
 ###############################################################################
 # Write the socket filepath assigned to a user and collision domain to standard
-# output.
+# output. The MD5 digest of the user's name is used to prevent issues with
+# invalid characters in the username.
 # Usage:
 #   get_hub_socket DOMAIN
 # Globals:
@@ -398,7 +399,11 @@ get_tap_interface() {
 ###############################################################################
 get_hub_socket() {
    local domain=$1
-   echo "$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$domain$HUB_SOCKET_EXTENSION"
+   
+   local user_md5
+
+   user_md5=$(printf "%s" "$USER_ID" | md5sum | awk '{ print $1 }')
+   echo "$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${user_md5}_$domain$HUB_SOCKET_EXTENSION"
 }
 
 
