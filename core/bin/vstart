@@ -308,7 +308,13 @@ setup_interfaces() {
          unset tap_address guest_address
          hub_name=$hub_specification
       fi
-      
+
+      # Check for invalid characters in hub_name
+      if ! validate_collision_domain_names "$hub_name"; then
+         echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid collision domain name"
+         usage 1
+      fi
+
       hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
 
       kernel_cmd+=( "$device=daemon,,,$hub_socket" )
@@ -463,15 +469,7 @@ while true; do
          hub_name=$2
          shift
 
-         # TODO: double-check whitespace check
-         if string_contains "$hub_name" "_" " "; then
-            echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid character in collision domain name"
-            usage 1
-         elif [ "${hub_name#tap,}" = "$hub_name" ] && string_contains "$hub_name" "," "."; then
-            echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid character in collision domain name"
-            usage 1
-         fi
-
+         # Collision domain names are validated later in setup_interfaces
          interface_specifications+=( "$device=$hub_name" )
          ;;
       -F|--foreground)

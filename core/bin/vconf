@@ -192,6 +192,12 @@ setup_interfaces() {
             HUB_LIST+=( "$hub_name" )
          fi
 
+         # Check for invalid characters in hub_name
+         if ! validate_collision_domain_names "$hub_name"; then
+            echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid collision domain name"
+            usage 1
+         fi
+
          hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
          
          VCONF_DEVICES+=( "$device=daemon,,,$hub_socket" )
@@ -298,23 +304,7 @@ while true; do
          hub_name=$2
          shift
 
-         # Check if tap interface (regular hubs cannot be named with commas)
-         if [[ "$hub_name" == tap,* ]]; then
-            # Format: tap,tap_address,guest_address
-            IFS=, read -r _ tap_address guest_address <<< "$hub_name"
-
-            if ! is_inet_addr "$tap_address"; then
-               echo 1>&2 "$SCRIPTNAME: $tap_address: Invalid tap address"
-               usage 1
-            fi
-
-            if ! is_inet_addr "$guest_address"; then
-               echo 1>&2 "$SCRIPTNAME: $guest_address: Invalid guest address"
-               usage 1
-            fi
-         fi
-
-         # Construct array of ethN=hub_name
+         # Collision domain names are validated later in setup_interfaces
          network_interfaces+=( "$device=$hub_name" )
          ;;
       --help)
