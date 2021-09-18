@@ -45,7 +45,7 @@ SCRIPT_UTILS_SRC=1
 ###############################################################################
 is_inet_addr() {
    inet_regex="((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])"
-   [[ "$1" =~ $inet_regex ]] && return 0 || return 1
+   [[ "$1" =~ ^$inet_regex$ ]] && return 0 || return 1
 }
 
 
@@ -66,7 +66,7 @@ validate_hostnames() {
    local hostnames=( "$@" )
 
    for hostname in "${hostnames[@]}"; do
-      if [[ $hostname =~ $hostname_regex ]]; then
+      if [[ ! "$hostname" =~ ^$hostname_regex$ ]]; then
          echo 1>&2 "$SCRIPTNAME: $hostname: Invalid hostname"
          exit 1
       fi
@@ -901,7 +901,10 @@ export LC_ALL=C
 #   - Cannot start or end with a - (hyphen)
 #   - Are case-insensitive
 #   - Can be 1 to 63 characters long
-# NOTE: must not allow [], characters
+# NOTE: must not allow the following characters:
+#         []          - for lab.conf parsing
+#         ,           - for LAB_MACHINES parsing
+#         ,:[:blank:] - for the ubd argument (.disk file is named after host)
 # TODO: put hostname_regex (and related - ipv4, domain, etc.) in config file
 hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9])"
 

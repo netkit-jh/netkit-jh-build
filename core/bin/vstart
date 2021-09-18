@@ -461,16 +461,19 @@ while true; do
          foreground=1
          ;;
       -f|--filesystem)
-         filesystem=$2
+         filesystem=$(readlink --canonicalize-missing "$2")
          shift
 
          if string_contains "," "$filesystem"; then
             echo 1>&2 "$SCRIPTNAME: $filesystem: Invalid filesystem - commas are not allowed"
             usage 1
+         elif string_contains ":" "$filesystem"; then
+            echo 1>&2 "$SCRIPTNAME: $filesystem: Invalid filesystem - colons are not allowed"
+            usage 1
+         elif string_contains " " "$filesystem"; then
+            echo 1>&2 "$SCRIPTNAME: $filesystem: Invalid filesystem - spaces are not allowed"
+            usage 1
          fi
-
-         # TODO: double-check udb0 argument allows spaces and commas
-         filesystem=$(readlink --canonicalize-missing "$filesystem")
          ;;
       -H|--no-hosthome)
          no_hosthome=1
@@ -497,16 +500,19 @@ while true; do
          shift
          ;;
       -m|--model-fs)
-         VM_MODEL_FS=$2
+         VM_MODEL_FS=$(readlink --canonicalize-missing "$2")
+         shift
 
          if string_contains "," "$VM_MODEL_FS"; then
             echo 1>&2 "$SCRIPTNAME: $VM_MODEL_FS: Invalid filesystem - commas are not allowed"
             usage 1
+         elif string_contains ":" "$VM_MODEL_FS"; then
+            echo 1>&2 "$SCRIPTNAME: $VM_MODEL_FS: Invalid filesystem - colons are not allowed"
+            usage 1
+         elif string_contains " " "$VM_MODEL_FS"; then
+            echo 1>&2 "$SCRIPTNAME: $VM_MODEL_FS: Invalid filesystem - spaces are not allowed"
+            usage 1
          fi
-
-         # TODO: double-check udb0 can take spaces
-         VM_MODEL_FS=$(readlink --canonicalize-missing "$VM_MODEL_FS")
-         shift
          ;;
       -p|--print)
          JUST_PRINT=1
