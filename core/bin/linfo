@@ -80,11 +80,15 @@ parent directory.
   -m, --map=FILE      Create a graphical link-level topology map of the lab and
                         save it into FILE in PNG format. This requires the
                         Graphviz library to be installed
-  -a, --auto          Finds sibling folders which all share the same prefix as
+  -a, --auto[=GLOB]   Finds sibling folders which all share the same prefix as
                         the current directory bar the final character. E.g.,
                         running in lab3a will find all directories starting
-                        with lab3* (lab3a, lab3b, lab3c, etc) can be paired
-                        with multiple -d to specify additional folders
+                        with lab3* (lab3a, lab3b, lab3c, etc). Alternatively, a
+                        GLOB can be specifed which will be used to pattern
+                        match directories. Ensure this is not expanded on the
+                        command line with suitable escaping of special
+                        characters. The option can be paired with the -d option
+                        to specify additional folders.
 
 Miscellaneous:
 $(help_option)
@@ -253,13 +257,21 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -a|--auto)
-         # Remove final character from PWD and expand to a list of directories
-         # with that prefix. E.g. running in /path/to/lab3a/ will find all
-         # directories in /path/to/ starting with lab3*, such as
-         # /path/to/lab3b/. The if-statement removes the need for nullglob to
-         # be set.
-         # TODO: allow user to specify a regular expression or glob
-         dirs=( "${PWD%?}"*/ )
+         glob=$2
+         shift
+
+         if [ -n "$glob" ]; then
+            # shellcheck disable=SC2206
+            dirs=( $glob )
+         else
+            # Remove final character from PWD and expand to a list of
+            # directories with that prefix. E.g. running in /path/to/lab3a/
+            # will find all directories in /path/to/ starting with lab3*, such
+            # as /path/to/lab3b/.
+            dirs=( "${PWD%?}"*/ )
+         fi
+
+         # The if-statement removes the need for nullglob to be set
          if [ -d "${dirs[0]}" ]; then
             lab_directories+=( "${dirs[@]}" )
          else

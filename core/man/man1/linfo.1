@@ -50,11 +50,13 @@ system in order to work.
 .PD 0
 .TP
 .B
-\-\-auto
-Finds sibling folders which all share the same prefix as the
-current directory bar the final character. E.g. running in lab3a
-will find all directories starting with lab3* (lab3a,lab3b,lab3c,etc...)
-can be paired with multiple -d to specify additional folders.
+\-\-auto[\fIGLOB\fR\fB]\fR
+Finds sibling folders which all share the same prefix as the current directory
+bar the final character. E.g., running in lab3a will find all directories
+starting with lab3* (lab3a, lab3b, lab3c, etc). Alternatively, a GLOB can be
+specifed which will be used to pattern match directories. Ensure this is not
+expanded on the command line with suitable escaping of special characters. The
+option can be paired with the -d option to specify additional folders.
 
 .PP
 The following standard options are also supported.
