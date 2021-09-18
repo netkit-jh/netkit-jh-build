@@ -1,4 +1,5 @@
 # Added
+- `coreutils` as a required package to run Netkit (for `md5sum` and `stdbuf`)
 
 # Modified
 - Machine names must conform to the Debian standard (which conforms to the RFC standard too)
@@ -20,6 +21,7 @@
 - Tap interfaces are named `netkit_$user_md5`, where `user_md5` is an 8-character (truncated) MD5 digest of the owner's username for uniqueness
 - Virtual network hub sockets are named with the user's MD5 digest instead of their name to avoid issues with invalid characters
 - Rename `--kill` to `--just-kill` in `vcrash` and `lcrash`
+- `uml_switch` logging now works
 
 # Removed
 - `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))

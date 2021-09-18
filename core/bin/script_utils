@@ -431,7 +431,8 @@ start_inet_hub() {
    local tap_address=$2
 
    local manage_tuntap_cmd
-   local user_md5 uml_switch_cmd
+   local interface_name uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
+   local hub_log_cmd
 
    if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
       # Either socket does not exist yet or it is still unused
@@ -448,12 +449,21 @@ start_inet_hub() {
 
       echo "************** Abandoning root privileges ***************"
 
-      user_md5=$(get_tap_interface "$USER_ID")
-      uml_switch_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "$user_md5" "-hub" "-unix" "$hub_socket" )
+      interface_name=$(get_tap_interface "$USER_ID")
+      uml_switch_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "$interface_name" "-hub" "-unix" "$hub_socket" )
+      printed_uml_switch_cmd="${uml_switch_cmd[*]} < /dev/null &"
+
+      # We need to disable buffering on standard output, otherwise the hub log
+      # may miss vital log messages when uml_switch is killed.
+      line_buffered_uml_switch_cmd=( "stdbuf" "--output=0" "${uml_switch_cmd[@]}" )
+
+      # shellcheck disable=SC2016
+      hub_log_cmd=( "stdbuf" "--output=0" \
+                    "awk" "-v" "HUB=$hub_socket" "-v" "USER=$USER_ID" "-v" "TIME=$(date --iso-8601=seconds)" \
+                    '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
       
-      # TODO: implement hub logging that's better (i.e. it works) than the
-      # original.
-      run_command "$JUST_PRINT" "${uml_switch_cmd[*]} < /dev/null &" "${uml_switch_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USER_ID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
+      run_command "$JUST_PRINT" "$printed_uml_switch_cmd" \
+         "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" > "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
@@ -482,15 +492,25 @@ start_inet_hub() {
 start_hub() {
    local hub_socket=$1
 
-   local uml_switch_cmd
+   local uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
+   local hub_log_cmd
 
    # Socket already exists but is not used
    if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
       uml_switch_cmd=( "$NETKIT_HOME/bin/uml_switch" "-hub" "-unix" "$hub_socket" )
+      printed_uml_switch_cmd="${uml_switch_cmd[*]} < /dev/null &"
 
-      # TODO: implement hub logging that's better (i.e. it works) than the
-      # original.
-      run_command "$JUST_PRINT" "${uml_switch_cmd[*]} < /dev/null &" "${uml_switch_cmd[@]}" < /dev/null 2>&1 | awk -v HUB="$hub_socket" -v USER="$USER_ID" -v TIME="$(date --iso-8601=seconds)" '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' > "$HUB_LOG" &
+      # We need to disable buffering on standard output, otherwise the hub log
+      # may miss vital log messages when uml_switch is killed.
+      line_buffered_uml_switch_cmd=( "stdbuf" "--output=0" "${uml_switch_cmd[@]}" )
+   
+      # shellcheck disable=SC2016
+      hub_log_cmd=( "stdbuf" "--output=0" \
+                    "awk" "-v" "HUB=$hub_socket" "-v" "USER=$USER_ID" "-v" "TIME=$(date --iso-8601=seconds)" \
+                    '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
+
+      run_command "$JUST_PRINT" "$printed_uml_switch_cmd" \
+         "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" > "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
