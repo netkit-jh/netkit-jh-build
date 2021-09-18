@@ -198,7 +198,7 @@ setup_interfaces() {
             usage 1
          fi
 
-         hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
+         hub_socket=$(get_hub_socket "$hub_name")
          
          VCONF_DEVICES+=( "$device=daemon,,,$hub_socket" )
          echo "$indent$device @ $hub_name ($hub_socket)"

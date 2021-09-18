@@ -380,6 +380,29 @@ get_tap_interface() {
 
 
 ###############################################################################
+# Write the socket filepath assigned to a user and collision domain to standard
+# output.
+# Usage:
+#   get_hub_socket DOMAIN
+# Globals:
+#   r- HUB_SOCKET_DIR
+#   r- HUB_SOCKET_EXTENSION
+#   r- HUB_SOCKET_PREFIX
+#   r- USER_ID
+# Arguments:
+#   $1 - name of collision domain
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+get_hub_socket() {
+   local domain=$1
+   echo "$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$domain$HUB_SOCKET_EXTENSION"
+}
+
+
+###############################################################################
 # Create a special 'tap' hub that can connect a guest to an interface on the
 # host. NAT rules are created to allow access to the Internet through the host
 # interface.
@@ -500,7 +523,7 @@ run_hubs() {
    for hub_specification in "${hub_specifications[@]}"; do
       IFS=, read -r hub_name tap_address <<< "$hub_specification"
 
-      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
+      hub_socket=$(get_hub_socket "$hub_name")
 
       if [ -n "$tap_address" ]; then
          start_inet_hub "$hub_socket" "$tap_address"
@@ -541,7 +564,7 @@ clean_hubs() {
    for hub_specification in "${hub_specifications[@]}"; do
       IFS=, read -r hub_name _ <<< "$hub_specification"
 
-      hub_socket="$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${USER_ID}_$hub_name$HUB_SOCKET_EXTENSION"
+      hub_socket=$(get_hub_socket "$hub_name")
 
       # Avoid attempting to kill hubs for which the socket file does not exist
       # any more. Such situation may occur if user accidentally deleted it
