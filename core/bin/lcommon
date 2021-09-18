@@ -104,8 +104,6 @@ get_lab_vhosts() {
    # Note: LAB_MACHINES is a comma-separated (whitespace is not ignored) list.
    # This means if hostname_regex allows, machine names cannot have commas in
    # them.
-   # TODO: allow commas (if so desired) in LAB_MACHINES hostnames with quotes
-   # or escape sequences.
    IFS="," read -r -a lab_vhosts_ref <<< "$(get_lab_variable "LAB_MACHINES" "$lab_directory")"
 
    if [ "${#lab_vhosts_ref[@]}" -eq 0 ]; then
