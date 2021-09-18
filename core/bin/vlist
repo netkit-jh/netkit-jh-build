@@ -204,17 +204,17 @@ print_vhost_info_by_name() {
    # Output the machine details in a structured format
    echo "============= Information for virtual machine '$vhost' ============="
    echo " --- Accounting information ---"
-   echo "   PID:               ${vhost_info[pid]}"
-   echo "   Owner:             ${vhost_info[owner]}"
-   echo "   Used mem:          ${vhost_info[memory_usage]} KB"
+   echo "   PID:             ${vhost_info[pid]}"
+   echo "   Owner:           ${vhost_info[owner]}"
+   echo "   Used mem:        ${vhost_info[memory_usage]} KB"
    echo " --- Emulation parameters ---"
-   echo "   Kernel:            ${vhost_info[kernel]}"
-   echo "   Modules:           ${vhost_info[modules]:-"-"}"
-   echo "   Memory:            $((vhost_info[mem] - VM_MEMORY_SKEW)) MB (+$VM_MEMORY_SKEW MB skew)"
-   echo "   Model fs:          ${vhost_info[fs]}"
-   echo "   Filesystem:        ${vhost_info[disk]:-"-"}"
+   echo "   Kernel:          ${vhost_info[kernel]}"
+   echo "   Modules:         ${vhost_info[modules]:-"-"}"
+   echo "   Memory:          $((vhost_info[mem] - VM_MEMORY_SKEW)) MB (+$VM_MEMORY_SKEW MB skew)"
+   echo "   Model fs:        ${vhost_info[fs]}"
+   echo "   Filesystem:      ${vhost_info[disk]:-"-"}"
 
-   echo -n "   Interfaces:        "
+   echo -n "   Interfaces:      "
 
    for i in "${!vhost_sockets[@]}"; do
       socket_filepath=${vhost_sockets[$i]}
@@ -226,15 +226,14 @@ print_vhost_info_by_name() {
       echo "${indent}eth$i @ $hub_name ($socket_filepath)"
 
       # Indent subsequent lines
-      indent="                      "
+      indent="                    "
    done
 
-   echo "   Hostlab:           ${vhost_info[hostlab]:-"-"}"
-   echo "   Hosthome:          ${vhost_info[hosthome]:-"-"}"
-   echo "   Working directory: ${vhost_info[hostwd]:-"-"}"
-   echo "   Boot command:      ${vhost_info[boot_cmd]:-"-"}"
+   echo "   Hostlab:         ${vhost_info[hostlab]:-"-"}"
+   echo "   Hosthome:        ${vhost_info[hosthome]:-"-"}"
+   echo "   Boot command:    ${vhost_info[boot_cmd]:-"-"}"
 
-   echo -n "   Console 1:         "
+   echo -n "   Console 1:       "
    case ${vhost_info[con0]} in
       none)    echo "disabled";;
       xterm)   echo "terminal emulator";;
@@ -243,7 +242,7 @@ print_vhost_info_by_name() {
       port:*)  echo "port ${vhost_info[con0]#"port:"}"
    esac
 
-   echo -n "   Console 2:         "
+   echo -n "   Console 2:       "
    case ${vhost_info[con1]} in
       none)    echo "disabled";;
       xterm)   echo "terminal emulator";;
@@ -252,8 +251,8 @@ print_vhost_info_by_name() {
       port:*)  echo "port ${vhost_info[con1]#"port:"}"
    esac
 
-   echo "   Other arguments:   ${vhost_info[other]:-"-"}"
-   echo "   Console socket:    ${vhost_info[mconsole]}"
+   echo "   Other arguments: ${vhost_info[other]:-"-"}"
+   echo "   Console socket:  ${vhost_info[mconsole]}"
 }
 
 

@@ -26,3 +26,4 @@
 - `--quiet` option for `lcrash`, `lhalt`, `vclean`, `vcrash`, and `vhalt` (`-q`|`--quick` still exists)
 - `-q`|`--quiet` option from `vconf` and `vstart`
 - Port helper compatibility
+- `-w`|`--hostwd` option from `vstart` (it did not provide any purpose)

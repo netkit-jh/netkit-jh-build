@@ -151,7 +151,6 @@ If wanting to set up a lab, the following options are relevant:
                         machine during the boot phase
   -l, --hostlab=DIR   tell the virtual machine that the base directory for a
                         Netkit-JH laboratory is DIR
-  -w, --hostwd=DIR    set the lab working directory to DIR
 
 Miscellaneous:
 $(help_option)
@@ -412,7 +411,7 @@ log_write "$0 $*"
 
 # Get command line options
 long_opts="append:,con0:,con1:,debug,exec:,filesystem:,foreground,help,\
-hide-disk-file,hostlab:,hostwd:,kernel:,mem:,model-fs:,no-cow,no-hosthome,\
+hide-disk-file,hostlab:,kernel:,mem:,model-fs:,no-cow,no-hosthome,\
 print,test,tmux-attached,tmux-detached,verbose,version,xterm:"
 short_opts="De:Ff:Hk:Ll:M:m:pvWw:"
 
@@ -535,10 +534,6 @@ while true; do
          ;;
       -W|--no-cow)
          no_cow=1
-         ;;
-      -w|--hostwd)
-         host_working_dir=$2
-         shift
          ;;
       --xterm)
          TERM_TYPE=$2
@@ -755,13 +750,6 @@ fi
 if [ -n "$hostlab_dir" ]; then
    echo "   Hostlab at:  $hostlab_dir"
    kernel_cmd+=( "hostlab=$hostlab_dir" )
-fi
-
-
-### HOST WORKING DIRECTORY ############################### (non-UML option) ###
-if [ -n "$host_working_dir" ]; then
-   echo "   Host WD at:  $host_working_dir"
-   kernel_cmd+=( "hostwd=$host_working_dir" )
 fi
 
 

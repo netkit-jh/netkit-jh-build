@@ -399,33 +399,20 @@ Tell the virtual machine that the base directory for the laboratory is \fIDIRECT
 \fIDIRECTORY\fR is a directory on the host machine which contains information
 about the configuration of the laboratory.
 
-.TP
-.B
--w \fIDIRECTORY\fR
-.TP
-.B
---hostwd=\fIDIRECTORY\fR
-Set the lab working directory to \fIDIRECTORY\fR. \fIDIRECTORY\fR is a directory
-on the host machine which is used to store some temporary files (e.g., files
-that indicate that a virtual machine has completed the boot process).
 
 .PP
-\fBNotice\fR: options \fB\-l\fR,
+\fBNotice\fR: options \fB\-l\fR and
 .nh
-\fB\-\-hostlab\fR,
+\fB\-\-hostlab\fR
 .hy
-\fB\-w\fR, and
-.nh
-\fB\-\-hostwd\fR
-.hy
-make the host filesystem accessible inside the virtual machine even if the
-option \fB\-H\fR or
+make the host filesystem accessible inside the virtual machine even
+if the option \fB\-H\fR or
 .nh
 \fB\-\-no\-hosthome\fR
 .hy
 is being used. In particular, \fIDIRECTORY\fR is made available for reading/writing
-under the '/hostlab' or '/hostwd' directory in the virtual machine
-(depending on the option being used).
+under the '/hostlab' directory in the virtual machine (depending on the option
+being used).
 
 .SS Other options
 .TP

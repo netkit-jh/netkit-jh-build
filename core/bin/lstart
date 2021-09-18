@@ -409,9 +409,8 @@ single_lab_vhost_start() {
 
    local configuration option value
 
-   # Add host lab and working directory, and place filesystem inside the lab
-   # directory.
-   local vstart_args=( "--hostlab" "$lab_directory" "--hostwd" "$PWD" "--filesystem" "$lab_directory/$vhost.disk" )
+   # Specify host lab directory, and place filesystem inside it
+   local vstart_args=( "--hostlab" "$lab_directory" "--filesystem" "$lab_directory/$vhost.disk" )
 
    # Generate vstart argument list
    if [ -e "$lab_directory/lab.conf" ]; then

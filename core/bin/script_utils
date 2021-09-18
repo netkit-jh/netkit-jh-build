@@ -809,7 +809,6 @@ get_vhost_info_by_pid() {
          exec)       vhost_info["boot_cmd"]=$value;;
          hosthome)   vhost_info["hosthome"]=$value;;
          hostlab)    vhost_info["hostlab"]=$value;;
-         hostwd)     vhost_info["hostwd"]=$value;;
          # Memory is NOT adjusted by the skew here
          mem)        vhost_info["mem"]=$value;;
          modules)    vhost_info["modules"]=$value;;
