@@ -192,6 +192,36 @@ END_OF_HELP
 
 
 ###############################################################################
+# Check for invalid characters in a filepath for the ubd argument (set with the
+# --filesystem and --model-fs options).
+# Usage:
+#   validate_ubd_argument FILE
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - filepath of COW or model filesystem
+# Returns:
+#   None. Exits the script with with usage 1 if invalid.
+# Example:
+#   None
+###############################################################################
+validate_ubd_argument() {
+   local filepath=$1
+
+   if string_contains "," "$filepath"; then
+      echo 1>&2 "$SCRIPTNAME: $filepath: Invalid filesystem - commas are not allowed"
+      usage 1
+   elif string_contains ":" "$filepath"; then
+      echo 1>&2 "$SCRIPTNAME: $filepath: Invalid filesystem - colons are not allowed"
+      usage 1
+   elif string_contains " " "$filepath"; then
+      echo 1>&2 "$SCRIPTNAME: $filepath: Invalid filesystem - spaces are not allowed"
+      usage 1
+   fi
+}
+
+
+###############################################################################
 # Warn if file is located on a filesystem that does not support sparse files.
 # Usage:
 #   check_filesystem FILE
@@ -464,16 +494,7 @@ while true; do
          filesystem=$(readlink --canonicalize-missing "$2")
          shift
 
-         if string_contains "," "$filesystem"; then
-            echo 1>&2 "$SCRIPTNAME: $filesystem: Invalid filesystem - commas are not allowed"
-            usage 1
-         elif string_contains ":" "$filesystem"; then
-            echo 1>&2 "$SCRIPTNAME: $filesystem: Invalid filesystem - colons are not allowed"
-            usage 1
-         elif string_contains " " "$filesystem"; then
-            echo 1>&2 "$SCRIPTNAME: $filesystem: Invalid filesystem - spaces are not allowed"
-            usage 1
-         fi
+         validate_ubd_argument "$filesystem"
          ;;
       -H|--no-hosthome)
          no_hosthome=1
@@ -503,16 +524,7 @@ while true; do
          VM_MODEL_FS=$(readlink --canonicalize-missing "$2")
          shift
 
-         if string_contains "," "$VM_MODEL_FS"; then
-            echo 1>&2 "$SCRIPTNAME: $VM_MODEL_FS: Invalid filesystem - commas are not allowed"
-            usage 1
-         elif string_contains ":" "$VM_MODEL_FS"; then
-            echo 1>&2 "$SCRIPTNAME: $VM_MODEL_FS: Invalid filesystem - colons are not allowed"
-            usage 1
-         elif string_contains " " "$VM_MODEL_FS"; then
-            echo 1>&2 "$SCRIPTNAME: $VM_MODEL_FS: Invalid filesystem - spaces are not allowed"
-            usage 1
-         fi
+         validate_ubd_argument "$VM_MODEL_FS"
          ;;
       -p|--print)
          JUST_PRINT=1
