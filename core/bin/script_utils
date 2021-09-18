@@ -142,13 +142,13 @@ string_contains() {
 # Arguments:
 #  ... Log message
 # Returns:
-#   echo returns 0 on success, non-zero on failure (if file is not writable,
-#   cannot be created, or the filename is not specified).
+#   echo returns 0 on success, non-zero on failure (if file is not writable or
+#   cannot be created).
 # Example:
 #   None
 ###############################################################################
 log_write() {
-   echo "$(date --iso-8601=seconds) $USER_ID $*" 2> /dev/null >> "$LOGFILENAME"
+   [ -n "$LOGFILENAME" ] && echo "$(date --iso-8601=seconds) $USER_ID $*" >> "$LOGFILENAME"
 }
 
 
@@ -464,7 +464,7 @@ start_inet_hub() {
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
       
       run_command "$JUST_PRINT" "$printed_uml_switch_cmd" \
-         "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" > "$HUB_LOG" &
+         "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
@@ -511,7 +511,7 @@ start_hub() {
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
 
       run_command "$JUST_PRINT" "$printed_uml_switch_cmd" \
-         "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" > "$HUB_LOG" &
+         "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
