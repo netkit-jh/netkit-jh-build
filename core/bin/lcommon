@@ -349,14 +349,14 @@ lab_clean() {
 ###############################################################################
 # Crash virtual machines of a Netkit lab.
 # Usage:
-#   lab_crash QUICK_MODE DIR KEEP_FS KILL
+#   lab_crash QUICK_MODE DIR KEEP_FS JUST_KILL
 # Globals:
 #   rw lab_vhosts
 # Arguments:
 #   $1 - set to 1 for quick mode on vcrash, empty string for otherwise
 #   $2 - lab directory
 #   $3 - set to 1 to keep the filesystem, empty string for otherwise
-#   $4 - set to 1 to kill machine process, empty string for otherwise
+#   $4 - set to 1 to just kill machine process, empty string for otherwise
 # Returns:
 #   None
 # Example:
@@ -366,7 +366,7 @@ lab_crash() {
    local quick_mode=$1
    local lab_directory=$2
    local keep_fs=$3
-   local kill_mode=$4
+   local just_kill=$4
 
    local vcrash_args vhost
 
@@ -374,7 +374,7 @@ lab_crash() {
 
    [ -z "$quick_mode" ] && vcrash_args+=( "-q" )
    [ -z "$keep_fs" ]    && vcrash_args+=( "-r" )
-   [ -n "$kill_mode" ]  && vcrash_args+=( "-k" )
+   [ -n "$just_kill" ]  && vcrash_args+=( "-k" )
    
    for vhost in "${lab_vhosts[@]}"; do
       bold_print "Crashing '$vhost'..."

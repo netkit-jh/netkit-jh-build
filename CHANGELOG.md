@@ -19,6 +19,7 @@
 - tmux sessions are now named `netkit-vhost` (orig. `netkit-vm`)
 - Tap interfaces are named `netkit_$user_md5`, where `user_md5` is an 8-character (truncated) MD5 digest of the owner's username for uniqueness
 - Virtual network hub sockets are named with the user's MD5 digest instead of their name to avoid issues with invalid characters
+- Rename `--kill` to `--just-kill` in `vcrash` and `lcrash`
 
 # Removed
 - `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))

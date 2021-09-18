@@ -72,7 +72,7 @@ Kill running virtual machines without halting them. This roughly corresponds to
 disconnecting their power plug. MACHINE is either the name or the PID of a
 virtual machine.
 
-  -k, --kill          by default, virtual machines are crashed by using their
+  -k, --just-kill     by default, virtual machines are crashed by using their
                         mconsole socket. This method is generally faster, but
                         in some situations it may not work properly (for
                         example, if a virtual machine is somewhy frozen). If
@@ -286,7 +286,7 @@ target_user=$USER_ID
 
 
 # Get command line options
-long_opts="help,kill,quick,remove-fs,root,test,user:,version"
+long_opts="help,just-kill,quick,remove-fs,root,test,user:,version"
 short_opts="kqru:"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -302,8 +302,7 @@ while true; do
       --help)
          usage 0
          ;;
-      # TODO: change to --force or something
-      -k|--kill)
+      -k|--just-kill)
          force=1
          ;;
       -q|--quick)

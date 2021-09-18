@@ -80,7 +80,7 @@ only a subset of the virtual machines that make up the lab.
                         filesystems are deleted after crashing the
                         corresponding virtual machine. Notice that, regardless
                         of this option, the model filesystem is never deleted
-  -k, --kill          crash virtual machines by simply killing their processes.
+  -k, --just-kill     crash virtual machines by simply killing their processes.
                         The default setting is to first try crashing virtual
                         machines by sending them a special message via their
                         mconsole socket. If such an attempt fails, the command
@@ -128,7 +128,7 @@ log_write "$0 $*"
 
 
 # Get command line options
-long_opts="help,version,keep-fs,kill,list,quick"
+long_opts="help,version,just-kill,keep-fs,list,quick"
 short_opts="d:Fklq"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -151,8 +151,8 @@ while true; do
       -F|--keep-fs)
          keep_fs=1
          ;;
-      -k|--kill)
-         kill_mode=1
+      -k|--just-kill)
+         just_kill=1
          ;;
       -l|--list)
          list_vhosts=1
@@ -198,7 +198,7 @@ lab_welcome "$lab_directory"
 bold_print "================================================================="
 
 # Crash virtual machines
-lab_crash "$quick_mode" "$lab_directory" "$keep_fs" "$kill_mode"
+lab_crash "$quick_mode" "$lab_directory" "$keep_fs" "$just_kill"
 bold_print "Lab has been crashed."
 bold_print "================================================================="
 
