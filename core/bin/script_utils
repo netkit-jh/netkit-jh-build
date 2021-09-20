@@ -460,7 +460,7 @@ start_inet_hub() {
 
       # shellcheck disable=SC2016
       hub_log_cmd=( "stdbuf" "--output=0" \
-                    "awk" "-v" "HUB=$hub_socket" "-v" "USER=$USER_ID" "-v" "TIME=$(date --iso-8601=seconds)" \
+                    "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
       
       run_command "$JUST_PRINT" "$printed_uml_switch_cmd" \
@@ -507,7 +507,7 @@ start_hub() {
    
       # shellcheck disable=SC2016
       hub_log_cmd=( "stdbuf" "--output=0" \
-                    "awk" "-v" "HUB=$hub_socket" "-v" "USER=$USER_ID" "-v" "TIME=$(date --iso-8601=seconds)" \
+                    "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
 
       run_command "$JUST_PRINT" "$printed_uml_switch_cmd" \
@@ -602,7 +602,7 @@ clean_hubs() {
       if file_in_use "$hub_socket"; then
          # We get the oldest process to limit output to a single PID
          hub_pid=$(pgrep --oldest --euid="$USER_ID" --full "^$NETKIT_HOME/bin/uml_switch[[:blank:]].*$hub_socket")
-         if [ "$(lsof -a -U -p "$hub_pid" -Fn | grep -c "^n$hub_socket")" -le 1 ]; then
+         if [ "$(lsof -a -U -p "$hub_pid" -Fn | grep --count "^n$hub_socket")" -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
             kill "$hub_pid" && rm "$hub_socket"
          fi

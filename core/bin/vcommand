@@ -117,7 +117,7 @@ tmux_command() {
 
    # Print all lines after the final match of ": $cmd_uuid" and remove the last
    # line (which should the next shell prompt.)
-   sed -n "/: $cmd_uuid/{n;h;b};H;\${x;p}" <<< "$tmux_buffer" | head -n -1
+   sed --quiet "/: $cmd_uuid/{n;h;b};H;\${x;p}" <<< "$tmux_buffer" | head --lines -1
 }
 
 

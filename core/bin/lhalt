@@ -194,11 +194,11 @@ get_lab_vhosts "$lab_directory"
 
 for vhost in "${lab_vhosts[@]}"; do
    bold_print "Halting '$vhost'... "
-   vhalt ${quick_mode:+"-q"} ${remove_filesystem:+"-r"} "$vhost" && rm -f "$lab_directory/$vhost.ready"
+   vhalt ${quick_mode:+"--quick"} ${remove_filesystem:+"--remove-fs"} "$vhost" && rm --force "$lab_directory/$vhost.ready"
 done
 
 bold_print "Removing readyfor.test..."
-rm -f "$lab_directory/readyfor.test"
+rm --force "$lab_directory/readyfor.test"
 bold_print "Lab has been halted."
 bold_print "================================================================="
 

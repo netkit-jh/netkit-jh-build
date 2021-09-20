@@ -104,7 +104,7 @@ get_lab_vhosts() {
    # Note: LAB_MACHINES is a comma-separated (whitespace is not ignored) list.
    # This means if hostname_regex allows, machine names cannot have commas in
    # them.
-   IFS="," read -r -a lab_vhosts_ref <<< "$(get_lab_variable "LAB_MACHINES" "$lab_directory")"
+   IFS="," read -ra lab_vhosts_ref <<< "$(get_lab_variable "LAB_MACHINES" "$lab_directory")"
 
    if [ "${#lab_vhosts_ref[@]}" -eq 0 ]; then
       # Build list of virtual machines that are part of the lab from the
@@ -244,7 +244,7 @@ get_lab_variable() {
 
    # Set lab variables from lab.conf. The sed expression prints only the first
    # matching line and deletes the variable name and equals sign.
-   sed -n "0,/^$variable=/s///p" "$lab_conf"
+   sed --quiet "0,/^$variable=/s///p" "$lab_conf"
 }
 
 
@@ -338,7 +338,7 @@ lab_clean() {
 
    for vhost in "${lab_vhosts[@]}"; do
       # Remove files from the lab directory
-      rm ${verbose:+"--verbose"} -r "${MCONSOLE_DIR:?}/$vhost"
+      rm ${verbose:+"--verbose"} --recursive "${MCONSOLE_DIR:?}/$vhost"
       rm ${verbose:+"--verbose"} "$lab_directory/$vhost."{"ready","disk","log","testdone"}
    done
 
@@ -372,17 +372,17 @@ lab_crash() {
 
    get_lab_vhosts "$lab_directory"
 
-   [ -z "$quick_mode" ] && vcrash_args+=( "-q" )
-   [ -z "$keep_fs" ]    && vcrash_args+=( "-r" )
-   [ -n "$just_kill" ]  && vcrash_args+=( "-k" )
+   [ -n "$quick_mode" ] && vcrash_args+=( "--quick" )
+   [ -z "$keep_fs" ]    && vcrash_args+=( "--remove-fs" )
+   [ -n "$just_kill" ]  && vcrash_args+=( "--just-kill" )
    
    for vhost in "${lab_vhosts[@]}"; do
       bold_print "Crashing '$vhost'..."
-      vcrash "${vcrash_args[@]}" "$vhost" && rm -f "$lab_directory/$vhost.ready"
+      vcrash "${vcrash_args[@]}" "$vhost" && rm --force "$lab_directory/$vhost.ready"
    done
    
    bold_print "Removing readyfor.test..."
-   rm -f "$lab_directory/readyfor.test"
+   rm --force "$lab_directory/readyfor.test"
 }
 
 

@@ -316,10 +316,10 @@ lab_start_parallel() {
    fi
    
    # Pass "passthrough" options on to the second invocation of lstart/ltest
-   [ -n "$verbose" ] && lstart_args+=( "-v" )
+   [ -n "$verbose" ] && lstart_args+=( "--verbose" )
 
    for arg in "${passthrough_args[@]}"; do
-      lstart_args+=( "-o" "$arg" )
+      lstart_args+=( "--pass" "$arg" )
    done
 
    # Pass testmode along subsequent invocations of this script
@@ -361,7 +361,7 @@ lab_start_parallel() {
    # The Makefile must use Bash as the shell for correct handling of ANSI-C
    # expansions present after the previous Q-operator array expansion.
    tab=$(printf '\t')
-   IFS='' read -r -d '' makefile_contents << EOF
+   IFS='' read -rd '' makefile_contents << EOF
 SHELL := /bin/bash
 
 %: dummy-prerequisite-to-force-remaking
@@ -375,7 +375,12 @@ EOF
 
    # Read the Makefile from stdin without implicit rules, and hide the output. It
    # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
-   make -irsC "$lab_directory" -f - -j ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} "${lab_vhosts[@]}" <<< "$makefile_contents"
+   make --ignore-errors --no-builtin-rules --silent \
+      --directory "$lab_directory" \
+      --file - \
+      --jobs ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} \
+      "${lab_vhosts[@]}" \
+      <<< "$makefile_contents"
 
    
    # Signal that every machine is ready for testing once booted.
@@ -442,7 +447,7 @@ single_lab_vhost_start() {
    fi
    
    # Remove .ready file, if existing
-   rm -f "$lab_directory/$vhost.ready"
+   rm --force "$lab_directory/$vhost.ready"
 
    if [ -z "$verbose" ]; then
       bold_print "Starting '$vhost'..."
@@ -461,7 +466,7 @@ single_lab_vhost_start() {
          sleep 1
       done
 
-      rm -f "$lab_directory/$vhost.ready"
+      rm --force "$lab_directory/$vhost.ready"
    fi
    
    # Wait for a specified amount of time before returning
@@ -648,7 +653,7 @@ if [ "$SCRIPTNAME" = "ltest" ]; then
    passthrough_opts=( "--con0" "none" "--con1" "none" "${passthrough_opts[@]}" )
 
    # Hide .disk files when running tests
-   passthrough_opts+=( "-D" )
+   passthrough_opts+=( "--hide-disk-file" )
 fi
 
 

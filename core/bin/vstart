@@ -361,7 +361,7 @@ remove_fs_command() {
       sleep 1
    done
    
-   rm -f "$filepath"
+   rm --force "$filepath"
 }
 
 
@@ -815,5 +815,5 @@ fi
 
 # Connect to the tmux session if TMUX_OPEN_TERMS is set
 if [ "$TMUX_OPEN_TERMS" = "yes" ] && [ "$VM_CON0" = "tmux" ]; then
-    vconnect -m "$vhost" --terminal --interval 5 --retry-count 20 &> /dev/null &
+    vconnect --terminal --interval 5 --retry-count 20 "$vhost" &> /dev/null &
 fi

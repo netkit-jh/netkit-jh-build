@@ -47,7 +47,7 @@ case $action in
    start)
       if [ ! -c /dev/net/tun ]; then
          printf "Creating /dev/net/tun device...\t\t"
-         if ! sudo mknod -m 666 /dev/net/tun c 10 200; then
+         if ! sudo mknod --mode 666 /dev/net/tun c 10 200; then
             echo "failed."
             exit 1
          fi
@@ -91,9 +91,9 @@ case $action in
       echo "done."
 
       # Create a new masquerade rule if it doesn't already exist.
-      if ! sudo iptables -t nat -C "${postrouting_rule[@]}" 2> /dev/null; then
+      if ! sudo iptables --table nat --check "${postrouting_rule[@]}" 2> /dev/null; then
          printf "Enabling masquerading...\t\t"
-         if ! sudo iptables -t nat -A "${postrouting_rule[@]}"; then
+         if ! sudo iptables --table nat --append "${postrouting_rule[@]}"; then
             echo "failed."
             exit 1
          fi
@@ -101,9 +101,9 @@ case $action in
       fi
 
       # Create a new forwarding rule if it doesn't already exist.
-      if ! sudo iptables -C "${forward_rule[@]}" 2> /dev/null; then
+      if ! sudo iptables --check "${forward_rule[@]}" 2> /dev/null; then
          printf "Opening firewall for tunnel...\t\t"
-         if ! sudo iptables -I "${forward_rule[@]}"; then
+         if ! sudo iptables --insert "${forward_rule[@]}"; then
             echo "failed."
             exit 1
          fi
@@ -111,18 +111,18 @@ case $action in
       fi
       ;;
    stop)
-      if sudo iptables -C "${forward_rule[@]}" 2> /dev/null; then
+      if sudo iptables --check "${forward_rule[@]}" 2> /dev/null; then
          printf "Closing firewall...\t\t\t\t"
-         if ! sudo iptables -D "${forward_rule[@]}"; then
+         if ! sudo iptables --delete "${forward_rule[@]}"; then
             echo "failed."
             exit 1
          fi
          echo "done."
       fi
 
-      if sudo iptables -t nat -C "${postrouting_rule[@]}" 2> /dev/null; then
+      if sudo iptables --table nat --check "${postrouting_rule[@]}" 2> /dev/null; then
          printf "Disabling masquerading...\t\t\t"
-         if ! sudo iptables -t nat -D "${postrouting_rule[@]}"; then
+         if ! sudo iptables --table nat --delete "${postrouting_rule[@]}"; then
             echo "failed."
             exit 1
          fi
@@ -145,7 +145,7 @@ case $action in
          uid=$(cat "$sys_class_net_entry/user/owner")
 
          # Ignore tuntap devices not owned by the user (if specified)
-         [ -n "$target_user" ] && [ "$(id -u "$target_user")" != "$uid" ] && continue
+         [ -n "$target_user" ] && [ "$(id --user "$target_user")" != "$uid" ] && continue
 
          device=$(basename "$sys_class_net_entry")
 

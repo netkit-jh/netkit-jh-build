@@ -102,13 +102,13 @@ open_terminal() {
    local term_cmd
 
    case $TERM_TYPE in
-      alacritty)     term_cmd=( "alacritty" "-e" );;
+      alacritty)     term_cmd=( "alacritty" "--command" );;
       kitty)         term_cmd=( "kitty" );;
       konsole)       term_cmd=( "konsole" "--nofork" "-e" );;
       konsole-tab)   term_cmd=( "$NETKIT_HOME/bin/konsole-tabs.sh" "-e" );;
       xterm)         term_cmd=( "xterm" "-e" );;
       wsl)           term_cmd=( "cmd.exe" "/c" "start" "wsl.exe" );;
-      wt)            term_cmd=( "cmd.exe" "/c" "wt.exe" "-p" "netkit" "wsl.exe" );;
+      wt)            term_cmd=( "cmd.exe" "/c" "wt.exe" "--profile" "netkit" "wsl.exe" );;
       *)
          echo "Terminal '$TERM_TYPE' not supported, defaulting to xterm."
          term_cmd=( "xterm" "-e" );;

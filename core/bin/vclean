@@ -221,7 +221,7 @@ kill_hubs() {
       mapfile -d "" -t uml_switch_cmd < "/proc/$hub_pid/cmdline"
       hub_file=${uml_switch_cmd[-1]}
 
-      if [ -n "$force" ] || [ "$(lsof -a -U -p "$hub_pid" -Fn | grep -c "^n$hub_file")" -le 1 ]; then
+      if [ -n "$force" ] || [ "$(lsof -a -U -p "$hub_pid" -Fn | grep --count "^n$hub_file")" -le 1 ]; then
          # Force mode or no more virtual machines are using the hub connected
          # to this socket
          found_unused_hub=1
