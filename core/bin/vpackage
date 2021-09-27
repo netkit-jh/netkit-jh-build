@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+
+# This script can be used to install new packages to the Netkit model
+# filesystem.
+
+
+###############################################################################
+# Write vpackage's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME COMMAND [OPTION]... [PACKAGE]..."
+}
+
+
+###############################################################################
+# Write vpackage's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   local status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
+      exit "$status"
+   fi
+
+   cat << END_OF_HELP
+$(usage_line)
+Manage PACKAGEs on the model Netkit filesystem with apt-get or dpkg.
+
+The following COMMANDs operate exactly as apt-get would:
+  update              synchronise package index files with their respective
+                        sources
+  upgrade             install latest package versions
+  dist-upgrade        upgrade and potentially remove unnecessary packages
+  install PACKAGE...  install or upgrade packages and their dependencies
+  remove PACKAGE...   remove packages, leaving their configuration files
+  purge PACKAGE...    remove packages and their configuration files
+  clean               clear out the apt cache
+  autoremove          (alias auto-remove) remove dependencies that are no
+                        longer needed
+
+The following COMMANDs use other underlying package management programs:
+  list                run dpkg --list to show all installed packages on the
+                        filesystem
+
+You can use the following options to configure vpackage or the underlying
+package management command:
+  -d DIRECTORY        mount the filesystem at the directory DIRECTORY. If the
+                        mount point does not exist, Netkit will try to create
+                        it. The default is $VPACKAGE_MOUNT_POINT
+  -f, --filesystem=FILENAME  use FILENAME as the filesystem to be mounted. By
+                              default, this is $VM_MODEL_FS
+  -l, --list          show a list of running virtual machines after halting the
+                        lab
+  -o, --pass=OPTION   pass OPTION unaltered to the underlying package
+                        management command
+      --only-upgrade  only install upgrades for the selected packages. This
+                        uses the --only-upgrade option to apt-get and must be
+                        used with the install subcommand
+  -y, --assume-yes, --yes  automatic yes to prompts to run all commands
+                            non-interactively. This uses the --assume-yes
+                            underlying option and therefore will only work with
+                            apt-get (dpkg has no such option).
+
+Miscellaneous:
+      --help          display this help and exit
+  -p, --print         use the --simulate option on the underlying package
+                        management command to show which commands would be
+                        executed
+      --version       output version information and exit
+END_OF_HELP
+
+   exit "$status"
+}
+
+
+###############################################################################
+# For use with an exit trap, unmount the filesystem.
+# Usage:
+#   cleanup
+# Globals:
+#   None
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   trap cleanup EXIT; ... ; exit
+###############################################################################
+cleanup() {
+   sudo umount "$mount_point"
+}
+
+
+SCRIPTNAME=$(basename "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+logWrite "$0 $*"
+
+
+filesystem=$VM_MODEL_FS
+mount_point=$VPACKAGE_MOUNT_POINT
+
+
+# We don't want the vpackage subcommand to be reordered by getopt, so we
+# swallow it here.
+if [ "$#" -lt 1 ]; then
+   echo 1>&2 "$SCRIPTNAME: Missing subcommand"
+   usage 1
+fi
+
+cmd=$1
+shift
+
+
+# Get command line options
+long_opts="assume-yes,filesystem:,help,only-upgrade,pass:,print,version,yes"
+short_opts="d:o:py"
+
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
+fi
+
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$getopt_opts"
+
+while true; do
+   case $1 in
+      -d)
+         mount_point=$(readlink --canonicalize-missing "$2")
+         shift
+         ;;
+      -f|--filesystem)
+         filesystem=$(readlink --canonicalize-missing "$2")
+         shift
+         ;;
+      --help)
+         usage 0
+         ;;
+      -o|--pass)
+         passthrough_opts+=( "$2" )
+         shift
+         ;;
+      --only-upgrade)
+         if [ "$cmd" != "install" ]; then
+            echo 1>&2 "error"
+            usage 1
+         fi
+
+         passthrough_opts=( "--only-upgrade" "${passthrough_opts[@]}" )
+         ;;
+      -p|--print)
+         passthrough_opts=( "--simulate" "${passthrough_opts[@]}" )
+         ;;
+      --version)
+         showVersion
+         exit 0
+         ;;
+      -y|--assume-yes|--yes)
+         passthrough_opts=( "--assume-yes" "${passthrough_opts[@]}" )
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
+   
+# Non-option arguments are package names
+packages=( "$@" )
+
+
+apt_get_cmd=( "sudo" "apt-get" "$cmd" "--option" "Dir=$mount_point" "${passthrough_opts[@]}" )
+
+
+# Warn for dangerous options
+if [ "$cmd" = "dist-upgrade" ]; then
+   while true; do
+      read -rp "Warning: dist-upgrade has the potential to delete packages that may be critical to the operation of Netkit. Continue [y/N]? " response
+      case $response in
+         [Yy]|[Yy][Ee][Ss])
+            break
+            ;;
+         [Nn]|[Nn][Oo])
+            exit 0
+            ;;
+         *)
+            ;;
+      esac
+   done
+fi
+
+
+# Mount the filesystem image 
+echo "Mounting '$filesystem' to '$mount_point'"
+sudo mkdir -p "$mount_point"
+sudo mount --options loop --source "$filesystem" --target "$mount_point"
+trap cleanup EXIT
+
+
+# The following apt-get commands are not supported for reasons relating to
+# complexity or lack of necessity for most users: dselect-upgrade, source,
+# build-dep, check, autoclean|auto-clean, changelog, and indextargets.
+case $cmd in
+   list)
+      # List currently installed packages
+      dpkg-query --admindir "$mount_point/var/lib/dpkg" --list "${passthrough_opts[@]}" "${packages[@]}"
+      ;;
+   update|upgrade|dist-upgrade|clean|autoremove|auto-remove)
+      "${apt_get_cmd[@]}"
+      ;;
+   install|remove|purge)
+      "${apt_get_cmd[@]}" "${packages[@]}"
+      ;;
+   *)
+      echo 1>&2 "$SCRIPTNAME: invalid subcommand '$cmd'"
+      usage 1
+      ;;
+esac
