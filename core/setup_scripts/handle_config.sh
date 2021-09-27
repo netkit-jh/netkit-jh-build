@@ -82,7 +82,6 @@ if [ "${CURRENT_VERSION}" -lt 4 ]; then
 fi
 
 # Upgrade from v4 to v5
-# - Sets mconsole dir to machines again due to broken V3 configuration
 if [ "${CURRENT_VERSION}" -lt 5 ]; then
     echo "Upgrading Netkit configuration to V5."
 
@@ -100,6 +99,20 @@ if [ "${CURRENT_VERSION}" -lt 5 ]; then
     sed -i 's/# This option only takes effect when USE_TMUX is true/# This option only takes effect when VM_CON0=tmux/g' ${NEW_DIR}/netkit.conf
 	
     # Finally, update the version.
-    CURRENT_VERSION=4
-    sed -i "s/CONFIG_VERSION=3/CONFIG_VERSION=4/g" ${NEW_DIR}/netkit.conf
+    CURRENT_VERSION=5
+    sed -i "s/CONFIG_VERSION=4/CONFIG_VERSION=5/g" ${NEW_DIR}/netkit.conf
+fi
+
+# Upgrade from v5 to v6
+if [ "${CURRENT_VERSION}" -lt 6 ]; then
+    echo "Upgrading Netkit configuration to V6."
+
+    echo "
+# Default mount directory used by vpackage
+VPACKAGE_MOUNT_POINT=\"/mnt/netkit-fs-mount-point/\"
+    " >> ${NEW_DIR}/netkit.conf
+
+    # Finally, update the version.
+    CURRENT_VERSION=6
+    sed -i "s/CONFIG_VERSION=5/CONFIG_VERSION=6/g" ${NEW_DIR}/netkit.conf
 fi
