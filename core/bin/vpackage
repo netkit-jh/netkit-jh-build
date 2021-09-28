@@ -73,8 +73,6 @@ package management command:
                         it. The default is $VPACKAGE_MOUNT_POINT
   -f, --filesystem=FILENAME  use FILENAME as the filesystem to be mounted. By
                               default, this is $VM_MODEL_FS
-  -l, --list          show a list of running virtual machines after halting the
-                        lab
   -o, --pass=OPTION   pass OPTION unaltered to the underlying package
                         management command
       --only-upgrade  only install upgrades for the selected packages. This
@@ -112,6 +110,34 @@ END_OF_HELP
 ###############################################################################
 cleanup() {
    sudo umount "$mount_point"
+}
+
+
+###############################################################################
+# Mount a filesystem to a mount point and enable an exit trap for cleanup
+# Usage:
+#   mount_fs FILESYSTEM DIRECTORY
+# Globals:
+#   None
+# Arguments:
+#   $1 - filesystem image to mount
+#   $2 - directory to be used as the mount point (will be created if does not
+#        exist)
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+mount_fs() {
+   local filesystem=$1
+   local mount_point=$2
+
+   echo "Mounting '$filesystem' to '$mount_point'"
+   sudo mkdir -p "$mount_point"
+   sudo mount --options loop --source "$filesystem" --target "$mount_point"
+
+   # Enable a trap to unmount the filesystem on exit
+   trap cleanup EXIT
 }
 
 
@@ -229,29 +255,25 @@ if [ "$cmd" = "dist-upgrade" ]; then
 fi
 
 
-# Mount the filesystem image 
-echo "Mounting '$filesystem' to '$mount_point'"
-sudo mkdir -p "$mount_point"
-sudo mount --options loop --source "$filesystem" --target "$mount_point"
-trap cleanup EXIT
-
-
 # The following apt-get commands are not supported for reasons relating to
 # complexity or lack of necessity for most users: dselect-upgrade, source,
 # build-dep, check, autoclean|auto-clean, changelog, and indextargets.
 case $cmd in
    list)
       # List currently installed packages
+      mount_fs "$filesystem" "$mount_point"
       dpkg-query --admindir "$mount_point/var/lib/dpkg" --list "${passthrough_opts[@]}" "${packages[@]}"
       ;;
    update|upgrade|dist-upgrade|clean|autoremove|auto-remove)
+      mount_fs "$filesystem" "$mount_point"
       "${apt_get_cmd[@]}"
       ;;
    install|remove|purge)
+      mount_fs "$filesystem" "$mount_point"
       "${apt_get_cmd[@]}" "${packages[@]}"
       ;;
    *)
-      echo 1>&2 "$SCRIPTNAME: invalid subcommand '$cmd'"
+      echo 1>&2 "$SCRIPTNAME: Invalid subcommand '$cmd'"
       usage 1
       ;;
 esac
