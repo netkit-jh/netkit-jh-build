@@ -189,11 +189,6 @@ while true; do
          shift
          ;;
       --only-upgrade)
-         if [ "$cmd" != "install" ]; then
-            echo 1>&2 "error"
-            usage 1
-         fi
-
          passthrough_opts=( "--only-upgrade" "${passthrough_opts[@]}" )
          ;;
       -p|--print)
