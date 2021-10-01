@@ -100,7 +100,8 @@ END_OF_HELP
 # Usage:
 #   cleanup
 # Globals:
-#   None
+#   r- mount_point
+#   r- mount_point_resolvconf
 # Arguments:
 #   None
 # Returns:
@@ -109,6 +110,7 @@ END_OF_HELP
 #   trap cleanup EXIT; ... ; exit
 ###############################################################################
 cleanup() {
+   sudo umount "$mount_point_resolvconf"
    sudo umount "$mount_point"
 }
 
@@ -118,7 +120,8 @@ cleanup() {
 # Usage:
 #   mount_fs FILESYSTEM DIRECTORY
 # Globals:
-#   None
+#   r- host_resolvconf
+#   r- mount_point_resolvconf
 # Arguments:
 #   $1 - filesystem image to mount
 #   $2 - directory to be used as the mount point (will be created if does not
@@ -135,6 +138,9 @@ mount_fs() {
    echo "Mounting '$filesystem' to '$mount_point'"
    sudo mkdir -p "$mount_point"
    sudo mount --options loop --source "$filesystem" --target "$mount_point"
+
+   echo "Bind mounting '$host_resolvconf' to '$mount_point_resolvconf'"
+   sudo mount --bind --source "$host_resolvconf" --target "$mount_point_resolvconf"
 
    # Enable a trap to unmount the filesystem on exit
    trap cleanup EXIT
@@ -158,6 +164,9 @@ logWrite "$0 $*"
 filesystem=$VM_MODEL_FS
 mount_point=$VPACKAGE_MOUNT_POINT
 
+host_resolvconf="/etc/resolv.conf"
+mount_point_resolvconf="$mount_point/etc/resolv.conf"
+
 
 # Get command line options
 long_opts="assume-yes,filesystem:,help,only-upgrade,pass:,print,version,yes"
@@ -176,6 +185,7 @@ while true; do
       -d)
          mount_point=$(readlink --canonicalize-missing "$2")
          shift
+         mount_point_resolvconf="$mount_point/etc/resolv.conf"
          ;;
       -f|--filesystem)
          filesystem=$(readlink --canonicalize-missing "$2")
@@ -242,7 +252,11 @@ if [ "$subcommand" = "dist-upgrade" ]; then
 fi
 
 
-apt_get_cmd=( "sudo" "apt-get" "$subcommand" "--option" "Dir=$mount_point" "${passthrough_opts[@]}" )
+# NOTE: for an unknown reason, apt-get --option RootDir does not work for
+# installing packages, rather the packages get installed to the host system.
+# chroot is not required for dpkg commands.
+chroot_cmd=( "sudo" "chroot" "$mount_point" )
+apt_get_cmd=( "${chroot_cmd[@]}" "apt-get" "${passthrough_opts[@]}" "$subcommand" )
 
 # The following apt-get commands are not supported for reasons relating to
 # complexity or lack of necessity for most users: dselect-upgrade, source,
