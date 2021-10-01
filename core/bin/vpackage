@@ -140,7 +140,7 @@ mount_fs() {
    sudo mount --options loop --source "$filesystem" --target "$mount_point"
 
    echo "Bind mounting '$host_resolvconf' to '$mount_point_resolvconf'"
-   sudo mount --bind --source "$host_resolvconf" --target "$mount_point_resolvconf"
+   sudo mount --bind "$host_resolvconf" "$mount_point_resolvconf"
 
    # Enable a trap to unmount the filesystem on exit
    trap cleanup EXIT
@@ -265,7 +265,7 @@ case $subcommand in
    list)
       # List currently installed packages
       mount_fs "$filesystem" "$mount_point"
-      dpkg-query --admindir "$mount_point/var/lib/dpkg" --list "${passthrough_opts[@]}" "${packages[@]}"
+      dpkg --admindir "$mount_point/var/lib/dpkg" --list "${passthrough_opts[@]}" "${packages[@]}"
       ;;
    update|upgrade|dist-upgrade|clean|autoremove|auto-remove)
       mount_fs "$filesystem" "$mount_point"
