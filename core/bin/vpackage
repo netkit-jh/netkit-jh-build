@@ -96,20 +96,46 @@ END_OF_HELP
 
 
 ###############################################################################
+# Exit with usage 1 if string is not a valid vpackage subcommand.
+# Usage:
+#   validate_vpackage_subcommand COMMAND
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - subcommand name to validate
+# Returns:
+#   None. Exits with a non-zero usage on an invalid subcommand.
+# Example:
+#   None
+###############################################################################
+validate_vpackage_subcommand() {
+   local subcommand=$1
+
+   if [[ ! "$subcommand" =~ ^(list|update|upgrade|dist-upgrade|clean|autoremove|auto-remove|install|remove|purge)$ ]]; then
+      echo 1>&2 "$SCRIPTNAME: Invalid subcommand '$subcommand'"
+      usage 1
+   fi
+}
+
+
+###############################################################################
 # For use with an exit trap, unmount the filesystem.
 # Usage:
-#   cleanup
+#   cleanup MOUNT_POINT
 # Globals:
-#   r- mount_point
-#   r- mount_point_resolvconf
-# Arguments:
 #   None
+# Arguments:
+#   $1 - directory used as the mount mount_point
 # Returns:
 #   None
 # Example:
-#   trap cleanup EXIT; ... ; exit
+#   trap "cleanup /mnt/fs" EXIT; ... ; exit
 ###############################################################################
 cleanup() {
+   local mount_point=$1
+
+   local mount_point_resolvconf="$mount_point/etc/resolv.conf"
+
    sudo umount "$mount_point_resolvconf"
    sudo umount "$mount_point"
 }
@@ -118,10 +144,9 @@ cleanup() {
 ###############################################################################
 # Mount a filesystem to a mount point and enable an exit trap for cleanup
 # Usage:
-#   mount_fs FILESYSTEM DIRECTORY
+#   mount_fs FILESYSTEM MOUNT_POINT
 # Globals:
-#   r- host_resolvconf
-#   r- mount_point_resolvconf
+#   r- SCRIPTNAME
 # Arguments:
 #   $1 - filesystem image to mount
 #   $2 - directory to be used as the mount point (will be created if does not
@@ -135,15 +160,27 @@ mount_fs() {
    local filesystem=$1
    local mount_point=$2
 
+   local host_resolvconf="/etc/resolv.conf"
+   local mount_point_resolvconf="$mount_point/etc/resolv.conf"
+
    echo "Mounting '$filesystem' to '$mount_point'"
    sudo mkdir -p "$mount_point"
-   sudo mount --options loop --source "$filesystem" --target "$mount_point"
+   
+   if ! sudo mount --options loop --source "$filesystem" --target "$mount_point"; then
+      echo 1>&2 "$SCRIPTNAME: Could not mount filesystem. Is it already mounted?"
+      exit 1
+   fi
 
    echo "Bind mounting '$host_resolvconf' to '$mount_point_resolvconf'"
-   sudo mount --bind "$host_resolvconf" "$mount_point_resolvconf"
+   if ! sudo mount --bind "$host_resolvconf" "$mount_point_resolvconf"; then
+      echo 1>&2 "$SCRIPTNAME: Could not bind mount name resolution file"
+      sudo umount "$mount_point"
+      exit 1
+   fi
 
    # Enable a trap to unmount the filesystem on exit
-   trap cleanup EXIT
+   # shellcheck disable=2064
+   trap "cleanup \"$mount_point\"" EXIT
 }
 
 
@@ -164,9 +201,6 @@ logWrite "$0 $*"
 filesystem=$VM_MODEL_FS
 mount_point=$VPACKAGE_MOUNT_POINT
 
-host_resolvconf="/etc/resolv.conf"
-mount_point_resolvconf="$mount_point/etc/resolv.conf"
-
 
 # Get command line options
 long_opts="assume-yes,filesystem:,help,only-upgrade,pass:,print,version,yes"
@@ -185,7 +219,6 @@ while true; do
       -d)
          mount_point=$(readlink --canonicalize-missing "$2")
          shift
-         mount_point_resolvconf="$mount_point/etc/resolv.conf"
          ;;
       -f|--filesystem)
          filesystem=$(readlink --canonicalize-missing "$2")
@@ -231,6 +264,8 @@ if [ "$#" -lt 1 ]; then
 fi
 
 subcommand=$1
+validate_vpackage_subcommand "$subcommand"
+
 packages=( "${@:2}" )
 
 
@@ -252,10 +287,18 @@ if [ "$subcommand" = "dist-upgrade" ]; then
 fi
 
 
+# Mount the Netkit filesystem. An EXIT trap will be set so we do not need to
+# manually unmount the filesystem at each script exit point.
+mount_fs "$filesystem" "$mount_point"
+
+
+chroot_cmd=( "sudo" "chroot" "$mount_point" )
+
+# vpackage subcommands that use apt-get can simply be passed through as a valid
+# apt-get subcommand. This is not the case with dpkg.
 # NOTE: for an unknown reason, apt-get --option RootDir does not work for
 # installing packages, rather the packages get installed to the host system.
 # chroot is not required for dpkg commands.
-chroot_cmd=( "sudo" "chroot" "$mount_point" )
 apt_get_cmd=( "${chroot_cmd[@]}" "apt-get" "${passthrough_opts[@]}" "$subcommand" )
 
 # The following apt-get commands are not supported for reasons relating to
@@ -263,20 +306,15 @@ apt_get_cmd=( "${chroot_cmd[@]}" "apt-get" "${passthrough_opts[@]}" "$subcommand
 # build-dep, check, autoclean|auto-clean, changelog, and indextargets.
 case $subcommand in
    list)
-      # List currently installed packages
-      mount_fs "$filesystem" "$mount_point"
-      dpkg --admindir "$mount_point/var/lib/dpkg" --list "${passthrough_opts[@]}" "${packages[@]}"
+      # We don't use --admindir in the event that the host system does not have
+      # the dpkg. Instead, the dpkg binary on the Netkit filesystem will be
+      # used.
+      "${chroot_cmd[@]}" dpkg --list "${passthrough_opts[@]}" "${packages[@]}"
       ;;
    update|upgrade|dist-upgrade|clean|autoremove|auto-remove)
-      mount_fs "$filesystem" "$mount_point"
       "${apt_get_cmd[@]}"
       ;;
    install|remove|purge)
-      mount_fs "$filesystem" "$mount_point"
       "${apt_get_cmd[@]}" "${packages[@]}"
-      ;;
-   *)
-      echo 1>&2 "$SCRIPTNAME: Invalid subcommand '$subcommand'"
-      usage 1
       ;;
 esac
