@@ -7,7 +7,7 @@ include ../Makefile.am
 FS_FILE_NAME=netkit-fs-${NETKIT_BUILD_RELEASE}
 FS_RELEASE=bullseye
 FS_SIZE=4G
-DEBIAN_MIRROR=http://ftp.uk.debian.org/debian
+DEBIAN_MIRROR=http://deb.debian.org/debian/
 
 # Build parameters
 BUILD_DIR=${MAKEFILE_DIR}/build
