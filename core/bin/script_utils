@@ -39,6 +39,7 @@ export LANG=C
 : ${HUB_SOCKET_PREFIX:="vhub"}
 : ${HUB_SOCKET_EXTENSION:=".cnct"}
 : ${HUB_LOG:="$HUB_SOCKET_DIR/vhubs.log"}
+: ${VPACKAGE_MOUNT_POINT:="/mnt/netkit-fs-mount-point/"}
 : ${VM_MEMORY:=32}
 : ${VM_MEMORY_SKEW:=4}
 : ${VM_MODEL_FS:="$NETKIT_HOME/fs/netkit-fs"}
