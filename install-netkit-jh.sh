@@ -139,8 +139,12 @@ if [ -n "${KERNEL_EXTRACTED_FILES}" -a -n "${FS_EXTRACTED_FILES}" -a -n "${CORE_
 	cp -r "${CORE_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
 else
 	files_expected=("release-${VERSION}.sha256" "netkit-core-${VERSION}.tar.bz2" "netkit-fs-${VERSION}.tar.bz2" "netkit-kernel-${VERSION}.tar.bz2")
+	
+	# Temporarily disable error checking as this function will return a non-zero code, causing bash to stop running the script
+	set +e
 	check_files_exist "${DOWNLOAD_DIR}" "${files_expected[@]}"
 	files_exist=$?
+	set -e
 	
 	if [ ${files_exist} -eq 0 ]; then
 		# If all expected files are found, we can continue
