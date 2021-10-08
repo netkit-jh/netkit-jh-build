@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Upon request, this file mounts a host directory containing kernel modules
 
@@ -35,32 +35,44 @@
 #                    usage inside virtual machines.
 ### END INIT INFO
 
-case "$1" in
+case $1 in
    start) 
+      # Full command used to invoke the process
+      mapfile -d "" -t full_command < "/proc/cmdline"
 
-MODULES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' '{if ($1=="modules") {print $2}}')
+      first_iteration=true
+      for argument in "${full_command[@]}"; do
+         # Skip program name
+         if $first_iteration; then
+            first_iteration=false
+            continue
+         fi
 
-if [ -n "$MODULES" ]; then
-   MODULES="$MODULES"/lib/uml/modules
-   echo "Mounting kernel modules directory ($MODULES) on /lib/modules/ ..."
-   # Write access is needed for depmod in order to work properly
-   if [ ! -d /lib/modules ]
-   then
-       mkdir -p /lib/modules
-   fi
-   mount none /lib/modules/ -t hostfs -o rw,$MODULES
-else
-   echo "Modules directory not mounted."
-fi
+         option=${argument%%=*}
+         value=${argument#*=}
 
-;;
-    stop)
-      KERNEL_VERSION=$(uname -r)
-      if [ -f /lib/modules/$KERNEL_VERSION/modules.dep ]; then
-         echo "Unmounting /lib/modules..."
+         if [ "$option" = "modules" ]; then
+            modules=$value
+            break
+         fi
+      done
+
+      if [ -n "$modules" ]; then
+         modules="$modules/lib/uml/modules"
+         echo "Mounting kernel modules directory '$modules' to '/lib/modules'"
+
+         # Write access is needed for depmod in order to work properly
+         [ ! -d /lib/modules ] && mkdir -p /lib/modules
+         mount none /lib/modules/ --types hostfs --options "rw,$modules"
+      else
+         echo "Modules directory not mounted"
+      fi
+      ;;
+   stop)
+      kernel_version=$(uname -r)
+      if [ -f "/lib/modules/$kernel_version/modules.dep" ]; then
+         echo "Unmounting /lib/modules"
          umount /lib/modules
       fi
-
-;;
+      ;;
 esac
-
