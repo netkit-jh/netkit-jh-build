@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+set -e 
+
+export LC_ALL=C 
+
 # First argument is the work directory, that contains the packages list, package selections, service lists
 WORK_DIRECTORY="$1"
 # Second argument is the build directory, that contains the filesystem version file
@@ -15,7 +19,14 @@ cat $WORK_DIRECTORY/debconf-package-selections | chroot $MOUNT_DIRECTORY debconf
 # Install packages in packages-list
 PACKAGES_LIST=$(cat $WORK_DIRECTORY/packages-list | grep -v '#')
 
-chroot $MOUNT_DIRECTORY add-apt-repository ppa:cz.nic-labs/bird  # for Bird Internet routing daemon
+# Install add-apt-repository command
+chroot $MOUNT_DIRECTORY apt update
+chroot $MOUNT_DIRECTORY apt install --assume-yes software-properties-common
+
+# Install custom repositories
+# chroot $MOUNT_DIRECTORY add-apt-repository ppa:cz.nic-labs/bird  # for Bird Internet routing daemon
+
+# Install packages inside packages_list
 chroot $MOUNT_DIRECTORY apt update
 chroot $MOUNT_DIRECTORY apt install --assume-yes ${PACKAGES_LIST}
 
@@ -27,7 +38,12 @@ chroot $MOUNT_DIRECTORY apt install --no-install-recommends wireguard-tools
 chroot $MOUNT_DIRECTORY update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 # Copy netkit filesystem files
-tar -C $WORK_DIRECTORY/filesystem-tweaks -c . | tar --overwrite --same-owner -C $MOUNT_DIRECTORY -x
+# we want to keep the destination mode/ownership (--no-preserve)
+# we want to keep symlinks and not de-reference them (-d)
+cp -r --no-preserve=mode,ownership -d $WORK_DIRECTORY/filesystem-tweaks/* $MOUNT_DIRECTORY/
+
+# However, some files in filesystem tweaks do need to be executable, so we set them again here
+chmod +x $MOUNT_DIRECTORY/usr/local/bin/tcpdump $MOUNT_DIRECTORY/etc/netkit/*
 
 # Copy in version file
 cp $BUILD_DIRECTORY/netkit-filesystem-version $MOUNT_DIRECTORY/etc/netkit-filesystem-version
@@ -68,7 +84,7 @@ chroot $MOUNT_DIRECTORY passwd -d root
 sed -i "s/$(whoami)@$(hostname)/root@netkit/g" $MOUNT_DIRECTORY/etc/ssh/*.pub
 
 # Save debconf-package-selections
-chroot $MOUNT_DIRECTORY debconf-get-selections > $WORK_DIRECTORY/build/debconf-package-selections.last
+(chroot $MOUNT_DIRECTORY debconf-get-selections) > $WORK_DIRECTORY/build/debconf-package-selections.last
 
 # Empty caches
 chroot $MOUNT_DIRECTORY apt clean

@@ -4,8 +4,8 @@ MAKEFILE_DIR := $(realpath $(dir $(MAKEFILE_PATH)))
 include ../Makefile.am
 
 # Kernel parameters
-KERNEL_VERSION=5.11
-KERNEL_URL=https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.11.tar.xz
+KERNEL_VERSION=5.14.9
+KERNEL_URL=https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.14.9.tar.xz
 KERNEL_ARCHIVE_NAME=$$(echo "${KERNEL_URL}" | sed 's:.*/::')
 KERNEL_FILE_EXTENSION=$$(echo "${KERNEL_ARCHIVE_NAME}" | sed 's:.*\.::')
 
@@ -38,7 +38,7 @@ ${BUILD_DIR}/linux-${KERNEL_VERSION}/downloaded.ready:
 
 	# If the file exists in the cache directory, copy it to our build directory
 	# Otherwise, download it and copy it to the cache directory
-	cd ${BUILD_DIR} ; test -f ${CACHE_DIR}/${KERNEL_ARCHIVE_NAME} && cp ${CACHE_DIR}/${KERNEL_ARCHIVE_NAME} . || wget ${KERNEL_URL} && cp ${KERNEL_ARCHIVE_NAME} ${CACHE_DIR}/${KERNEL_ARCHIVE_NAME}
+	cd ${BUILD_DIR} ; test -f ${CACHE_DIR}/${KERNEL_ARCHIVE_NAME} && cp ${CACHE_DIR}/${KERNEL_ARCHIVE_NAME} . || wget ${KERNEL_URL} --output-document=${CACHE_DIR}/${KERNEL_ARCHIVE_NAME} && cp ${CACHE_DIR}/${KERNEL_ARCHIVE_NAME} ${KERNEL_ARCHIVE_NAME}
 	# The file ending can be either .tar.xz (full-release) or .tar.gz (pre-release)
 	# Some tar's (GNU tar) do not require additional flags, this is therefore just a compatibility check
 	cd ${BUILD_DIR} ; test "${KERNEL_FILE_EXTENSION}" = "gz" && tar xzf ${KERNEL_ARCHIVE_NAME} || tar xJf ${KERNEL_ARCHIVE_NAME}

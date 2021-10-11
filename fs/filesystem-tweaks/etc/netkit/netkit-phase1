@@ -120,17 +120,14 @@ case $1 in
          # File check avoids need to set the nullglob shell option
          if [ -e "${shared_files[0]}" ]; then
             echo "Copying shared files from '/hostlab/shared/'"
-            # tar all the files inside the directory instead of just the
-            # directory itself, in order to properly cope with virtual
-            # machine directories that are symbolic links.
-            tar --exclude=CVS --exclude=.svn -C / -c hostlab/shared/* | tar -o -h -C / --strip 2 -xv | \
-            # Now mirror user's permissions to the group and to others
-            sed -r 's/^[^/]+\/[^/]+\//\//' | xargs -d "\n" stat --format="%a-%n" | { while IFS='-' read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} "${FILE}"; done; }
+            # Copy shared files, ignoring the ownership but keeping the permissions on the files
+			   cp -r --no-preserve=ownership -d /hostlab/shared/* /
          fi
 
-         if [ "$(echo "/hostlab/$hostname/"*)" != "/hostlab/$hostname/*" ]; then
+         if [ "$(echo /hostlab/$hostname/*)" != "/hostlab/$hostname/*" ]; then
             echo "Copying $hostname specific files from /hostlab/$hostname/..."
-            tar -C / -c "hostlab/$hostname/"* | tar -o -h -C / --strip 2 -xv | sed -r 's/^[^/]+\/[^/]+\//\//' | xargs -d "\n" stat --format="%a-%n" | { while IFS='-' read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} "${FILE}"; done; }
+            # Copy hostname specific files, ignoring the ownership but keeping the permissions on the files
+            cp -r --no-preserve=ownership -d /hostlab/$hostname/* /
          fi
          
          [ -n "$filesystem" ] && touch /etc/vhostconfigured

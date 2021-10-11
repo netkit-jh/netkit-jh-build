@@ -126,6 +126,8 @@ Console settings can be altered by the following options:
                           this    attach to stdin/stdout, i.e., use current
                                    terminal; only one console at a time can be
                                    set to 'this'.
+                          tmux    run in a tmux session (only valid with con0 -
+                                  see documentation for more details)
                           pty     attach to a pseudo-terminal
                           port:N  attach to TCP port N
                           none    disable console
@@ -134,7 +136,7 @@ Console settings can be altered by the following options:
       --xterm=TYPE    specify the terminal emulator application. The following
                         values are supported:
                           alacritty    use the lightweight Alacritty terminal
-                          gnome        use xtermGNOME Terminal
+                          gnome        use the GNOME Terminal
                           kitty        use the lightweight Kitty terminal
                           konsole      use the KDE Konsole
                           konsole-tab  same as above, but different virtual
@@ -445,7 +447,7 @@ while true; do
          shift
 
          case $console in
-            xterm|this|pty|port:*|none)
+            xterm|this|tmux|pty|port:*|none)
                [ "$option" = "--con0" ] && VM_CON0=$console || VM_CON1=$console
                ;;
             *)

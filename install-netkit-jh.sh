@@ -139,9 +139,13 @@ if [ -n "${KERNEL_EXTRACTED_FILES}" -a -n "${FS_EXTRACTED_FILES}" -a -n "${CORE_
     cp -r "${CORE_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
 else
     files_expected=("release-${VERSION}.sha256" "netkit-core-${VERSION}.tar.bz2" "netkit-fs-${VERSION}.tar.bz2" "netkit-kernel-${VERSION}.tar.bz2")
+
+    # Temporarily disable error checking as this function will return a non-zero code, causing bash to stop running the script
+    set +e
     check_files_exist "${DOWNLOAD_DIR}" "${files_expected[@]}"
     files_exist=$?
-    
+    set -e
+
     if [ ${files_exist} -eq 0 ]; then
         # If all expected files are found, we can continue
         echo "Downloaded files found in ${DOWNLOAD_DIR}, continuing..."
@@ -159,15 +163,15 @@ else
             exit 1
         fi
     fi
-    
+
     (cd ${DOWNLOAD_DIR}; sha256sum -c release-${VERSION}.sha256)
     FILES_INVALID=$?
-    
+
     if [ ${FILES_INVALID} -eq 1 ]; then
         echo "File checksums failed to verify, please delete the downloaded files and re-run this script." >&2
         exit 1
     fi
-    
+
     # strip-components removes the netkit-jh directory
     tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-core-${VERSION}.tar.bz2
     tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-fs-${VERSION}.tar.bz2

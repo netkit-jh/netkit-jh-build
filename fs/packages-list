@@ -19,6 +19,7 @@ debconf-utils
 dnsmasq
 dnsutils
 ebtables
+ettercap-text-only
 uml-utilities
 util-linux
 # emacs23-nox
@@ -56,7 +57,7 @@ openvpn
 # cpdns-recursor
 ppp
 pppoe
-proftpd-basic
+# proftpd - temporarily removed due to installation error, see https://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg1783748.html
 psmisc
 python3
 radvd

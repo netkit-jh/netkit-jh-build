@@ -1,0 +1,89 @@
+.TH VPACKAGE 1 "October 2021" "" "Netkit"
+.SH NAME
+vpackage \- manage packages on the Netkit model filesystem
+.SH SYNOPSIS
+.B vpackage
+\fI\,COMMAND\/\fR [\fI\,OPTION\/\fR]... [\fI\,PACKAGE\/\fR]...
+.SH DESCRIPTION
+.PP
+Manage PACKAGEs on the model Netkit filesystem with apt-get or dpkg.
+.PP
+Unless the \fB\-\-help\fR option is given, one of the commands below must be
+present. The following COMMANDs operate exactly as apt-get would:
+.TP
+\fBupdate\fR
+synchronise package index files with their respective sources
+.TP
+\fBupgrade\fR
+install latest package versions
+.TP
+\fBdist-upgrade\fR
+upgrade and potentially remove unnecessary packages
+.TP
+\fBinstall\fR \fRPACKAGE\fR...
+install or upgrade packages and their dependencies
+.TP
+\fBremove\fR \fIPACKAGE\fR...
+remove packages, leaving their configuration files
+.TP
+\fBpurge\fR \fIPACKAGE\fR...
+remove packages and their configuration files
+.TP
+\fBclean\fR
+clear out the apt cache
+.TP
+\fBautoremove\fR (alias \fBauto-remove\fR)
+remove dependencies that are no longer needed
+.PP
+You can use the following options to configure \fIvpackage\fR or the underlying
+package management command:
+.TP
+\fB\-d\fR \fI\,DIRECTORY\/\fR
+mount the filesystem at the directory DIRECTORY. If the mount point does not
+exist, Netkit will try to create it. The default is $VPACKAGE_MOUNT_POINT
+.TP
+\fB\-f\fR, \fB\-\-filesystem\fR=\fI\,FILENAME\/\fR
+use \fIFILENAME\fR as the filesystem to be mounted. By default, this is $VM_MODEL_FS
+.TP
+\fB\-o\fR, \fB\-\-pass=\fI\,OPTION\/\fR
+pass \fIOPTION\fR unaltered to the underlying package management command
+.TP
+\fB\-\-only\-upgrade
+only install upgrades for the selected packages. This uses the \fB\-\-only\-upgrade\fR
+option to apt\-get and must be used with the \fBinstall\fR subcommand
+.TP
+\fB\-y\fR, \fB\-\-assume\-yes\fR, \fB\-\-yes\fR
+automatic yes to prompts to run all commands non\-interactively. This uses the
+\fB\-\-assume\-yes\fR underlying option and therefore will only work with
+apt\-get (dpkg has no such option)
+.PP
+Miscellaneous
+.TP
+\fB\-\-help\fR
+display this help and exit
+.TP
+\fB\-p\fR, \fB\-\-print\fR
+use the \fB\-\-simulate\fR option on the underlying package management command
+to show which commands would be executed
+.TP
+\fB\-\-version\fR
+output version information and exit
+
+.SH "SEE ALSO"
+\fIvclean\fR(1),
+\fIvcommand\fR(1),
+\fIvconf\fR(1),
+\fIvconnnect\fR(1),
+\fIvcrash\fR(1),
+\fIvdump\fR(1),
+\fIvhalt\fR(1),
+\fIvlist\fR(1),
+\fIvstart\fR(1),
+Netkit filesystem README.
+
+.SH AUTHOR
+\fIvpackage\fR script: Adam Bromiley
+.br
+This man page: Adam Bromiley
+
+.so include/bugreport.man
