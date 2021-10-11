@@ -35,80 +35,91 @@
 
 # Function that mounts a certain directory on the host
 mountdir() {
-   HOST_DIR="$1"
-   GUEST_DIR="$2"
-   MESSAGE="$3"
+   local host_dir="$1"
+   local guest_dir="$2"
+   local message="$3"
 
-   echo  "$MESSAGE"
-   mkdir -p "$GUEST_DIR"
-   mount none "$GUEST_DIR" -t hostfs -o rw,"$HOST_DIR"
+   echo "$message"
+   mkdir -p "$guest_dir"
+   mount none "$guest_dir" --types hostfs --options "rw,$host_dir"
 }
 
-# ANSI style escape sequences
-DELIMITER_TEXT=$'\e[34;1m'
-NORMAL_TEXT=$'\e[0m\e[36m'
-INFO_FIELD=$'\e[34;4;1m'
-PLAIN_TEXT=$'\e[0m'
 
-case "$1" in
+# ANSI style escape sequences
+color_normal='\033[0m'
+color_bold_blue='\033[34;1m'
+color_cyan='\033[36m'
+
+
+case $1 in
    start) 
       echo
-      echo "${DELIMITER_TEXT}--- Starting Netkit phase 1 init script ---${NORMAL_TEXT}"
+      # The information block between the two line delimeters is coloured cyan
+      echo -e "$color_bold_blue--- Starting Netkit phase 1 init script ---$color_normal$color_cyan"
 
-      ASSIGN_VARIABLES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' \
-         '
-            ($1=="name") {print "HOSTNAME=" $2}
-            ($1=="hosthome") {print "HOSTHOME=" $2}
-            ($1=="hostlab") {print "HOSTLAB=" $2}
-            ($1=="title") {print "TITLE=" $2}
-            ($1=="def_route") {print "DEFAULT_ROUTE=" $2}
-            ($1=="ubd0") {print "FILESYSTEM=" $2}
-         ')
 
-      eval "$ASSIGN_VARIABLES"
-      COW=$(echo $FILESYSTEM|awk -v FS=, '{print $2}')
+      # Full command used to invoke the process
+      mapfile -d "" -t full_command < "/proc/cmdline"
 
-      AUTOCONF_INTERFACES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' \
-         '(match($1,"autoconf_eth[0-9]+")) {
-               gsub("autoconf_","",$1)
-               gsub("\n","",$2)
-               print "echo \"Bringing up interface " $1 " (" $2 ")...\""
-               print "ifconfig " $1 " " $2 " up"
-            }
-         ')
+      first_iteration=true
+      for argument in "${full_command[@]}"; do
+         # Skip program name
+         if $first_iteration; then
+            first_iteration=false
+            continue
+         fi
 
+         option=${argument%%=*}
+         value=${argument#*=}
+
+         case $option in
+            name)          hostname=$value;;
+            hosthome)      hosthome=$value;;
+            hostlab)       hostlab=$value;;
+            title)         title=$value;;
+            def_route)     default_route=$value;;
+            ubd0)          filesystem=${value#*,};;
+            autoconf_eth*)
+               # Get interface name (ethX)
+               device=${option#autoconf_}
+               # Array of alternating interface names and IP addresses
+               autoconf_interfaces+=( "$device" "$value" )
+            ;;
+         esac
+      done
+
+
+      HOSTNAME=$hostname
       export HOSTNAME
 
-      # Set title for the terminal window
-      if [ -n "$TITLE" ]; then
-         echo -ne "\e]2;${TITLE}\a"
-         # For Konsole (no longer used because title is set using the --title option)
-#         echo -ne "\e]30;${TITLE}\a"
-      fi
+
+      # Set title for the terminal window with special xterm escape sequence
+      [ -n "$title" ] && echo -ne "\033]2;$title\a"
 
       # Mount host directories inside the guest
-      [ -n "$HOSTHOME" ] && mountdir "$HOSTHOME" /hosthome "Mounting $HOSTHOME on /hosthome..."
-      [ -n "$HOSTLAB" ] && mountdir "$HOSTLAB" /hostlab "Mounting $HOSTLAB on /hostlab ..."
+      [ -n "$hosthome" ] && mountdir "$hosthome" /hosthome "Mounting $hosthome on '/hosthome/'"
+      [ -n "$hostlab" ] &&  mountdir "$hostlab"  /hostlab  "Mounting $hostlab on '/hostlab/'"
+
 
       # Configure virtual host for the first boot
       if [ ! -e /etc/vhostconfigured ]; then
-
-         if [ -n "$HOSTNAME" ]; then
-            echo "Configuring host name..."
-            echo $HOSTNAME > /etc/hostname
+         if [ -n "$hostname" ]; then
+            echo "Configuring host name"
+            echo "$hostname" > /etc/hostname
             hostname --file /etc/hostname
 
-            mv /etc/hosts /etc/hosts.tmp
-            echo 127.0.0.1 $HOSTNAME > /etc/hosts
-            cat /etc/hosts.tmp >> /etc/hosts
-            rm /etc/hosts.tmp
+            # Prepend IPv4 localhost entry to hosts file
+            sed --in-place "1s;^;127.0.0.1 $hostname\n;" /etc/hosts
          fi
 
-         echo "Running 'resolvconf -u' to generate /etc/resolv.conf"
+         echo "Running 'resolvconf -u' to generate '/etc/resolv.conf'"
          resolvconf -u
 
-         if [ "$(echo /hostlab/shared/*)" != "/hostlab/shared/*" ]; then
-            echo "Copying shared files from /hostlab/shared/..."
+         shared_files=( "/hostlab/shared/"* )
+
+         # File check avoids need to set the nullglob shell option
+         if [ -e "${shared_files[0]}" ]; then
+            echo "Copying shared files from '/hostlab/shared/'"
             # tar all the files inside the directory instead of just the
             # directory itself, in order to properly cope with virtual
             # machine directories that are symbolic links.
@@ -117,52 +128,56 @@ case "$1" in
             sed -r 's/^[^/]+\/[^/]+\//\//' | xargs -d "\n" stat --format="%a-%n" | { while IFS='-' read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} "${FILE}"; done; }
          fi
 
-         if [ "$(echo /hostlab/$HOSTNAME/*)" != "/hostlab/$HOSTNAME/*" ]; then
-            echo "Copying $HOSTNAME specific files from /hostlab/$HOSTNAME/..."
-            tar --exclude=CVS --exclude=.svn -C / -c hostlab/$HOSTNAME/* | tar -o -h -C / --strip 2 -xv | sed -r 's/^[^/]+\/[^/]+\//\//' | xargs -d "\n" stat --format="%a-%n" | { while IFS='-' read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} "${FILE}"; done; }
+         if [ "$(echo "/hostlab/$hostname/"*)" != "/hostlab/$hostname/*" ]; then
+            echo "Copying $hostname specific files from /hostlab/$hostname/..."
+            tar -C / -c "hostlab/$hostname/"* | tar -o -h -C / --strip 2 -xv | sed -r 's/^[^/]+\/[^/]+\//\//' | xargs -d "\n" stat --format="%a-%n" | { while IFS='-' read PERM FILE; do chmod ${PERM:0:1}${PERM:0:1}${PERM:0:1} "${FILE}"; done; }
          fi
          
-         [ ! -z "$COW" ] && touch /etc/vhostconfigured
+         [ -n "$filesystem" ] && touch /etc/vhostconfigured
       fi
 
-      # Autoconfigure interfaces, if asked to
-      if [ -n "$AUTOCONF_INTERFACES" ]; then
-         eval "$AUTOCONF_INTERFACES"
-      fi
+
+      # Autoconfigure interfaces
+      for (( i = 0; i < ${#autoconf_interfaces[@]}; i += 2 )); do
+         device=${autoconf_interfaces[$i]}
+         addr=${autoconf_interfaces[$(( i + 1 ))]}
+
+         echo "Bringing up interface $device ($addr)"
+         ifconfig "$device" "$addr" up
+      done
+
 
       # Insert a default entry in the routing table, if asked to
       # (this must be done after autoconfiguring interfaces)
-      if [ -n "$DEFAULT_ROUTE" ]; then
-         echo "Configuring default gateway: $DEFAULT_ROUTE..."
-         route add default gateway $DEFAULT_ROUTE
+      if [ -n "$default_route" ]; then
+         echo "Configuring default gateway: $default_route..."
+         route add default gateway "$default_route"
       fi
 
-      echo "${DELIMITER_TEXT}--- Netkit phase 1 initialization terminated ---${PLAIN_TEXT}"
+      echo "$color_bold_blue--- Netkit phase 1 initialization terminated ---$color_normal"
       echo
       ;;
-
    stop)
       echo
-      echo "${DELIMITER_TEXT}--- Starting Netkit phase 1 shutdown script ---${NORMAL_TEXT}"
+      echo "$color_bold_blue--- Starting Netkit phase 1 shutdown script ---$color_normal$color_cyan"
 
       if [ -d /hostlab ]; then
-         echo  "Unmounting and removing /hostlab..."
+         echo  "Unmounting and removing '/hostlab'"
          umount /hostlab
          rmdir /hostlab
       fi
 
-      echo  "Unmounting and removing /hosthome..."
+      # TODO: make mounting /hosthome optional
+      echo  "Unmounting and removing '/hosthome'"
       umount /hosthome
       rmdir /hosthome
 
-      echo "${DELIMITER_TEXT}--- Netkit phase 1 shutdown terminated ---${PLAIN_TEXT}"
+      echo "$color_bold_blue--- Netkit phase 1 shutdown terminated ---$color_normal"
       echo
       ;;
-
    *)
       echo "Usage: $0 {start|stop}"
       exit 1
       ;;
-
 esac
 
