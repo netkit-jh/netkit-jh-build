@@ -42,7 +42,7 @@ usage() {
 
    if [ "$status" -ne 0 ]; then
       usage_line 1>&2
-      echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
+      try_help
       exit "$status"
    fi
 
@@ -84,11 +84,11 @@ package management command:
                             apt-get (dpkg has no such option).
 
 Miscellaneous:
-      --help          display this help and exit
+$(help_option)
   -p, --print         use the --simulate option on the underlying package
                         management command to show which commands would be
                         executed
-      --version       output version information and exit
+$(version_option)
 END_OF_HELP
 
    exit "$status"
@@ -193,7 +193,7 @@ fi
 . "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
-logWrite "$0 $*"
+log_write "$0 $*"
 
 
 filesystem=$VM_MODEL_FS
