@@ -5,7 +5,7 @@
 - Machine names must conform to the Debian standard (which conforms to the RFC standard too)
 - Better output when multiple labs are specified in `linfo -m`
 - Script order:
-    1. /usr/bin/env bash shebang
+    1. `/usr/bin/env bash` shebang
     2. Copyright notice
     3. Script description
     4. `usage_line` & `usage`
@@ -22,6 +22,7 @@
 - Virtual network hub sockets are named with the user's MD5 digest instead of their name to avoid issues with invalid characters
 - Rename `--kill` to `--just-kill` in `vcrash` and `lcrash`
 - `uml_switch` logging now works
+- /etc/vhostconfigured (file indicating machine has been booted before) is now at /etc/netkit/.vhostconfigured
 
 # Removed
 - `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))
