@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #     Copyright 2002-2007 Maurizio Patrignani, Stefano Pettini, Maurizio Pizzonia,
 #     Fabio Ricci, Massimo Rimondini - Computer Networks Research Group, Roma Tre
