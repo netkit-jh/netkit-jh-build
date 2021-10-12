@@ -193,25 +193,25 @@ EOF
       fi
 
 
-      echo "$color_bold_blue--- Netkit phase 1 initialization terminated ---$color_normal"
+      echo -e "$color_bold_blue--- Netkit phase 1 initialization terminated ---$color_normal"
       echo
       ;;
    stop)
       echo
-      echo "$color_bold_blue--- Starting Netkit phase 1 shutdown script ---$color_normal$color_cyan"
+      echo -e "$color_bold_blue--- Starting Netkit phase 1 shutdown script ---$color_normal$color_cyan"
 
       if [ -d /hostlab ]; then
-         echo  "Unmounting and removing (if empty) '/hostlab'"
+         echo "Unmounting and removing (if empty) '/hostlab'"
          umount /hostlab
          rmdir /hostlab
       fi
 
       # TODO: make mounting /hosthome optional
-      echo  "Unmounting and removing (if empty) '/hosthome'"
+      echo "Unmounting and removing (if empty) '/hosthome'"
       umount /hosthome
       rmdir /hosthome
 
-      echo "$color_bold_blue--- Netkit phase 1 shutdown terminated ---$color_normal"
+      echo -e "$color_bold_blue--- Netkit phase 1 shutdown terminated ---$color_normal"
       echo
       ;;
    *)
