@@ -73,7 +73,7 @@ mount_host_dir() {
    local message="$3"
 
    [ -n "$message" ] && echo "$message"
-   mkdir -p "$guest_dir"
+   mkdir --parents "$guest_dir"
    mount none "$guest_dir" --types hostfs --options "rw,$host_dir"
 }
 
