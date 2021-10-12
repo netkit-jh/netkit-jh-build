@@ -55,11 +55,11 @@ usage_line() {
 SCRIPTNAME=$(basename "$0")
 
 
-# ANSI style escape sequences
-DELIMITER_TEXT=$'\e[34;1m'
-NORMAL_TEXT=$'\e[0m\e[36m'
-PLAIN_TEXT=$'\e[0m'
-INFO_FIELD=$'\e[34;1m'
+# ANSI color escape sequences
+color_normal='\033[0m'
+color_bold_blue='\033[34;1m'
+color_cyan='\033[36m'
+
 
 # Variables from the kernel command line (used by both start and stop,
 # namely $HOSTNAME - we don't trust what happens to $HOSTNAME within system)
@@ -79,7 +79,7 @@ export HOSTLAB
 case $1 in
    start) 
       echo
-      echo "${DELIMITER_TEXT}--- Starting Netkit phase 2 init script ---${NORMAL_TEXT}"
+      echo -e "$color_bold_blue--- Starting Netkit phase 2 init script ---$color_normal$color_cyan"
 
       if [ -f /hostlab/shared.startup ]; then
          echo
@@ -118,34 +118,35 @@ case $1 in
          : ${LAB_DESCRIPTION:="<none>"}
 
          echo
-         echo "${DELIMITER_TEXT}##################################################${NORMAL_TEXT}"
+         echo -e "$color_bold_blue##################################################"
          echo
-         echo "${INFO_FIELD}Lab directory (host)${NORMAL_TEXT}: $HOSTLAB"
-         echo "${INFO_FIELD}Version${NORMAL_TEXT}: $LAB_VERSION"
-         echo "${INFO_FIELD}Author${NORMAL_TEXT}:  $LAB_AUTHOR"
-         echo "${INFO_FIELD}Email${NORMAL_TEXT}:   $LAB_EMAIL"
-         echo "${INFO_FIELD}Web${NORMAL_TEXT}:     $LAB_WEB"
-         echo "${INFO_FIELD}Description${NORMAL_TEXT}:"
-         echo "$LAB_DESCRIPTION"
+         echo -e "Lab directory (host): $color_normal$color_cyan$HOSTLAB"
+         echo -e "${color_bold_blue}Version: $color_normal$color_cyan$LAB_VERSION"
+         echo -e "${color_bold_blue}Author:  $color_normal$color_cyan$LAB_AUTHOR"
+         echo -e "${color_bold_blue}Email:   $color_normal$color_cyan$LAB_EMAIL"
+         echo -e "${color_bold_blue}Web:     $color_normal$color_cyan$LAB_WEB"
+         echo -e "${color_bold_blue}Description:"
+         echo -e "$color_normal$color_cyan$LAB_DESCRIPTION"
          echo
-         echo "${DELIMITER_TEXT}##################################################${NORMAL_TEXT}"
+         echo -e "$color_bold_blue##################################################$color_normal"
          echo
-         touch /hostlab/$HOSTNAME.ready
+
+         touch "/hostlab/$HOSTNAME.ready"
       fi
 
 
-      if [ ! -z "$TEST" ]; then
+      if [ -n "$TEST" ]; then
          /sbin/netkit-test-phase
       fi
       
 
-      echo "${DELIMITER_TEXT}--- Netkit phase 2 initialization terminated ---${PLAIN_TEXT}"
+      echo -e "$color_bold_blue--- Netkit phase 2 initialization terminated ---$color_normal"
       echo
       ;;
 
    stop)
       echo
-      echo "${DELIMITER_TEXT}--- Starting Netkit phase 2 shutdown script ---${NORMAL_TEXT}"
+      echo -e "$color_bold_blue--- Starting Netkit phase 2 shutdown script ---$color_normal$color_cyan"
 
       if [ -f /hostlab/$HOSTNAME.shutdown ]; then
          echo
@@ -164,7 +165,7 @@ case $1 in
       fi
 
       
-      echo "${DELIMITER_TEXT}--- Netkit shutdown phase 2 terminated ---${PLAIN_TEXT}"
+      echo -e "$color_bold_blue--- Netkit shutdown phase 2 terminated ---$color_normal"
       echo
       ;;
 
