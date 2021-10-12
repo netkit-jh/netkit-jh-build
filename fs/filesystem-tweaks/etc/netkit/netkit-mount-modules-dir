@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Upon request, this file mounts a host directory containing kernel modules
 
@@ -20,6 +20,7 @@
 #     You should have received a copy of the GNU General Public License along
 #     with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
+
 ### BEGIN INIT INFO
 # Provides:          netkit-mount-modules-dir
 # Required-Start:
@@ -34,6 +35,28 @@
 # Description:       This is a Netkit initialization script. It is intended for
 #                    usage inside virtual machines.
 ### END INIT INFO
+
+
+###############################################################################
+# Write netkit-mount-modules-dir's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME {start|stop}"
+}
+
+
+SCRIPTNAME=$(basename "$0")
+
 
 case $1 in
    start) 
@@ -74,5 +97,9 @@ case $1 in
          echo "Unmounting /lib/modules"
          umount /lib/modules
       fi
+      ;;
+   *)
+      usage_line
+      exit 1
       ;;
 esac
