@@ -225,7 +225,7 @@ version_option() {
 show_version() {
    local netkit_version
    local kernel_filepath kernel_filename kernel_version
-   local filesystem_filepath filesystem_filename filesystem_version
+   local filesystem_version_long filesystem_version
 
    # Netkit version information
    echo -n "Netkit version:            "
