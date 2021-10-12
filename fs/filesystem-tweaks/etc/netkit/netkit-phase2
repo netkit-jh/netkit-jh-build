@@ -52,6 +52,32 @@ usage_line() {
 }
 
 
+###############################################################################
+# Get the value of a parameter set in a lab's lab.conf file and write to
+# standard output.
+# Usage:
+#   get_lab_variable VARIABLE DIR
+# Globals:
+#   None
+# Arguments:
+#   $1 - lab variable name
+#   $2 - lab directory
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+get_lab_variable() {
+   local variable=$1
+   local lab_conf="$2/lab.conf"
+
+   # Set lab variables from lab.conf. The sed expression prints only the first
+   # matching line and deletes the variable name and equals sign.
+   value=$(sed --quiet "0,/^$variable=/s///p" "$lab_conf")
+   echo "${value:-"<unknown>"}"
+}
+
+
 SCRIPTNAME=$(basename "$0")
 
 
@@ -61,118 +87,119 @@ color_bold_blue='\033[34;1m'
 color_cyan='\033[36m'
 
 
-# Variables from the kernel command line (used by both start and stop,
-# namely $HOSTNAME - we don't trust what happens to $HOSTNAME within system)
-ASSIGN_VARIABLES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' \
-    '
-                    ($1=="name") {print "HOSTNAME=" $2}
-                    ($1=="hostlab") {print "HOSTLAB=" $2}
-                    ($1=="exec") {print "COMMAND=" $2}
-                    ($1=="test") {print "TEST=" $1}
-                    ')
-eval "$ASSIGN_VARIABLES"
+# Hostname has been set in netkit-phase1
+hostname=$(hostname)
 
-# these may be used by scripts that we call
-export HOSTNAME
-export HOSTLAB
+
+# Full command used to invoke the process
+mapfile -d "" -t full_command < "/proc/cmdline"
+
+first_iteration=true
+for argument in "${full_command[@]}"; do
+   # Skip program name
+   if $first_iteration; then
+      first_iteration=false
+      continue
+   fi
+
+   option=${argument%%=*}
+   value=${argument#*=}
+
+   case $option in
+      hostlab) hostlab=$value;;
+      exec)    exec_cmd=${value#*,};;
+      test)    test_mode=1;;
+   esac
+done
+
 
 case $1 in
    start) 
       echo
       echo -e "$color_bold_blue--- Starting Netkit phase 2 init script ---$color_normal$color_cyan"
 
+
       if [ -f /hostlab/shared.startup ]; then
          echo
          echo ">>> Running shared startup script..."
-         sed "s/\r$//" /hostlab/shared.startup | /bin/bash
+         bash /hostlab/shared.startup
          echo ">>> End of shared startup script."
          echo
       fi
 
-      if [ -f /hostlab/$HOSTNAME.startup ]; then
+      if [ -f "/hostlab/$hostname.startup" ]; then
          echo
-         echo ">>> Running $HOSTNAME specific startup script..."
-         sed "s/\r$//" /hostlab/$HOSTNAME.startup | /bin/bash
-         echo ">>> End of $HOSTNAME specific startup script."
+         echo ">>> Running $hostname specific startup script..."
+         bash "/hostlab/$hostname.startup"
+         echo ">>> End of $hostname specific startup script."
          echo
       fi
 
-      if [ -x "$COMMAND" ]; then
-         echo "Executing $COMMAND ..."
-         $COMMAND
+
+      if [ -n "$exec_cmd" ]; then
+         echo "Executing $exec_cmd"
+         $exec_cmd
       fi
 
 
-
-      if [ -d /hostlab ]; then
-         # Read lab configuration file, if present
-         if [ -r "/hostlab/lab.conf" ]; then
-            # Filter out unuseful (and potentially invalid) lab.conf contents.
-            eval $(grep -E "(LAB_VERSION)|(LAB_AUTHOR)|(LAB_EMAIL)|(LAB_WEB)|(LAB_DESCRIPTION)" /hostlab/lab.conf | sed -r 's/LAB_([A-Z]+)=([^\"])/LAB_\1=\"\2/; /LAB_([A-Z]+)=/ s/([^\"])[ ]*$/\1\"/')
-         fi
-
-         : ${LAB_VERSION:="<none>"}
-         : ${LAB_AUTHOR:="<none>"}
-         : ${LAB_EMAIL:="<none>"}
-         : ${LAB_WEB:="<none>"}
-         : ${LAB_DESCRIPTION:="<none>"}
+      if [ -d /hostlab/ ]; then
+         lab_version=$(get_lab_variable "LAB_VERSION" "/hostlab/")
+         lab_author=$(get_lab_variable "LAB_AUTHOR" "/hostlab/")
+         lab_email=$(get_lab_variable "LAB_EMAIL" "/hostlab/")
+         lab_web=$(get_lab_variable "LAB_WEB" "/hostlab/")
+         lab_description=$(get_lab_variable "LAB_DESCRIPTION" "/hostlab/")
 
          echo
          echo -e "$color_bold_blue##################################################"
          echo
-         echo -e "Lab directory (host): $color_normal$color_cyan$HOSTLAB"
-         echo -e "${color_bold_blue}Version: $color_normal$color_cyan$LAB_VERSION"
-         echo -e "${color_bold_blue}Author:  $color_normal$color_cyan$LAB_AUTHOR"
-         echo -e "${color_bold_blue}Email:   $color_normal$color_cyan$LAB_EMAIL"
-         echo -e "${color_bold_blue}Web:     $color_normal$color_cyan$LAB_WEB"
+         echo -e                   "Lab directory: $color_normal$color_cyan$hostlab"
+         echo -e "${color_bold_blue}Version:       $color_normal$color_cyan$lab_version"
+         echo -e "${color_bold_blue}Author:        $color_normal$color_cyan$lab_author"
+         echo -e "${color_bold_blue}Email:         $color_normal$color_cyan$lab_email"
+         echo -e "${color_bold_blue}URL:           $color_normal$color_cyan$lab_web"
          echo -e "${color_bold_blue}Description:"
-         echo -e "$color_normal$color_cyan$LAB_DESCRIPTION"
+         echo -e "$color_normal$color_cyan$lab_description"
          echo
          echo -e "$color_bold_blue##################################################$color_normal"
          echo
 
-         touch "/hostlab/$HOSTNAME.ready"
+         touch "/hostlab/$hostname.ready"
       fi
 
 
-      if [ -n "$TEST" ]; then
-         /sbin/netkit-test-phase
-      fi
+      [ -n "$test_mode" ] && /sbin/netkit-test-phase
       
 
       echo -e "$color_bold_blue--- Netkit phase 2 initialization terminated ---$color_normal"
       echo
       ;;
-
    stop)
       echo
       echo -e "$color_bold_blue--- Starting Netkit phase 2 shutdown script ---$color_normal$color_cyan"
 
-      if [ -f /hostlab/$HOSTNAME.shutdown ]; then
+
+      if [ -f "/hostlab/$hostname.shutdown" ]; then
          echo
-         echo ">>> Running $HOSTNAME specific shutdown script..."
-         sed "s/\r$//" /hostlab/$HOSTNAME.shutdown | /bin/bash
-         echo ">>> End of $HOSTNAME specific shutdown script."
+         echo ">>> Running $hostname specific shutdown script..."
+         bash "/hostlab/$hostname.shutdown"
+         echo ">>> End of $hostname specific shutdown script."
          echo
       fi
 
       if [ -f /hostlab/shared.shutdown ]; then
          echo
          echo ">>> Running shared shutdown script..."
-         sed "s/\r$//" /hostlab/shared.shutdown | /bin/bash
+         bash /hostlab/shared.shutdown
          echo ">>> End of shared shutdown script."
          echo
       fi
 
-      
+
       echo -e "$color_bold_blue--- Netkit shutdown phase 2 terminated ---$color_normal"
       echo
       ;;
-
    *)
       usage_line
       exit 1
       ;;
-
 esac
-
