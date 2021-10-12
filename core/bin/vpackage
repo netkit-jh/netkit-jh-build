@@ -85,9 +85,10 @@ package management command:
 
 Miscellaneous:
 $(help_option)
-  -p, --print         use the --simulate option on the underlying package
-                        management command to show which commands would be
-                        executed
+  -n, --just-print, --dry-run, --recon  use the --simulate option on the
+                                         underlying package management command
+                                         to show which commands would be
+                                         executed
 $(version_option)
 END_OF_HELP
 
@@ -201,8 +202,8 @@ mount_point=$VPACKAGE_MOUNT_POINT
 
 
 # Get command line options
-long_opts="assume-yes,filesystem:,help,only-upgrade,pass:,print,version,yes"
-short_opts="d:o:py"
+long_opts="assume-yes,dry-run,filesystem:,help,just-print,only-upgrade,pass:,recon,version,yes"
+short_opts="d:no:y"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
@@ -225,15 +226,15 @@ while true; do
       --help)
          usage 0
          ;;
+      -n|--dry-run|--just-print|--recon)
+         passthrough_opts=( "--simulate" "${passthrough_opts[@]}" )
+         ;;
       -o|--pass)
          passthrough_opts+=( "$2" )
          shift
          ;;
       --only-upgrade)
          passthrough_opts=( "--only-upgrade" "${passthrough_opts[@]}" )
-         ;;
-      -p|--print)
-         passthrough_opts=( "--simulate" "${passthrough_opts[@]}" )
          ;;
       --version)
          showVersion

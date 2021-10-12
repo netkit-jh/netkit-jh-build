@@ -23,6 +23,7 @@
 - Rename `--kill` to `--just-kill` in `vcrash` and `lcrash`
 - `uml_switch` logging now works
 - /etc/vhostconfigured (file indicating machine has been booted before) is now at /etc/netkit/.vhostconfigured
+- `-p`|`--print` option has been changed to `-n`|`--dry-run`|`--just-print`|`--recon` for `vconf`, `vpackage`, and `vstart`. This follows what the Make utility uses
 
 # Removed
 - `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))

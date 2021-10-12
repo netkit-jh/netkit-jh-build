@@ -278,7 +278,7 @@ show_version() {
 ###############################################################################
 # Execute a command and write the argument list to stdout.
 # Usage:
-#   run_command DRY_RUN PRINTED_CMD CMD...
+#   run_command JUST_PRINT PRINTED_CMD CMD...
 # Globals:
 #   None
 # Arguments:
@@ -293,7 +293,7 @@ show_version() {
 #   None
 ###############################################################################
 run_command() {
-   local dry_run=$1
+   local just_print=$1
    local printed_cmd=$2
    local run_cmd=( "${@:3}" )
 
@@ -301,7 +301,7 @@ run_command() {
    # being executed.
    [ -z "$printed_cmd" ] && printed_cmd=${run_cmd[*]}
 
-   if [ -n "$dry_run" ]; then
+   if [ -n "$just_print" ]; then
       echo "Not running ==> $printed_cmd"
       return 0
    fi

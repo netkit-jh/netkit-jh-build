@@ -171,8 +171,8 @@ $(help_option)
                         hubs are always started in background, regardless of
                         this option. This is the default when using 'this' as
                         the console mode
-  -p, --print         do not start anything, just show which commands would be
-                        executed
+  -n, --dry-run, --just-print, --recon  do not start anything, just show which
+                                         commands would be executed
   --tmux-attached     run each VM in tmux and start a terminal attached to the
                         tmux session. This is equivalent to VM_CON0=tmux and
                         TMUX_OPEN_TERMS=yes in netkit.conf
@@ -419,10 +419,11 @@ log_write "$0 $*"
 
 
 # Get command line options
-long_opts="append:,con0:,con1:,debug,exec:,filesystem:,foreground,help,\
-hide-disk-file,hostlab:,kernel:,mem:,model-fs:,no-cow,no-hosthome,\
-print,test,tmux-attached,tmux-detached,verbose,version,xterm:"
-short_opts="De:Ff:Hk:Ll:M:m:pvWw:"
+long_opts="append:,con0:,con1:,debug,dry-run,exec:,filesystem:,foreground,\
+help,hide-disk-file,hostlab:,just-print,kernel:,mem:,model-fs:,no-cow,\
+no-hosthome,print,recon,test,tmux-attached,tmux-detached,verbose,version,\
+xterm:"
+short_opts="De:Ff:Hk:Ll:M:m:nvWw:"
 
 for i in $(seq 0 $MAX_INTERFACES); do
    long_opts="$long_opts,eth$i:"
@@ -512,7 +513,7 @@ while true; do
          VM_MODEL_FS=$(readlink --canonicalize-missing "$2")
          shift
          ;;
-      -p|--print)
+      -n|--dry-run|--just-print|--recon)
          just_print=1
          ;;
       --test)

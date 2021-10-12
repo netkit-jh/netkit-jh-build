@@ -108,8 +108,8 @@ Attach network interfaces to running virtual machines.
 
 Miscellaneous:
 $(help_option)
-  -p, --print         do not actually start anything. Just show which commands
-                        would be executed
+  -n, --dry-run, --just-print, --recon  do not actually start anything. Just
+                                         show which commands would be executed
 $(version_option)
 
 Notice: arguments containing spaces are not allowed. Interfaces attached by
@@ -282,8 +282,8 @@ target_user=$USER_ID
 
 
 # Get command line options
-long_opts="help,print,version,user:"
-short_opts="pu:"
+long_opts="dry-run,help,just-print,recon,version,user:"
+short_opts="nu:"
 
 # Append a new long option for each network interface that can be configured
 for ((i = 0; i < MAX_INTERFACES; ++i)); do
@@ -311,7 +311,7 @@ while true; do
       --help)
          usage 0
          ;;
-      -p|--print)
+      -n|--dry-run|--just-print|--recon)
          just_print=1
          ;;
       -u|--user)
