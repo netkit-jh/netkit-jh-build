@@ -265,22 +265,9 @@ show_version() {
 
    # Netkit filesystem version information
    echo -n "Netkit filesystem version: "
-
-   if [ -e "$VM_MODEL_FS" ]; then
-      filesystem_filepath=$VM_MODEL_FS
-
-      # By default, the filesystem is a symbolic link
-      [ -L "$filesystem_filepath" ] && filesystem_filepath=$(readlink "$filesystem_filepath")
-
-      filesystem_filename=$(basename "$filesystem_filepath")
-      filesystem_version=${filesystem_filename##"netkit-fs-"}
-
-      if [ "$filesystem_version" = "$filesystem_filename" ]; then
-         echo "<unknown>"
-      else
-         echo "$filesystem_version"
-      fi
-   fi
+   filesystem_version_long=$(cat "$NETKIT_HOME/fs/netkit-filesystem-version" 2> /dev/null)
+   filesystem_version=${filesystem_version_long##"Netkit-JH filesystem version "}
+   echo "${filesystem_version:-"<unknown>"}"
    
    # Host kernel version information
    echo -n "Host kernel version:       "
