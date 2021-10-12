@@ -1000,7 +1000,7 @@ netkit_dir_check() {
    local dir=$1
 
    if [ ! -e "$dir" ]; then
-      mkdir "$dir"
+      mkdir --parents "$dir" || exit 1
       chmod 777 "$dir"
    elif [ ! -d "$dir" ]; then
       echo 1>&2 "File '$dir' exists: unable to create directory '$dir'"
