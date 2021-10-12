@@ -32,3 +32,4 @@
 - `-q`|`--quiet` option from `vconf` and `vstart`
 - Port helper compatibility
 - `-w`|`--hostwd` option from `vstart` (it did not provide any purpose)
+- /etc/netkit/netkit-welcome script (was disabled anyway)
