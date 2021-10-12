@@ -400,23 +400,24 @@ get_hub_socket() {
 # host. NAT rules are created to allow access to the Internet through the host
 # interface.
 # Usage:
-#   start_inet_hub HUB ADDR
+#   start_inet_hub JUST_PRINT HUB ADDR
 # Globals:
 #   r- HUB_LOG
-#   r- JUST_PRINT
 #   r- NETKIT_HOME
 #   r- USER_ID
 # Arguments:
-#   $1 - hub socket filepath
-#   $2 - address of the tap interface on the host
+#   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $2 - hub socket filepath
+#   $3 - address of the tap interface on the host
 # Returns:
 #   None. Exits with a non-zero code on a configuration error
 # Example:
 #   None
 ###############################################################################
 start_inet_hub() {
-   local hub_socket=$1
-   local tap_address=$2
+   local just_print=$1
+   local hub_socket=$2
+   local tap_address=$3
 
    local manage_tuntap_cmd
    local interface_name uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
@@ -430,7 +431,7 @@ start_inet_hub() {
       echo "   (host) $tap_address"
       echo "********     (root privileges are required)      ********"
 
-      if ! run_command "$JUST_PRINT" "" "${manage_tuntap_cmd[@]}"; then
+      if ! run_command "$just_print" "" "${manage_tuntap_cmd[@]}"; then
          echo 1>&2 "Error while configuring the tunnel."
          exit 1
       fi
@@ -450,12 +451,12 @@ start_inet_hub() {
                     "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
       
-      run_command "$JUST_PRINT" "$printed_uml_switch_cmd" \
+      run_command "$just_print" "$printed_uml_switch_cmd" \
          "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
-   while [ -z "$JUST_PRINT" ] && [ ! -S "$hub_socket" ]; do
+   while [ -z "$just_print" ] && [ ! -S "$hub_socket" ]; do
       sleep 1
    done
 }
@@ -464,21 +465,22 @@ start_inet_hub() {
 ###############################################################################
 # Start a virtual network hub.
 # Usage:
-#   start_hub HUB
+#   start_hub JUST_PRINT HUB
 # Globals:
 #   r- HUB_LOG
-#   r- JUST_PRINT
 #   r- NETKIT_HOME
 #   r- USER_ID
 # Arguments:
-#   $1 - hub socket filepath
+#   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $2 - hub socket filepath
 # Returns:
 #   None. Exits with a non-zero code on a configuration error
 # Example:
 #   None
 ###############################################################################
 start_hub() {
-   local hub_socket=$1
+   local just_print=$1
+   local hub_socket=$2
 
    local uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
    local hub_log_cmd
@@ -497,12 +499,12 @@ start_hub() {
                     "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
 
-      run_command "$JUST_PRINT" "$printed_uml_switch_cmd" \
+      run_command "$just_print" "$printed_uml_switch_cmd" \
          "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
-   while [ -z "$JUST_PRINT" ] && [ ! -S "$hub_socket" ]; do
+   while [ -z "$just_print" ] && [ ! -S "$hub_socket" ]; do
       sleep 1
    done
 }
@@ -511,25 +513,26 @@ start_hub() {
 ###############################################################################
 # Start all hubs specified in an array.
 # Usage:
-#   run_hubs [HUB[,ADDR]]...
+#   run_hubs JUST_PRINT [HUB[,ADDR]]...
 # Globals:
 #   r- HUB_LOG
 #   r- HUB_SOCKET_DIR
 #   r- HUB_SOCKET_EXTENSION
 #   r- HUB_SOCKET_PREFIX
-#   r- JUST_PRINT
 #   r- NETKIT_HOME
 #   r- USER_ID
 # Arguments:
+#   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
 #  ... - list of hub names optionally paired with an IP address (for a tap
 #        interface).
 # Returns:
 #   None. Exits with a non-zero code on a configuration error
 # Example:
-#   run_hubs hub1 hub2 tap,10.0.0.1 hub3
+#   run_hubs "" hub1 hub2 tap,10.0.0.1 hub3
 ###############################################################################
 run_hubs() {
-   local hub_specifications=( "$@" )
+   local just_print=$1
+   local hub_specifications=( "${@:2}" )
 
    local hub_specification hub_name tap_address hub_socket
 
@@ -539,9 +542,9 @@ run_hubs() {
       hub_socket=$(get_hub_socket "$hub_name")
 
       if [ -n "$tap_address" ]; then
-         start_inet_hub "$hub_socket" "$tap_address"
+         start_inet_hub "$just_print" "$hub_socket" "$tap_address"
       else
-         start_hub "$hub_socket"
+         start_hub "$just_print" "$hub_socket"
       fi
    done
 }
@@ -556,7 +559,6 @@ run_hubs() {
 #   r- HUB_SOCKET_DIR
 #   r- HUB_SOCKET_EXTENSION
 #   r- HUB_SOCKET_PREFIX
-#   r- JUST_PRINT
 #   r- NETKIT_HOME
 #   r- USER_ID
 # Arguments:

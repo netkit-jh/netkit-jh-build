@@ -216,12 +216,12 @@ setup_interfaces() {
 ###############################################################################
 # Attach/remove network interfaces from running machines with mconsole.
 # Usage:
-#   invoke_mconsole MACHINE [VCONF_DEVICES]...
+#   invoke_mconsole JUST_PRINT MACHINE [VCONF_DEVICES]...
 # Globals:
-#   r- JUST_PRINT
 #   r- NETKIT_HOME
 # Arguments:
-#   $1 - machine name
+#   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $2 - machine name
 #  ... - list of devices to configure. To remove an interface: 'ethN', to add
 #        an interface: 'ethN=daemon,,,path/to/socket'.
 # Returns:
@@ -230,8 +230,9 @@ setup_interfaces() {
 #   None
 ###############################################################################
 invoke_mconsole() {
-   local vhost=$1
-   local vconf_devices=( "${@:2}" )
+   local just_print=$1
+   local vhost=$2
+   local vconf_devices=( "${@:3}" )
 
    local device_specification device hub_specification
    local action action_desc
@@ -256,7 +257,7 @@ invoke_mconsole() {
 
       uml_mconsole_cmd=( "$NETKIT_HOME/bin/uml_mconsole" "$vhost" "$action" "$device" )
 
-      if ! run_command "$JUST_PRINT" "" "${uml_mconsole_cmd[@]}" 2>&1; then
+      if ! run_command "$just_print" "" "${uml_mconsole_cmd[@]}" 2>&1; then
          echo 2>&1 "Failed to $action_desc interface '$device'"
       fi
    done
@@ -311,7 +312,7 @@ while true; do
          usage 0
          ;;
       -p|--print)
-         JUST_PRINT=1
+         just_print=1
          ;;
       -u|--user)
          target_user=$2
@@ -370,7 +371,7 @@ if [ ${#network_interfaces[@]} -gt 0 ]; then
 fi
 
 # Start network hubs
-run_hubs "${HUB_LIST[@]}"
+run_hubs "$just_print" "${HUB_LIST[@]}"
 
 # Attach/remove network interfaces
-invoke_mconsole "$vhost" "${VCONF_DEVICES[@]}"
+invoke_mconsole "$just_print" "$vhost" "${VCONF_DEVICES[@]}"

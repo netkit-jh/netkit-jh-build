@@ -371,13 +371,13 @@ remove_fs_command() {
 # Run relevant kernel invocation setup functions and then invoke the UML kernel
 # instance. Upon return, clean up redundant network hubs.
 # Usage:
-#   run_kernel FILE MACHINE
+#   run_kernel JUST_PRINT FILE MACHINE
 # Globals:
 #   r- HUB_LIST
-#   r- JUST_PRINT
 #   r- kernel_cmd
 # Arguments:
-#   $1 - filesystem (.disk) file to remove. Empty string to not remove it
+#   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $2 - filesystem (.disk) file to remove. Empty string to not remove it
 #   $2 - machine name
 # Returns:
 #   None
@@ -385,19 +385,20 @@ remove_fs_command() {
 #   None
 ###############################################################################
 run_kernel() {
-   local filesystem=$1
-   local vhost=$2
+   local just_print=$1
+   local filesystem=$2
+   local vhost=$3
 
    # If doing a dry run, we want to skip all four commands here.
-   if [ -n "$JUST_PRINT" ]; then
-      run_command "$JUST_PRINT" "" "${kernel_cmd[@]}"
+   if [ -n "$just_print" ]; then
+      run_command "$just_print" "" "${kernel_cmd[@]}"
       return
    fi
    
    # Remove .disk file, if requested
    [ -n "$filesystem" ] && remove_fs_command "$filesystem" &
 
-   run_command "$JUST_PRINT" "" "${kernel_cmd[@]}"
+   run_command "$just_print" "" "${kernel_cmd[@]}"
 
    clean_hubs "${HUB_LIST[@]}"
 }
@@ -512,7 +513,7 @@ while true; do
          shift
          ;;
       -p|--print)
-         JUST_PRINT=1
+         just_print=1
          ;;
       --test)
          kernel_cmd_append+=( "test" )
@@ -779,7 +780,7 @@ echo
 ###############################################################################
 
 
-if [ -z "$JUST_PRINT" ]; then
+if [ -z "$just_print" ]; then
    # Check whether the virtual machine already exists
    if get_machine_state "$USER_ID" "$vhost"; then
       echo 1>&2 "$SCRIPTNAME: Virtual machine '$vhost' is already running; halt it or use a different hostname"
@@ -795,22 +796,22 @@ fi
 
 
 # Start network hubs
-run_hubs "${HUB_LIST[@]}"
+run_hubs "$just_print" "${HUB_LIST[@]}"
 
 
 # Completely hide primary console, if requested to
 if [ "$VM_CON0" = "none" ]; then
    # Start machine in background unless otherwise requested
    if [ -n "$foreground" ] || [ "$VM_CON1" = "this" ]; then
-      run_kernel ${remove_fs:+"$filesystem"} "$vhost" > /dev/null 2>&1
+      run_kernel "$just_print" "${remove_fs:+$filesystem}" "$vhost" > /dev/null 2>&1
    else
-      run_kernel ${remove_fs:+"$filesystem"} "$vhost" > /dev/null 2>&1 &
+      run_kernel "$just_print" "${remove_fs:+$filesystem}" "$vhost" > /dev/null 2>&1 &
    fi
 else
    if [ -n "$foreground" ] || [ "$VM_CON1" = "this" ]; then
-      run_kernel ${remove_fs:+"$filesystem"} "$vhost"
+      run_kernel "$just_print" "${remove_fs:+$filesystem}" "$vhost"
    else
-      run_kernel ${remove_fs:+"$filesystem"} "$vhost" &
+      run_kernel "$just_print" "${remove_fs:+$filesystem}" "$vhost" &
    fi
 fi
 
