@@ -663,7 +663,10 @@ else
 
    echo -n "   Filesystem:  $filesystem"
    validate_ubd_argument "$VM_MODEL_FS" "$filesystem"
-   check_filesystem "$filesystem"
+
+   # We check the directory because the .disk (if new) will not already be
+   # there
+   check_filesystem "$(dirname "$filesystem")"
 
    # Explicitly declaring the model fs name is redundant after the COW file has
    # been created. Nevertheless, this is needed in order to later get
