@@ -698,12 +698,13 @@ fi
 
 
 ### CONSOLES ##################################################################
+# NOTE: "xterm" maps to "this" for con0 because of the previously used
+# port-helper option.
 case $VM_CON0 in
-   none)    kernel_cmd+=( "con0=null" );;
-   xterm)   kernel_cmd+=( "con0=xterm" );;
-   this)    kernel_cmd+=( "con0=fd:0,fd:1" );;
-   pty)     kernel_cmd+=( "con0=pty" );;
-   port:*)  kernel_cmd+=( "con0=$VM_CON0" );;
+   none)       kernel_cmd+=( "con0=null" );;
+   this|xterm) kernel_cmd+=( "con0=fd:0,fd:1" );;
+   pty)        kernel_cmd+=( "con0=pty" );;
+   port:*)     kernel_cmd+=( "con0=$VM_CON0" );;
 esac
 
 case $VM_CON1 in
