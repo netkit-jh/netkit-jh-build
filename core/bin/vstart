@@ -342,7 +342,7 @@ setup_interfaces() {
       echo "$indent$device @ $hub_name ($hub_socket)"
 
       # Indent subsequent lines
-      indent="               "
+      indent="                "
    done
 }
 
