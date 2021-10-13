@@ -133,6 +133,35 @@ string_contains() {
 
 
 ###############################################################################
+# Check if an array contains a string.
+# Usage:
+#   array_contains QUERY ARRAY
+# Globals:
+#   None
+# Arguments:
+#   $1 - string to search for
+#   $2 - word-expanded array to search
+# Returns:
+#   0 if array contains query, non-zero if not
+# Example:
+#   bar=( a b c )
+#   if array_contains "a" "${bar[@]}"; then echo "Found!"; fi
+###############################################################################
+array_contains() {
+   local query=$1
+   local array=( "${@:2}" )
+
+   local item
+
+   for item in "${array[@]}"; do
+      [ "$query" = "$item" ] && return 0
+   done
+
+   return 1
+}
+
+
+###############################################################################
 # Write commands to the Netkit-JH log file.
 # Usage:
 #   log_write ...
@@ -1040,6 +1069,7 @@ collision_domain_name_regex="([[:alnum:]_.-]+)"
 
 # Read Netkit configuration in order of file localisation (per system, per
 # install, per user).
+# TODO: move into own source script
 # shellcheck disable=SC1091
 [ -f /etc/netkit.conf ] && . "/etc/netkit.conf"
 # shellcheck source=../netkit.conf

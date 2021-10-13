@@ -28,6 +28,10 @@
 LCOMMON_SRC=1
 
 
+# shellcheck source=./script_utils
+. "$NETKIT_HOME/bin/script_utils"
+
+
 ###############################################################################
 # Print a string with bold formatting.
 # Usage:
@@ -44,35 +48,6 @@ LCOMMON_SRC=1
 ###############################################################################
 bold_print() {
    echo -e "$color_bold$1$color_normal"
-}
-
-
-###############################################################################
-# Check if an array contains a string.
-# Usage:
-#   array_contains QUERY ARRAY
-# Globals:
-#   None
-# Arguments:
-#   $1 - string to search for
-#   $2 - word-expanded array to search
-# Returns:
-#   0 if array contains query, non-zero if not
-# Example:
-#   bar=( a b c )
-#   if array_contains "a" "${bar[@]}"; then echo "Found!"; fi
-###############################################################################
-array_contains() {
-   local query=$1
-   local array=( "${@:2}" )
-
-   local item
-
-   for item in "${array[@]}"; do
-      [ "$query" = "$item" ] && return 0
-   done
-
-   return 1
 }
 
 
