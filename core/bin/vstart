@@ -647,7 +647,7 @@ kernel_cmd+=( "mem=${VM_MEMORY}M" )
 
 
 ### FILESYSTEM(S) #############################################################
-echo "   Model fs:   $VM_MODEL_FS"
+echo "   Model fs:    $VM_MODEL_FS"
 
 if [ -n "$no_cow" ]; then
    echo "   Filesystem:  using model fs (no COW)"
