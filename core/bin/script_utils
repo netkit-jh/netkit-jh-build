@@ -829,7 +829,7 @@ get_vhost_info_by_pid() {
    unset vhost_info
    unset vhost_sockets
 
-   declare -A vhost_info
+   declare -A -g vhost_info
 
    vhost_info["pid"]=$pid
 
