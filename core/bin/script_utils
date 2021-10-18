@@ -920,7 +920,7 @@ get_vhost_info_by_pid() {
             [ "${vhost_info["disk"]}" = "${vhost_info["fs"]}" ] && unset vhost_info["disk"]
             ;;
          umid)       vhost_info["umid"]=$value;;
-         *)          vhost_info["other"]="${vhost_info[$other]} $argument"
+         *)          vhost_info["other"]="${vhost_info[other]} $argument"
       esac
    done
 
