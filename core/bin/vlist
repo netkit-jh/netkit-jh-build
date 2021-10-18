@@ -210,7 +210,10 @@ print_vhost_info_by_name() {
    echo " --- Emulation parameters ---"
    echo "   Kernel:          ${vhost_info[kernel]}"
    echo "   Modules:         ${vhost_info[modules]:-"-"}"
-   echo "   Memory:          $((vhost_info[mem] - VM_MEMORY_SKEW)) MB (+$VM_MEMORY_SKEW MB skew)"
+
+   # Remove the M suffix from the memory value
+   vhost_mem_mb=${vhost_info[mem]%M}
+   echo "   Memory:          $((vhost_mem_mb - VM_MEMORY_SKEW)) MB (+$VM_MEMORY_SKEW MB skew)"
    echo "   Model fs:        ${vhost_info[fs]}"
    echo "   Filesystem:      ${vhost_info[disk]:-"-"}"
 
