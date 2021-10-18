@@ -140,7 +140,7 @@ kill_all_vhosts() {
 
    local pids
 
-   mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]]")
+   mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL")
 
    echo "   PIDs: ${pids[*]}"
 
@@ -167,7 +167,7 @@ kill_all_vhosts() {
    kill -TERM "${pids[@]}"
 
    sleep 1
-   mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]]")
+   mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL")
 
    if [ "${#pids[@]}" -gt 0 ]; then
       echo -n "killing harder... "
@@ -176,7 +176,7 @@ kill_all_vhosts() {
       kill -CONT "${pids[@]}"
 
       sleep 1
-      mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]]")
+      mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL")
 
       if [ "${#pids[@]}" -gt 0 ]; then
          echo "failed!"

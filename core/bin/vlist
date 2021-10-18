@@ -131,7 +131,7 @@ print_vhost_summary() {
    # The process hierarchy (relevance of the PGID) is documented in
    # scripts_utils.
    machine_count=0
-   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/kernel/netkit-kernel"); do
+   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL"); do
       # Get the process group ID (PGID)
       pgid=$(ps --no-headers --format pgid --pid "$pid")
 

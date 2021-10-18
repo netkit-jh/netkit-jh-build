@@ -680,7 +680,7 @@ get_vhost_pid_by_name() {
    # instances if there is a machine called "foo" and "foo bar". We hence do
    # further processing - this filter just removes processes which definitely
    # are not matches.
-   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]].*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
+   full_command_regex="^$VM_KERNEL.*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
 
    # The process hierarchy looks like this:
    #
@@ -768,7 +768,7 @@ get_vhost_all_pids_by_name() {
    # instances if there is a machine called "foo" and "foo bar". We hence do
    # further processing - this filter just removes processes which definitely
    # are not matches.
-   full_command_regex="^$NETKIT_HOME/kernel/netkit-kernel[[:blank:]].*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
+   full_command_regex="^$VM_KERNEL.*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
 
    # See get_vhost_pid_by_name for a process hierarchy explanation.
 
