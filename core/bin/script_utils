@@ -802,6 +802,7 @@ get_vhost_info_by_pid() {
 
    local first_iteration argument option value
    local device_id
+   local vhost_info_other
 
    # Unset the globals
    unset vhost_info
@@ -898,9 +899,11 @@ get_vhost_info_by_pid() {
             [ "${vhost_info["disk"]}" = "${vhost_info["fs"]}" ] && unset vhost_info["disk"]
             ;;
          umid)       vhost_info["umid"]=$value;;
-         *)          vhost_info["other"]="${vhost_info[other]} $argument"
+         *)          vhost_info_other+=( "$argument" )
       esac
    done
+
+   vhost_info["other"]="${vhost_info_other[*]}"
 
    # The UML console socket filepath
    vhost_info["mconsole"]="$MCONSOLE_DIR/${vhost_info[umid]}/mconsole"
