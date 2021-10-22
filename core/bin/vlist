@@ -219,18 +219,22 @@ print_vhost_info_by_name() {
 
    echo -n "   Interfaces:      "
 
-   for i in "${!vhost_sockets[@]}"; do
-      socket_filepath=${vhost_sockets[$i]}
-      socket_filename=$(basename "$socket_filepath")
+   if [ "${#vhost_sockets[@]}" -gt 0 ]; then
+      for i in "${!vhost_sockets[@]}"; do
+         socket_filepath=${vhost_sockets[$i]}
+         socket_filename=$(basename "$socket_filepath")
 
-      hub_name_and_ext=${socket_filename#$HUB_SOCKET_PREFIX_*_}
-      hub_name=${hub_name_and_ext%$HUB_SOCKET_EXTENSION}
+         hub_name_and_ext=${socket_filename#$HUB_SOCKET_PREFIX_*_}
+         hub_name=${hub_name_and_ext%$HUB_SOCKET_EXTENSION}
 
-      echo "${indent}eth$i @ $hub_name ($socket_filepath)"
+         echo "${indent}eth$i @ $hub_name ($socket_filepath)"
 
-      # Indent subsequent lines
-      indent="                    "
-   done
+         # Indent subsequent lines
+         indent="                    "
+      done
+   else
+      echo "-"
+   fi
 
    echo "   Hostlab:         ${vhost_info[hostlab]:-"-"}"
    echo "   Hosthome:        ${vhost_info[hosthome]:-"-"}"
