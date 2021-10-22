@@ -551,7 +551,7 @@ while true; do
          TERM_TYPE=$2
          shift
 
-         if [[ "$TERM_TYPE" =~ ^(konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl|wt)$ ]]; then
+         if [[ ! "$TERM_TYPE" =~ ^(konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl|wt)$ ]]; then
             echo 1>&2 "$SCRIPTNAME: $TERM_TYPE: Unsupported terminal emulator"
             usage 1
          fi
