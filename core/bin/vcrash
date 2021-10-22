@@ -209,7 +209,8 @@ mconsole_halt() {
 
    local uml_mconsole_pid
 
-   "$NETKIT_HOME/bin/uml_mconsole" "$mconsole" halt > /dev/null &
+   # We hide stderr because uml_mconsole has safely ignorable warnings
+   "$NETKIT_HOME/bin/uml_mconsole" "$mconsole" halt > /dev/null 2>&1 &
    uml_mconsole_pid=$!
 
    # Check whether the mconsole process is hanging forever
@@ -366,7 +367,7 @@ for vhost in "${vhosts[@]}"; do
          kill_by_signaling "$test_mode" "$quick_mode" "$target_user" "$vhost" || continue
       else
          # Crash virtual machines via uml_mconsole
-         if ! kill_by_mconsole "${vhost_info[mconsole]}" "$target_user" "$vhost"; then
+         if ! kill_by_mconsole "$quick_mode" "${vhost_info[mconsole]}" "$target_user" "$vhost"; then
             kill_by_signaling "" "$quick_mode" "$target_user" "$vhost" || continue
          fi
       fi
