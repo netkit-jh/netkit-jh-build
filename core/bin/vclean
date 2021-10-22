@@ -341,7 +341,7 @@ fi
 
 
 if [ -z "$target_user" ]; then
-   user_str="all users"
+   user_str="any user"
 else
    user_str=$target_user
 fi
