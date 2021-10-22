@@ -307,13 +307,15 @@ show_version() {
 ###############################################################################
 # Execute a command and write the argument list to stdout.
 # Usage:
-#   run_command JUST_PRINT PRINTED_CMD CMD...
+#   run_command JUST_PRINT BACKGROUND PRINTED_CMD CMD...
 # Globals:
 #   None
 # Arguments:
 #   $1 - set to 1 if only doing a dry run of the command that would be ran.
 #        Otherwise pass an empty string.
-#   $2 - the command to print. If an empty string, this will be set to the
+#   $2 - set to 1 if backgrounding the ran command, otherwise pass an empty
+#        string.
+#   $3 - the command to print. If an empty string, this will be set to the
 #        actual command that is ran.
 #  ... - the command to run as a separated argument list.
 # Returns:
@@ -323,8 +325,9 @@ show_version() {
 ###############################################################################
 run_command() {
    local just_print=$1
-   local printed_cmd=$2
-   local run_cmd=( "${@:3}" )
+   local backgrounded=$2
+   local printed_cmd=$3
+   local run_cmd=( "${@:4}" )
 
    # If the command to print has not been explicitly given, we print the one
    # being executed.
@@ -336,7 +339,12 @@ run_command() {
    fi
 
    echo "Running ==> $printed_cmd"
-   "${run_cmd[@]}"
+
+   if [ -z "$backgrounded" ]; then
+      "${run_cmd[@]}"
+   else
+      "${run_cmd[@]}" &
+   fi
 }
 
 
@@ -460,7 +468,7 @@ start_inet_hub() {
       echo "   (host) $tap_address"
       echo "********     (root privileges are required)      ********"
 
-      if ! run_command "$just_print" "" "${manage_tuntap_cmd[@]}"; then
+      if ! run_command "$just_print" "" "" "${manage_tuntap_cmd[@]}"; then
          echo 1>&2 "Error while configuring the tunnel."
          exit 1
       fi
@@ -480,7 +488,7 @@ start_inet_hub() {
                     "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
       
-      run_command "$just_print" "$printed_uml_switch_cmd" \
+      run_command "$just_print" "" "$printed_uml_switch_cmd" \
          "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
    fi
 
@@ -528,7 +536,7 @@ start_hub() {
                     "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
 
-      run_command "$just_print" "$printed_uml_switch_cmd" \
+      run_command "$just_print" "" "$printed_uml_switch_cmd" \
          "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
    fi
 

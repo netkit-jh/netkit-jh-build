@@ -375,14 +375,15 @@ remove_fs_command() {
 # Run relevant kernel invocation setup functions and then invoke the UML kernel
 # instance. Upon return, clean up redundant network hubs.
 # Usage:
-#   run_kernel JUST_PRINT FILE MACHINE
+#   run_kernel JUST_PRINT BACKGROUND FILE MACHINE
 # Globals:
 #   r- HUB_LIST
 #   r- kernel_cmd
 # Arguments:
 #   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
-#   $2 - filesystem (.disk) file to remove. Empty string to not remove it
-#   $2 - machine name
+#   $2 - set to 1 if backgrounding the commands, otherwise pass an empty string
+#   $3 - filesystem (.disk) file to remove. Empty string to not remove it
+#   $4 - machine name
 # Returns:
 #   None
 # Example:
@@ -390,21 +391,26 @@ remove_fs_command() {
 ###############################################################################
 run_kernel() {
    local just_print=$1
-   local filesystem=$2
-   local vhost=$3
+   local backgrounded=$2
+   local filesystem=$3
+   local vhost=$4
 
    # If doing a dry run, we want to skip all four commands here.
    if [ -n "$just_print" ]; then
-      run_command "$just_print" "" "${kernel_cmd[@]}"
+      run_command "$just_print" "$backgrounded" "" "${kernel_cmd[@]}"
       return
    fi
    
    # Remove .disk file, if requested
    [ -n "$filesystem" ] && remove_fs_command "$filesystem" &
 
-   run_command "$just_print" "" "${kernel_cmd[@]}"
+   run_command "$just_print" "$backgrounded" "" "${kernel_cmd[@]}"
 
-   clean_hubs "${HUB_LIST[@]}"
+   if [ -z "$backgrounded" ]; then
+      clean_hubs "${HUB_LIST[@]}"
+   else
+      clean_hubs "${HUB_LIST[@]}" &
+   fi
 }
 
 
@@ -807,20 +813,14 @@ fi
 run_hubs "$just_print" "${HUB_LIST[@]}"
 
 
+# Background invocation commands if not running directly in the parent terminal
+[ -z "$foreground" ] && [ "$VM_CON0" != "this" ] && [ "$VM_CON1" != "this" ] && backgrounded=1
+
 # Completely hide primary console, if requested to
 if [ "$VM_CON0" = "none" ]; then
-   # Start machine in background unless otherwise requested
-   if [ -n "$foreground" ] || [ "$VM_CON1" = "this" ]; then
-      run_kernel "$just_print" "${remove_fs:+$filesystem}" "$vhost" > /dev/null 2>&1
-   else
-      run_kernel "$just_print" "${remove_fs:+$filesystem}" "$vhost" > /dev/null 2>&1 &
-   fi
+   run_kernel "$just_print" "$backgrounded" "${remove_fs:+$filesystem}" "$vhost" > /dev/null 2>&1
 else
-   if [ -n "$foreground" ] || [ "$VM_CON1" = "this" ]; then
-      run_kernel "$just_print" "${remove_fs:+$filesystem}" "$vhost"
-   else
-      run_kernel "$just_print" "${remove_fs:+$filesystem}" "$vhost" &
-   fi
+   run_kernel "$just_print" "$backgrounded" "${remove_fs:+$filesystem}" "$vhost"
 fi
 
 
