@@ -397,18 +397,20 @@ run_kernel() {
 
    # If doing a dry run, we want to skip all four commands here.
    if [ -n "$just_print" ]; then
-      run_command "$just_print" "$backgrounded" "" "${kernel_cmd[@]}"
+      echo "Not running ==> ${kernel_cmd[*]}"
       return
    fi
    
    # Remove .disk file, if requested
    [ -n "$filesystem" ] && remove_fs_command "$filesystem" &
 
-   run_command "$just_print" "$backgrounded" "" "${kernel_cmd[@]}"
+   echo "Running ==> ${kernel_cmd[*]}"
 
    if [ -z "$backgrounded" ]; then
+      "${kernel_cmd[@]}"
       clean_hubs "${HUB_LIST[@]}"
    else
+      "${kernel_cmd[@]}" &
       clean_hubs "${HUB_LIST[@]}" &
    fi
 }

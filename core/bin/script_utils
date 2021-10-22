@@ -305,50 +305,6 @@ show_version() {
 
 
 ###############################################################################
-# Execute a command and write the argument list to stdout.
-# Usage:
-#   run_command JUST_PRINT BACKGROUND PRINTED_CMD CMD...
-# Globals:
-#   None
-# Arguments:
-#   $1 - set to 1 if only doing a dry run of the command that would be ran.
-#        Otherwise pass an empty string.
-#   $2 - set to 1 if backgrounding the ran command, otherwise pass an empty
-#        string.
-#   $3 - the command to print. If an empty string, this will be set to the
-#        actual command that is ran.
-#  ... - the command to run as a separated argument list.
-# Returns:
-#   Returns the exit status of the command.
-# Example:
-#   None
-###############################################################################
-run_command() {
-   local just_print=$1
-   local backgrounded=$2
-   local printed_cmd=$3
-   local run_cmd=( "${@:4}" )
-
-   # If the command to print has not been explicitly given, we print the one
-   # being executed.
-   [ -z "$printed_cmd" ] && printed_cmd=${run_cmd[*]}
-
-   if [ -n "$just_print" ]; then
-      echo "Not running ==> $printed_cmd"
-      return 0
-   fi
-
-   echo "Running ==> $printed_cmd"
-
-   if [ -z "$backgrounded" ]; then
-      "${run_cmd[@]}"
-   else
-      "${run_cmd[@]}" &
-   fi
-}
-
-
-###############################################################################
 # Test if a file is being used by a process.
 # Usage:
 #   file_in_use FILE
@@ -468,9 +424,15 @@ start_inet_hub() {
       echo "   (host) $tap_address"
       echo "********     (root privileges are required)      ********"
 
-      if ! run_command "$just_print" "" "" "${manage_tuntap_cmd[@]}"; then
-         echo 1>&2 "Error while configuring the tunnel."
-         exit 1
+      if [ -n "$just_print" ]; then
+         echo "Not running ==> ${manage_tuntap_cmd[*]}"
+      else
+         echo "Running ==> ${manage_tuntap_cmd[*]}"
+
+         if "${manage_tuntap_cmd[@]}"; then
+            echo 1>&2 "Error while configuring the tunnel."
+            exit 1
+         fi
       fi
 
       echo "************** Abandoning root privileges ***************"
@@ -487,9 +449,13 @@ start_inet_hub() {
       hub_log_cmd=( "stdbuf" "--output=0" \
                     "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
-      
-      run_command "$just_print" "" "$printed_uml_switch_cmd" \
+
+      if [ -n "$just_print" ]; then
+         echo "Not running ==> $printed_uml_switch_cmd"
+      else
+         echo "Running ==> $printed_uml_switch_cmd"
          "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
+      fi
    fi
 
    # Wait for uml_switch to start
@@ -535,9 +501,13 @@ start_hub() {
       hub_log_cmd=( "stdbuf" "--output=0" \
                     "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
-
-      run_command "$just_print" "" "$printed_uml_switch_cmd" \
+      
+      if [ -n "$just_print" ]; then
+         echo "Not running ==> $printed_uml_switch_cmd"
+      else
+         echo "Running ==> $printed_uml_switch_cmd"
          "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
+      fi
    fi
 
    # Wait for uml_switch to start

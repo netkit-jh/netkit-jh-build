@@ -257,8 +257,11 @@ invoke_mconsole() {
 
       uml_mconsole_cmd=( "$NETKIT_HOME/bin/uml_mconsole" "$vhost" "$action" "$device" )
 
-      if ! run_command "$just_print" "" "" "${uml_mconsole_cmd[@]}" 2>&1; then
-         echo 2>&1 "Failed to $action_desc interface '$device'"
+      if [ -n "$just_print" ]; then
+         echo "Not running ==> ${uml_mconsole_cmd[*]}"
+      else
+         echo "Running ==> ${uml_mconsole_cmd[*]}"
+         "${uml_mconsole_cmd[@]}" 2>&1 || echo 2>&1 "Failed to $action_desc interface '$device'"
       fi
    done
 }

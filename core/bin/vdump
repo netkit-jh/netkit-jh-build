@@ -147,4 +147,5 @@ fi
 
 uml_dump_cmd=( "uml_dump" "$hub_socket" )
 
-run_command "" "" "" "${uml_dump_cmd[@]}"
+echo "Running ==> ${uml_dump_cmd[*]}"
+"${uml_dump_cmd[@]}"
