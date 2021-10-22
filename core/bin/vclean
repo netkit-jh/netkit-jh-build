@@ -337,9 +337,7 @@ if [ -n "$remove_hubs" ] && [ -n "$kill_machines" ]; then
 fi
 
 # Enable default action (remove unused virtual hubs) if none has been requested
-if [ -z "$kill_machines" ] && [ -z "$remove_tunnels" ]; then
-   remove_hubs=1
-fi
+[ -z "$kill_machines" ] && [ -z "$remove_tunnels" ] && remove_hubs=1
 
 
 if [ -z "$target_user" ]; then
