@@ -347,7 +347,7 @@ else
 fi
 
 
-# Remove unused hubs (if asked to)
+# Remove unused hubs (if asked to - is also default)
 if [ -n "$remove_hubs" ]; then
    # Just remove unused switches
    echo "Killing unusued virtual hubs owned by $user_str:"
