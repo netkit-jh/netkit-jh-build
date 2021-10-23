@@ -135,8 +135,8 @@ print_vhost_summary() {
       # Get the process group ID (PGID)
       pgid=$(ps --no-headers --format pgid --pid "$pid")
 
-      # Ignore if not a process leader
-      [ "$pgid" -ne "$pid" ] && continue
+      # Ignore if no return or not a process leader
+      [ -z "$pgid" ] || [ "$pgid" -ne "$pid" ] && continue
    
       ((++machine_count))
 
@@ -340,9 +340,7 @@ fi
 
 
 # Display summary of virtual machines
-if [ "${#vhosts[@]}" -eq 0 ]; then
-   print_vhost_summary "$no_header" "$target_user"
-fi
+[ "${#vhosts[@]}" -eq 0 ] && print_vhost_summary "$no_header" "$target_user"
 
 
 # Get verbose information for specific virtual machines
