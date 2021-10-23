@@ -137,7 +137,7 @@ unset TMUX
 
 
 # Get command line options
-long_opts="interval:,list,machine:,retry-count,terminal"
+long_opts="help,interval:,list,retry-count:,terminal,version"
 short_opts="lm:n:r:t"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
