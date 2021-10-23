@@ -246,7 +246,8 @@ print_vhost_info_by_name() {
       xterm)   echo "terminal emulator";;
       this)    echo "stdin/stdout";;
       pty)     echo "pty";;
-      port:*)  echo "port ${vhost_info[con0]#"port:"}"
+      port:*)  echo "port ${vhost_info[con0]#"port:"}";;
+      tmux)    echo "tmux";;
    esac
 
    echo -n "   Console 2:       "
@@ -255,7 +256,7 @@ print_vhost_info_by_name() {
       xterm)   echo "terminal emulator";;
       this)    echo "stdin/stdout";;
       pty)     echo "pty";;
-      port:*)  echo "port ${vhost_info[con1]#"port:"}"
+      port:*)  echo "port ${vhost_info[con1]#"port:"}";;
    esac
 
    echo "   Other arguments: ${vhost_info[other]:-"-"}"

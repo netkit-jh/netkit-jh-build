@@ -864,6 +864,8 @@ get_vhost_info_by_pid() {
       # matching:
       case $option in
          con0)
+            # NOTE: tmux sessions are identified later in the command line with
+            # a dummy option.
             case $value in
                xterm)      vhost_info["con0"]=$value;;
                fd:0,fd:1)  vhost_info["con0"]="this";;
@@ -889,6 +891,7 @@ get_vhost_info_by_pid() {
          modules)    vhost_info["modules"]=$value;;
          name)       vhost_info["name"]=$value;;
          title)      vhost_info["title"]=$value;;
+         tmux)       vhost_info["con0"]="tmux";;
          ubd0)
             # The ubd0 value is disk,fs or fs
             vhost_info["disk"]=${value%%,*}
