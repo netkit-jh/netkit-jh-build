@@ -216,12 +216,12 @@ setup_interfaces() {
 ###############################################################################
 # Attach/remove network interfaces from running machines with mconsole.
 # Usage:
-#   invoke_mconsole JUST_PRINT MACHINE [VCONF_DEVICES]...
+#   invoke_mconsole JUST_PRINT MCONSOLE [VCONF_DEVICES]...
 # Globals:
 #   r- NETKIT_HOME
 # Arguments:
 #   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
-#   $2 - machine name
+#   $2 - uml_mconsole socket file
 #  ... - list of devices to configure. To remove an interface: 'ethN', to add
 #        an interface: 'ethN=daemon,,,path/to/socket'.
 # Returns:
@@ -231,7 +231,7 @@ setup_interfaces() {
 ###############################################################################
 invoke_mconsole() {
    local just_print=$1
-   local vhost=$2
+   local mconsole=$2
    local vconf_devices=( "${@:3}" )
 
    local device_specification device hub_specification
@@ -255,13 +255,13 @@ invoke_mconsole() {
          action_desc="remove"
       fi
 
-      uml_mconsole_cmd=( "$NETKIT_HOME/bin/uml_mconsole" "$vhost" "$action" "$device" )
+      uml_mconsole_cmd=( "$NETKIT_HOME/bin/uml_mconsole" "$mconsole" "$action" "$device" )
 
       if [ -n "$just_print" ]; then
          echo "Not running ==> ${uml_mconsole_cmd[*]}"
       else
          echo "Running ==> ${uml_mconsole_cmd[*]}"
-         "${uml_mconsole_cmd[@]}" 2>&1 || echo 2>&1 "Failed to $action_desc interface '$device'"
+         "${uml_mconsole_cmd[@]}" > /dev/null 2>&1 || echo 2>&1 "Failed to $action_desc interface '$device'"
       fi
    done
 }
@@ -357,7 +357,7 @@ vhost=$1
 validate_hostnames "$vhost"
 
 
-if ! get_machine_state "$target_user" "$vhost"; then
+if ! get_vhost_info_by_name "$target_user" "$vhost"; then
    echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$vhost' exists"
    [ -n "$target_user" ] && echo " for user $target_user." || echo "."
    exit 1
@@ -377,4 +377,4 @@ fi
 run_hubs "$just_print" "${HUB_LIST[@]}"
 
 # Attach/remove network interfaces
-invoke_mconsole "$just_print" "$vhost" "${VCONF_DEVICES[@]}"
+invoke_mconsole "$just_print" "${vhost_info[mconsole]}" "${VCONF_DEVICES[@]}"
