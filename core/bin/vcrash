@@ -197,7 +197,7 @@ kill_by_signaling() {
 # Globals:
 #   r- NETKIT_HOME
 # Arguments:
-#   None
+#   $1 - uml_mconsole socket file
 # Returns:
 #   Returns zero on success, non-zero if there was an issue with killing the
 #   machine.
