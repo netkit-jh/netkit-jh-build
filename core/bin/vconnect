@@ -184,6 +184,14 @@ while true; do
    shift
 done
 
+
+# Do not connect to the tmux session, just list available ones.
+if [ -n "$list_only" ]; then
+   tmux -L netkit list-sessions
+   exit 0
+fi
+
+
 # Parse virtual machine name
 if [ $# -eq 0 ]; then
    echo 1>&2 "$SCRIPTNAME: Missing machine name"
@@ -195,13 +203,6 @@ fi
 
 vhost=$1
 validate_hostnames "$vhost"
-
-
-# Do not connect to the tmux session, just list available ones.
-if [ -n "$list_only" ]; then
-   tmux -L netkit list-sessions
-   exit 0
-fi
 
 
 echo -n "Connecting to '$vhost'."
