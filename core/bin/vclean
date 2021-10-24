@@ -156,15 +156,15 @@ kill_all_vhosts() {
 
    if [ -n "$quick_mode" ]; then
       # Just kill processes
-      kill -KILL "${pids[@]}"
-      kill -CONT "${pids[@]}"
+      kill -KILL "${pids[@]}" 2> /dev/null
+      kill -CONT "${pids[@]}" 2> /dev/null
       return
    fi
 
    # Signalling processes twice ensures they stop even if they need to be
    # killed in a certain order
-   kill -TERM "${pids[@]}"
-   kill -TERM "${pids[@]}"
+   kill -TERM "${pids[@]}" 2> /dev/null
+   kill -TERM "${pids[@]}" 2> /dev/null
 
    sleep 1
    mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL")
@@ -172,8 +172,8 @@ kill_all_vhosts() {
    if [ "${#pids[@]}" -gt 0 ]; then
       echo -n "killing harder... "
 
-      kill -KILL "${pids[@]}"
-      kill -CONT "${pids[@]}"
+      kill -KILL "${pids[@]}" 2> /dev/null
+      kill -CONT "${pids[@]}" 2> /dev/null
 
       sleep 1
       mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL")
@@ -230,7 +230,7 @@ kill_hubs() {
 
          if [ -z "$test_mode" ]; then
             echo -n ": Killing... "
-            kill "$hub_pid" && rm "$hub_file"
+            kill "$hub_pid"  2> /dev/null && rm "$hub_file"
             echo -n "done."
          fi
 
