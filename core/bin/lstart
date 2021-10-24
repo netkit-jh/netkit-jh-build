@@ -275,8 +275,8 @@ lab_start() {
       single_lab_vhost_start "$fast_mode" "$verbose" "$lab_directory" "$vhost" "${passthrough_args[@]}"
    done
    
-   # The readyfor.test file should not be created if we have been invoked
-   # with the --makefile option (=launch a single machine and exit).
+   # The readyfor.test file should not be created if lstart has been invoked
+   # with the --makefile option (launch a single machine and exit).
    [ -n "$test_mode" ] && [ -z "$makefile" ] && : > "$lab_directory/readyfor.test"
 }
 
