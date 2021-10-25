@@ -640,6 +640,8 @@ kernel_cmd+=( "mem=${VM_MEMORY}M" )
 
 
 ### FILESYSTEM(S) #############################################################
+# NOTE: for some reason escaping quotes around the ubd0 argument allows for
+# filepaths with whitespace in(?)
 echo "   Model fs:    $VM_MODEL_FS"
 
 if [ -n "$no_cow" ]; then
