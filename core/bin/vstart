@@ -212,7 +212,7 @@ validate_ubd_argument() {
    local filepath
 
    for filepath in "${filepaths[@]}"; do
-      if string_contains "$filepath" "," ":" " "; then
+      if string_contains "$filepath" "," ":"; then
          echo 1>&2 "$SCRIPTNAME: $filepath: Invalid character in filesystem path"
          usage 1
       fi
@@ -607,6 +607,15 @@ fi
 
 ###############################################################################
 # The following code constructs the command to invoke the UML kernel instance
+# NOTE: some parameters are enclosed in escaped double quotes:
+#       "\"param=$value\""
+#       This preserves quoting for when the kernel processes it (see
+#       /lib/cmdline.c of the kernel source), allowing 'value' to have
+#       whitespace inside. Some rules:
+#       1) Quotes must enclose the entire param value pair ("param=value", not
+#          param="value")
+#       2) " cannot be present in the param value pair (and is not escapable)
+#       3) Hyphens and underscores are interchangable in the parameter name
 ###############################################################################
 
 
@@ -630,7 +639,7 @@ kernel_cmd+=( "$VM_KERNEL" )
 ### UML ID ####################################################################
 # This is used to assign a unique ID to the instance and to name the PID file
 # and mconsole socket.
-kernel_cmd+=( "umid=$vhost" )
+kernel_cmd+=( "\"umid=$vhost\"" )
 
 
 ### MEMORY ####################################################################
@@ -648,7 +657,7 @@ if [ -n "$no_cow" ]; then
    check_filesystem "$VM_MODEL_FS"
 
    # Use model fs as virtual machine filesystem (do not use COW)
-   kernel_cmd+=( "ubd0=$VM_MODEL_FS" )
+   kernel_cmd+=( "\"ubd0=$VM_MODEL_FS\"" )
 
    filesystem=$VM_MODEL_FS
 else
@@ -664,7 +673,7 @@ else
    # Explicitly declaring the model fs name is redundant after the COW file has
    # been created. Nevertheless, this is needed in order to later get
    # information about the virtual machine (i.e., by using vlist).
-   kernel_cmd+=( "ubd0=$filesystem,$VM_MODEL_FS" )
+   kernel_cmd+=( "\"ubd0=$filesystem,$VM_MODEL_FS\"" )
 
    [ ! -f "$filesystem" ] && echo " (new)" || echo
 fi
@@ -677,7 +686,7 @@ kernel_cmd+=( "root=98:0" )
 
 
 ### MCONSOLE DIRECTORY ########################################################
-kernel_cmd+=( "uml_dir=$MCONSOLE_DIR" )
+kernel_cmd+=( "\"uml_dir=$MCONSOLE_DIR\"" )
 
 
 ### NETWORK INTERFACES ########################################################
@@ -731,32 +740,32 @@ kernel_modules_dir="$(dirname "$VM_KERNEL")/modules"
 
 if [ -d "$kernel_modules_dir" ]; then
    echo "   Modules:     $kernel_modules_dir"
-   kernel_cmd+=( "modules=$kernel_modules_dir" )
+   kernel_cmd+=( "\"modules=$kernel_modules_dir\"" )
 fi
 
 
 ### MACHINE NAME ######################################### (non-UML option) ###
-kernel_cmd+=( "name=$vhost" "title=$vhost" )
+kernel_cmd+=( "\"name=$vhost\"" "\"title=$vhost\"" )
 
 
 ### HOSTHOME DIRECTORY ################################### (non-UML option) ###
 if [ -z "$no_hosthome" ]; then
    echo "   Hosthome at: $HOME"
-   kernel_cmd+=( "hosthome=$HOME" )
+   kernel_cmd+=( "\"hosthome=$HOME\"" )
 fi
 
 
 ### HOSTLAB DIRECTORY #################################### (non-UML option) ###
 if [ -n "$hostlab_dir" ]; then
    echo "   Hostlab at:  $hostlab_dir"
-   kernel_cmd+=( "hostlab=$hostlab_dir" )
+   kernel_cmd+=( "\"hostlab=$hostlab_dir\"" )
 fi
 
 
 ### BOOT COMMAND ######################################### (non-UML option) ###
 if [ -n "$exec_cmd" ]; then
    echo "   Boot cmd:    '$exec_cmd'"
-   kernel_cmd+=( "exec=$exec_cmd" )
+   kernel_cmd+=( "\"exec=$exec_cmd\"" )
 fi
 
 
