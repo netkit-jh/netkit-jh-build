@@ -159,7 +159,7 @@ case $1 in
             echo "Copying shared files from '/hostlab/shared/'"
             # Copy shared files without following symbolic links. Ignore file
             # ownership.
-			   cp --recursive --no-preserve ownership --no-dereference --preserve links --target-directory / "${shared_files[@]}"
+			   cp --recursive --no-preserve ownership --no-dereference --preserve=links --target-directory / "${shared_files[@]}"
          fi
 
          # File check avoids need to set the nullglob shell option
@@ -168,7 +168,7 @@ case $1 in
             echo "Copying $hostname-specific files from '/hostlab/$hostname/'"
             # Copy host-specific files without following symbolic links. Ignore
             # file ownership.
-            cp --recursive --no-preserve ownership --no-dereference --preserve links --target-directory / "${host_files[@]}"
+            cp --recursive --no-preserve ownership --no-dereference --preserve=links --target-directory / "${host_files[@]}"
          fi
 
          # Only perform these actions on the machine's first boot (if a shared
