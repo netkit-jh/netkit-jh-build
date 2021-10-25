@@ -861,7 +861,9 @@ get_vhost_info_by_pid() {
       fi
 
       # Most of the command-line options can be matched with basic pattern
-      # matching:
+      # matching.
+      # NOTE: some non-UML parameters will be enclosed in escaped double quotes
+      # to allow for whitespace in them.
       case $option in
          con0)
             # NOTE: tmux sessions are identified later in the command line with
@@ -883,14 +885,14 @@ get_vhost_info_by_pid() {
                null)       vhost_info["con1"]="none";;
             esac
             ;;
-         exec)       vhost_info["boot_cmd"]=$value;;
-         hosthome)   vhost_info["hosthome"]=$value;;
-         hostlab)    vhost_info["hostlab"]=$value;;
+         \"exec)       vhost_info["boot_cmd"]=${value%\"};;
+         \"hosthome)   vhost_info["hosthome"]=${value%\"};;
+         \"hostlab)    vhost_info["hostlab"]=${value%\"};;
          # Memory is NOT adjusted by the skew here
          mem)        vhost_info["mem"]=$value;;
-         modules)    vhost_info["modules"]=$value;;
+         \"modules)    vhost_info["modules"]=${value%\"};;
          tmux)       vhost_info["con0"]="tmux";;
-         ubd0)
+         \"ubd0)
             # The ubd0 value is disk,fs or fs
             vhost_info["disk"]=${value%%,*}
             vhost_info["fs"]=${value#*,}
@@ -898,6 +900,8 @@ get_vhost_info_by_pid() {
             # The parameter expansions result in equal values if a single,
             # shared filesystem is used.
             [ "${vhost_info["disk"]}" = "${vhost_info["fs"]}" ] && unset vhost_info["disk"]
+
+            vhost_info["fs"]=${vhost_info[fs]%\"}
             ;;
          umid)       vhost_info["umid"]=$value;;
          *)          vhost_info_other+=( "$argument" )
