@@ -607,15 +607,6 @@ fi
 
 ###############################################################################
 # The following code constructs the command to invoke the UML kernel instance
-# NOTE: some parameters are enclosed in escaped double quotes:
-#       "\"param=$value\""
-#       This preserves quoting for when the kernel processes it (see
-#       /lib/cmdline.c of the kernel source), allowing 'value' to have
-#       whitespace inside. Some rules:
-#       1) Quotes must enclose the entire param value pair ("param=value", not
-#          param="value")
-#       2) " cannot be present in the param value pair (and is not escapable)
-#       3) Hyphens and underscores are interchangable in the parameter name
 ###############################################################################
 
 
@@ -639,7 +630,7 @@ kernel_cmd+=( "$VM_KERNEL" )
 ### UML ID ####################################################################
 # This is used to assign a unique ID to the instance and to name the PID file
 # and mconsole socket.
-kernel_cmd+=( "\"umid=$vhost\"" )
+kernel_cmd+=( "umid=$vhost" )
 
 
 ### MEMORY ####################################################################
@@ -686,7 +677,7 @@ kernel_cmd+=( "root=98:0" )
 
 
 ### MCONSOLE DIRECTORY ########################################################
-kernel_cmd+=( "\"uml_dir=$MCONSOLE_DIR\"" )
+kernel_cmd+=( "uml_dir=$MCONSOLE_DIR" )
 
 
 ### NETWORK INTERFACES ########################################################
@@ -734,6 +725,12 @@ esac
 # The following options are ignored by the UML kernel (they are not valid
 # command-line options), but used by the Netkit start-up scripts when reading
 # /proc/cmdline.
+# NOTE: some parameters are enclosed in escaped double quotes:
+#       "\"param=$value\""
+#       This preserves the quotes for when they are parsed in
+#       /etc/netkit/netkit-phase1, allowing 'value' to have whitespace inside.
+#       The parsing means double quotes cannot be present anywhere in the
+#       value.
 
 ### KERNEL MODULES ####################################### (non-UML option) ###
 kernel_modules_dir="$(dirname "$VM_KERNEL")/modules"
