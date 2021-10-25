@@ -100,7 +100,7 @@ case $1 in
       # a null byte, making the output similar to /proc/$pid/cmdline. The
       # full_command variable is a Bash array where each element is a
       # parameter=value specification.
-      mapfile -d "" -t full_command < <(awk '
+      mapfile -d "" -t full_command < <(gawk '
          BEGIN {
             FPAT = "([^ ]+)|(\"[^\"]+\")"
             OFS = "\0"
