@@ -24,6 +24,7 @@
 - `uml_switch` logging now works
 - /etc/vhostconfigured (file indicating machine has been booted before) is now at /etc/netkit/.vhostconfigured
 - `-p`|`--print` option has been changed to `-n`|`--dry-run`|`--just-print`|`--recon` for `vconf`, `vpackage`, and `vstart`. This follows what the Make utility uses
+- `hostname` parameter in `kernel_cmd` (replaced `name` and `title`)
 
 # Removed
 - `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))
@@ -34,3 +35,4 @@
 - Port helper compatibility
 - `-w`|`--hostwd` option from `vstart` (it did not provide any purpose)
 - /etc/netkit/netkit-welcome script (was disabled anyway)
+- `name` and `title` parameters in `kernel_cmd` (see [Modified](#modified))

@@ -734,6 +734,13 @@ esac
 #       The parsing means double quotes cannot be present anywhere in the
 #       value.
 
+### HOSTNAME ############################################# (non-UML option) ###
+# This specifies the hostname, set in /etc/netkit/enetkit-phase1. The value of
+# the umid parameter is used, but cannot be read because it is not present in
+# /proc/cmdline of the UML instance.
+kernel_cmd+=( "hostname=$vhost" )
+
+
 ### KERNEL MODULES ####################################### (non-UML option) ###
 kernel_modules_dir="$(dirname "$VM_KERNEL")/modules"
 

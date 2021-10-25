@@ -116,7 +116,7 @@ case $1 in
          value=${argument#*=}
 
          case $option in
-            umid)          hostname=$value;;
+            hostname)      hostname=$value;;
             hosthome)      hosthome=$value;;
             hostlab)       hostlab=$value;;
             def_route)     default_route=$value;;
