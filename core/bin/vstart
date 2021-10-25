@@ -744,10 +744,6 @@ if [ -d "$kernel_modules_dir" ]; then
 fi
 
 
-### MACHINE NAME ######################################### (non-UML option) ###
-kernel_cmd+=( "\"name=$vhost\"" "\"title=$vhost\"" )
-
-
 ### HOSTHOME DIRECTORY ################################### (non-UML option) ###
 if [ -z "$no_hosthome" ]; then
    echo "   Hosthome at: $HOME"

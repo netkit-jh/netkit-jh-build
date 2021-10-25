@@ -116,10 +116,9 @@ case $1 in
          value=${argument#*=}
 
          case $option in
-            name)          hostname=$value;;
+            umid)          hostname=$value;;
             hosthome)      hosthome=$value;;
             hostlab)       hostlab=$value;;
-            title)         title=$value;;
             def_route)     default_route=$value;;
             ubd0)          filesystem=${value#*,};;
             autoconf_*)
@@ -133,7 +132,7 @@ case $1 in
 
 
       # Set title for the terminal window with special xterm escape sequence
-      [ -n "$title" ] && echo -ne "\033]2;$title\a"
+      [ -n "$hostname" ] && echo -ne "\033]2;$hostname\a"
 
       # Mount host directories inside the guest
       [ -n "$hosthome" ] && mount_host_dir "$hosthome" /hosthome "Mounting $hosthome on '/hosthome/'"
