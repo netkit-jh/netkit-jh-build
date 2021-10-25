@@ -94,17 +94,24 @@ case $1 in
       echo -e "$color_bold_blue--- Starting Netkit phase 1 init script ---$color_normal$color_cyan"
 
 
-      # Full command used to invoke the process
-      mapfile -d "" -t full_command < "/proc/cmdline"
+      # This short GNU AWK script processes /proc/cmdline (the command line
+      # used to invoke the kernel). The script transforms it into a null-
+      # delimited list of parameters by replacing all unquoted spaces with
+      # a null byte, making the output similar to /proc/$pid/cmdline. The
+      # full_command variable is a Bash array where each element is a
+      # parameter=value specification.
+      mapfile -d "" -t full_command < <(awk '
+         BEGIN {
+            FPAT = "([^ ]+)|(\"[^\"]+\")"
+            OFS = "\0"
+         }
+         {
+            $1=$1
+            gsub("\"", "")
+            printf $0
+         }' < /proc/cmdline)
 
-      first_iteration=true
       for argument in "${full_command[@]}"; do
-         # Skip program name
-         if $first_iteration; then
-            first_iteration=false
-            continue
-         fi
-
          option=${argument%%=*}
          value=${argument#*=}
 
