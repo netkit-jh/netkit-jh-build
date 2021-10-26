@@ -152,6 +152,8 @@ options:
                         machine during the boot phase.
   -l, --hostlab=DIR     Tell the virtual machine that the base directory for a
                         laboratory is DIR.
+      --mount=SRC,DEST  Mount SRC directory from the host to DEST directory in
+                        the virtual machine.
   -w, --hostwd=DIR      Set the lab working directory to DIR.
 
 Other options are:
