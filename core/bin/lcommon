@@ -313,11 +313,11 @@ lab_clean() {
 
    for vhost in "${lab_vhosts[@]}"; do
       # Remove files from the lab directory
-      rm ${verbose:+"--verbose"} --recursive "${MCONSOLE_DIR:?}/$vhost"
-      rm ${verbose:+"--verbose"} "$lab_directory/$vhost."{"ready","disk","log","testdone"}
+      rm ${verbose:+"--verbose"} --force --recursive "${MCONSOLE_DIR:?}/$vhost"
+      rm ${verbose:+"--verbose"} --force             "$lab_directory/$vhost."{"ready","disk","log","testdone"}
    done
 
-   rm ${verbose:+"--verbose"} "$lab_directory/readyfor.test"
+   rm ${verbose:+"--verbose"} --force "$lab_directory/readyfor.test"
 }
 
 
