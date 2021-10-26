@@ -152,6 +152,8 @@ options:
                         machine during the boot phase.
   -l, --hostlab=DIR     Tell the virtual machine that the base directory for a
                         laboratory is DIR.
+      --mount=SRC,DEST  Mount SRC directory from the host to DEST directory in
+                        the virtual machine.
   -w, --hostwd=DIR      Set the lab working directory to DIR.
 
 Other options are:
@@ -199,7 +201,7 @@ END_OF_HELP
 # Get command line options
 INVALID_OPTION=0
 OPT_LIST="kernel:,mem:,model-fs:,filesystem:,con0:,con1:,exec:"
-OPT_LIST="${OPT_LIST},hostlab:,hostwd:,append:,foreground,help,hide-disk-file"
+OPT_LIST="${OPT_LIST},hostlab:,mount:,hostwd:,append:,foreground,help,hide-disk-file"
 OPT_LIST="${OPT_LIST},no-cow,print,verbose,no-hosthome"
 OPT_LIST="${OPT_LIST},quiet,debug, version,test,xterm:"
 OPT_LIST="${OPT_LIST},tmux-attached,tmux-detached"
@@ -321,6 +323,12 @@ parseCmdLine() {
             shift; CURRENT_ARGUMENT="$1"
             checkSpaces "$CURRENT_ARGUMENT"
             VM_HOSTLAB=$CURRENT_ARGUMENT;;
+
+         --mount)
+            shift; CURRENT_ARGUMENT="$1"
+            checkSpaces "$CURRENT_ARGUMENT"
+            VM_MOUNTS="$VM_MOUNTS $CURRENT_ARGUMENT"
+            ;;
             
          --hostwd|-w)
             shift; CURRENT_ARGUMENT="$1"
@@ -671,6 +679,14 @@ fi
 if [ ! -z "$VM_HOSTLAB" ]; then
    [ -z "$BE_QUIET" ] && echo "   Hostlab at: $VM_HOSTLAB"
    KERNELCMD="$KERNELCMD hostlab=$VM_HOSTLAB"
+fi
+if [ ! -z "$VM_MOUNTS" ]; then
+   for VM_MOUNT in $VM_MOUNTS; do
+      VM_SRC_MOUNT=${VM_MOUNT%%,*}
+      VM_DEST_MOUNT=${VM_MOUNT#*,}
+      [ -z "$BE_QUIET" ] && echo "   Mount:      $VM_SRC_MOUNT @ $VM_DEST_MOUNT"
+      KERNELCMD="$KERNELCMD mount=$VM_MOUNT"
+   done
 fi
 if [ ! -z "$VM_HOSTWD" ]; then
    [ -z "$BE_QUIET" ] && echo "   Host WD at: $VM_HOSTWD"
