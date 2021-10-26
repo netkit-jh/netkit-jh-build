@@ -60,6 +60,7 @@ case "$1" in
             ($1=="name") {print "HOSTNAME=" $2}
             ($1=="hosthome") {print "HOSTHOME=" $2}
             ($1=="hostlab") {print "HOSTLAB=" $2}
+            ($1=="mount") {print "MOUNTS=\"$MOUNTS " $2 "\""}
             ($1=="title") {print "TITLE=" $2}
             ($1=="def_route") {print "DEFAULT_ROUTE=" $2}
             ($1=="ubd0") {print "FILESYSTEM=" $2}
@@ -87,6 +88,15 @@ case "$1" in
       fi
 
       # Mount host directories inside the guest
+      if [ -n "$MOUNTS" ]; then
+         for MOUNT in $MOUNTS; do
+            SRC_MOUNT=${MOUNT%%,*}
+            DEST_MOUNT=${MOUNT#*,}
+
+            mountdir "$SRC_MOUNT" "$DEST_MOUNT" "Mounting $SRC_MOUNT on $DEST_MOUNT..."
+         done
+      fi
+
       [ -n "$HOSTHOME" ] && mountdir "$HOSTHOME" /hosthome "Mounting $HOSTHOME on /hosthome..."
       [ -n "$HOSTLAB" ] && mountdir "$HOSTLAB" /hostlab "Mounting $HOSTLAB on /hostlab ..."
 
@@ -141,6 +151,23 @@ case "$1" in
    stop)
       echo
       echo "${DELIMITER_TEXT}--- Starting Netkit phase 1 shutdown script ---${NORMAL_TEXT}"
+
+      ASSIGN_VARIABLES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' \
+         '
+            ($1=="mount") {print "MOUNTS=\"$MOUNTS " $2 "\""}
+         ')
+
+      eval "$ASSIGN_VARIABLES"
+
+      if [ -n "$MOUNTS" ]; then
+         for MOUNT in $MOUNTS; do
+            DEST_MOUNT=${MOUNT#*,}
+
+            echo "Unmounting and removing $DEST_MOUNT..."
+            umount "$DEST_MOUNT"
+            rmdir "$DEST_MOUNT"
+         done
+      fi
 
       if [ -d /hostlab ]; then
          echo  "Unmounting and removing /hostlab..."
