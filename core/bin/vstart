@@ -101,6 +101,8 @@ You can use the following options to adjust the virtual machine parameters:
 
 Filesystem settings can be tuned by using the following options:
   -H, --no-hosthome   do not mount host filesystem inside the machine
+      --mount=SRC,DEST  mount SRC directory from the host to DEST directory in
+                         the virtual machine
   -m, --model-fs=FILENAME  use the specified filesystem image as a model for
                             the virtual machine. FILENAME will not be altered
                             in any way unless the --no-cow option is used. The
@@ -413,7 +415,7 @@ log_write "$0 $*"
 
 # Get command line options
 long_opts="append:,con0:,con1:,debug,dry-run,exec:,filesystem:,foreground,\
-help,hide-disk-file,hostlab:,just-print,kernel:,mem:,model-fs:,no-cow,\
+help,hide-disk-file,hostlab:,just-print,kernel:,mem:,model-fs:,mount:,no-cow,\
 no-hosthome,print,recon,test,tmux-attached,tmux-detached,verbose,version,\
 xterm:"
 short_opts="De:Ff:Hk:Ll:M:m:nvWw:"
@@ -504,6 +506,10 @@ while true; do
       -m|--model-fs)
          # Filepath is validated with validate_ubd_argument later
          VM_MODEL_FS=$(readlink --canonicalize-missing "$2")
+         shift
+         ;;
+      --mount)
+         mount_specifications+=( "$2" )
          shift
          ;;
       -n|--dry-run|--just-print|--recon)
@@ -754,6 +760,23 @@ fi
 if [ -z "$no_hosthome" ]; then
    echo "   Hosthome at: $HOME"
    kernel_cmd+=( "\"hosthome=$HOME\"" )
+fi
+
+
+### DIRECTORY MOUNTS ##################################### (non-UML option) ###
+if [ "${#mount_specifications[@]}" -gt 0 ]; then
+   for mount_specification in "${mount_specifications[@]}"; do
+      source_mount=${mount_specification%%,*}
+      destination_mount=${mount_specification#*,}
+
+      if string_contains "$source_mount$destination_mount" ","; then
+         echo 1>&2 "$SCRIPTNAME: $mount_specification: Invalid character in mount specification"
+         usage 1
+      fi
+
+      echo "   Mount:       $source_mount @ $destination_mount"
+      kernel_cmd+=( "\"mount=$VM_MOUNT\"" )
+   done
 fi
 
 

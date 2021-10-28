@@ -68,13 +68,37 @@ usage_line() {
 #   None
 ###############################################################################
 mount_host_dir() {
-   local host_dir="$1"
-   local guest_dir="$2"
-   local message="$3"
+   local host_dir=$1
+   local guest_dir=$2
+   local message=$3
 
    [ -n "$message" ] && echo "$message"
    mkdir --parents "$guest_dir"
    mount none "$guest_dir" --types hostfs --options "rw,$host_dir"
+}
+
+
+###############################################################################
+# Unmount a host directory that has been mounted into the guest
+# Usage:
+#   umount_host_dir DIRECTORY [MESSAGE]
+# Globals:
+#   None
+# Arguments:
+#   $1 - mount point on guest
+#   $2 - optional message to output
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+umount_host_dir() {
+   local guest_dir=$1
+   local message=$2
+
+   [ -n "$message" ] && echo "$message"
+   umount "$guest_dir"
+   rmdir "$guest_dir"
 }
 
 
@@ -118,6 +142,7 @@ case $1 in
          case $option in
             hostname)      hostname=$value;;
             hosthome)      hosthome=$value;;
+            mount)         mount_specifications+=( "$value" );;
             hostlab)       hostlab=$value;;
             def_route)     default_route=$value;;
             ubd0)          filesystem=${value#*,};;
@@ -135,8 +160,17 @@ case $1 in
       [ -n "$hostname" ] && echo -ne "\033]2;$hostname\a"
 
       # Mount host directories inside the guest
-      [ -n "$hosthome" ] && mount_host_dir "$hosthome" /hosthome "Mounting $hosthome on '/hosthome/'"
-      [ -n "$hostlab" ] &&  mount_host_dir "$hostlab"  /hostlab  "Mounting $hostlab on '/hostlab/'"
+      if [ "${#mount_specifications[@]}" -gt 0 ]; then
+         for mount_specification in "${mount_specifications[@]}"; do
+            source_mount=${mount_specification%%,*}
+            destination_mount=${mount_specification#*,}
+
+            mount_host_dir "$source_mount" "$destination_mount" "Mounting '$source_mount' on '$destination_mount'"
+         done
+      fi
+
+      [ -n "$hosthome" ] && mount_host_dir "$hosthome" /hosthome "Mounting '$hosthome' on '/hosthome/'"
+      [ -n "$hostlab" ] &&  mount_host_dir "$hostlab"  /hostlab  "Mounting '$hostlab' on '/hostlab/'"
 
 
       # Configure virtual host on the first boot
@@ -206,16 +240,39 @@ EOF
       echo
       echo -e "$color_bold_blue--- Starting Netkit phase 1 shutdown script ---$color_normal$color_cyan"
 
-      if [ -d /hostlab ]; then
-         echo "Unmounting and removing (if empty) '/hostlab'"
-         umount /hostlab
-         rmdir /hostlab
-      fi
+      mapfile -d "" -t full_command < <(gawk '
+         BEGIN {
+            FPAT = "([^ ]+)|(\"[^\"]+\")"
+            OFS = "\0"
+         }
+         {
+            $1=$1
+            gsub("\"", "")
+            printf $0
+         }' < /proc/cmdline)
 
-      # TODO: make mounting /hosthome optional
-      echo "Unmounting and removing (if empty) '/hosthome'"
-      umount /hosthome
-      rmdir /hosthome
+      for argument in "${full_command[@]}"; do
+         option=${argument%%=*}
+         value=${argument#*=}
+
+         case $option in
+            hosthome)      hosthome=$value;;
+            mount)         mount_specifications+=( "$value" );;
+            hostlab)       hostlab=$value;;
+         esac
+      done
+
+
+      # Unmount host directories inside the guest
+      [ -n "$hostlab" ] &&  umount_host_dir "/hostlab"  "Unmounting and removing '/hostlab'"
+      [ -n "$hosthome" ] && umount_host_dir "/hosthome" "Unmounting and removing '/hosthome'"
+
+      if [ "${#mount_specifications[@]}" -gt 0 ]; then
+         for mount_specification in "${mount_specifications[@]}"; do
+            destination_mount=${mount_specification#*,}
+            umount_host_dir "$destination_mount" "Unmounting and removing '$destination_mount'"
+         done
+      fi
 
       echo -e "$color_bold_blue--- Netkit phase 1 shutdown terminated ---$color_normal"
       echo
