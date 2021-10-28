@@ -31,16 +31,11 @@ CHECK_NETKIT_HOME=$(dirname "$PWD")
 # force language to avoid localization errors
 export LANG=C
 
-# Use the correct syntax for echo, depending on the shell being used
-if type source > /dev/null 2>&1; then
-   # We are using bash
-   alias echo="echo -e"
-fi
 
 # This function is used by check_configuration.d scripts to notify that a
 # particular check is taking place
 check_message() {
-   echo -n ">  $1"
+   echo -en ">  $1"
 }
 
 # This function is used by check_configuration.d scripts to raise warnings.
@@ -51,9 +46,9 @@ check_warning() {
 # This function actually prints a recoverable warning message
 issue_warning() {
    echo
-   echo "\033[33;1m[WARNING]\033[0m Some configuration settings should be changed."
-   echo "          You may also ignore this message, but doing so may result in Netkit"
-   echo "          not working properly on your system."
+   echo -e "\033[33;1m[WARNING]\033[0m Some configuration settings should be changed."
+   echo                     "          You may also ignore this message, but doing so may result in Netkit"
+   echo                     "          not working properly on your system."
    echo
 }
 
@@ -62,8 +57,8 @@ issue_warning() {
 # checks.
 check_failure() {
    echo
-   echo "\033[31;1m[ ERROR ]\033[0m Your system is not configured properly. Please correct the"
-   echo "          above errors before starting to use Netkit."
+   echo -e "\033[31;1m[ ERROR ]\033[0m Your system is not configured properly. Please correct the"
+   echo                     "          above errors before starting to use Netkit."
    echo
    exit 1
 }
@@ -114,7 +109,7 @@ if [ $ISSUE_WARNING = 1 ]; then
    issue_warning
 else
    echo
-   echo "\033[32;1m[ READY ]\033[0m Congratulations! Your Netkit setup is now complete!"
-   echo "          Enjoy Netkit!"
+   echo -e "\033[32;1m[ READY ]\033[0m Congratulations! Your Netkit setup is now complete!"
+   echo                     "          Enjoy Netkit!"
 fi
 
