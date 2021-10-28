@@ -184,7 +184,7 @@ for vhost in "${vhosts[@]}"; do
 
    echo -n "Halting '$vhost' (PID ${vhost_info[pid]})"
    [ -n "$target_user" ] && echo -n " owned by $target_user"
-   echo -e -n " [                         ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+   echo -en " [                         ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
 
    # Old method uses CTRL-ALT-DEL. This yields the error
    #   harddog_open - run_helper failed, errno = -2

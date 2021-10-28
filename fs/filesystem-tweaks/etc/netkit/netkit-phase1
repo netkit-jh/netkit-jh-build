@@ -157,7 +157,7 @@ case $1 in
 
 
       # Set title for the terminal window with special xterm escape sequence
-      [ -n "$hostname" ] && echo -ne "\033]2;$hostname\a"
+      [ -n "$hostname" ] && echo -en "\033]2;$hostname\a"
 
       # Mount host directories inside the guest
       if [ "${#mount_specifications[@]}" -gt 0 ]; then
