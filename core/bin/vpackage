@@ -164,7 +164,7 @@ mount_fs() {
    local host_resolvconf="/etc/resolv.conf"
    local mount_point_resolvconf="$mount_point/etc/resolv.conf"
 
-   sudo mkdir -p "$mount_point"
+   sudo mkdir --parents "$mount_point"
    
    if ! sudo mount --options loop --source "$filesystem" --target "$mount_point"; then
       echo 1>&2 "$SCRIPTNAME: Could not mount filesystem"
