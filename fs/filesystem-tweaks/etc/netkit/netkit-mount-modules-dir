@@ -85,7 +85,7 @@ case $1 in
          echo "Mounting kernel modules directory '$modules' to '/lib/modules'"
 
          # Write access is needed for depmod in order to work properly
-         [ ! -d /lib/modules ] && mkdir --parents /lib/modules
+         mkdir --parents /lib/modules
          mount none /lib/modules/ --types hostfs --options "rw,$modules"
       else
          echo "Modules directory not mounted"
