@@ -22,17 +22,6 @@
 # inside virtual machines.
 
 
-# ANSI color escape sequences
-color_blue='\033[34m'
-color_bold_blue='\033[34;1m'
-color_normal='\033[0m'
-
-
-hostlab_dir="/hostlab/"
-test_dir="$hostlab_dir/_test/"
-results_dir="$test_dir/results/"
-
-
 ###############################################################################
 # Display a 3-character rolling dot in the background
 # Usage:
@@ -85,11 +74,25 @@ kill_heartbeat() {
    echo -en "$cursor_show"
 }
 
+
+SCRIPTNAME=$(basename "$0")
+
+
+# ANSI color escape sequences
+color_blue='\033[34m'
+color_bold_blue='\033[34;1m'
+color_normal='\033[0m'
+
+
+# Test directories
+hostlab_dir="/hostlab/"
+test_dir="$hostlab_dir/_test/"
+results_dir="$test_dir/results/"
+
+
 # Check if hostlab is mounted
-if ! mount | grep -q "$hostlab_dir"; then
-   echo -e "${color_bold_blue}ERROR${color_normal}${color_blue}: '$hostlab_dir' is not mounted properly."
-   echo "Press any key or wait 30 seconds to shut down this virtual machine."
-   read -rsn 1 -t 30
+if [ ! -d "$hostlab_dir" ]; then
+   echo "$SCRIPTNAME: '$hostlab_dir' does not exist"
    halt
 fi
 
