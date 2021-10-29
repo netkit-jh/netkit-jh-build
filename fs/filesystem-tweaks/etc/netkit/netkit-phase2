@@ -174,7 +174,7 @@ case $1 in
       fi
 
 
-      [ -n "$test_mode" ] && /etc/init.d/netkit-test-phase
+      [ -n "$test_mode" ] && /etc/netkit/netkit-test-phase
       
 
       echo -e "$color_bold_blue--- Netkit phase 2 initialization terminated ---$color_normal"

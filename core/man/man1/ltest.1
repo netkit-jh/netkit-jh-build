@@ -245,7 +245,7 @@ result files, and are placed at the following locations:
 
 .TP
 .I
-/etc/init.d/netkit-test-phase \fR(inside virtual machines)
+/etc/netkit/netkit-test-phase \fR(inside virtual machines)
 This file is the container for the default test script. It resides in the
 virtual machines filesystem. In case you want to alter the default test
 operations, this is the file you must work on.
@@ -301,7 +301,7 @@ Proto Recv-Q Send-Q Local Address           Foreign Address         State
     0 /sbin/klogd
     0 /sbin/syslogd
     0 /bin/bash /etc/rc2.d/S99netkit-phase2 start
-    0 /bin/bash /etc/init.d/netkit-test-phase
+    0 /bin/bash /etc/netkit/netkit-test-phase
     0 /bin/ps -e -o uid,command
 .fi
 .RE
