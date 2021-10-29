@@ -271,6 +271,8 @@ lab_start() {
       return
    fi
 
+   [ -n "$test_mode" ] && passthrough_args+=( "--test" )
+
    for vhost in "${lab_vhosts[@]}"; do
       single_lab_vhost_start "$fast_mode" "$verbose" "$lab_directory" "$vhost" "${passthrough_args[@]}"
    done
@@ -745,7 +747,7 @@ if [ -n "$test_mode" ]; then
       testdone_files=( "$lab_directory/"*.testdone )
 
       # Test avoids the need for shopt -s nullglob
-      [ -d "${testdone_files[0]}" ] && tests_completed=${#testdone_files[@]}
+      [ -f "${testdone_files[0]}" ] && tests_completed=${#testdone_files[@]}
       sleep 1
    done
 
