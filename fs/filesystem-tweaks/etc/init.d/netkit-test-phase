@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+
+#     Copyright 2004-2008 Fabio Ricci, Massimo Rimondini - Computer Networks
+#     Research Group, Roma Tre University.
+#
+#     This file is part of Netkit.
+#
+#     Netkit is free software: you can redistribute it and/or modify it under
+#     the terms of the GNU General Public License as published by the Free
+#     Software Foundation, either version 3 of the License, or (at your option)
+#     any later version.
+#
+#     Netkit is distributed in the hope that it will be useful, but WITHOUT ANY
+#     WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+#     FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+#     details.
+#
+#     You should have received a copy of the GNU General Public License along
+#     with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+# This script is used to generate test signatures. It is meant to be run from
+# inside virtual machines.
+
+
+# ANSI color escape sequences
+color_blue='\033[34m'
+color_bold_blue='\033[34;1m'
+color_normal='\033[0m'
+cursor_show='\033[?25h'
+cursor_hide='\033[?25l'
+
+
+hostlab_dir="/hostlab/"
+test_dir="$hostlab_dir/_test/"
+results_dir="$test_dir/results/"
+
+
+# This function cleans the output of test commands a bit
+clean_output() {
+   grep -v grep | \
+   grep -v awk  | \
+   grep -v sed  | \
+   grep -v sort | \
+   grep -v netkit-test-phase | \
+   grep -v sleep | \
+   sort
+}
+
+# This function displays a rolling dot
+heartbeat() {
+   while true; do
+      for _ in {0..3}; do
+         echo -ne ".  \b\b\b"
+         sleep 1
+      done
+   done &
+
+   heartbeat_pid=$!
+   disown "$heartbeat_pid"
+}
+
+# This function stops an existing rolling dot
+kill_heartbeat() {
+   kill "$heartbeat_pid"
+}
+
+# Check if hostlab is mounted
+if ! mount | grep -q "$hostlab_dir"; then
+   echo -e "${color_bold_blue}ERROR${color_normal}${color_blue}: '$hostlab_dir' is not mounted properly."
+   echo "Press any key or wait 30 seconds to shut down this virtual machine."
+   read -rsn 1 -t 30
+   halt
+fi
+
+echo -en "${color_blue}Waiting for virtual machines to start... "
+while [ ! -e "$hostlab_dir/readyfor.test" ]; do
+   sleep 1
+done
+
+echo "ok."
+
+[ ! -d "$results_dir" ] && mkdir -p "$results_dir"
+   
+############################################
+## User defined test
+############################################
+
+if [ -x "$test_dir/$HOSTNAME.test" ]; then
+   echo -en "${color_bold_blue}Running user defined test, please wait...$color_normal$color_blue [   ]\b\b\b\b$cursor_hide"
+   heartbeat
+   exec 10>&1 >"$results_dir/$HOSTNAME.user"
+   "$test_dir/$HOSTNAME.test"
+   exec 1>&10 10>&-
+   kill_heartbeat
+   echo -en "$cursor_show"
+fi
+
+
+# If no user defined test was found, wait for the lab to settle
+if [ ! -x "$test_dir/$HOSTNAME.test" ]; then
+   echo -e "${color_bold_blue}Waiting 1 minute for the lab to settle...$color_normal$color_blue"
+   sleep 1m
+fi
+
+
+echo -en "${color_bold_blue}Running predefined lab test, please wait...$color_normal$color_blue [   ]\b\b\b\b$cursor_hide"
+# Show that the virtual machine is still alive
+heartbeat
+
+# Backup the descriptor associated to the standard output before redirecting it
+exec 10>&1 >"$results_dir/$HOSTNAME.default"
+
+############################################
+## Change the following lines to modify the default test
+############################################
+
+echo '[NETWORK INTERFACES]'
+# MAC addresses are randomly generated, so they must not be reported
+ip addr show | grep -v link | sed -r 's/^[0-9]+:/===\n/' | awk -v RS='===\n' -v FS='\n' '(NR!=1) {gsub("\n",""); print}' | clean_output
+echo
+echo '[ROUTING TABLE]'
+route -n | sed -n '3,$p' | clean_output
+echo
+echo '[LISTENING PORTS]'
+netstat -tuwln  | sed -n '3,$p' | clean_output
+echo '[PROCESSES]'
+ps -e -o uid,command | sed -n '2,$p' | clean_output
+echo
+
+
+############################################
+## End of the default test
+############################################
+
+# Restore stdout and close fd 10
+exec 1>&10 10>&-
+
+kill_heartbeat
+echo "$cursor_show"
+
+echo "Done."
+echo "This virtual machine should automatically shut down in a while."
+touch "$hostlab_dir/$HOSTNAME.testdone"
+halt
