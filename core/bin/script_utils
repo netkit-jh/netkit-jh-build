@@ -686,8 +686,8 @@ get_vhost_pid_by_name() {
       # Get the process group ID (PGID)
       pgid=$(ps --no-headers --format pgid --pid "$pid")
 
-      # Ignore if not a process leader
-      [ "$pgid" -ne "$pid" ] && continue
+      # Ignore if no return or not a process leader
+      [ -z "$pgid" ] || [ "$pgid" -ne "$pid" ] && continue
 
       # Full command used to invoke the process
       mapfile -d "" -t full_command < "/proc/$pid/cmdline"
