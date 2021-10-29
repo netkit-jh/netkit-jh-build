@@ -26,8 +26,6 @@
 color_blue='\033[34m'
 color_bold_blue='\033[34;1m'
 color_normal='\033[0m'
-cursor_show='\033[?25h'
-cursor_hide='\033[?25l'
 
 
 hostlab_dir="/hostlab/"
@@ -35,33 +33,56 @@ test_dir="$hostlab_dir/_test/"
 results_dir="$test_dir/results/"
 
 
-# This function cleans the output of test commands a bit
-clean_output() {
-   grep -v grep | \
-   grep -v awk  | \
-   grep -v sed  | \
-   grep -v sort | \
-   grep -v netkit-test-phase | \
-   grep -v sleep | \
-   sort
-}
-
-# This function displays a rolling dot
+###############################################################################
+# Display a 3-character rolling dot in the background
+# Usage:
+#   heartbeat
+# Globals:
+#   rw heartbeat_pid
+# Arguments:
+#   None
+# Returns:
+#   None. Echoes the heartbeat's PID to standard output.
+# Example:
+#   None
+###############################################################################
 heartbeat() {
+   local cursor_hide='\033[?25l'
+   echo -en "$cursor_hide"
+
    while true; do
-      for _ in {0..3}; do
-         echo -ne ".  \b\b\b"
-         sleep 1
-      done
+      echo -en ".  \b\b\b"
+      sleep 1
+      echo -en " . \b\b\b"
+      sleep 1
+      echo -en "  .\b\b\b"
+      sleep 1
+      echo -en " . \b\b\b"
+      sleep 1
    done &
 
    heartbeat_pid=$!
    disown "$heartbeat_pid"
 }
 
-# This function stops an existing rolling dot
+
+###############################################################################
+# Kill an existing heartbeat process
+# Usage:
+#   kill_heartbeat
+# Globals:
+#   r- heartbeat_pid
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
 kill_heartbeat() {
+   local cursor_show='\033[?25h'
    kill "$heartbeat_pid"
+   echo -en "$cursor_show"
 }
 
 # Check if hostlab is mounted
@@ -72,71 +93,62 @@ if ! mount | grep -q "$hostlab_dir"; then
    halt
 fi
 
+# Wait for lab to start (wait for readyfor.test)
 echo -en "${color_blue}Waiting for virtual machines to start... "
-while [ ! -e "$hostlab_dir/readyfor.test" ]; do
+until [ -e "$hostlab_dir/readyfor.test" ]; do
    sleep 1
 done
 
 echo "ok."
 
-[ ! -d "$results_dir" ] && mkdir -p "$results_dir"
-   
-############################################
-## User defined test
-############################################
 
+mkdir --parents "$results_dir" || exit 1
+
+###############################################################################
+# Run user defined tests
+###############################################################################
 if [ -x "$test_dir/$HOSTNAME.test" ]; then
-   echo -en "${color_bold_blue}Running user defined test, please wait...$color_normal$color_blue [   ]\b\b\b\b$cursor_hide"
+   echo -en "${color_bold_blue}Running user defined test, please wait...$color_normal$color_blue [   ]\b\b\b\b"
+
    heartbeat
-   exec 10>&1 >"$results_dir/$HOSTNAME.user"
-   "$test_dir/$HOSTNAME.test"
-   exec 1>&10 10>&-
+   "$test_dir/$HOSTNAME.test" > "$results_dir/$HOSTNAME.user"
    kill_heartbeat
-   echo -en "$cursor_show"
-fi
-
-
-# If no user defined test was found, wait for the lab to settle
-if [ ! -x "$test_dir/$HOSTNAME.test" ]; then
+else
+   # If no user defined test was found, wait for the lab to settle
    echo -e "${color_bold_blue}Waiting 1 minute for the lab to settle...$color_normal$color_blue"
    sleep 1m
 fi
 
 
-echo -en "${color_bold_blue}Running predefined lab test, please wait...$color_normal$color_blue [   ]\b\b\b\b$cursor_hide"
-# Show that the virtual machine is still alive
+###############################################################################
+# Run predefined tests
+###############################################################################
+echo -en "${color_bold_blue}Running predefined lab test, please wait...$color_normal$color_blue [   ]\b\b\b\b"
 heartbeat
 
-# Backup the descriptor associated to the standard output before redirecting it
-exec 10>&1 >"$results_dir/$HOSTNAME.default"
+# Redirect standard output of all further commands to default test output file
+exec 10>&1 > "$results_dir/$HOSTNAME.default"
 
-############################################
-## Change the following lines to modify the default test
-############################################
-
-echo '[NETWORK INTERFACES]'
-# MAC addresses are randomly generated, so they must not be reported
-ip addr show | grep -v link | sed -r 's/^[0-9]+:/===\n/' | awk -v RS='===\n' -v FS='\n' '(NR!=1) {gsub("\n",""); print}' | clean_output
-echo
-echo '[ROUTING TABLE]'
-route -n | sed -n '3,$p' | clean_output
-echo
-echo '[LISTENING PORTS]'
-netstat -tuwln  | sed -n '3,$p' | clean_output
-echo '[PROCESSES]'
-ps -e -o uid,command | sed -n '2,$p' | clean_output
+echo "[NETWORK INTERFACES]"
+ip addr show | grep --invert-match link
 echo
 
+echo "[ROUTING TABLE]"
+route --numeric | tail --lines +2
+echo
 
-############################################
-## End of the default test
-############################################
+# Show all active inet sockets
+echo "[LISTENING PORTS]"
+ss --query inet --processes --numeric --all
+echo
 
-# Restore stdout and close fd 10
+echo "[PROCESSES]"
+ps -e -o uid,command
+echo
+
+# Restore standard output and close file descriptor 10
 exec 1>&10 10>&-
-
 kill_heartbeat
-echo "$cursor_show"
 
 echo "Done."
 echo "This virtual machine should automatically shut down in a while."
