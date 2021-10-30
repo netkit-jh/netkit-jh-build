@@ -96,7 +96,7 @@ script.
 
 \fIltest\fR reads the user test script for machine \fImachine\fR from
 .nh
-'\fIlab\-path\fR/_test/\fImachine\fR.test\fR'
+'\fIlab\-path\fR/_test/scripts/\fImachine\fR.test\fR'
 .hy
 and writes the output to
 .nh
@@ -108,6 +108,19 @@ this by using the follwing command:
 .RS 2
 chmod +x \fIlab\-path\fR/_test/\fImachine\fR.test
 .RE
+
+.IP \(en 2
+A shared \fBuser\fR script may be used to run the same script for all machines
+being tested.
+
+\fIltest\fR reads the shared user test script from
+.nh
+'\fIlab\-path\fR/_test/scripts/shared.test\fR'
+.hy
+and writes the output to
+.nh
+'\fIlab\-path\fR/_test/results/\fImachine\fR.shared'.
+.hy
 
 \fBNotice\fR: every time you launch \fIltest\fR any existing output of previous
 tests is overwritten. Hence, remember to move output files elsewhere before

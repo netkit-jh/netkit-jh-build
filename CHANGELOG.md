@@ -3,6 +3,7 @@
 - `uml_switch` logging now works
 - `ltest` automated lab testing now works (added /etc/netkit/netkit-test-phase)
 - `--mount` option to `vstart` - mount any host folder inside a machine
+- Ability to use a _test/shared.test script to run the same script for all hosts with `ltest`. Script output is stored in _test/results/$hostname.shared
 
 # Modified
 - Machine names must conform to the Debian standard (which conforms to the RFC standard too)
@@ -27,6 +28,8 @@
 - /etc/vhostconfigured (file indicating machine has been booted before) is now at /etc/netkit/.vhostconfigured
 - `-p`|`--print` option has been changed to `-n`|`--dry-run`|`--just-print`|`--recon` for `vconf`, `vpackage`, and `vstart`. This follows what the Make utility uses
 - `hostname` parameter in `kernel_cmd` (replaced `name` and `title`)
+- `ltest` user defined scripts should be stored in _test/scripts/
+- `ltest` script results are placed in _test/results/
 
 # Removed
 - `ltest` signature comparison, and the `-R`|`--rebuild-signature` and `--verify` options

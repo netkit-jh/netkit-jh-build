@@ -87,7 +87,8 @@ color_normal='\033[0m'
 # Test directories
 hostlab_dir="/hostlab/"
 test_dir="$hostlab_dir/_test/"
-results_dir="$test_dir/results/"
+test_scripts_dir="$test_dir/scripts/"
+test_results_dir="$test_dir/results/"
 
 
 # Check if hostlab is mounted
@@ -105,21 +106,25 @@ done
 echo "ok."
 
 
-mkdir --parents "$results_dir" || exit 1
+mkdir --parents "$test_scripts_dir" "$test_results_dir" || exit 1
 
 ###############################################################################
 # Run user defined tests
 ###############################################################################
-if [ -x "$test_dir/$HOSTNAME.test" ]; then
+if [ -x "$test_scripts_dir/shared.test" ]; then
+   echo -en "${color_bold_blue}Running shared user defined test, please wait...$color_normal$color_blue [   ]\b\b\b\b"
+
+   heartbeat
+   "$test_scripts_dir/shared.test" >> "$test_results_dir/$HOSTNAME.shared"
+   kill_heartbeat
+fi
+
+if [ -x "$test_scripts_dir/$HOSTNAME.test" ]; then
    echo -en "${color_bold_blue}Running user defined test, please wait...$color_normal$color_blue [   ]\b\b\b\b"
 
    heartbeat
-   "$test_dir/$HOSTNAME.test" > "$results_dir/$HOSTNAME.user"
+   "$test_scripts_dir/$HOSTNAME.test" > "$test_results_dir/$HOSTNAME.user"
    kill_heartbeat
-else
-   # If no user defined test was found, wait for the lab to settle
-   echo -e "${color_bold_blue}Waiting 1 minute for the lab to settle...$color_normal$color_blue"
-   sleep 1m
 fi
 
 
@@ -130,7 +135,7 @@ echo -en "${color_bold_blue}Running predefined lab test, please wait...$color_no
 heartbeat
 
 # Redirect standard output of all further commands to default test output file
-exec 10>&1 > "$results_dir/$HOSTNAME.default"
+exec 10>&1 > "$test_results_dir/$HOSTNAME.default"
 
 echo "[NETWORK INTERFACES]"
 ip addr show | grep --invert-match link
