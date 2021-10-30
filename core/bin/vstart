@@ -416,7 +416,7 @@ log_write "$0 $*"
 # Get command line options
 long_opts="append:,con0:,con1:,debug,dry-run,exec:,filesystem:,foreground,\
 help,hide-disk-file,hostlab:,just-print,kernel:,mem:,model-fs:,mount:,no-cow,\
-no-hosthome,print,recon,test,tmux-attached,tmux-detached,verbose,version,\
+no-hosthome,print,recon,test:,tmux-attached,tmux-detached,verbose,version,\
 xterm:"
 short_opts="De:Ff:Hk:Ll:M:m:nvWw:"
 
@@ -516,7 +516,8 @@ while true; do
          just_print=1
          ;;
       --test)
-         kernel_cmd_append+=( "test" )
+         kernel_cmd_append+=( "\"test=$2\"" )
+         shift
          ;;
       --tmux-attached)
          VM_CON0="tmux"

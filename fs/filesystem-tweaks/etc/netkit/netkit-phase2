@@ -115,7 +115,7 @@ for argument in "${full_command[@]}"; do
    case $option in
       hostlab) hostlab=$value;;
       exec)    exec_cmd=${value#*,};;
-      test)    test_mode=1;;
+      test)    test_delay=$value;;
    esac
 done
 
@@ -174,7 +174,7 @@ case $1 in
       fi
 
 
-      [ -n "$test_mode" ] && /etc/netkit/netkit-test-phase
+      [ -n "$test_delay" ] && /etc/netkit/netkit-test-phase "$test_delay"
       
 
       echo -e "$color_bold_blue--- Netkit phase 2 initialization terminated ---$color_normal"

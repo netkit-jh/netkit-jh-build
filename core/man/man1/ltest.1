@@ -44,6 +44,24 @@ automation of regression tests.
 
 \" ########################################
 
+
+.SH OPTIONS
+
+Besides the options supported by \fBlstart\fR, \fBltest\fR also support the
+following options:
+
+.TP
+.B
+\-\-delay=\fINUMBER\fR[\fISUFFIX\fR]
+Wait the specified amount of time after the lab starts before invoking test
+scripts. This can be used to allow the lab to settle. By default, ltest does
+not wait. \fINUMBER\fR and, optionally, \fISUFFIX\fR must be valid to the GNU \fBsleep\fR
+command.
+
+
+\" ########################################
+
+
 .SH "HOW TO PERFORM A TEST"
 
 A Netkit test consists of two kinds of scripts: \fBdefault\fR (built\-in) and

@@ -76,6 +76,7 @@ kill_heartbeat() {
 
 
 SCRIPTNAME=$(basename "$0")
+test_delay=$1
 
 
 # ANSI color escape sequences
@@ -104,6 +105,12 @@ until [ -e "$hostlab_dir/readyfor.test" ]; do
 done
 
 echo "ok."
+
+
+if [ "$test_delay" != "0" ]; then
+   echo -e "${color_bold_blue}Waiting for the lab to settle...$color_normal$color_blue"
+   sleep "$test_delay"
+fi
 
 
 mkdir --parents "$test_scripts_dir" "$test_results_dir" || exit 1

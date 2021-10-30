@@ -115,6 +115,18 @@ END_OF_HELP
                         when using either parallel startup or the -f option
 END_OF_HELP
 
+   if [ "$SCRIPTNAME" = "ltest" ]; then
+      cat << END_OF_HELP
+
+ltest-specific options:
+      --delay=NUMBER[SUFFIX]  wait the specified amount of time after the lab
+                               starts before invoking test scripts. This can be
+                               used to allow the lab to settle. By default,
+                               ltest does not wait. NUMBER and, optionally,
+                               SUFFIX must be valid to the GNU sleep command
+END_OF_HELP
+   fi
+
    cat << END_OF_HELP
 
 Miscellaneous:
@@ -200,12 +212,12 @@ update_available() {
 ###############################################################################
 # Start virtual machines of a Netkit lab sequentially.
 # Usage:
-#   lab_start FAST_MODE TEST_MODE VERBOSE MAKEFILE DIR [PASSTHROUGH]...
+#   lab_start FAST_MODE TEST_DELAY VERBOSE MAKEFILE DIR [PASSTHROUGH]...
 # Globals:
 #   rw lab_vhosts
 # Arguments:
 #   $1 - set to 1 for fast mode, empty string otherwise
-#   $2 - set to 1 for test mode, empty string otherwise
+#   $2 - test delay as an argument to sleep, empty string otherwise
 #   $3 - set to 1 for verbose mode, empty string otherwise
 #   $4 - used internally when lstart is invoked with Make
 #   $5 - lab directory
@@ -217,7 +229,7 @@ update_available() {
 ###############################################################################
 lab_start() {
    local fast_mode=$1
-   local test_mode=$2
+   local test_delay=$2
    local verbose=$3
    local makefile=$4
    local lab_directory=$5
@@ -232,7 +244,7 @@ lab_start() {
       return
    fi
 
-   [ -n "$test_mode" ] && passthrough_args+=( "--test" )
+   [ -n "$test_delay" ] && passthrough_args+=( "--test=$test_delay" )
 
    for vhost in "${lab_vhosts[@]}"; do
       single_lab_vhost_start "$fast_mode" "$verbose" "$lab_directory" "$vhost" "${passthrough_args[@]}"
@@ -240,7 +252,7 @@ lab_start() {
    
    # The readyfor.test file should not be created if lstart has been invoked
    # with the --makefile option (launch a single machine and exit).
-   [ -n "$test_mode" ] && [ -z "$makefile" ] && : > "$lab_directory/readyfor.test"
+   [ -n "$test_delay" ] && [ -z "$makefile" ] && : > "$lab_directory/readyfor.test"
 }
 
 
@@ -252,7 +264,7 @@ lab_start() {
 #   r- MAX_SIMULTANEOUS_VMS
 #   rw lab_vhosts
 # Arguments:
-#   $1 - set to 1 for test mode, empty string otherwise
+#   $1 - set to non-zero length string for test mode, empty string otherwise
 #   $2 - set to 1 for verbose mode, empty string otherwise
 #   $3 - lab directory
 #  ... - array of options to pass through into vstart
@@ -460,6 +472,8 @@ short_opts="d:Flo:p::svw:"
 if [ "$SCRIPTNAME" = "lstart" ]; then
    long_opts+=",fast"
    short_opts+="f"
+elif [ "$SCRIPTNAME" = "ltest" ]; then
+   long_opts+=",delay:"
 fi
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -474,6 +488,10 @@ while true; do
    case $1 in
       -d)
          lab_directory=$(readlink --canonicalize-missing "$2")
+         shift
+         ;;
+      --delay)
+         test_delay=$2
          shift
          ;;
       -F|--force-lab)
@@ -583,7 +601,7 @@ fi
 
 # Check if the script has been invoked for testing
 if [ "$SCRIPTNAME" = "ltest" ]; then
-   test_mode=1
+   : "${test_delay:="0"}"
 
    # Default console is "none" for ltest. By prepending, we allow other
    # passthrough options to override this.
@@ -599,7 +617,7 @@ if [ -n "$makefile" ]; then
    # Make sure to wait for .ready files to appear. Otherwise, no dependencies
    # would be satisfied!
    unset fast_mode
-   lab_start "$fast_mode" "$test_mode" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
+   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
    exit 0
 fi
 
@@ -611,7 +629,7 @@ fi
 
 
 # Print lab information
-if [ -n "$test_mode" ]; then
+if [ -n "$test_delay" ]; then
    bold_print "========================== Testing lab =========================="
 else
    bold_print "========================== Starting lab ========================="
@@ -630,7 +648,7 @@ bold_print "================================================================="
 
 
 # Clean up the lab directory before starting
-[ -n "$test_mode" ] && lab_clean "$verbose" "$lab_directory" > /dev/null
+[ -n "$test_delay" ] && lab_clean "$verbose" "$lab_directory" > /dev/null
 
 
 # Check whether a lab.dep file exists. If so, enable parallel startup of
@@ -639,14 +657,14 @@ if [ -z "$force_sequential_mode" ] && [ -f "$lab_directory/lab.dep" ] || [ -n "$
    # Use parallel startup if not forced to be sequential and either lab.dep or
    # force_parallel_mode is enabled.
    bold_print "You chose to use parallel startup."
-   lab_start_parallel "$test_mode" "$verbose" "$lab_directory" "${passthrough_opts[@]}"
+   lab_start_parallel "$test_delay" "$verbose" "$lab_directory" "${passthrough_opts[@]}"
 else
    # Use sequential startup
 
    # If lab_vhosts is not empty, then lab_start takes care of starting only the
    # machines listed in lab_vhosts; those appearing in lab_vhosts but that are
    # not part in the lab will simply be skipped.
-   lab_start "$fast_mode" "$test_mode" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
+   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
 fi
 
 
@@ -655,7 +673,7 @@ bold_print "The lab has been started."
 bold_print "================================================================="
 
 
-if [ -n "$test_mode" ]; then
+if [ -n "$test_delay" ]; then
    # Wait for the test to finish
    vhost_count=${#lab_vhosts[@]}
 
