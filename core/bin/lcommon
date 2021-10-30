@@ -95,9 +95,7 @@ get_lab_vhosts() {
          vhost=$(basename "$dir")
 
          # Avoid the shared and _test directories
-         if [ "$vhost" = "shared" ] || [ "$vhost" = "_test" ]; then
-            continue
-         fi
+         array_contains "$vhost" "${invalid_hostnames[@]}" && continue
 
          lab_vhosts_ref+=( "$vhost" )
       done

@@ -69,7 +69,7 @@ validate_hostnames() {
    local hostname
 
    for hostname in "${hostnames[@]}"; do
-      if [[ ! "$hostname" =~ ^$hostname_regex$ ]]; then
+      if [[ ! "$hostname" =~ ^$hostname_regex$ ]] || array_contains "$hostname" "${invalid_hostnames[@]}"; then
          echo 1>&2 "$SCRIPTNAME: $hostname: Invalid hostname"
          exit 1
       fi
@@ -1025,6 +1025,7 @@ export LC_ALL=C
 # Regular expression for matching an IPv4 address with range validation
 inet_regex="((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])"
 
+
 # Regular expression for a Debian-approved (and RFC-compliant) hostname
 # label. This expression can be substituted directly into most Linux utility
 # commands, such as egrep (grep -E).
@@ -1039,6 +1040,10 @@ inet_regex="((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-
 #         ,           - for LAB_MACHINES parsing
 #         ,:[:blank:] - for the ubd argument (.disk file is named after host)
 hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9])"
+
+# Invalid hostnames (tested irrespective of hostname_regex)
+invalid_hostnames=( "shared" "_test" )
+
 
 # Regular expression for matching a collision domain name. This choice is
 # arbitrary (though some characters MUST be avoided), but should allow for all
