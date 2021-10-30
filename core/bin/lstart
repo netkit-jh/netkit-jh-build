@@ -765,7 +765,7 @@ if [ -n "$test_mode" ]; then
    # outcome.
    if [ ! -d "$lab_directory/_test/signature" ] || [ -n "$rebuild_signature" ]; then
       # (Re)create the test signature
-      rm -rf "$lab_directory/_test/signature"
+      rm --force --recursive "$lab_directory/_test/signature"
       mv "$lab_directory/_test/results" "$lab_directory/_test/signature"
 
       if [ -z "$script_mode" ]; then
