@@ -2,6 +2,7 @@
 - `coreutils` as a required package to run Netkit (for `md5sum` and `stdbuf`)
 - `uml_switch` logging now works
 - `ltest` automated lab testing now works (added /etc/netkit/netkit-test-phase)
+- `--mount` option to `vstart` - mount any host folder inside a machine
 
 # Modified
 - Machine names must conform to the Debian standard (which conforms to the RFC standard too)
