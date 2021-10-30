@@ -57,6 +57,8 @@ usage_line() {
 usage() {
    local status=$1
 
+   local action=${SCRIPTNAME:1}
+
    if [ "$status" -ne 0 ]; then
       usage_line 1>&2
       try_help
@@ -65,34 +67,21 @@ usage() {
 
    usage_line
 
-   if [ "$SCRIPTNAME" = "ltest" ]; then
-      echo "Test a Netkit lab."
-   else
-      echo "Start a Netkit lab."
-   fi
+   echo "${action^} a Netkit lab."
 
    cat << END_OF_HELP
 It is possible to start up the whole lab or just some of the virtual machines
 that compose it.
-END_OF_HELP
-
-   if [ "$SCRIPTNAME" = "ltest" ]; then
-      echo -n "  -d DIRECTORY        test the lab located inside DIRECTORY."
-   else
-      echo -n "  -d DIRECTORY        start the lab located inside DIRECTORY."
-   fi
-
-   cat << END_OF_HELP
- By default, the
+  -d DIRECTORY        $action the lab located inside DIRECTORY. By default, the
                         process takes place in the current directory
+  -F, --force-lab     by default, Netkit refuses to start a lab in a directory
+                        that has neither a lab.conf nor a lab.dep file. Enable
+                        this option if you really want to start a lab without
+                        any of those two
 END_OF_HELP
 
    if [ "$SCRIPTNAME" != "ltest" ]; then
       cat << END_OF_HELP
-  -F, --force-lab     by default, Netkit refuses to start a lab in a directory
-                        that has neither a lab.conf nor a lab.dep file. Enable
-                        this option if you really want to start a lab without
-                        any of those two files
   -f, --fast          do not wait for a virtual machine to complete the boot
                         phase before starting the next one. This option has no
                         effect when parallel startup is being used, and is not
@@ -126,26 +115,6 @@ END_OF_HELP
                         when using either parallel startup or the -f option
 END_OF_HELP
 
-   if [ "$SCRIPTNAME" = "ltest" ]; then
-      cat << END_OF_HELP
-
-ltest-specific options:
-  -R, --rebuild-signature  unconditionally rebuild the test signature,
-                            overwriting any existing one
-  -S, --script-mode   use a terser and prettier output, suitable for automating
-                        the test of several labs
-  --verify=TESTTYPE   when performing the test, force ltest to verify the
-                        outcome of the test specified by TESTTYPE. Allowed
-                        values for TESTTYPE are:
-                          user     check the outcome of user-defined tests only
-                          builtin  check the outcome of builtin tests only
-                          both     always check the outcome of all tests
-                        By default, for each virtual machine ltest verifies
-                        only the user-defined test if one is available in the
-                        signature, or only the built-in test otherwise
-END_OF_HELP
-   fi
-
    cat << END_OF_HELP
 
 Miscellaneous:
@@ -162,14 +131,6 @@ actually started. If any of the MACHINE names is invalid (i.e., it does not
 correspond to a virtual machine of the lab), it will simply be skipped.
 
 END_OF_HELP
-
-   if [ "$SCRIPTNAME" = "ltest" ]; then
-      cat << END_OF_HELP
-The return value of ltest is zero (=good) if and only if the test completed
-successfully or a new test signature has been produced.
-
-END_OF_HELP
-   fi
 
    exit "$status"
 }
@@ -493,25 +454,17 @@ log_write "$0 $*"
 
 
 # Get command line options
-common_long_opts="force-lab,help,list,makefile,pass:,sequential,tmux-attached,tmux-detached,verbose,version,wait:"
-common_short_opts="d:Flo:p::svw:"
+long_opts="force-lab,help,list,makefile,pass:,sequential,tmux-attached,tmux-detached,verbose,version,wait:"
+short_opts="d:Flo:p::svw:"
 
-ltest_long_opts="$common_long_opts,script-mode,rebuild-signature,verify:"
-ltest_short_opts="${common_short_opts}RS"
+if [ "$SCRIPTNAME" = "lstart" ]; then
+   long_opts+=",fast"
+   short_opts+="f"
+fi
 
-lstart_long_opts="$common_long_opts,fast"
-lstart_short_opts="${common_short_opts}f"
-
-if [ "$SCRIPTNAME" = "ltest" ]; then
-   if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$ltest_short_opts" --longoptions "$ltest_long_opts" -- "$@"); then
-      # getopt will output the errorneous command-line argument
-      usage 1
-   fi
-else
-   if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$lstart_short_opts" --longoptions "$lstart_long_opts" -- "$@"); then
-      # getopt will output the errorneous command-line argument
-      usage 1
-   fi
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
 fi
 
 # (Safely) set positional parameters to those reordered by getopt
@@ -565,12 +518,6 @@ while true; do
          force_parallel_mode=1
          unset force_sequential_mode
          ;;
-      -R|--rebuild-signature)
-         rebuild_signature=1
-         ;;
-      -S|--script-mode)
-         script_mode=1
-         ;;
       -s|--sequential)
          force_sequential_mode=1
          unset force_parallel_mode
@@ -583,18 +530,6 @@ while true; do
          ;;
       -v|--verbose)
          verbose=1
-         ;;
-      --verify)
-         case $2 in
-            user|builtin|both)
-               test_type=$2
-               shift
-               ;;
-            *)
-               echo 1>&2 "$SCRIPTNAME: Invalid argument to option '--verify'"
-               exit 1
-               ;;
-         esac
          ;;
       --version)
          show_version
@@ -676,67 +611,49 @@ fi
 
 
 # Print lab information
-if [ -n "$test_mode" ] && [ -z "$script_mode" ]; then
+if [ -n "$test_mode" ]; then
    bold_print "========================== Testing lab =========================="
 else
    bold_print "========================== Starting lab ========================="
 fi
 
-if [ -z "$script_mode" ]; then
-   lab_welcome "$lab_directory"
-   echo
-   bold_print "Having issues starting the lab? Run 'lclean' before running 'lstart'."
+lab_welcome "$lab_directory"
+echo
+bold_print "Having issues starting the lab? Run 'lclean' before running 'lstart'."
 
-   # Get ready to start the lab
-   if update_url=$(update_available); then
-      bold_print "Update available for Netkit-JH - download at $update_url"
-   fi
-
-   bold_print "================================================================="
+# Get ready to start the lab
+if update_url=$(update_available); then
+   bold_print "Update available for Netkit-JH - download at $update_url"
 fi
+
+bold_print "================================================================="
 
 
 # Clean up the lab directory before starting
 [ -n "$test_mode" ] && lab_clean "$verbose" "$lab_directory" > /dev/null
 
-[ -n "$script_mode" ] && echo -n "Starting lab... "
 
 # Check whether a lab.dep file exists. If so, enable parallel startup of
 # virtual machines.
-
 if [ -z "$force_sequential_mode" ] && [ -f "$lab_directory/lab.dep" ] || [ -n "$force_parallel_mode" ]; then
    # Use parallel startup if not forced to be sequential and either lab.dep or
    # force_parallel_mode is enabled.
-   if [ -z "$script_mode" ]; then
-      bold_print "You chose to use parallel startup."
-      lab_start_parallel "$test_mode" "$verbose" "$lab_directory" "${passthrough_opts[@]}"
-   else
-      lab_start_parallel "$test_mode" "$verbose" "$lab_directory" "${passthrough_opts[@]}" > /dev/null
-   fi
+   bold_print "You chose to use parallel startup."
+   lab_start_parallel "$test_mode" "$verbose" "$lab_directory" "${passthrough_opts[@]}"
 else
    # Use sequential startup
 
    # If lab_vhosts is not empty, then lab_start takes care of starting only the
    # machines listed in lab_vhosts; those appearing in lab_vhosts but that are
    # not part in the lab will simply be skipped.
-   if [ -z "$script_mode" ]; then
-      lab_start "$fast_mode" "$test_mode" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
-   else
-      lab_start "$fast_mode" "$test_mode" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}" > /dev/null
-   fi
+   lab_start "$fast_mode" "$test_mode" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
 fi
 
 
-if [ -z "$script_mode" ]; then
-   echo
-   bold_print "The lab has been started."
-   bold_print "================================================================="
-else
-   echo -n "Testing... "
-fi
+echo
+bold_print "The lab has been started."
+bold_print "================================================================="
 
-# Return the status of the lab test
-exit_code=0
 
 if [ -n "$test_mode" ]; then
    # Wait for the test to finish
@@ -751,84 +668,12 @@ if [ -n "$test_mode" ]; then
       sleep 1
    done
 
-   # Test finished: now crash the lab
-   if [ -z "$script_mode" ]; then
-      bold_print "Stopping lab..."
-   else
-      echo -n "Stopping lab... "
-   fi
-
+   # Test finished, now crash the lab
+   bold_print "Stopping lab..."
    lab_crash "" "$lab_directory" "" "" > /dev/null
    lab_clean "$verbose" "$lab_directory" > /dev/null
-
-   # Check whether we need to build a test signature or to verify the test
-   # outcome.
-   if [ ! -d "$lab_directory/_test/signature" ] || [ -n "$rebuild_signature" ]; then
-      # (Re)create the test signature
-      rm --force --recursive "$lab_directory/_test/signature"
-      mv "$lab_directory/_test/results" "$lab_directory/_test/signature"
-
-      if [ -z "$script_mode" ]; then
-         bold_print "Test signature created."
-      else
-         echo -e "test completed.\t\t[ ${color_bold_yellow}SIGN$color_normal ]"
-      fi
-   else
-      # Verify the test outcome against the signature
-      case $test_type in
-         user)
-            user_test_outcomes=( "$lab_directory/_test/signature/"*.user )
-            if [ -f "${user_test_outcomes[0]}" ]; then
-               diff -qEbB "${user_test_outcomes[@]}" --to-file "$lab_directory/_test/results" > /dev/null
-               exit_code=$?
-            else
-               exit_code=1
-            fi
-            ;;
-         builtin)
-            default_test_outcomes=( "$lab_directory/_test/signature/"*.default )
-            if [ -f "${default_test_outcomes[0]}" ]; then
-               diff -qEbB "${default_test_outcomes[@]}" --to-file "$lab_directory/_test/results" > /dev/null
-               exit_code=$?
-            else
-               exit_code=1
-            fi
-            ;;
-         both)
-            diff -qEbBr "$lab_directory/_test/signature" --to-file "$lab_directory/_test/results" > /dev/null
-            exit_code=$?
-            ;;
-         *)
-            # test_type has not been set
-            for vhost in "${lab_vhosts[@]}"; do
-               if [ -f "$lab_directory/_test/signature/$vhost.user" ]; then
-                  diff -qEbB "$lab_directory/_test/signature/$vhost.user" --to-file "$lab_directory/_test/results" > /dev/null
-                  exit_code=$((exit_code + $?))
-               elif [ -f "$lab_directory/_test/signature/$vhost.default" ]; then
-                  diff -qEbB "$lab_directory/_test/signature/$vhost.default" --to-file "$lab_directory/_test/results" > /dev/null
-                  exit_code=$((exit_code + $?))
-               fi
-            done
-            ;;
-      esac
-
-      if [ -z "$script_mode" ]; then
-         if [ "$exit_code" -eq 0 ]; then
-            bold_print "Test succeeded."
-         else
-            bold_print "Test FAILED!"
-         fi
-      else
-         if [ "$exit_code" -eq 0 ]; then
-            echo -e "test completed.\t\t[ $color_bold_green OK $color_normal ]"
-         else
-            echo -e "test completed.\t\t[ ${color_bold_red}FAIL$color_normal ]"
-         fi
-      fi
-   fi
+   bold_print "Test completed."
 fi
 
 # Show a list of running virtual machines, if asked to
 [ -n "$list_vhosts" ] && vlist
-
-exit $exit_code

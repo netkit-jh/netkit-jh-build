@@ -1,5 +1,7 @@
 # Added
 - `coreutils` as a required package to run Netkit (for `md5sum` and `stdbuf`)
+- `uml_switch` logging now works
+- `ltest` automated lab testing now works (added /etc/netkit/netkit-test-phase)
 
 # Modified
 - Machine names must conform to the Debian standard (which conforms to the RFC standard too)
@@ -21,12 +23,13 @@
 - Tap interfaces are named `netkit_$user_md5`, where `user_md5` is an 8-character (truncated) MD5 digest of the owner's username for uniqueness
 - Virtual network hub sockets are named with the user's MD5 digest instead of their name to avoid issues with invalid characters
 - Rename `--kill` to `--just-kill` in `vcrash` and `lcrash`
-- `uml_switch` logging now works
 - /etc/vhostconfigured (file indicating machine has been booted before) is now at /etc/netkit/.vhostconfigured
 - `-p`|`--print` option has been changed to `-n`|`--dry-run`|`--just-print`|`--recon` for `vconf`, `vpackage`, and `vstart`. This follows what the Make utility uses
 - `hostname` parameter in `kernel_cmd` (replaced `name` and `title`)
 
 # Removed
+- `ltest` signature comparison, and the `-R`|`--rebuild-signature` and `--verify` options
+- `-S`|` --script-mode` option from `ltest`
 - `--machine` and `--command` switches in `vcommand` (see [Modified](#modified))
 - `--machine` switch in `vconnect` (see [Modified](#modified))
 - `USE_SUDO` configuration directive (default is to use `sudo` now, `su -c` has been removed)

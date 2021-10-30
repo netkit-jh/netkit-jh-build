@@ -17,21 +17,15 @@ machine or Netkit distribution.
 
 Basically, \fIltest\fR takes care of launching the lab in a 'test mode',
 running an ad\-hoc set of scripts on virtual machines, and storing their output
-on the host filesystem. If the test is being run for the first time, \fIltest\fR
-creates a "signature" of the test results that is used as a fingerprint of a
-correctly behaving lab. The next times that the test is run, test results are
-compared with the signature to check that the lab still behaves as expected.
-After running the test, the lab is then automatically stopped, any temporary
-files are deleted and the outcome of the test is printed as output.
+on the host filesystem. After running the test, the lab is then automatically
+stopped and any temporary files are deleted (\fIlcrash\fR then \fIlclean\fR).
 
 In the following, it is assumed that \fIlab\-path\fR is the directory in which
 the lab is located.
 
 Whenever a test is run, a subdirectory '_test' is created inside \fIlab\-path\fR
 (if it does not already exist) and the results of the test are stored inside it.
-Any existing results of previous tests are overwritten. Subdirectory
-'_test/signature' and '_test/results' will contain the signature of the lab test
-and the outcome of the last executed test, respectively.
+Any existing results of previous tests are overwritten.
 
 Providing a list of \fIMACHINE\-NAME\fRs on the command line has the effect of
 limiting the scope of the test to these virtual machines (comparing two
@@ -47,63 +41,6 @@ attached terminal. Therefore, no window will pop up and no output will be shown
 by virtual machines during a test. This has been chosen in order to ease the
 automation of regression tests.
 
-\" ########################################
-
-.SH OPTIONS
-
-Besides the options supported by \fBlstart\fR, \fBltest\fR also support the
-following options:
-
-.TP
-.B
-\-R
-.PD 0
-.TP
-.B
-\-\-rebuild\-signature
-Force generating a new signature for the lab, even if one already exists.
-Overwrites any existing signature.
-
-.TP
-.B
-\-S
-.PD 0
-.TP
-.B
-\-\-script\-mode
-Use a more concise output with pretty printing of the test outcome, which is
-more suitable for testing a large number of labs from a script.
-
-.TP
-.B
-\-\-verify=\fITESTTYPE\fR
-After a signature has been generated, the outcome of any following tests is
-compared with information in the signature. By default, for each virtual machine
-\fIltest\fR verifies the outcome of the user-defined test if one is available
-in the signature, or of the built-in test otherwise. Option \fB\-\-verify\fR
-allows to force \fIltest\fR to always verify only a certain kind of test.
-Possible values for \fITESTTYPE\fR are as follows:
-
-.RS
-.PP
-.TP 10
-.B
-user
-Consider only user\-defined test scripts.
-.TP
-.B
-builtin
-Consider only predefined built\-in tests.
-.TP
-.B
-both
-Consider both kinds of test scripts (i.e., takes into account the built\-in test
-even when a user\-defined test exists for a certain virtual machine).
-
-.PP
-Verifications are always performed only for those tests that exist in the
-signature, regardless of whether or not option \fB\-\-verify\fR is being used.
-.RE
 
 \" ########################################
 
@@ -178,22 +115,6 @@ performing other instances of the test.
 
 \" ########################################
 
-.SH RETURN VALUE
-
-\fIltest\fR has a zero return value if and only if the test completed
-successfully or a new signature has been generated. This allows, for example,
-to automate lab tests by using a command like the following:
-
-.RS 2
-.nf
-if ! ltest -d my_lab --script-mode; then
-   echo "Lab test failed!" > lab.log
-fi
-.fi
-.RE
-
-\" ########################################
-
 .SH FILES
 
 .SS Test scripts
@@ -227,19 +148,6 @@ This file contains the output of the execution of the default test operations.
 \fIlab\-path\fR/_test/results/\fImachine\fR.user
 This file contains the output of the execution of
 \fIlab\-path\fR/_test/\fImachine\fR.test\fR.
-
-.SS Test signature files
-
-The first time a test is being run on a lab, \fIltest\fR creates a "signature"
-instead of the test results. The signature is used by subsequent tests as a
-fingerprint of a correctly running lab. Signature files are exactly the same as
-result files, and are placed at the following locations:
-
-.TP
-.I
-\fIlab\-path\fR/_test/signature/\fImachine\fR.user
-.PP
-\fIlab\-path\fR/_test/results/\fImachine\fR.default
 
 .SS Other files
 
