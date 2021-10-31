@@ -627,186 +627,198 @@ elif [ "$VM_CON0" = "tmux" ]; then
 fi
 
 
-echo "============= Starting virtual machine '$vhost' ============="
+# Create file for machine details
+out_file=$(mktemp)
+# shellcheck disable=2064
+trap "rm --force '$out_file'" EXIT
 
-### KERNEL BINARY #############################################################
-echo "   Kernel:      $VM_KERNEL"
-kernel_cmd+=( "$VM_KERNEL" )
+# Scoping the following block allows machine details to be outputted
+# sequentially, even when parallel startup is enabled.
+{
+   echo "============= Starting virtual machine '$vhost' ============="
 
-
-### UML ID ####################################################################
-# This is used to assign a unique ID to the instance and to name the PID file
-# and mconsole socket.
-kernel_cmd+=( "umid=$vhost" )
-
-
-### MEMORY ####################################################################
-echo "   Memory:      $VM_MEMORY MB"
-((VM_MEMORY += VM_MEMORY_SKEW))
-kernel_cmd+=( "mem=${VM_MEMORY}M" )
+   ### KERNEL BINARY ##########################################################
+   echo "   Kernel:      $VM_KERNEL"
+   kernel_cmd+=( "$VM_KERNEL" )
 
 
-### FILESYSTEM(S) #############################################################
-# NOTE: for some reason escaping quotes around the ubd0 argument allows for
-# filepaths with whitespace in(?)
-echo "   Model fs:    $VM_MODEL_FS"
-
-if [ -n "$no_cow" ]; then
-   echo "   Filesystem:  using model fs (no COW)"
-   validate_ubd_argument "$VM_MODEL_FS"
-   check_filesystem "$VM_MODEL_FS"
-
-   # Use model fs as virtual machine filesystem (do not use COW)
-   kernel_cmd+=( "\"ubd0=$VM_MODEL_FS\"" )
-
-   filesystem=$VM_MODEL_FS
-else
-   : "${filesystem:="$PWD/$vhost.disk"}"
-
-   echo -n "   Filesystem:  $filesystem"
-   validate_ubd_argument "$VM_MODEL_FS" "$filesystem"
-
-   # We check the directory because the .disk (if new) will not already be
-   # there
-   check_filesystem "$(dirname "$filesystem")"
-
-   # Explicitly declaring the model fs name is redundant after the COW file has
-   # been created. Nevertheless, this is needed in order to later get
-   # information about the virtual machine (i.e., by using vlist).
-   kernel_cmd+=( "\"ubd0=$filesystem,$VM_MODEL_FS\"" )
-
-   [ ! -f "$filesystem" ] && echo " (new)" || echo
-fi
+   ### UML ID #################################################################
+   # This is used to assign a unique ID to the instance and to name the PID
+   # file and mconsole socket.
+   kernel_cmd+=( "umid=$vhost" )
 
 
-### ROOT FILESYSTEM ###########################################################
-# NOTE: The following root= options should also be valid: /dev/ubda1 and
-# /dev/ubd/disc0/part1.
-kernel_cmd+=( "root=98:0" )
+   ### MEMORY #################################################################
+   echo "   Memory:      $VM_MEMORY MB"
+   ((VM_MEMORY += VM_MEMORY_SKEW))
+   kernel_cmd+=( "mem=${VM_MEMORY}M" )
 
 
-### MCONSOLE DIRECTORY ########################################################
-kernel_cmd+=( "uml_dir=$MCONSOLE_DIR" )
+   ### FILESYSTEM(S) ##########################################################
+   # NOTE: for some reason escaping quotes around the ubd0 argument allows for
+   # filepaths with whitespace in(?)
+   echo "   Model fs:    $VM_MODEL_FS"
+
+   if [ -n "$no_cow" ]; then
+      echo "   Filesystem:  using model fs (no COW)"
+      validate_ubd_argument "$VM_MODEL_FS"
+      check_filesystem "$VM_MODEL_FS"
+
+      # Use model fs as virtual machine filesystem (do not use COW)
+      kernel_cmd+=( "\"ubd0=$VM_MODEL_FS\"" )
+
+      filesystem=$VM_MODEL_FS
+   else
+      : "${filesystem:="$PWD/$vhost.disk"}"
+
+      echo -n "   Filesystem:  $filesystem"
+      validate_ubd_argument "$VM_MODEL_FS" "$filesystem"
+
+      # We check the directory because the .disk (if new) will not already be
+      # there
+      check_filesystem "$(dirname "$filesystem")"
+
+      # Explicitly declaring the model fs name is redundant after the COW file
+      # has been created. Nevertheless, this is needed in order to later get
+      # information about the virtual machine (i.e., by using vlist).
+      kernel_cmd+=( "\"ubd0=$filesystem,$VM_MODEL_FS\"" )
+
+      [ ! -f "$filesystem" ] && echo " (new)" || echo
+   fi
 
 
-### NETWORK INTERFACES ########################################################
-setup_interfaces "${interface_specifications[@]}"
+   ### ROOT FILESYSTEM ########################################################
+   # NOTE: The following root= options should also be valid: /dev/ubda1 and
+   # /dev/ubd/disc0/part1.
+   kernel_cmd+=( "root=98:0" )
 
 
-### BOOT SEQUENCE VERBOSITY ###################################################
-if [ -n "$debug" ]; then
-   kernel_cmd=( "gdb --args" "${kernel_cmd[@]}" )
-elif [ -z "$verbose" ]; then
-   kernel_cmd+=( "quiet" )
-fi
+   ### MCONSOLE DIRECTORY #####################################################
+   kernel_cmd+=( "uml_dir=$MCONSOLE_DIR" )
 
 
-### CONSOLES ##################################################################
-# NOTE: "xterm" maps to "this" for con0 because of the previously used
-# port-helper option.
-case $VM_CON0 in
-   none)       kernel_cmd+=( "con0=null" );;
-   this|xterm) kernel_cmd+=( "con0=fd:0,fd:1" );;
-   pty)        kernel_cmd+=( "con0=pty" );;
-   port:*)     kernel_cmd+=( "con0=$VM_CON0" );;
-   # Dummy option used by vinfo to identify machines with a tmux session
-   tmux)       kernel_cmd_append+=( "tmux" );;
-esac
-
-case $VM_CON1 in
-   none)    kernel_cmd+=( "con1=null" );;
-   xterm)   kernel_cmd+=( "con1=xterm" );;
-   this)    kernel_cmd+=( "con1=fd:0,fd:1" );;
-   pty)     kernel_cmd+=( "con1=pty" );;
-   port:*)  kernel_cmd+=( "con1=$VM_CON1" );;
-esac
+   ### NETWORK INTERFACES #####################################################
+   setup_interfaces "${interface_specifications[@]}"
 
 
-### CREATE "PROPER" TERMINAL EMULATOR #########################################
-# Argument format is <terminal emulator>,<title switch>,<exec switch>
-case $TERM_TYPE in
-   gnome)         kernel_cmd+=( "xterm=gnome-terminal,-t,-x" );;
-   konsole)       kernel_cmd+=( "xterm=konsole,-T,-e" );;
-   konsole-tab)   kernel_cmd+=( "xterm=$NETKIT_HOME/bin/konsole-tabs.sh,-T,-e" );;
-esac
+   ### BOOT SEQUENCE VERBOSITY ################################################
+   if [ -n "$debug" ]; then
+      kernel_cmd=( "gdb --args" "${kernel_cmd[@]}" )
+   elif [ -z "$verbose" ]; then
+      kernel_cmd+=( "quiet" )
+   fi
 
 
-# The following options are ignored by the UML kernel (they are not valid
-# command-line options), but used by the Netkit start-up scripts when reading
-# /proc/cmdline.
-# NOTE: some parameters are enclosed in escaped double quotes:
-#       "\"param=$value\""
-#       This preserves the quotes for when they are parsed in
-#       /etc/netkit/netkit-phase1, allowing 'value' to have whitespace inside.
-#       The parsing means double quotes cannot be present anywhere in the
-#       value.
+   ### CONSOLES ###############################################################
+   # NOTE: "xterm" maps to "this" for con0 because of the previously used
+   # port-helper option.
+   case $VM_CON0 in
+      none)       kernel_cmd+=( "con0=null" );;
+      this|xterm) kernel_cmd+=( "con0=fd:0,fd:1" );;
+      pty)        kernel_cmd+=( "con0=pty" );;
+      port:*)     kernel_cmd+=( "con0=$VM_CON0" );;
+      # Dummy option used by vinfo to identify machines with a tmux session
+      tmux)       kernel_cmd_append+=( "tmux" );;
+   esac
 
-### HOSTNAME ############################################# (non-UML option) ###
-# This specifies the hostname, set in /etc/netkit/enetkit-phase1. The value of
-# the umid parameter is used, but cannot be read because it is not present in
-# /proc/cmdline of the UML instance.
-kernel_cmd+=( "hostname=$vhost" )
-
-
-### KERNEL MODULES ####################################### (non-UML option) ###
-kernel_modules_dir="$(dirname "$VM_KERNEL")/modules"
-
-if [ -d "$kernel_modules_dir" ]; then
-   echo "   Modules:     $kernel_modules_dir"
-   kernel_cmd+=( "\"modules=$kernel_modules_dir\"" )
-fi
+   case $VM_CON1 in
+      none)    kernel_cmd+=( "con1=null" );;
+      xterm)   kernel_cmd+=( "con1=xterm" );;
+      this)    kernel_cmd+=( "con1=fd:0,fd:1" );;
+      pty)     kernel_cmd+=( "con1=pty" );;
+      port:*)  kernel_cmd+=( "con1=$VM_CON1" );;
+   esac
 
 
-### HOSTHOME DIRECTORY ################################### (non-UML option) ###
-if [ -z "$no_hosthome" ]; then
-   echo "   Hosthome at: $HOME"
-   kernel_cmd+=( "\"hosthome=$HOME\"" )
-fi
+   ### CREATE "PROPER" TERMINAL EMULATOR ######################################
+   # Argument format is <terminal emulator>,<title switch>,<exec switch>
+   case $TERM_TYPE in
+      gnome)         kernel_cmd+=( "xterm=gnome-terminal,-t,-x" );;
+      konsole)       kernel_cmd+=( "xterm=konsole,-T,-e" );;
+      konsole-tab)   kernel_cmd+=( "xterm=$NETKIT_HOME/bin/konsole-tabs.sh,-T,-e" );;
+   esac
 
 
-### DIRECTORY MOUNTS ##################################### (non-UML option) ###
-if [ "${#mount_specifications[@]}" -gt 0 ]; then
-   for mount_specification in "${mount_specifications[@]}"; do
-      source_mount=${mount_specification%%,*}
-      destination_mount=${mount_specification#*,}
+   # The following options are ignored by the UML kernel (they are not valid
+   # command-line options), but used by the Netkit start-up scripts when
+   # reading /proc/cmdline.
+   # NOTE: some parameters are enclosed in escaped double quotes:
+   #       "\"param=$value\""
+   #       This preserves the quotes for when they are parsed in
+   #       /etc/netkit/netkit-phase1, allowing 'value' to have whitespace
+   #       inside. The parsing means double quotes cannot be present anywhere
+   #       in the value.
 
-      if string_contains "$source_mount$destination_mount" ","; then
-         echo 1>&2 "$SCRIPTNAME: $mount_specification: Invalid character in mount specification"
-         usage 1
-      fi
-
-      echo "   Mount:       $source_mount @ $destination_mount"
-      kernel_cmd+=( "\"mount=$VM_MOUNT\"" )
-   done
-fi
-
-
-### HOSTLAB DIRECTORY #################################### (non-UML option) ###
-if [ -n "$hostlab_dir" ]; then
-   echo "   Hostlab at:  $hostlab_dir"
-   kernel_cmd+=( "\"hostlab=$hostlab_dir\"" )
-fi
+   ### HOSTNAME ########################################## (non-UML option) ###
+   # This specifies the hostname, set in /etc/netkit/enetkit-phase1. The value
+   # of the umid parameter is used, but cannot be read because it is not
+   # present in /proc/cmdline of the UML instance.
+   kernel_cmd+=( "hostname=$vhost" )
 
 
-### BOOT COMMAND ######################################### (non-UML option) ###
-if [ -n "$exec_cmd" ]; then
-   echo "   Boot cmd:    '$exec_cmd'"
-   kernel_cmd+=( "\"exec=$exec_cmd\"" )
-fi
+   ### KERNEL MODULES #################################### (non-UML option) ###
+   kernel_modules_dir="$(dirname "$VM_KERNEL")/modules"
+
+   if [ -d "$kernel_modules_dir" ]; then
+      echo "   Modules:     $kernel_modules_dir"
+      kernel_cmd+=( "\"modules=$kernel_modules_dir\"" )
+   fi
 
 
-### DISABLE SELINUX ###################################### (non-UML option) ###
-kernel_cmd+=( "SELINUX_INIT=0" )
+   ### HOSTHOME DIRECTORY ################################ (non-UML option) ###
+   if [ -z "$no_hosthome" ]; then
+      echo "   Hosthome at: $HOME"
+      kernel_cmd+=( "\"hosthome=$HOME\"" )
+   fi
 
 
-### OTHER ARGUMENTS ###########################################################
-if [ ${#kernel_cmd_append[@]} -gt 0 ]; then
-   echo "   Other args:  ${kernel_cmd_append[*]}"
-   kernel_cmd+=( "${kernel_cmd_append[@]}" )
-fi
+   ### DIRECTORY MOUNTS ################################## (non-UML option) ###
+   if [ "${#mount_specifications[@]}" -gt 0 ]; then
+      for mount_specification in "${mount_specifications[@]}"; do
+         source_mount=${mount_specification%%,*}
+         destination_mount=${mount_specification#*,}
+
+         if string_contains "$source_mount$destination_mount" ","; then
+            echo 1>&2 "$SCRIPTNAME: $mount_specification: Invalid character in mount specification"
+            usage 1
+         fi
+
+         echo "   Mount:       $source_mount @ $destination_mount"
+         kernel_cmd+=( "\"mount=$VM_MOUNT\"" )
+      done
+   fi
 
 
-echo
+   ### HOSTLAB DIRECTORY ################################# (non-UML option) ###
+   if [ -n "$hostlab_dir" ]; then
+      echo "   Hostlab at:  $hostlab_dir"
+      kernel_cmd+=( "\"hostlab=$hostlab_dir\"" )
+   fi
+
+
+   ### BOOT COMMAND ###################################### (non-UML option) ###
+   if [ -n "$exec_cmd" ]; then
+      echo "   Boot cmd:    '$exec_cmd'"
+      kernel_cmd+=( "\"exec=$exec_cmd\"" )
+   fi
+
+
+   ### DISABLE SELINUX ################################### (non-UML option) ###
+   kernel_cmd+=( "SELINUX_INIT=0" )
+
+
+   ### OTHER ARGUMENTS ########################################################
+   if [ ${#kernel_cmd_append[@]} -gt 0 ]; then
+      echo "   Other args:  ${kernel_cmd_append[*]}"
+      kernel_cmd+=( "${kernel_cmd_append[@]}" )
+   fi
+
+
+   echo
+} > "$out_file" 2>&1
+
+cat "$out_file"
+rm --force "$out_file"
 
 
 ###############################################################################
