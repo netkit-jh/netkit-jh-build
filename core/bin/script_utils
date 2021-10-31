@@ -429,7 +429,7 @@ start_inet_hub() {
       else
          echo "Running ==> ${manage_tuntap_cmd[*]}"
 
-         if "${manage_tuntap_cmd[@]}"; then
+         if ! "${manage_tuntap_cmd[@]}"; then
             echo 1>&2 "Error while configuring the tunnel."
             exit 1
          fi
