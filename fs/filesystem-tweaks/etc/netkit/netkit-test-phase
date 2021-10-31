@@ -23,6 +23,24 @@
 
 
 ###############################################################################
+# Write netkit-test-phase's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [NUMBER[SUFFIX]]"
+}
+
+
+###############################################################################
 # Display a 3-character rolling dot in the background
 # Usage:
 #   heartbeat
@@ -76,7 +94,7 @@ kill_heartbeat() {
 
 
 SCRIPTNAME=$(basename "$0")
-test_delay=$1
+test_delay=${1:-"0"}
 
 
 # ANSI color escape sequences
@@ -93,8 +111,9 @@ test_results_dir="$test_dir/results/"
 
 
 # Check if hostlab is mounted
+# TODO: output errors to log or host terminal
 if [ ! -d "$hostlab_dir" ]; then
-   echo "$SCRIPTNAME: '$hostlab_dir' does not exist"
+   echo 1>&2 "$SCRIPTNAME: '$hostlab_dir' does not exist"
    halt
 fi
 
@@ -109,7 +128,12 @@ echo "ok."
 
 if [ "$test_delay" != "0" ]; then
    echo -e "${color_bold_blue}Waiting for the lab to settle...$color_normal$color_blue"
-   sleep "$test_delay"
+
+   if ! sleep "$test_delay" 2> /dev/null; then
+      echo 1>&2 "$SCRIPTNAME: Invalid sleep time '$test_delay'"
+      usage_line
+      halt
+   fi
 fi
 
 
