@@ -259,13 +259,13 @@ lab_start() {
 ###############################################################################
 # Start virtual machines of a Netkit lab simultaneously with GNU Make.
 # Usage:
-#   lab_start_parallel TEST_MODE VERBOSE DIR [PASSTHROUGH]...
+#   lab_start_parallel TEST_DELAY VERBOSE DIR [PASSTHROUGH]...
 # Globals:
 #   r- MAX_SIMULTANEOUS_VMS
 #   rw lab_vhosts
 # Arguments:
 #   $1 - set to non-zero length string for test mode, empty string otherwise
-#   $2 - set to 1 for verbose mode, empty string otherwise
+#   $2 - test delay as an argument to sleep, empty string otherwise
 #   $3 - lab directory
 #  ... - array of options to pass through into vstart
 # Returns:
@@ -274,7 +274,7 @@ lab_start() {
 #   None
 ###############################################################################
 lab_start_parallel() {
-   local test_mode=$1
+   local test_delay=$1
    local verbose=$2
    local lab_directory=$3
    local passthrough_args=( "${@:4}" )
@@ -298,8 +298,9 @@ lab_start_parallel() {
    done
 
    # Pass testmode along subsequent invocations of this script
-   if [ -n "$test_mode" ]; then
+   if [ -n "$test_delay" ]; then
       program_name="ltest"
+      lstart_args+=( "--delay=$test_delay" )
    else
       program_name="lstart"
    fi
@@ -359,7 +360,7 @@ EOF
 
    
    # Signal that every machine is ready for testing once booted.
-   [ -n "$test_mode" ] && : > "$lab_directory/readyfor.test"
+   [ -n "$test_delay" ] && : > "$lab_directory/readyfor.test"
 }
 
 
