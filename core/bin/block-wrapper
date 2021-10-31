@@ -22,13 +22,15 @@ kernel_cmd=( "${@:3}" )
 
 # The PID of the current terminal process is stored in a temporary file. This
 # is so the program's state can be monitored later on for termination.
-pidfile=$(mktemp)
+pid_file=$(mktemp)
+# shellcheck disable=2064
+trap "rm --force '$pid_file'" EXIT
 
 # The reason behind making pid_cmd a string (and not array like kernel_cmd) is
 # to enforce the fact it is a command which will experience shell expansion
 # upon being processed by Bash inside the terminal emulator session. This
 # allows the $ special parameter and output redirection to function normally.
-pid_cmd="echo \$\$ > '$pidfile'"
+pid_cmd="echo \$\$ > '$pid_file'"
 
 
 # kernel_cmd is expanded with the Q operator, meaning Bash will sufficiently
@@ -81,13 +83,13 @@ esac
 
 
 # Wait until the PID file has been written to
-until [ -s "$pidfile" ]; do
+until [ -s "$pid_file" ]; do
    sleep 1s
 done
 
 # Wait until this process is dead
-while ps --pid "$(cat "$pidfile")" > /dev/null; do
+while ps --pid "$(cat "$pid_file")" > /dev/null; do
    sleep 1s
 done
 
-rm "$pidfile"
+rm --force "$pid_file"
