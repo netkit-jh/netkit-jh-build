@@ -164,6 +164,8 @@ print_vhost_summary() {
          separator=", "
       done
 
+      unset separator
+
       echo
    done
 
