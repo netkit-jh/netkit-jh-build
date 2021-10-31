@@ -137,7 +137,7 @@ if [ "$test_delay" != "0" ]; then
 fi
 
 
-mkdir --parents "$test_scripts_dir" "$test_results_dir" || exit 1
+mkdir --parents "$test_results_dir" || exit 1
 
 ###############################################################################
 # Run user defined tests
