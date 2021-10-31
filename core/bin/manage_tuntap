@@ -140,11 +140,10 @@ case $action in
 
       for sys_class_net_entry in /sys/class/net/netkit_*; do
          # Avoids need for shopt -s nullglob
-         [ ! -f "$sys_class_net_entry" ] && continue
-
-         uid=$(cat "$sys_class_net_entry/user/owner")
+         [ ! -e "$sys_class_net_entry" ] && continue
 
          # Ignore tuntap devices not owned by the user (if specified)
+         uid=$(cat "$sys_class_net_entry/owner")
          [ -n "$target_user" ] && [ "$(id --user "$target_user")" != "$uid" ] && continue
 
          device=$(basename "$sys_class_net_entry")
