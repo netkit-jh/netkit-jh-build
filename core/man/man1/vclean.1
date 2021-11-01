@@ -40,11 +40,24 @@ performed. It is also possible to perform several actions in a single run.
 .TP
 .B
 --clean-all
-This option tells \fIvclean\fR to perform all the cleanup operations listed below.
-It is a shortcut for \fB-HKT\fR.
-.br
-Please \fBuse this option with care\fR: depending on the other command line
-switches you are using, this \fBmay kill virtual machines started by any user\fR!
+Equivalent to \fB--kill-machines\fR, \fB--clean-directories\fR, and
+\fB--remove-tunnels\fR. This option affects all users.
+
+.TP
+.B
+--clean-directories
+Empty the '$MCONSOLE_DIR', '$HUB_SOCKET_DIR', and `$HOME/.netkit/' directories.
+This option affects all users.
+
+.TP
+.B
+-f
+.PD 0
+.TP
+.B
+--force
+When used with \fB--remove-hubs\fR, kill all (not just unused) virtual hubs and
+clean their files.
 
 .TP
 .B
@@ -164,6 +177,15 @@ Show usage information.
 --quick
 By default, after killing processes \fIvclean\fR checks whether they have actually
 stopped. This option disables these checks, thus quickening the execution of \fIvclean\fR.
+
+.TP
+.B
+-v
+.PD 0
+.TP
+.B
+--verbose
+Show affected processes and files.
 
 .TP
 .B

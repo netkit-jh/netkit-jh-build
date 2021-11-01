@@ -5,6 +5,9 @@
 - `--mount` option to `vstart` - mount any host folder inside a machine
 - Ability to use a _test/shared.test script to run the same script for all hosts with `ltest`. Script output is stored in _test/results/$hostname.shared
 - `--delay` option to `ltest` to specify how long to wait for the lab to settle before running test scripts
+- `--clean-directories` option to `vclean` to wipe `$HOME`/.netkit/, `$MCONSOLE_DIR`/, and `$HUB_SOCKET_DIR`/ (now included in `--clean-all`)
+- `-f`|`--force` option to `vclean` for usage alongside `-H`|`--remove-hubs` to remove hubs even if they are being used by running machines
+- `-v`|`--verbose` option to `vclean`
 
 # Modified
 - Machine names must conform to the Debian standard (which conforms to the RFC standard too)
@@ -31,6 +34,8 @@
 - `hostname` parameter in `kernel_cmd` (replaced `name` and `title`)
 - `ltest` user defined scripts should be stored in _test/scripts/
 - `ltest` script results are placed in _test/results/
+- `--clean-all` in `vclean` now removes all items inside Netkit directories (`$HOME`/.netkit/, `$MCONSOLE_DIR`/, and `$HUB_SOCKET_DIR`/)
+- `--clean-all` in `vclean` now affects machines owned by all users
 
 # Removed
 - `ltest` signature comparison, and the `-R`|`--rebuild-signature` and `--verify` options
