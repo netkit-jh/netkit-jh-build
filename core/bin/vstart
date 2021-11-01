@@ -842,7 +842,7 @@ fi
 
 
 # Start network hubs
-run_hubs "$just_print" "${HUB_LIST[@]}"
+run_hubs "$verbose" "$just_print" "${HUB_LIST[@]}"
 
 
 # Completely hide primary console, if requested to

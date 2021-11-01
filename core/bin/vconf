@@ -216,12 +216,13 @@ setup_interfaces() {
 ###############################################################################
 # Attach/remove network interfaces from running machines with mconsole.
 # Usage:
-#   invoke_mconsole JUST_PRINT MCONSOLE [VCONF_DEVICES]...
+#   invoke_mconsole VERBOSE JUST_PRINT MCONSOLE [VCONF_DEVICES]...
 # Globals:
 #   r- NETKIT_HOME
 # Arguments:
-#   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
-#   $2 - uml_mconsole socket file
+#   $1 - set to 1 for verbose, otherwise pass an empty string
+#   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $3 - uml_mconsole socket file
 #  ... - list of devices to configure. To remove an interface: 'ethN', to add
 #        an interface: 'ethN=daemon,,,path/to/socket'.
 # Returns:
@@ -230,9 +231,10 @@ setup_interfaces() {
 #   None
 ###############################################################################
 invoke_mconsole() {
-   local just_print=$1
-   local mconsole=$2
-   local vconf_devices=( "${@:3}" )
+   local verbose=$1
+   local just_print=$2
+   local mconsole=$3
+   local vconf_devices=( "${@:4}" )
 
    local device_specification device hub_specification
    local action action_desc
@@ -260,7 +262,7 @@ invoke_mconsole() {
       if [ -n "$just_print" ]; then
          echo "Not running ==> ${uml_mconsole_cmd[*]}"
       else
-         echo "Running ==> ${uml_mconsole_cmd[*]}"
+         [ -n "$verbose" ] && echo "Running ==> ${uml_mconsole_cmd[*]}"
          "${uml_mconsole_cmd[@]}" > /dev/null 2>&1 || echo 2>&1 "Failed to $action_desc interface '$device'"
       fi
    done
@@ -327,6 +329,9 @@ while true; do
             usage 1
          fi
          ;;
+      -v|--verbose)
+         verbose=1
+         ;;
       --version)
          show_version
          exit 0
@@ -374,7 +379,7 @@ if [ ${#network_interfaces[@]} -gt 0 ]; then
 fi
 
 # Start network hubs
-run_hubs "$just_print" "${HUB_LIST[@]}"
+run_hubs "$verbose" "$just_print" "${HUB_LIST[@]}"
 
 # Attach/remove network interfaces
-invoke_mconsole "$just_print" "${vhost_info[mconsole]}" "${VCONF_DEVICES[@]}"
+invoke_mconsole "$verbose" "$just_print" "${vhost_info[mconsole]}" "${VCONF_DEVICES[@]}"

@@ -393,24 +393,26 @@ get_hub_socket() {
 # host. NAT rules are created to allow access to the Internet through the host
 # interface.
 # Usage:
-#   start_inet_hub JUST_PRINT HUB ADDR
+#   start_inet_hub VERBOSE JUST_PRINT HUB ADDR
 # Globals:
 #   r- HUB_LOG
 #   r- NETKIT_HOME
 #   r- USER_ID
 # Arguments:
-#   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
-#   $2 - hub socket filepath
-#   $3 - address of the tap interface on the host
+#   $1 - set to 1 for verbose, otherwise pass an empty string
+#   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $3 - hub socket filepath
+#   $4 - address of the tap interface on the host
 # Returns:
 #   None. Exits with a non-zero code on a configuration error
 # Example:
 #   None
 ###############################################################################
 start_inet_hub() {
-   local just_print=$1
-   local hub_socket=$2
-   local tap_address=$3
+   local verbose=$1
+   local just_print=$2
+   local hub_socket=$3
+   local tap_address=$4
 
    local manage_tuntap_cmd
    local interface_name uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
@@ -427,7 +429,7 @@ start_inet_hub() {
       if [ -n "$just_print" ]; then
          echo "Not running ==> ${manage_tuntap_cmd[*]}"
       else
-         echo "Running ==> ${manage_tuntap_cmd[*]}"
+         [ -n "$verbose" ] && echo "Running ==> ${manage_tuntap_cmd[*]}"
 
          if ! "${manage_tuntap_cmd[@]}"; then
             echo 1>&2 "Error while configuring the tunnel."
@@ -453,7 +455,7 @@ start_inet_hub() {
       if [ -n "$just_print" ]; then
          echo "Not running ==> $printed_uml_switch_cmd"
       else
-         echo "Running ==> $printed_uml_switch_cmd"
+         [ -n "$verbose" ] && echo "Running ==> $printed_uml_switch_cmd"
          "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
       fi
    fi
@@ -468,22 +470,24 @@ start_inet_hub() {
 ###############################################################################
 # Start a virtual network hub.
 # Usage:
-#   start_hub JUST_PRINT HUB
+#   start_hub VERBOSE JUST_PRINT HUB
 # Globals:
 #   r- HUB_LOG
 #   r- NETKIT_HOME
 #   r- USER_ID
 # Arguments:
-#   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
-#   $2 - hub socket filepath
+#   $1 - set to 1 for verbose, otherwise pass an empty string
+#   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $3 - hub socket filepath
 # Returns:
 #   None. Exits with a non-zero code on a configuration error
 # Example:
 #   None
 ###############################################################################
 start_hub() {
-   local just_print=$1
-   local hub_socket=$2
+   local verbose=$1
+   local just_print=$2
+   local hub_socket=$3
 
    local uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
    local hub_log_cmd
@@ -505,7 +509,7 @@ start_hub() {
       if [ -n "$just_print" ]; then
          echo "Not running ==> $printed_uml_switch_cmd"
       else
-         echo "Running ==> $printed_uml_switch_cmd"
+         [ -n "$verbose" ] && echo "Running ==> $printed_uml_switch_cmd"
          "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
       fi
    fi
@@ -520,7 +524,7 @@ start_hub() {
 ###############################################################################
 # Start all hubs specified in an array.
 # Usage:
-#   run_hubs JUST_PRINT [HUB[,ADDR]]...
+#   run_hubs VERBOSE JUST_PRINT [HUB[,ADDR]]...
 # Globals:
 #   r- HUB_LOG
 #   r- HUB_SOCKET_DIR
@@ -529,17 +533,19 @@ start_hub() {
 #   r- NETKIT_HOME
 #   r- USER_ID
 # Arguments:
-#   $1 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $1 - set to 1 for verbose, otherwise pass an empty string
+#   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
 #  ... - list of hub names optionally paired with an IP address (for a tap
 #        interface).
 # Returns:
 #   None. Exits with a non-zero code on a configuration error
 # Example:
-#   run_hubs "" hub1 hub2 tap,10.0.0.1 hub3
+#   run_hubs "" "" hub1 hub2 tap,10.0.0.1 hub3
 ###############################################################################
 run_hubs() {
-   local just_print=$1
-   local hub_specifications=( "${@:2}" )
+   local verbose=$1
+   local just_print=$2
+   local hub_specifications=( "${@:3}" )
 
    local hub_specification hub_name tap_address hub_socket
 
@@ -549,9 +555,9 @@ run_hubs() {
       hub_socket=$(get_hub_socket "$hub_name")
 
       if [ -n "$tap_address" ]; then
-         start_inet_hub "$just_print" "$hub_socket" "$tap_address"
+         start_inet_hub "$verbose" "$just_print" "$hub_socket" "$tap_address"
       else
-         start_hub "$just_print" "$hub_socket"
+         start_hub "$verbose" "$just_print" "$hub_socket"
       fi
    done
 }
