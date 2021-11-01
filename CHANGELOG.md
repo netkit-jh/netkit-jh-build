@@ -7,7 +7,7 @@
 - `--delay` option to `ltest` to specify how long to wait for the lab to settle before running test scripts
 - `--clean-directories` option to `vclean` to wipe `$HOME`/.netkit/, `$MCONSOLE_DIR`/, and `$HUB_SOCKET_DIR`/ (now included in `--clean-all`)
 - `-f`|`--force` option to `vclean` for usage alongside `-H`|`--remove-hubs` to remove hubs even if they are being used by running machines
-- `-v`|`--verbose` option to `vclean`, `vconf`, and `vcrash`
+- `-v`|`--verbose` option to `vclean`, `vconf`, `vcrash`, and `vdump`
 
 # Modified
 - Machine names must conform to the Debian standard (which conforms to the RFC standard too)

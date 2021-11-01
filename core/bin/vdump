@@ -68,6 +68,7 @@ $(usage_line)
 Dump packets from a Netkit DOMAIN (collision domain) to standard output.
 
 $(help_option)
+  -v, --verbose       show the commands being ran
 $(version_option)
 
 END_OF_HELP
@@ -106,6 +107,9 @@ while true; do
    case $1 in
       --help)
          usage 0
+         ;;
+      -v|--verbose)
+         verbose=1
          ;;
       --version)
          show_version
@@ -147,5 +151,5 @@ fi
 
 uml_dump_cmd=( "uml_dump" "$hub_socket" )
 
-echo "Running ==> ${uml_dump_cmd[*]}"
+[ -n "$verbose" ] && echo "Running ==> ${uml_dump_cmd[*]}"
 "${uml_dump_cmd[@]}"
