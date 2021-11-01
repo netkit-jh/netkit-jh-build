@@ -106,9 +106,9 @@ open_terminal() {
       kitty)         term_cmd=( "kitty" );;
       konsole)       term_cmd=( "konsole" "--nofork" "-e" );;
       konsole-tab)   term_cmd=( "$NETKIT_HOME/bin/konsole-tabs.sh" "-e" );;
-      xterm)         term_cmd=( "xterm" "-e" );;
       wsl)           term_cmd=( "cmd.exe" "/c" "start" "wsl.exe" );;
       wt)            term_cmd=( "cmd.exe" "/c" "wt.exe" "--profile" "netkit" "wsl.exe" );;
+      xterm)         term_cmd=( "xterm" "-e" );;
       *)
          echo "Terminal '$TERM_TYPE' not supported, defaulting to xterm."
          term_cmd=( "xterm" "-e" );;
@@ -213,7 +213,7 @@ while ! tmux -L netkit has-session -t="$vhost" 2> /dev/null; do
    ((++attempts))
 
    if [ "$attempts" -eq "$retry_count" ]; then
-      echo
+      echo ""
       echo 1>&2 "Could not connect to '$vhost'."
       exit 1
    fi
@@ -221,6 +221,8 @@ while ! tmux -L netkit has-session -t="$vhost" 2> /dev/null; do
    sleep "$retry_interval"
    echo -n "."
 done
+
+echo ""
 
 if [ -n "$open_term" ]; then
    open_terminal "$vhost"
