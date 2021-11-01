@@ -18,7 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This is the Netkit vconfig script, which allows to attach virtual machine
+# This is the Netkit vconf script, which allows to attach virtual machine
 # interfaces on the fly. Interface detaching is not supported, because the
 # release function for uml-netdev0 is still under development. This script
 # already supports interface removal, which can be achieved by using an empty

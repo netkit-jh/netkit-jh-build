@@ -36,6 +36,7 @@
 - `ltest` script results are placed in _test/results/
 - `--clean-all` in `vclean` now removes all items inside Netkit directories (`$HOME`/.netkit/, `$MCONSOLE_DIR`/, and `$HUB_SOCKET_DIR`/)
 - `--clean-all` in `vclean` now affects machines owned by all users
+- `vconf` manual entry is called `vconf` now (used to be `vconfig`)
 
 # Removed
 - `ltest` signature comparison, and the `-R`|`--rebuild-signature` and `--verify` options
