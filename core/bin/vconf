@@ -72,7 +72,7 @@ usage() {
 $(usage_line)
 Attach network interfaces to running virtual machines.
 
-      --ethN=[DOMAIN] equip virtual machine with a network interface ethN,
+      --ethN=[DOMAIN]  equip virtual machine with a network interface ethN,
                         where N is a number between 0 and $((MAX_INTERFACES - 1)). DOMAIN is the
                         name of the collision domain the interface should be
                         connected to. Using an empty DOMAIN name (e.g.,
@@ -110,6 +110,7 @@ Miscellaneous:
 $(help_option)
   -n, --dry-run, --just-print, --recon  do not actually start anything. Just
                                          show which commands would be executed
+  -v, --verbose       show commands being ran
 $(version_option)
 
 Notice: arguments containing spaces are not allowed. Interfaces attached by
@@ -287,8 +288,8 @@ target_user=$USER_ID
 
 
 # Get command line options
-long_opts="dry-run,help,just-print,recon,version,user:"
-short_opts="nu:"
+long_opts="dry-run,help,just-print,recon,user:,verbose,version"
+short_opts="nu:v"
 
 # Append a new long option for each network interface that can be configured
 for ((i = 0; i < MAX_INTERFACES; ++i)); do
