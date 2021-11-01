@@ -51,7 +51,6 @@ for relevant quoting and escaping.
 
   -n, --timeout=N     set how long to wait before grabbing the command output
 
-
 Miscellaneous:
 $(help_option)
   -v, --verbose       display debugging messages
