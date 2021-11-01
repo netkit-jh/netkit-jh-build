@@ -105,6 +105,7 @@ virtual machine.
 
 Miscellaneous:
 $(help_option)
+  -v, --verbose       show which processes are getting killed
 $(version_option)
 
 END_OF_HELP
@@ -116,10 +117,11 @@ END_OF_HELP
 ###############################################################################
 # Kill a virtual machine by signaling the corresponding processes.
 # Usage:
-#   kill_by_signaling TEST_MODE QUICK_MODE USER MACHINE
+#   kill_by_signaling VERBOSE TEST_MODE QUICK_MODE USER MACHINE
 # Globals:
 #   None
 # Arguments:
+#   $1 - set to 1 for verbose, empty string otherwise
 #   $1 - set to 1 for test mode, empty string otherwise
 #   $2 - set to 1 for quick mode, empty string otherwise
 #   $3 - owner of machine
@@ -131,10 +133,11 @@ END_OF_HELP
 #   None
 ###############################################################################
 kill_by_signaling() {
-   local test_mode=$1
-   local quick_mode=$2
-   local target_user=$3
-   local vhost=$4
+   local verbose=$1
+   local test_mode=$2
+   local quick_mode=$3
+   local target_user=$4
+   local vhost=$5
 
    local pids
 
@@ -142,12 +145,12 @@ kill_by_signaling() {
    # killed in a certain order
    IFS=" " read -ra pids <<< "$(get_vhost_all_pids_by_name "$target_user" "$vhost")"
 
-   echo "Virtual machine PIDs: ${pids[*]}"
+   [ -n "$verbose" ] || [ -n "$test_mode" ] && echo "PIDs: ${pids[*]}"
 
    # We are in test mode, just show which processes would be killed
    [ -n "$test_mode" ] && return 1
 
-   echo -n "Killing... "
+   echo -n "Killing by signaling... "
 
    if [ "${#pids[@]}" -eq 0 ]; then
       echo "done."
@@ -185,7 +188,6 @@ kill_by_signaling() {
    fi
 
    echo "done."
-
    return 0
 }
 
@@ -219,7 +221,7 @@ mconsole_halt() {
       sleep 1
    done
 
-   echo "hangup detected... "
+   echo -n "hangup detected... "
    kill "$uml_mconsole_pid"
 
    return 1
@@ -249,22 +251,29 @@ kill_by_mconsole() {
    local target_user=$3
    local vhost=$4
 
-   echo -n "Crashing... "
+   echo -n "Halting with mconsole... "
 
    mconsole_halt "$mconsole"
 
    # When the above command exits, an attempt via the mconsole has been
    # performed. Regardless of whether the virtual machine has actually halted,
    # the above command ensures that the uml_mconsole process has ended.
-   if [ -z "$quick_mode" ] && get_machine_state "$target_user" "$vhost"; then
+   if get_machine_state "$target_user" "$vhost"; then
+      if [ -n "$quick_mode" ]; then
+         echo "failed, ignoring (try again without --quick)."
+         return 1
+      fi
+
       # Make a second attempt if machine is still running
       echo -n "retrying... "
       sleep 1
-      mconsole_halt "$mconsole" || return 1
+      if ! mconsole_halt "$mconsole"; then
+         echo "failed."
+         return 1
+      fi
    fi
 
    echo "done."
-
    return 0
 }
 
@@ -287,8 +296,8 @@ target_user=$USER_ID
 
 
 # Get command line options
-long_opts="help,just-kill,quick,remove-fs,root,test,user:,version"
-short_opts="kqru:"
+long_opts="help,just-kill,quick,remove-fs,root,test,user:,verbose,version"
+short_opts="kqru:v"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
@@ -324,6 +333,9 @@ while true; do
             echo 1>&2 "$SCRIPTNAME: $target_user: User does not exist"
             usage 1
          fi
+         ;;
+      -v|--verbose)
+         verbose=1
          ;;
       --version)
          show_version
@@ -364,26 +376,19 @@ for vhost in "${vhosts[@]}"; do
 
       if [ -n "$force" ] || [ -n "$test_mode" ]; then
          # Crash virtual machines by simply killing their processes
-         kill_by_signaling "$test_mode" "$quick_mode" "$target_user" "$vhost" || continue
-      else
-         # Crash virtual machines via uml_mconsole
-         if ! kill_by_mconsole "$quick_mode" "${vhost_info[mconsole]}" "$target_user" "$vhost"; then
-            kill_by_signaling "" "$quick_mode" "$target_user" "$vhost" || continue
-         fi
+         kill_by_signaling "$verbose" "$test_mode" "$quick_mode" "$target_user" "$vhost" || continue
+      elif ! kill_by_mconsole "$quick_mode" "${vhost_info[mconsole]}" "$target_user" "$vhost"; then
+         kill_by_signaling "$verbose" "" "$quick_mode" "$target_user" "$vhost" || continue
       fi
 
       # Filesystem and tmux session removal only occurs if the machine
       # successfully shut down (if the previous commands returned 0).
 
-      # Kill tmux Sessions
-      echo "Checking for '$vhost' tmux session"
-
+      # Kill tmux sessions
       if tmux -L netkit has-session -t="$vhost" 2>/dev/null; then
          echo "Killing tmux session '$vhost'"
          tmux -L netkit kill-session -t="$vhost"
       fi
-
-      echo "Checking for '$vhost-dead' tmux session"
 
       if tmux -L netkit has-session -t="$vhost-dead" 2>/dev/null; then
          echo "Killing tmux session '$vhost-dead'"
