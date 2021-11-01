@@ -114,7 +114,7 @@ log_write "$0 $*"
 
 
 # Get command line options
-long_opts="help,version,verbose"
+long_opts="help,verbose,version"
 short_opts="d:v"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then

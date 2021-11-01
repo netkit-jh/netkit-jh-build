@@ -128,7 +128,7 @@ log_write "$0 $*"
 
 
 # Get command line options
-long_opts="help,version,just-kill,keep-fs,list,quick"
+long_opts="help,just-kill,keep-fs,list,quick,version"
 short_opts="d:Fklq"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
