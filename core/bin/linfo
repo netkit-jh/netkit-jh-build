@@ -329,7 +329,7 @@ cum_lab_vhosts_str=${cum_lab_vhosts_str%", "}
 # Print lab information
 bold_print "======================== Lab information ========================"
 lab_welcome "${lab_directories[@]}"
-bold_print "The lab is made up of ${#cum_lab_vhosts_str[@]} virtual machines ($cum_lab_vhosts_str)."
+bold_print "The lab is made up of ${#cum_lab_vhosts[@]} virtual machines ($cum_lab_vhosts_str)."
 
 for dir in "${lab_directories[@]}"; do
    [ -f "$dir/lab.dep" ] && bold_print "The lab part $dir supports parallel startup."
