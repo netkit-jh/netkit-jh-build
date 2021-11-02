@@ -165,7 +165,7 @@ EOF
       >,
       labeldistance=1.5,
       labelfontsize=8.0
-   ];'
+   ];
 EOF
 
          hub_names+=( "$value" )
@@ -176,7 +176,7 @@ EOF
       else
          options[$vhost]+="$option = $value<BR/>"
       fi
-   done < <(grep --no-filename "^$hostname_regex\[.*\]=" "${lab_confs[@]}")
+   done < <(grep --extended-regexp --no-filename "^$hostname_regex\[.*\]=" "${lab_confs[@]}")
 
    # Label each machine with its hostname and vstart options
    for vhost in "${lab_vhosts[@]}"; do
