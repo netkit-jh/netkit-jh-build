@@ -128,10 +128,9 @@ generate_dot_graph() {
    # Global map parameters
    cat << EOF
 graph netkit_jh_graph {
-   overlap="prism";
-   overlap_scaling=-6.0;
-   resolution=400.0;
-   splines="line";
+   overlap="scalexy"
+   resolution=400.0
+   splines="line"
 EOF
 
    while IFS= read -r configuration; do
@@ -156,19 +155,12 @@ EOF
          # Add an edge between the machine and its collision domain
          cat << EOF
    "$vhost" -- "$value" [
-      taillabel=<
-         <TABLE BGCOLOR="white" BORDER="0" CELLPADDING="1" CELLSPACING="0">
-            <TR>
-               <TD>eth$option</TD>
-            </TR>
-         </TABLE>
-      >,
+      taillabel=<<TABLE BGCOLOR="white" BORDER="0" CELLPADDING="1" CELLSPACING="0"><TR><TD>eth$option</TD></TR></TABLE>>,
       labeldistance=1.5,
       labelfontsize=8.0
-   ];
+   ]
 EOF
-
-         hub_names+=( "$value" )
+         array_contains "$value" "${hub_names[@]}" || hub_names+=( "$value" )
 
          # Device IDs cannot have whitespace, so a space-separated list is
          # safe.
@@ -182,16 +174,11 @@ EOF
    for vhost in "${lab_vhosts[@]}"; do
       cat << EOF
    "$vhost" [
-      shape=box,
-      label=<
-         $vhost
-         <FONT POINT-SIZE="10">
-            <BR/>${options[$vhost]}
-         </FONT>
-      >,
+      shape="box",
+      label=<$vhost<FONT POINT-SIZE="10"><BR/>${options[$vhost]}</FONT>>,
       height=0.5,
       width=0.5
-   ];
+   ]
 EOF
    done
 
@@ -199,7 +186,7 @@ EOF
    for hub_name in "${hub_names[@]}"; do
       cat << EOF
    "$hub_name" [
-      shape=plaintext,
+      shape="plaintext",
       width=0,
       height=0,
       margin=0
