@@ -322,36 +322,37 @@ lab_clean() {
 ###############################################################################
 # Crash virtual machines of a Netkit lab.
 # Usage:
-#   lab_crash QUICK_MODE DIR KEEP_FS JUST_KILL
+#   lab_crash VERBOSE QUICK_MODE DIR KEEP_FS JUST_KILL
 # Globals:
 #   rw lab_vhosts
 # Arguments:
-#   $1 - set to 1 for quick mode on vcrash, empty string for otherwise
-#   $2 - lab directory
-#   $3 - set to 1 to keep the filesystem, empty string for otherwise
-#   $4 - set to 1 to just kill machine process, empty string for otherwise
+#   $1 - set to 1 for verbose, empty string for otherwise
+#   $2 - set to 1 for quick mode on vcrash, empty string for otherwise
+#   $3 - lab directory
+#   $4 - set to 1 to keep the filesystem, empty string for otherwise
+#   $5 - set to 1 to just kill machine process, empty string for otherwise
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 lab_crash() {
-   local quick_mode=$1
-   local lab_directory=$2
-   local keep_fs=$3
-   local just_kill=$4
+   local verbose=$1
+   local quick_mode=$2
+   local lab_directory=$3
+   local keep_fs=$4
+   local just_kill=$5
 
    local vcrash_args vhost
 
    get_lab_vhosts "$lab_directory"
 
-   [ -n "$quick_mode" ] && vcrash_args+=( "--quick" )
-   [ -z "$keep_fs" ]    && vcrash_args+=( "--remove-fs" )
-   [ -n "$just_kill" ]  && vcrash_args+=( "--just-kill" )
+   # shellcheck disable=2206
+   vcrash_args+=( ${verbose:+"--verbose"} ${quick_mode:+"--quick"} ${keep_fs:-"--remove-fs"} ${just_kill:+"--just-kill"} )
    
    for vhost in "${lab_vhosts[@]}"; do
       bold_print "Crashing '$vhost'..."
-      vcrash "${vcrash_args[@]}" "$vhost" && rm --force "$lab_directory/$vhost.ready"
+      vcrash "${vcrash_args[@]}" "$vhost" && rm ${verbose:+"--verbose"} --force "$lab_directory/$vhost.ready"
    done
    
    bold_print "Removing readyfor.test..."

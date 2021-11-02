@@ -98,6 +98,7 @@ only a subset of the virtual machines that make up the lab.
 
 Miscellaneous:
 $(help_option)
+  -v, --verbose       show what processes are getting killed
 $(version_option)
 
 If one or more MACHINEs are passed on the command line, then only those
@@ -128,8 +129,8 @@ log_write "$0 $*"
 
 
 # Get command line options
-long_opts="help,just-kill,keep-fs,list,quick,version"
-short_opts="d:Fklq"
+long_opts="help,just-kill,keep-fs,list,quick,verbose,version"
+short_opts="d:Fklqv"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
@@ -159,6 +160,9 @@ while true; do
          ;;
       -q|--quick)
          quick_mode=1
+         ;;
+      -v|--verbose)
+         verbose=1
          ;;
       --version)
          show_version
@@ -198,7 +202,7 @@ lab_welcome "$lab_directory"
 bold_print "================================================================="
 
 # Crash virtual machines
-lab_crash "$quick_mode" "$lab_directory" "$keep_fs" "$just_kill"
+lab_crash "$verbose" "$quick_mode" "$lab_directory" "$keep_fs" "$just_kill"
 bold_print "Lab has been crashed."
 bold_print "================================================================="
 

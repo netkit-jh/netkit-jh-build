@@ -683,7 +683,7 @@ if [ -n "$test_delay" ]; then
 
    # Test finished, now crash the lab
    bold_print "Stopping lab..."
-   lab_crash "" "$lab_directory" "" "" > /dev/null
+   lab_crash "$verbose" "" "$lab_directory" "" "" > /dev/null
    lab_clean "$verbose" "$lab_directory" > /dev/null
    bold_print "Test completed."
 fi
