@@ -9,6 +9,11 @@
 - `-f`|`--force` option to `vclean` for usage alongside `-H`|`--remove-hubs` to remove hubs even if they are being used by running machines
 - `-v`|`--verbose` option to `lcrash`, `vclean`, `vconf`, `vcrash`, and `vdump`
 - `--show-boot-log` option to `vstart` to display the boot log (replaced the `-v`|`--verbose` option, see [Modified](#modified))
+- Support for whitespace (and some other special characters) in arguments
+- Support for whitespace in the lab directory path
+- ShellCheck directives for effective linting
+- .gitignore now ignores compilation, test, and development artefacts
+- Copyright notices for the Netkit-JH development team (alongside the original Netkit and Netkit-NG notices)
 
 # Modified
 - Machine names must conform to the Debian standard (which conforms to the RFC standard too)

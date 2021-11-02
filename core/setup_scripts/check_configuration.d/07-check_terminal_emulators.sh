@@ -1,6 +1,8 @@
 #!/bin/false
 # shellcheck shell=bash
 
+#     Copyright 2020-2021 Billy Bromell, Adam Bromiley, Mohammed Habib, Joshua
+#     Hawking - Warwick Manufacturing Group, University of Warwick.
 #     Copyright 2004-2007 Massimo Rimondini
 #     Computer Networks Research Group, Roma Tre University.
 #

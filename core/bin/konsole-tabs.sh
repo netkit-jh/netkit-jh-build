@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#     Copyright 2020-2021 Adam Bromiley, Joseph Bunce, Joshua Hawking - Warwick
+#     Manufacturing Group, University of Warwick.
 #     Copyright 2004-2010 Massimo Rimondini - Computer Networks Research Group,
 #     Roma Tre University.
 #

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Upon request, this file mounts a host directory containing kernel modules
-
+#     Copyright 2020-2021 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
+#     Group, University of Warwick.
 #     Copyright 2002-2007 Massimo Rimondini - Computer Networks Research Group,
 #     Roma Tre University.
 #
@@ -19,6 +19,8 @@
 #
 #     You should have received a copy of the GNU General Public License along
 #     with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+# Upon request, this file mounts a host directory containing kernel modules
 
 
 ### BEGIN INIT INFO

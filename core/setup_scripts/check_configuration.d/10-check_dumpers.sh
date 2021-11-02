@@ -1,6 +1,8 @@
 #!/bin/false
 # shellcheck shell=bash
 
+#     Copyright 2021 Adam Bromiley - Warwick Manufacturing Group, University of
+#     Warwick.
 #     Copyright 2009 Julien Iguchi-Cartigny
 #     XLIM Laboratory, Limoges University, France
 #

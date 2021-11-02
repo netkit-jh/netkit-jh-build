@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#     Copyright 2020-2021 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
+#     Group, University of Warwick.
 #     Copyright 2009 Julien Iguchi-Cartigny, XLIM Laboratory, France
 #
 #     This file is part of Netkit.
