@@ -391,7 +391,7 @@ single_lab_vhost_start() {
    local configuration option value
 
    # Specify host lab directory, and place filesystem inside it
-   local vstart_args=( "--hostlab" "$lab_directory" "--filesystem" "$lab_directory/$vhost.disk" )
+   local vstart_args=( "--hostlab" "$lab_directory" "--filesystem" "$lab_directory/$vhost.disk" ${verbose:+"--verbose"} )
 
    # Generate vstart argument list
    if [ -e "$lab_directory/lab.conf" ]; then
@@ -424,12 +424,6 @@ single_lab_vhost_start() {
    
    # Remove .ready file, if existing
    rm --force "$lab_directory/$vhost.ready"
-
-   if [ -z "$verbose" ]; then
-      bold_print "Starting '$vhost'..."
-   else
-      bold_print "Starting '$vhost' with options '${vstart_args[*]} ${passthrough_args[*]}'... "
-   fi
 
    if ! vstart "${vstart_args[@]}" "${passthrough_args[@]}" "$vhost"; then
       echo 2>&1 "Error while starting virtual machine '$vhost'"
