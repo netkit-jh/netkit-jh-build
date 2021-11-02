@@ -243,13 +243,10 @@ get_lab_variable() {
 lab_welcome() {
    local lab_directories=( "$@" )
 
-   local lab_directories_str
+   local indent lab_directories_str
    local dir lab
 
    declare -A lab_versions lab_authors lab_emails lab_webs lab_descriptions
-
-   printf -v lab_directories_str '%s, ' "${lab_directories[@]}"
-   lab_directories_str=${lab_directories_str%", "}
 
    for dir in "${lab_directories[@]}"; do
          # Check that the lab directory exists
@@ -259,6 +256,9 @@ lab_welcome() {
       fi
 
       lab=$(basename "$dir")
+
+      lab_directories_str+=$indent$dir$'\n'
+      indent="                    "
 
       # We use associative arrays for printing the values with their respective
       # directory basename. SC2034 (variable appears unused) must be ignored
@@ -274,6 +274,8 @@ lab_welcome() {
       # shellcheck disable=SC2034
       lab_descriptions[$lab]=$(get_lab_variable "LAB_DESCRIPTION" "$dir")
    done
+
+   lab_directories_str=${lab_directories_str%$'\n'}
 
    # Convert the multi-lab arrays to flat, comma-separated lists and print
    bold_print "Lab directory(ies): $color_blue$lab_directories_str"
