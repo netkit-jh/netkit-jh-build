@@ -164,10 +164,10 @@ $(help_option)
                         times. Parameters will be passed to the kernel in the
                         same order in which they are provided
       --debug         run the virtual machine under a GDB instance to report
-                        more messages than with --verbose, and for further
-                        debugging. The process requires a SIGINT delivery with
-                        kill -INT <pid> to start debugging (if the session
-                        booted successfully)
+                        more messages than with --show-boot-log, and for
+                        further debugging. The process requires a SIGINT
+                        delivery with kill -INT <pid> to start debugging (if
+                        the session booted successfully)
   -F, --foreground    do not launch the virtual machine in background (the
                         latter being the default behavior). Note that virtual
                         hubs are always started in background, regardless of
@@ -175,13 +175,16 @@ $(help_option)
                         the console mode
   -n, --dry-run, --just-print, --recon  do not start anything, just show which
                                          commands would be executed
-  --tmux-attached     run each VM in tmux and start a terminal attached to the
+      --show-boot-log  do not hide the boot log with 'quiet' when the kernel
+                        is booting. This option is useful for finding errors in
+                        the boot sequence without having to use --debug
+      --tmux-attached  run each VM in tmux and start a terminal attached to the
                         tmux session. This is equivalent to VM_CON0=tmux and
                         TMUX_OPEN_TERMS=yes in netkit.conf
-  --tmux-detached     run each VM in a tmux session without opening terminals.
+      --tmux-detached  run each VM in a tmux session without opening terminals.
                         This is the same as VM_CON0=tmux and TMUX_OPEN_TERMS=no
                         in netkit.conf
-  -v, --verbose       show debugging messages during the boot sequence
+  -v, --verbose       show machine details and commands ran
 $(version_option)
 
 Note: unless otherwise stated, whitespace is not permitted in any option
@@ -416,8 +419,8 @@ log_write "$0 $*"
 # Get command line options
 long_opts="append:,con0:,con1:,debug,dry-run,exec:,filesystem:,foreground,\
 help,hide-disk-file,hostlab:,just-print,kernel:,mem:,model-fs:,mount:,no-cow,\
-no-hosthome,print,recon,test:,tmux-attached,tmux-detached,verbose,version,\
-xterm:"
+no-hosthome,print,recon,show-boot-log,test:,tmux-attached,tmux-detached,\
+verbose,version,xterm:"
 short_opts="De:Ff:Hk:Ll:M:m:nvWw:"
 
 for i in $(seq 0 $MAX_INTERFACES); do
@@ -514,6 +517,9 @@ while true; do
          ;;
       -n|--dry-run|--just-print|--recon)
          just_print=1
+         ;;
+      --show-boot-log)
+         show_boot_log=1
          ;;
       --test)
          kernel_cmd_append+=( "\"test=$2\"" )
@@ -704,7 +710,7 @@ trap "rm --force '$out_file'" EXIT
    ### BOOT SEQUENCE VERBOSITY ################################################
    if [ -n "$debug" ]; then
       kernel_cmd=( "gdb --args" "${kernel_cmd[@]}" )
-   elif [ -z "$verbose" ]; then
+   elif [ -z "$show_boot_log" ]; then
       kernel_cmd+=( "quiet" )
    fi
 
@@ -815,9 +821,9 @@ trap "rm --force '$out_file'" EXIT
 
 
    echo
-} > "$out_file" 2>&1
+} > "$out_file"
 
-cat "$out_file"
+[ -n "$verbose" ] && cat "$out_file"
 rm --force "$out_file"
 
 
@@ -855,7 +861,11 @@ fi
 # Background invocation commands if not running directly in the parent terminal
 [ -z "$foreground" ] && [ "$VM_CON0" != "this" ] && [ "$VM_CON1" != "this" ] && backgrounded=1
 
-echo "Running ==> ${kernel_cmd[*]}"
+if [ -n "$verbose" ]; then
+   echo "Running ==> ${kernel_cmd[*]}"
+else
+   echo "Starting '$vhost'..."
+fi
 
 if [ "$VM_CON0" = "none" ]; then
    if [ -n "$backgrounded" ]; then

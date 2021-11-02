@@ -8,6 +8,7 @@
 - `--clean-directories` option to `vclean` to wipe `$HOME`/.netkit/, `$MCONSOLE_DIR`/, and `$HUB_SOCKET_DIR`/ (now included in `--clean-all`)
 - `-f`|`--force` option to `vclean` for usage alongside `-H`|`--remove-hubs` to remove hubs even if they are being used by running machines
 - `-v`|`--verbose` option to `vclean`, `vconf`, `vcrash`, and `vdump`
+- `--show-boot-log` option to `vstart` to display the boot log (replaced the `-v`|`--verbose` option, see [Modified](#modified))
 
 # Modified
 - Machine names must conform to the Debian standard (which conforms to the RFC standard too)
@@ -37,6 +38,7 @@
 - `--clean-all` in `vclean` now removes all items inside Netkit directories (`$HOME`/.netkit/, `$MCONSOLE_DIR`/, and `$HUB_SOCKET_DIR`/)
 - `--clean-all` in `vclean` now affects machines owned by all users
 - `vconf` manual entry is called `vconf` now (used to be `vconfig`)
+- `-v`|`--verbose` in `vstart` now only displays machine information and ran commands. Boot log verbosity is now controlled with `--show-boot-log`, see [Added](#added)
 
 # Removed
 - `ltest` signature comparison, and the `-R`|`--rebuild-signature` and `--verify` options

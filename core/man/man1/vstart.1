@@ -476,10 +476,18 @@ be executed, including those used to start virtual hubs.
 
 .TP
 .B
+--show-boot-log
+Do not hide the boot log with 'quiet' when the kernel is booting. This option
+is useful for finding errors in the boot sequence without having to use
+--debug.
+
+.TP
+.B
 --debug
 Run the virtual machine under a gdb instance to report more messages than with
---verbose, and for further debugging. The process requires a SIGINT delivery
-with kill -INT <pid> to start debugging (if the session booted successfully)
+--show-boot-log, and for further debugging. The process requires a SIGINT
+delivery with kill -INT <pid> to start debugging (if the session booted
+successfully).
 
 .TP
 .B
@@ -487,7 +495,7 @@ with kill -INT <pid> to start debugging (if the session booted successfully)
 .TP
 .B
 --verbose
-This option enables verbose kernel messages during the virtual machine boot phase.
+Show machine details and commands ran.
 
 .TP
 .B
