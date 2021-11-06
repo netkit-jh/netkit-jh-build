@@ -371,12 +371,4 @@ lab_crash() {
 # ANSI color escape sequences
 color_normal='\033[0m'
 color_bold='\033[1m'
-
 color_blue='\033[34m'
-
-# shellcheck disable=SC2034
-color_bold_red='\033[31;1m'
-# shellcheck disable=SC2034
-color_bold_green='\033[32;1m'
-# shellcheck disable=SC2034
-color_bold_yellow='\033[33;1m'
