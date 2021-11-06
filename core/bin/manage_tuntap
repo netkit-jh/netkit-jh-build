@@ -49,7 +49,7 @@ case $action in
    start)
       if [ ! -c /dev/net/tun ]; then
          printf "Creating /dev/net/tun device...\t\t\t"
-         if ! sudo mknod --mode 666 /dev/net/tun c 10 200; then
+         if ! sudo --prompt $'\n'"[sudo] password for %p: " mknod --mode 666 /dev/net/tun c 10 200; then
             echo "failed."
             exit 1
          fi
@@ -60,7 +60,7 @@ case $action in
       tap_device_name=$(get_tap_interface "$target_user" "$domain")
 
       printf "Bringing down %s (if any)...\t" "$tap_device_name"
-      sudo ifconfig "$tap_device_name" down > /dev/null 2>&1
+      sudo --prompt $'\n'"[sudo] password for %p: " ifconfig "$tap_device_name" down > /dev/null 2>&1
       echo "done."
 
       printf "Bringing down tunnel (if any)...\t\t"
