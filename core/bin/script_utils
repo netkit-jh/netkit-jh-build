@@ -261,17 +261,9 @@ show_version() {
    # Netkit version information
    echo -n "Netkit version:            "
 
-   if netkit_version=$(grep "Netkit version" "$NETKIT_HOME/netkit-version" 2> /dev/null); then
-      netkit_version=${netkit_version##"Netkit version "}
-
-      if [[ "$netkit_version" =~ ^([0-9]+[.-])+[0-9]+[a-zA-Z]*$ ]]; then
-         echo "$netkit_version"
-      else
-         echo "<unknown>"
-      fi
-   else
-      echo "<unknown>"
-   fi
+   netkit_version=$(grep "Netkit version" "$NETKIT_HOME/netkit-version" 2> /dev/null)
+   netkit_version=${netkit_version##"Netkit version "}
+   echo "${netkit_version:-"<unknown>"}"
    
    # Netkit kernel version information
    echo -n "Netkit kernel version:     "
