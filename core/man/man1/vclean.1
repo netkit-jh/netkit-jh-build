@@ -99,37 +99,36 @@ found, also the iptables firewall. For details about the configuration parameter
 being altered, see \fBvstart\fR(1).
 
 This option removes any host-side configurations and restores the previous
-firewall settings. More precisely, the following operations are performed:
+firewall settings (if affecting all users). More precisely, the following
+operations are performed:
 
-1) If the iptables firewall is found, then both masquerading and packet forwarding
-for data passing through tap interfaces are disabled. In particular, the following
-rules are removed:
+1) If affecting all users with \fB\-\-user\fR=\fI\-\fR, both masquerading and
+packet forwarding for data passing through tap interfaces are disabled. In
+particular, the following rules are removed:
 .nf
 *nat
--A POSTROUTING -j MASQUERADE
+--append POSTROUTING ! --out-interface lo --match comment --comment Netkit-JH --jump MASQUERADE
 *filter
--A FORWARD -i netkit_+ -j ACCEPT
+--append FORWARD --in-interface nk_+ --match comment --comment Netkit-JH --jump ACCEPT
 .fi
 .br
-2) Kernel IP forwarding is disabled by echoing '0' to the special file
+2) If affecting all users, kernel IP forwarding is disabled by echoing '0' to
+the special file
 .nh
 '/proc/sys/net/ipv4/ip_forward'.
 .hy
 .br
-3) Every tap interface (on the host side) is brought down and the corresponding
-tap device is removed.
+3) Every tap interface owned by the user (on the host side) is brought down and
+the corresponding tap device is removed.
 .br
-4) Permissions for the '/dev/net/tun' device are set to 660 (read/write for its
-owner and for other users in the same group; no permissions for other users).
+4) If affecting all users, permissions for the '/dev/net/tun' device are set to
+660 (read/write for its owner and for other users in the same group; no
+permissions for other users).
 
 These operations require administrative privileges. The \fIvclean\fR
 command will take care of asking you for a password if needed. For more
 information about how Netkit gains root privileges, see \fBSETTING UP NETKIT
 FOR USE WITH SUDO\fR in the man page of \fBnetkit.conf\fR(5).
-
-\fBNotice\fR: this action is in no way influenced by the \fB\-\-user\fR option.
-Using \fB\-\-remove\-tunnels\fR or \fB-T\fR causes all host-side configurations
-to be removed, regardless of the user who had requested them.
 
 .TP
 .B

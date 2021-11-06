@@ -12,6 +12,7 @@
 - `-f`|`--force` option to `vclean` for usage alongside `-H`|`--remove-hubs` to remove hubs even if they are being used by running machines
 - `--delay` option to `ltest` to specify how long to wait for the lab to settle before running test scripts
 - `--show-boot-log` option to `vstart` to display the boot log (replaced the `-v`|`--verbose` option, see [Other Modified](#other-modified))
+- Ability to affect a specific user for `-T`|`--remove-tunnels` in `vclean`
 - `coreutils` as a required package to run Netkit (for `sha256sum` and `stdbuf`)
 
 ## Modified

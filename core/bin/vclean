@@ -75,8 +75,9 @@ Perform a Netkit cleanup operation:
 - Remove host-side configurations set up for tap interfaces
 By default, the script just removes unused virtual hubs.
 
-      --clean-all     Equivalent to --kill-machines, --clean-directories, and
-                        --remove-tunnels. This option affects all users.
+      --clean-all     Equivalent to --user=-, --kill-machines,
+                        --clean-directories, and --remove-tunnels. This option
+                        affects all users.
       --clean-directories  Empty the following directories:
                               - MCONSOLE_DIR
                               - HUB_SOCKET_DIR
@@ -91,12 +92,12 @@ By default, the script just removes unused virtual hubs.
                         (even those that are frozen) and the virtual hubs they
                         are attached to.
   -T, --remove-tunnels  Remove tunnels and other configuration settings that
-                         have been altered in order to set up "tap" collision
-                         domains. This is not a per-user action: using this
-                         option will remove every host-side configuration that
-                         has been set up to use tap interfaces. This operation
-                         requires administrative privileges. The script will
-                         take care of asking for the root password if required.
+                         have been altered in order to set up "tap" interfaces.
+                         If the user specified is not '-' (all), current
+                         firewall rules enabling 'tap' interfaces (which are
+                         global) are not affected. This operation requires
+                         administrative privileges. The script will take care
+                         of asking for the root password if required.
       --test          Do not actually stop virtual machines and hubs: just show
                         which processes would be killed. --remove-tunnels is
                         not affected by this option.
@@ -408,9 +409,7 @@ if [ -n "$remove_tunnels" ]; then
    echo "================== Removing tap configurations =================="
    echo "This will affect tap configurations for $user_str."
 
-   # TODO: These commands don't run for the specified user (this is a
-   # manage_tuntap limitation). 
-   manage_tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "stop" )
+   manage_tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "stop" "$target_user" )
 
    [ -n "$verbose" ] && echo "Running ==> ${manage_tuntap_cmd[*]}"
 
