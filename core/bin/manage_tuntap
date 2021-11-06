@@ -63,9 +63,8 @@ case $action in
       sudo ifconfig "$tap_device_name" down > /dev/null 2>&1
       echo "done."
 
-      # TODO: Handle failure
       printf "Bringing down tunnel (if any)...\t\t"
-      sudo "$NETKIT_HOME/bin/tunctl" -d "$tap_device_name" > /dev/null
+      sudo "$NETKIT_HOME/bin/tunctl" -d "$tap_device_name" > /dev/null 2>&1
       echo "done."
 
       if ip addr show | grep --quiet "inet $tap_address"; then
