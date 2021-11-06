@@ -34,21 +34,25 @@ action=$1
 # Name of the user the tunnel is being configured for
 target_user=$2
 
+# Collision domain name (for naming the interface)
+domain=$3
+
 # Address of the (host side) tap interface
-tap_address=$3
+tap_address=$4
+
 
 # Get name for the user's tap interface
-tap_device_name=$(get_tap_interface "$target_user")
+tap_device_name=$(get_tap_interface "$target_user" "$domain")
 
 
 postrouting_rule=( "POSTROUTING" "!" "--out-interface" "lo" "--match" "comment" "--comment" "Netkit-JH" "--jump" "MASQUERADE" )
-forward_rule=( "FORWARD" "--in-interface" "netkit_+" "--match" "comment" "--comment" "Netkit-JH" "--jump" "ACCEPT" )
+forward_rule=( "FORWARD" "--in-interface" "nk_+" "--match" "comment" "--comment" "Netkit-JH" "--jump" "ACCEPT" )
 
 
 case $action in
    start)
       if [ ! -c /dev/net/tun ]; then
-         printf "Creating /dev/net/tun device...\t\t"
+         printf "Creating /dev/net/tun device...\t\t\t"
          if ! sudo mknod --mode 666 /dev/net/tun c 10 200; then
             echo "failed."
             exit 1
@@ -60,33 +64,39 @@ case $action in
       sudo ifconfig "$tap_device_name" down > /dev/null 2>&1
       echo "done."
 
-      printf "Bringing down tunnel (if any)...\t"
+      # TODO: Handle failure
+      printf "Bringing down tunnel (if any)...\t\t"
       sudo "$NETKIT_HOME/bin/tunctl" -d "$tap_device_name" > /dev/null
       echo "done."
 
-      printf "Setting up tunnel...\t\t\t"
+      if ip addr show | grep --quiet "inet $tap_address"; then
+         echo 1>&2 "$tap_address: Tap address already allocated to another interface. Remove the interface or change the IP address"
+         exit 1
+      fi
+
+      printf "Setting up tunnel...\t\t\t\t"
       if ! sudo "$NETKIT_HOME/bin/tunctl" -u "$target_user" -t "$tap_device_name" > /dev/null; then
          echo "failed."
          exit 1
       fi
       echo "done."
       
-      printf "Bringing up %s...\t\t" "$tap_device_name"
+      printf "Bringing up %s...\t\t\t" "$tap_device_name"
       if ! sudo ifconfig "$tap_device_name" "$tap_address" up; then
          echo "failed."
          exit 1
       fi
       echo "done."
       
-      printf "Setting permissions for /dev/net/tun...\t"
+      printf "Setting permissions for /dev/net/tun...\t\t"
       if ! sudo chmod 666 /dev/net/tun; then
          echo "failed."
          exit 1
       fi
       echo "done."
       
-      printf "Enabling IP forwarding...\t\t"
-      if ! echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward; then
+      printf "Enabling IP forwarding...\t\t\t"
+      if ! echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward > /dev/null; then
          echo "failed."
          exit 1
       fi
@@ -94,7 +104,7 @@ case $action in
 
       # Create a new masquerade rule if it doesn't already exist.
       if ! sudo iptables --table nat --check "${postrouting_rule[@]}" 2> /dev/null; then
-         printf "Enabling masquerading...\t\t"
+         printf "Enabling masquerading...\t\t\t"
          if ! sudo iptables --table nat --append "${postrouting_rule[@]}"; then
             echo "failed."
             exit 1
@@ -104,7 +114,7 @@ case $action in
 
       # Create a new forwarding rule if it doesn't already exist.
       if ! sudo iptables --check "${forward_rule[@]}" 2> /dev/null; then
-         printf "Opening firewall for tunnel...\t\t"
+         printf "Opening firewall for tunnel...\t\t\t"
          if ! sudo iptables --insert "${forward_rule[@]}"; then
             echo "failed."
             exit 1
@@ -132,40 +142,38 @@ case $action in
       fi
 
       printf "Disabling IP forwarding...\t\t\t"
-      if ! echo 0 | sudo tee /proc/sys/net/ipv4/ip_forward; then
+      if ! echo 0 | sudo tee /proc/sys/net/ipv4/ip_forward > /dev/null; then
          echo "failed."
          exit 1
       fi
       echo "done."
 
-      echo "Bringing down tap devices and tunnels:"
+      sys_class_net_entries=( /sys/class/net/nk_* )
+      if [ -e "${sys_class_net_entries[0]}" ]; then
+         echo "Bringing down tap devices and tunnels:"
 
-      for sys_class_net_entry in /sys/class/net/netkit_*; do
-         # Avoids need for shopt -s nullglob
-         [ ! -e "$sys_class_net_entry" ] && continue
+         for sys_class_net_entry in "${sys_class_net_entries[@]}"; do
+            # Ignore tuntap devices not owned by the user (if specified)
+            uid=$(cat "$sys_class_net_entry/owner")
+            [ -n "$target_user" ] && [ "$(id --user "$target_user")" != "$uid" ] && continue
 
-         # Ignore tuntap devices not owned by the user (if specified)
-         uid=$(cat "$sys_class_net_entry/owner")
-         [ -n "$target_user" ] && [ "$(id --user "$target_user")" != "$uid" ] && continue
+            device=$(basename "$sys_class_net_entry")
 
-         device=$(basename "$sys_class_net_entry")
+            printf "\t%s...\t\t\t" "$device"
+            if ! sudo ifconfig "$device" down > /dev/null; then
+               echo "failed."
+               exit 1
+            fi
+            echo "done."
 
-         printf "\t%s...\t\t\t" "$device"
-         if ! sudo ifconfig "$device" down > /dev/null; then
-            echo "failed."
-            exit 1
-         fi
-         echo "done."
-
-         printf "\t%s tunnel...\t\t" "$device"
-         if ! sudo "$NETKIT_HOME/bin/tunctl" -d "$device" > /dev/null; then
-            echo "failed."
-            exit 1
-         fi
-         echo "done."
-      done
-
-      echo "Done."
+            printf "\t%s tunnel...\t\t" "$device"
+            if ! sudo "$NETKIT_HOME/bin/tunctl" -d "$device" > /dev/null; then
+               echo "failed."
+               exit 1
+            fi
+            echo "done."
+         done
+      fi
       
       printf "Resetting permissions for /dev/net/tun...\t"
       if ! sudo chmod 660 /dev/net/tun; then

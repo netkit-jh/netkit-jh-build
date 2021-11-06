@@ -24,7 +24,7 @@ The syntax for this option is exactly the same as for the corresponding option o
 \fIDOMAIN\fR, in which case the network interface \fBethN\fR will be no longer
 available on the virtual machine.
 .br
-Please read the \fBvstart\fR documentation before using this option to setup "\fBtap\fR" collision domains.
+Please read the \fBvstart\fR documentation before using this option to setup "\fBtap\fR" interfaces.
 
 Attaching an already existing interface to a virtual machine causes an error.
 
@@ -104,12 +104,12 @@ shut down. In order to do this, you should use the \fBvclean\fR command with the
 option \fB\-H\fR (see \fBvclean\fR(1)).
 
 An important difference with respect to attaching interfaces with \fIvstart\fR (see
-\fBvstart\fR(1)) is that, when using "\fBtap\fR" collision domains, the
-configuration of the virtual machine is not automatically updated. In particular,
-assume that interface eth0 has been set up using \fIvconf\fR with the following option:
+\fBvstart\fR(1)) is that, when using "\fBtap\fR" interfaces, the configuration
+of the virtual machine is not automatically updated. In particular, assume that
+interface eth0 has been set up using \fIvconf\fR with the following option:
 
 .nf
-\-\-eth0=tap,\fITAP\-ADDRESS\fR,\fIGUEST\-ADDRESS\fR
+--eth\fIN\fR=\fIDOMAIN\fR,\fITAP\-ADDRESS\fR,\fIGUEST\-ADDRESS\fR
 .fi
 
 After doing so, the following operations must be performed inside the virtual
@@ -141,10 +141,9 @@ route add default gw \fITAP\-ADDRESS\fR dev eth0
 Once this is done, the interface is ready for use.
 
 Please make sure you run 'vclean -H' (see \fBvclean\fR(1)) when a "\fBtap\fR"
-collision domain is no more used. Not doing so may result in the impossibility
-to correctly configure new "\fBtap\fR" collision domains. For example, this
-may prevent from correctly setting the \fITAP\-ADDRESS\fR for a new "\fBtap\fR"
-domain.
+interface is no more used. Not doing so may result in the impossibility to
+correctly configure new "\fBtap\fR" interfaces. For example, this may prevent
+from correctly setting the \fITAP\-ADDRESS\fR for a new "\fBtap\fR" interface.
 
 
 
@@ -174,7 +173,7 @@ to the virtual collision domain \fBA\fR.
 .TP
 .B
 .nf
-vconf --eth1=tap,10.0.0.1,10.0.0.2 -u foo pc2
+vconf --eth1=tap-domain,10.0.0.1,10.0.0.2 -u foo pc2
 .fi
 Configure a new interface (\fBeth1\fR) on virtual machine \fBpc2\fR owned
 by user \fBfoo\fR. The host side of the interface will be automatically configured

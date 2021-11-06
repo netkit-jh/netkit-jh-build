@@ -2,6 +2,7 @@
 ## Added
 - `--mount` option to `vstart` - mount any host folder inside a machine
 - Ability to use a _test/shared.test script to run the same script for all hosts with `ltest`. Script output is stored in _test/results/$hostname.shared
+- Multiple taps can be created for machines to have their own unique interfaces (they can still share if the same collision domain is used)
 - Support for whitespace (and some other special characters) in arguments
 - Support for whitespace in the lab directory path
 - `--clean-directories` option to `vclean` to wipe `$HOME`/.netkit/, `$MCONSOLE_DIR`/, and `$HUB_SOCKET_DIR`/ (now included in `--clean-all`)
@@ -11,9 +12,10 @@
 - `-f`|`--force` option to `vclean` for usage alongside `-H`|`--remove-hubs` to remove hubs even if they are being used by running machines
 - `--delay` option to `ltest` to specify how long to wait for the lab to settle before running test scripts
 - `--show-boot-log` option to `vstart` to display the boot log (replaced the `-v`|`--verbose` option, see [Other Modified](#other-modified))
-- `coreutils` as a required package to run Netkit (for `md5sum` and `stdbuf`)
+- `coreutils` as a required package to run Netkit (for `sha256sum` and `stdbuf`)
 
 ## Modified
+- Tap interfaces are specified with `DOMAIN,TAP-ADDRESS,GUEST-ADDRESS` (`DOMAIN` does not have to be `tap` now, it should be a regular collision domain name). See [Added](#added) for information on multiple tap interface specifications
 - `vcommand` usage signature is now `vcommand [OPTION]... MACHINE [COMMAND]`
 - `vconnect` usage signature is now `vconnect [OPTION]... MACHINE`
 - `machines` lab.conf variable is now `LAB_MACHINES`
@@ -31,8 +33,9 @@
 - Machine names must conform to the Debian standard (which conforms to the RFC standard too)
 - Better output when multiple labs are specified in `linfo -m`
 - tmux sessions are now named `netkit-vhost` (orig. `netkit-vm`)
-- Tap interfaces are named `netkit_$user_md5`, where `user_md5` is an 8-character (truncated) MD5 digest of the owner's username for uniqueness
-- Virtual network hub sockets are named with the user's MD5 digest instead of their name to avoid issues with invalid characters
+- Tap interfaces are named `nk_$interface_sha256`, where `interface_sha256` is an 12-character (truncated) SHA-256 digest of the collision domain name SHA-256 appended to the owner's username's SHA-256 for uniqueness and avoiding character set issues
+- `iptables` forwarding rule uses the new interface specification to match the input interface (`nk_+`)
+- Virtual network hub sockets are named with the username's and domain's SHA-256 digests instead of plaintext to avoid issues with invalid characters. Tap sockets are identfied in the filename
 - /etc/vhostconfigured (file indicating machine has been booted before) is now at /etc/netkit/.vhostconfigured
 
 ## Removed
@@ -53,6 +56,7 @@
 - ShellCheck directives for effective linting
 - .gitignore now ignores compilation, test, and development artefacts
 - Copyright notices for the Netkit-JH development team (alongside the original Netkit and Netkit-NG notices)
+- Collision domain argument to `manage_tuntap`
 
 ## Modifed
 - All scripts are interpreted by Bash now

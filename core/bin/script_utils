@@ -328,11 +328,12 @@ file_in_use() {
 ###############################################################################
 # Write the tap interface name assigned to a user to standard output.
 # Usage:
-#   get_tap_interface USER
+#   get_tap_interface USER DOMAIN
 # Globals:
 #   None
 # Arguments:
 #   $1 - owner of the network interface
+#   $2 - collision domain name
 # Returns:
 #   None
 # Example:
@@ -340,8 +341,9 @@ file_in_use() {
 ###############################################################################
 get_tap_interface() {
    local target_user=$1
+   local domain=$2
 
-   local user_md5
+   local user_sha256 domain_sha256 interface_sha256
 
    # We name Netkit tap devices after the user who owns them. Linux network
    # interface names are case-sensitive and:
@@ -350,43 +352,54 @@ get_tap_interface() {
    #   - Must not contain '/' or whitespace
    # Usernames in Linux have different requirements. There's a possibility, for
    # example, where two usernames with a common prefix create Netkit tap
-   # devices. If the prefix is longer than 8 characters, their tap devices will
+   # devices. If the prefix is longer than 12 characters, their tap devices will
    # have the same name and be indistuinguishable; for example, users
    # 'foobarbaz_steve' and 'foobarbaz_brian' both create the tap device named
-   # 'netkit_foobarba'. Using the MD5 digest of the target user and truncating
-   # to 8 chracters will be sufficient for ensuring uniqueness on a system with
-   # many users.
-   user_md5=$(printf "%s" "$target_user" | md5sum)
+   # 'nk_foobarbarbaz'. Using the SHA-256 digest of the target user and
+   # truncating to 12 chracters will be sufficient for ensuring uniqueness on a
+   # system with many users.
+   # Appending "_$domain" allows users to have multiple tap interfaces. The
+   # underscore delimiter prevents collisions with other users.
+   user_sha256=$(echo -n "$target_user" | sha256sum | awk '{ print $1 }')
+   domain_sha256=$(echo -n "$domain" | sha256sum | awk '{ print $1 }')
 
-   echo "netkit_${user_md5:0:8}"
+   interface_sha256=$(echo -n "${user_sha256}_$domain_sha256" | sha256sum | awk '{ print $1 }')
+
+   echo "nk_${interface_sha256:0:12}"
 }
 
 
 ###############################################################################
 # Write the socket filepath assigned to a user and collision domain to standard
-# output. The MD5 digest of the user's name is used to prevent issues with
+# output. The SHA-256 digest of the user's name is used to prevent issues with
 # invalid characters in the username.
 # Usage:
-#   get_hub_socket DOMAIN
+#   get_hub_socket TAP DOMAIN
 # Globals:
 #   r- HUB_SOCKET_DIR
 #   r- HUB_SOCKET_EXTENSION
 #   r- HUB_SOCKET_PREFIX
 #   r- USER_ID
 # Arguments:
-#   $1 - name of collision domain
+#   $1 - set to 1 for a tap socket, otherwise pass an empty string
+#   $2 - name of collision domain
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
 get_hub_socket() {
-   local domain=$1
+   local tap=$1
+   local domain=$2
    
-   local user_md5
+   local user_sha256 domain_sha256
 
-   user_md5=$(printf "%s" "$USER_ID" | md5sum | awk '{ print $1 }')
-   echo "$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${user_md5}_$domain$HUB_SOCKET_EXTENSION"
+   user_sha256=$(echo -n "$USER_ID" | sha256sum | awk '{ print $1 }')
+   domain_sha256=$(echo -n "$domain" | sha256sum | awk '{ print $1 }')
+
+   # We truncate the SHA-256 digests to avoid hitting the maximum filename
+   # length.
+   echo "$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${user_sha256:0:8}_${tap:+"tap_"}${domain_sha256:0:8}$HUB_SOCKET_EXTENSION"
 }
 
 
@@ -395,7 +408,7 @@ get_hub_socket() {
 # host. NAT rules are created to allow access to the Internet through the host
 # interface.
 # Usage:
-#   start_inet_hub VERBOSE JUST_PRINT HUB ADDR
+#   start_inet_hub VERBOSE JUST_PRINT HUB DOMAIN ADDR
 # Globals:
 #   r- HUB_LOG
 #   r- NETKIT_HOME
@@ -404,7 +417,8 @@ get_hub_socket() {
 #   $1 - set to 1 for verbose, otherwise pass an empty string
 #   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
 #   $3 - hub socket filepath
-#   $4 - address of the tap interface on the host
+#   $4 - collision domain name
+#   $5 - address of the tap interface on the host
 # Returns:
 #   None. Exits with a non-zero code on a configuration error
 # Example:
@@ -414,52 +428,78 @@ start_inet_hub() {
    local verbose=$1
    local just_print=$2
    local hub_socket=$3
-   local tap_address=$4
+   local domain=$4
+   local tap_address=$5
 
+   local tap_device_name
    local manage_tuntap_cmd
    local interface_name uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
    local hub_log_cmd
 
-   if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
-      # Either socket does not exist yet or it is still unused
-      manage_tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER_ID" "$tap_address" )
+   if [ -S "$hub_socket" ] && file_in_use "$hub_socket"; then
+      # The socket already exists and is in use
 
-      echo "******** Starting Internet connected virtual hub ********"
-      echo "   (host) $tap_address"
-      echo "********     (root privileges are required)      ********"
+      # Get name for the user's tap interface
+      tap_device_name=$(get_tap_interface "$USER_ID" "$domain")
 
-      if [ -n "$just_print" ]; then
-         echo "Not running ==> ${manage_tuntap_cmd[*]}"
-      else
-         [ -n "$verbose" ] && echo "Running ==> ${manage_tuntap_cmd[*]}"
+      # Check to see if interface already exists
+      if ip addr show "$tap_device_name" > /dev/null 2>&1; then
+         # If the interface already exists, it must have the same IP as
+         # requested.
+         if ! ip addr show "$tap_device_name" | grep --quiet "inet $tap_address"; then
+            echo 1>&2 "$SCRIPTNAME: $tap_device_name: Interface already exists and is in usage with a different IP. Remove the interface or change the IP address"
+            usage 1
+         else
+            # Interface-address pair exists; wait for uml_switch to start
+            while [ -z "$just_print" ] && [ ! -S "$hub_socket" ]; do
+               sleep 1
+            done
 
-         if ! "${manage_tuntap_cmd[@]}"; then
-            echo 1>&2 "Error while configuring the tunnel."
-            exit 1
+            return
          fi
       fi
 
-      echo "************** Abandoning root privileges ***************"
+      # Interface does not exist
+   fi
 
-      interface_name=$(get_tap_interface "$USER_ID")
-      uml_switch_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "$interface_name" "-hub" "-unix" "$hub_socket" )
-      printed_uml_switch_cmd="${uml_switch_cmd[*]} < /dev/null &"
+   # Socket does not exist yet or it is going unused
+   manage_tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER_ID" "$domain" "$tap_address" )
 
-      # We need to disable buffering on standard output, otherwise the hub log
-      # may miss vital log messages when uml_switch is killed.
-      line_buffered_uml_switch_cmd=( "stdbuf" "--output=0" "${uml_switch_cmd[@]}" )
+   echo "******** Starting Internet connected virtual hub ********"
+   echo "   (host) $tap_address"
+   echo "********     (root privileges are required)      ********"
 
-      # shellcheck disable=SC2016
-      hub_log_cmd=( "stdbuf" "--output=0" \
-                    "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
-                    '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
+   if [ -n "$just_print" ]; then
+      echo "Not running ==> ${manage_tuntap_cmd[*]}"
+   else
+      [ -n "$verbose" ] && echo "Running ==> ${manage_tuntap_cmd[*]}"
 
-      if [ -n "$just_print" ]; then
-         echo "Not running ==> $printed_uml_switch_cmd"
-      else
-         [ -n "$verbose" ] && echo "Running ==> $printed_uml_switch_cmd"
-         "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
+      if ! "${manage_tuntap_cmd[@]}"; then
+         echo 1>&2 "Error while configuring the tunnel."
+         exit 1
       fi
+   fi
+
+   echo "************** Abandoning root privileges ***************"
+
+   interface_name=$(get_tap_interface "$USER_ID" "$domain")
+   uml_switch_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "$interface_name" "-hub" "-unix" "$hub_socket" )
+   printed_uml_switch_cmd="${uml_switch_cmd[*]} < /dev/null &"
+
+   # We need to disable buffering on standard output, otherwise the hub log
+   # may miss vital log messages when uml_switch is killed.
+   line_buffered_uml_switch_cmd=( "stdbuf" "--output=0" "${uml_switch_cmd[@]}" )
+
+   # shellcheck disable=SC2016
+   hub_log_cmd=( "stdbuf" "--output=0" \
+                  "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
+                  '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
+
+   if [ -n "$just_print" ]; then
+      echo "Not running ==> $printed_uml_switch_cmd"
+   else
+      [ -n "$verbose" ] && echo "Running ==> $printed_uml_switch_cmd"
+      "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
@@ -554,10 +594,10 @@ run_hubs() {
    for hub_specification in "${hub_specifications[@]}"; do
       IFS=, read -r hub_name tap_address <<< "$hub_specification"
 
-      hub_socket=$(get_hub_socket "$hub_name")
+      hub_socket=$(get_hub_socket "${tap_address:+"1"}" "$hub_name")
 
       if [ -n "$tap_address" ]; then
-         start_inet_hub "$verbose" "$just_print" "$hub_socket" "$tap_address"
+         start_inet_hub "$verbose" "$just_print" "$hub_socket" "$hub_name" "$tap_address"
       else
          start_hub "$verbose" "$just_print" "$hub_socket"
       fi
@@ -588,13 +628,13 @@ run_hubs() {
 clean_hubs() {
    local hub_specifications=( "$@" )
 
-   local hub_specification hub_name hub_socket
+   local hub_specification hub_name tap_address hub_socket
    local hub_pid
 
    for hub_specification in "${hub_specifications[@]}"; do
-      IFS=, read -r hub_name _ <<< "$hub_specification"
+      IFS=, read -r hub_name tap_address <<< "$hub_specification"
 
-      hub_socket=$(get_hub_socket "$hub_name")
+      hub_socket=$(get_hub_socket "${tap_address:+"1"}" "$hub_name")
 
       # Avoid attempting to kill hubs for which the socket file does not exist
       # any more. Such situation may occur if user accidentally deleted it
@@ -608,7 +648,7 @@ clean_hubs() {
          hub_pid=$(pgrep --oldest --euid="$USER_ID" --full "^$NETKIT_HOME/bin/uml_switch[[:blank:]].*$hub_socket")
          if [ "$(lsof -a -U -p "$hub_pid" -Fn | grep --count "^n$hub_socket")" -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
-            kill "$hub_pid" && rm "$hub_socket"
+            kill "$hub_pid" 2> /dev/null && rm --force "$hub_socket"
          fi
       else
          # There are no switches connected to this socket - remove it

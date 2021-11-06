@@ -61,39 +61,32 @@ ranging from 0 to a maximum value stored inside the \fInetkit.conf\fR file
 Interface \fBeth\fIN\fR will be attached to a (virtual) collision domain whose name
 is \fIDOMAIN\fR. A collision domain can be seen as a sort of virtual hub. Thus,
 attaching interfaces of different virtual machines to the same
-collision domain allows them to exchange network traffic. \fIDOMAIN\fR must not
-contain underscores ('\fB_\fR'), commas ('\fB,\fR') and dots ('\fB.\fR'), unless
-a "\fBtap\fR" collision domain is being configured (see below).
+collision domain allows them to exchange network traffic.
 
-The special domain name "\fBtap\fR" is reserved. When attaching an interface
-to a "\fBtap\fR" domain, an external (i.e., real) network can be reached
-through this interface. A "\fBtap\fR" collision domain must be declared with
-the following syntax:
+Including a comma in \fIDOMAIN\fR defines a 'tap' interface. This is a special socket
+that allows an external to be reached in the virtual machine. A 'tap' interface
+must be declared with the following syntax:
 
 .nf
---eth\fIN\fR=tap,\fITAP\-ADDRESS\fR,\fIGUEST\-ADDRESS\fR
+--eth\fIN\fR=\fIDOMAIN\fR,\fITAP\-ADDRESS\fR,\fIGUEST\-ADDRESS\fR
 .fi
                         
-where \fITAP\-ADDRESS\fR is the IP address of the host side of the interface
-and \fIGUEST\-ADDRESS\fR is the IP address of the interface inside the virtual
-machine (guest side). \fITAP\-ADDRESS\fR and \fIGUEST\-ADDRESS\fR must be on
-the same (sub)network and, most important, this network must \fInot\fR already
-exist on your host network (otherwise routing would be messed up). Interfaces
-connected to a "\fBtap\fR" collision domain are automatically configured and
-brought up inside virtual machines.
-
-There can be at most one "\fBtap\fR" collision domain for each user. Hence,
-if different virtual machines are configured for using "\fBtap\fR" connected
-interfaces, they also are on the same collision domain. \fITAP\-ADDRESS\fR is
-mandatory, but is only taken into account when a "\fBtap\fR" collision domain
-is first used (i.e., this is the first interface the current user ever connected
-to a "\fBtap\fR" collision domain). Otherwise, it simply ignored.
+where \fIDOMAIN\fR is a valid collision domain name, \fITAP_ADDRESS\fR is the IP address of
+the 'host side' of the interface and \fIGUEST_ADDRESS\fR is the IP address of the
+interface inside the virtual machine. \fITAP_ADDRESS\fR and \fIGUEST_ADDRESS\fR must be on
+the same /8 network. Machines can share a 'tap' interface if one uses the same
+\fIDOMAIN\fR and \fITAP_ADDRESS\fR for them. If an interface on the same \fIDOMAIN\fR with a
+different \fITAP_ADDRESS\fR already exists, an error will be thrown. Another
+interface with a \fITAP_ADDRESS\fR within the /8 subnet of another cannot be created;
+likewise, like a regular collision domain, two machines using the same 'tap'
+interface cannot share an IP address (there will be no explicit error for
+either of these scenarios.)
 
 .B
-*** IMPORTANT NOTES ABOUT USING "tap" COLLISION DOMAINS ***
+*** IMPORTANT NOTES ABOUT USING "tap" INTERFACES ***
 .RS
 .IP \(en 2
-Configuring "\fBtap\fR" domains for the first time requires administrative
+Configuring "\fBtap\fR" interfaces for the first time requires administrative
 (root) privileges. The \fIvstart\fR script will take care of asking you for the
 root password if needed. For more information about how Netkit gains root
 privileges, see \fBSETTING UP NETKIT FOR USE WITH SUDO\fR in the man page of
@@ -104,11 +97,12 @@ root:
 .br
 2) Permissions for the '/dev/net/tun' device are set to 666 (read/write for all users).
 .br
-3) Any existing network device named 'netkit_\fIUSERNAME_MD5\fR' is brought down and
-removed (\fIUSERNAME_MD5\fR is the MD5 digest of the current username, truncated to
-8 characters long).
+3) Any existing network device named 'nk_\fIINTERFACE_SHA256\fR' is brought down and
+removed (\fIINTERFACE_SHA256\fR is the SHA-256 digest of the concatenated SHA-256
+digests of the current username and collision domain name, truncated to 12
+characters long).
 .br
-4) A tap network device named 'netkit_\fIUSERNAME_MD5\fR' is created and configured to
+4) A tap network device named 'nk_\fIINTERFACE_SHA256\fR' is created and configured to
 have IP address \fITAP\-ADDRESS\fR.
 .br
 5) Kernel based IP forwarding is enabled via the '/proc/sys/net/ipv4/ip_forward'
@@ -120,17 +114,17 @@ rules are added to the current iptables configuration:
 
 *nat
 .br
--A POSTROUTING -j MASQUERADE
+--append POSTROUTING ! --out-interface lo --match comment --comment Netkit-JH --jump MASQUERADE
 .br
 *filter
 .br
--A FORWARD -i netkit_+ -j ACCEPT
+--append FORWARD --in-interface nk_+ --match comment --comment Netkit-JH --jump ACCEPT
 
 All these configuration settings can be easily removed by using the \fBvclean\fR
 command (see \fBvclean\fR(1)).
 
 .IP \(en 2
-Using "\fBtap\fR" domains requires some host-side configurations. These
+Using "\fBtap\fR" interfaces requires some host-side configurations. These
 configurations are not automatically removed after halting virtual machines.
 The \fBvclean\fR command must be used for this purpose (see \fBvclean\fR(1)).
 .RE
@@ -623,7 +617,7 @@ communication can actually take place.
 .TP
 .B
 .nf
-vstart router --eth0=tap,10.0.0.1,10.0.0.2 --eth1=A
+vstart router --eth0=tap-domain,10.0.0.1,10.0.0.2 --eth1=A
 .fi
 Start a new virtual machine named \fBrouter\fR. The machine will have two network
 interfaces. Interface \fBeth0\fR will be automatically configured to have IP address

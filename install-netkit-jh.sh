@@ -205,7 +205,7 @@ done
 
 # make (processing lab.dep)
 # net-tools (manage_tuntap)
-# coreutils (md5sum and stdbuf)
+# coreutils (sha256sum and stdbuf)
 if [ "${INSTALL_APT_PACKAGES}" = true ]; then
     echo "Installing packages to run netkit..."
     sudo apt-get update && sudo apt-get install xterm make net-tools curl coreutils

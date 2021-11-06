@@ -141,11 +141,19 @@ fi
 hub_name=$1
 
 
-hub_socket=$(get_hub_socket "$hub_name")
-if [ ! -e "$hub_socket" ]; then
-   echo 1>&2 "$SCRIPTNAME: $hub_socket: No such file or directory"
+reg_hub_socket=$(get_hub_socket "" "$hub_name")
+tap_hub_socket=$(get_hub_socket "1" "$hub_name")
+
+if [ -e "$reg_hub_socket" ]; then
+   hub_socket=$reg_hub_socket
+elif [ -e "$tap_hub_socket" ]; then
+   hub_socket=$tap_hub_socket
+else
+   echo 1>&2 "$SCRIPTNAME: $hub_name: Cannot find hub socket for the collision domain"
    usage 1
-elif [ ! -S "$hub_socket" ]; then
+fi
+
+if [ ! -S "$hub_socket" ]; then
    echo 1>&2 "$SCRIPTNAME: $hub_socket: File is not a socket"
    usage 1
 fi

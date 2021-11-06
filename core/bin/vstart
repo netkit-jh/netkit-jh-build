@@ -72,30 +72,41 @@ $(usage_line)
 Start MACHINE with a given configuration.
 
 You can use the following options to adjust the virtual machine parameters:
-      --ethN=DOMAIN   equip machine with a network interface ethN, where N is a
-                        number between 0 and $((MAX_INTERFACES - 1)). It will be connected to the
-                        DOMAIN collision domain (network segment). The special
-                        domain 'tap' is reserved: when connected to it, an
-                        external network can be reached through this interface.
-                        A 'tap' interface is declared as follows:
-                        --ethN=tap,TAP_ADDRESS,GUEST_ADDRESS
-                        where TAP_ADDRESS is the IP address of the host side of
-                        the interface and GUEST_ADDRESS is the IP address of
-                        the interface inside the virtual machine. TAP_ADDRESS
-                        and GUEST_ADDRESS must be on the same subnetwork which,
-                        in turn, must not exist on your host network.
-                        Note:
-                        - Using 'tap' domains performs host-side operations
-                           with administrative privileges. The script will take
-                           care of asking you for the root password if and when
-                           required.
+      --ethN=[DOMAIN]  equip virtual machine with a network interface ethN,
+                        where N is a number between 0 and $((MAX_INTERFACES - 1)). DOMAIN is the
+                        name of the collision domain the interface should be
+                        connected to. Using an empty DOMAIN name (e.g.,
+                        'eth0=') results in detaching the interface from a
+                        running virtual machine.
+                        Including a comma in DOMAIN defines a 'tap' interface.
+                        This is a special socket that allows an external
+                        to be reached in the virtual machine. A 'tap' interface
+                        must be declared with the following syntax:
+                          --ethX=DOMAIN,TAP_ADDRESS,GUEST_ADDRESS
+                        where DOMAIN is a valid collision domain name,
+                        TAP_ADDRESS is the IP address of the 'host side' of the
+                        interface and GUEST_ADDRESS is the IP address of the
+                        interface inside the virtual machine. TAP_ADDRESS and
+                        GUEST_ADDRESS must be on the same /8 network. Machines
+                        can share a 'tap' interface if one uses the same DOMAIN
+                        and TAP_ADDRESS for them. If an interface on the same
+                        DOMAIN with a different TAP_ADDRESS already exists, an
+                        error will be thrown. Another interface with a
+                        TAP_ADDRESS within the /8 subnet of another cannot be
+                        created; likewise, like a regular collision domain, two
+                        machines using the same 'tap' interface cannot share an
+                        IP address (there will be no explicit error for either
+                        of these scenarios.)
+                        Notices:
+                        - Using 'tap' interfaces requires administrative
+                          privileges. This script will take care of asking you
+                          for the root password when needed.
                         - TAP_ADDRESS is mandatory, but is only taken into
-                           account when a 'tap' collision domain is first used.
-                           The script only uses one 'tap' collision domain for
-                           each user on the host machine.
-                        - Host-side configurations are not automatically
-                           removed when halting machines: you should use the
-                           vclean script instead.
+                          account when a 'tap' interface with such a collision
+                          domain is first used.
+                        - Tunnel configurations are not automatically removed
+                          when halting machines: you should use the vclean
+                          script for this purpose.
   -k, --kernel=FILENAME  use FILENAME as the UML kernel for the virtual
                           machine. The default kernel is:
                           $VM_KERNEL
@@ -278,7 +289,8 @@ setup_interfaces() {
    local interface_specifications=( "$@" )
 
    local interface_specification
-   local hub_specification hub_name tap_address guest_address hub_socket
+   local hub_specification hub_name tap_address guest_address
+   local reg_hub_socket tap_hub_socket hub_socket
    local device used_devices
    local enabled_default_route indent
 
@@ -304,7 +316,7 @@ setup_interfaces() {
       used_devices+=( "$device" )
 
       # Check if tap interface (regular hubs cannot be named with commas)
-      if [[ "$hub_specification" == tap,* ]]; then
+      if [[ "$hub_specification" == *,* ]]; then
          # Format: tap,tap_address,guest_address
          IFS=, read -r hub_name tap_address guest_address <<< "$hub_specification"
 
@@ -318,7 +330,7 @@ setup_interfaces() {
             usage 1
          fi
       else
-         # This is a normal (i.e., not 'tap') collision domain
+         # This is a normal interface
          unset tap_address guest_address
          hub_name=$hub_specification
       fi
@@ -329,11 +341,17 @@ setup_interfaces() {
          usage 1
       fi
 
-      hub_socket=$(get_hub_socket "$hub_name")
+      reg_hub_socket=$(get_hub_socket "" "$hub_name")
+      tap_hub_socket=$(get_hub_socket "1" "$hub_name")
 
-      kernel_cmd+=( "$device=daemon,,,$hub_socket" )
-      
       if [ -n "$tap_address" ]; then
+         if [ -e "$reg_hub_socket" ]; then
+            echo 1>&2 "$SCRIPTNAME: $hub_name: Regular (not tap) hub socket under the same collision domain already exists"
+            usage 1
+         fi
+
+         hub_socket=$tap_hub_socket
+
          HUB_LIST+=( "$hub_name,$tap_address" )
 
          kernel_cmd+=( "autoconf_$device=$guest_address" )
@@ -344,8 +362,17 @@ setup_interfaces() {
             enabled_default_route=true
          fi
       else
+         if [ -e "$tap_hub_socket" ]; then
+            echo 1>&2 "$SCRIPTNAME: $hub_name: Tap hub socket under the same collision domain already exists"
+            usage 1
+         fi
+
+         hub_socket=$reg_hub_socket
+
          HUB_LIST+=( "$hub_name" )
       fi
+
+      kernel_cmd+=( "$device=daemon,,,$hub_socket" )
 
       echo "$indent$device @ $hub_name ($hub_socket)"
 
