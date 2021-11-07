@@ -552,6 +552,9 @@ while true; do
          show_boot_log=1
          ;;
       --test)
+         # This is a hidden option which is passed through by ltest to specify
+         # that the machine should run lab test scripts (option argument is
+         # time delay between lab startup and test invocation).
          kernel_cmd_append+=( "\"test=$2\"" )
          shift
          ;;
