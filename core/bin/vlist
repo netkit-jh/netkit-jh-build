@@ -228,6 +228,8 @@ print_vhost_info_by_name() {
          socket_filepath=${vhost_sockets[$i]}
          socket_filename=$(basename "$socket_filepath")
 
+         # TODO: this does not get the hub name anymore (since sockets are
+         # named with the SHA-256 digest of the collision domain name).
          hub_name_and_ext=${socket_filename#$HUB_SOCKET_PREFIX_*_}
          hub_name=${hub_name_and_ext%$HUB_SOCKET_EXTENSION}
 
