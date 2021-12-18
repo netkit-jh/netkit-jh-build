@@ -840,6 +840,7 @@ get_vhost_all_pids_by_name() {
 get_vhost_info_by_pid() {
    local pid=$1
 
+   local full_command
    local first_iteration argument option value
    local device_id
    local vhost_info_other
