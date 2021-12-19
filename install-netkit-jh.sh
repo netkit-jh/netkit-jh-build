@@ -19,14 +19,15 @@ DOWNLOAD_FILES=true
 DOWNLOAD_DIR="/tmp"
 DOWNLOAD_URL_PREFIX="https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/"
 
+# Start and end delimeters for Netkit-related stuff in the shell's rc file
+NK_RC_HEADER="#=== NETKIT VARIABLES ==="
+NK_RC_FOOTER="#=== NETKIT VARIABLES END ==="
+
 # Environment variables required for Netkit-JH to run
 NK_ENV_VARS="
-#=== NETKIT VARIABLES ===
-# additions for netkit
 export NETKIT_HOME=\"${TARGET_INSTALL_DIR}\"
 export MANPATH=\"\$MANPATH:\$NETKIT_HOME/man\"
-export PATH=\"\$PATH:\$NETKIT_HOME/bin\"
-#=== NETKIT VARIABLES END ==="
+export PATH=\"\$PATH:\$NETKIT_HOME/bin\""
 
 # If desired, you can specify a directory where the files have already been 
 # extracted (primarily for development purposes)
@@ -191,16 +192,24 @@ for RC_FILE in "${RC_FILES[@]}"; do
     cp "${RC_FILE}" "${BAK_FILE}"
 
     # Check whether the netkit variables header exists, if not, wipe all cases of netkit
-    if [ -z "$(grep "=== NETKIT VARIABLES ===" "${RC_FILE}")" ]; then
+    if [ -z "$(grep "$NK_RC_HEADER" "${RC_FILE}")" ]; then
         # strip out any lines containing the word "netkit" (case insensitive) from bashrc
         grep -iv "netkit" "${BAK_FILE}" > "${RC_FILE}"
     else
         # Otherwise, just wipe between the headers
-        sed -i "/^#=== NETKIT VARIABLES ===/,/^#=== NETKIT VARIABLES END ===/d;" ${RC_FILE}
+        sed -i "/^$NK_RC_HEADER/,/^$NK_RC_FOOTER/d;" ${RC_FILE}
     fi
 
-    # Append Netkit additions to bashrc  
+    echo "$NK_RC_HEADER" >> "${RC_FILE}"
+
+    # Append Netkit additions to bashrc
     echo "$NK_ENV_VARS" >> "${RC_FILE}"
+
+    # Source the Bash completion script
+    # shellcheck disable=SC2016
+    [ "$(basename -- "$RC_FILE")" = ".bashrc" ] && echo '. "$NETKIT_HOME/bin/netkit_bash_completion"' >> "${RC_FILE}"
+
+    echo "$NK_RC_FOOTER"
 done
 
 # make (processing lab.dep)
