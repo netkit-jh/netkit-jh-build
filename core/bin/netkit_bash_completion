@@ -23,265 +23,989 @@
 # Part of the completion routines is significantly inspired to the scripts in
 # the bash-completion package.
 
+
+###############################################################################
+# Write a newline-separated list of long options for the given command to
+# standard output.
+# Usage:
+#   _get_get_command_options COMMAND
+# Globals:
+#   r- NETKIT_HOME
+# Arguments:
+#   $1 - command name (must be present in $NETKIT_HOME/bin/)
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_get_command_options() {
+   # Get long options
+   "$NETKIT_HOME/bin/$1" --help | grep --extended-regexp --only-matching "^(  -[[:alnum:]], | {6})--[[:alnum:]-]+=?" | awk --field-separator "," '{ gsub(/[[:blank:]]/, "", $NF); print $NF }'
+   # Get short options
+   # NOTE: we don't gather the short options because conventionally linux
+   # utilities only autocomplete long ones.
+   #"$NETKIT_HOME/bin/$1" --help | grep --extended-regexp --only-matching '^  -[[:alnum:]]' | tr -d "[:blank:]"
+}
+
+
+###############################################################################
+# Expand '--ethN=' in a command's option array to '--eth1= --eth2= ...
+# --eth${MAX_INTERFACES}='. The option list wrote to standard output will be
+# space-separated, which should be fine given that command-line options do not
+# have whitespace in.
+# Usage:
+#   _expand_eth_option [OPTION]...
+# Globals:
+#   None
+# Arguments:
+#   $1 - command name (must be present in $NETKIT_HOME/bin/)
+# Returns:
+#   None
+# Example:
+#   mapfile -t options < <(_get_command_options vstart)
+#   mapfile -t options < <(_expand_eth_option "${options[@]}")
+###############################################################################
+_expand_eth_option() {
+   local option i max_interfaces
+
+   # We only want the value of MAX_INTERFACES from script_utils. Sourcing
+   # script_utils in this shell would flood the user's environment with other
+   # Netkit environment variables when they source this script inside .bashrc
+   # (or similar) to get the completions. Therefore, we source in a subshell
+   # and extract just the value of MAX_INTERFACES.
+   # shellcheck source=./script_utils
+   max_interfaces=$(. "$NETKIT_HOME/bin/script_utils"; echo "$MAX_INTERFACES")
+
+   for option in "$@"; do
+      [ "$option" = "--ethN=" ] && continue
+      echo "$option"
+   done
+
+   for ((i = 0; i <= max_interfaces; ++i)) do
+      echo "--eth$i="
+   done
+}
+
+
+###############################################################################
+# Write a newline-separated list of subcommands for the given command to
+# standard output.
+# Usage:
+#   _get_command_subcommands COMMAND
+# Globals:
+#   r- NETKIT_HOME
+# Arguments:
+#   $1 - command name (must be present in $NETKIT_HOME/bin/)
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_get_command_subcommands() {
+   "$NETKIT_HOME/bin/$1" --help | grep --extended-regexp --only-matching "^  [[:alnum:]][[:alnum:]-]+" | tr -d "[:blank:]"
+}
+
+
+###############################################################################
+# Bash completion function for lclean to fill the COMPREPLY array
+# Usage:
+#   _lclean
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_lclean() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options lclean)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -d)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --help, -v, --verbose, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for lcrash to fill the COMPREPLY array
+# Usage:
+#   _lcrash
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_lcrash() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options lcrash)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -d)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # -F, --help, --just-kill, -k, --keep-fs, -l, --list, -q, --quick, -v,
+         # --verbose, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for lhalt to fill the COMPREPLY array
+# Usage:
+#   _lhalt
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_lhalt() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options lhalt)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -d)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --help, -l, --list, -q, --quick, -r, --remove-fs, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for linfo to fill the COMPREPLY array
+# Usage:
+#   _linfo
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_linfo() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options linfo)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -a|--auto)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
+      -d)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
+      -m|--map)
+         # These options take parameters that are not autocompletable
+         COMPREPLY=( );;
+      *)
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --help, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for lstart to fill the COMPREPLY array
+# Usage:
+#   _lstart
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_lstart() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options lstart)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -d)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word")
+         ;;
+      -o|--pass)
+         # NOTE: _vstart will set COMPREPLY
+         _vstart "$current_word"
+         ;;
+      -w|--wait)
+         # These options take parameters that are not autocompletable
+         COMPREPLY=( )
+         ;;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # -F, -f, --fast, --force-lab, --help, -l, --list, -p, -s,
+         # --sequential, --tmux-attached, --tmux-detached, -v, --verbose,
+         # --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+         ;;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for ltest to fill the COMPREPLY array
+# Usage:
+#   _ltest
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_ltest() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options ltest)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -d)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
+      -o|--pass)
+         # NOTE: _vstart will set COMPREPLY
+         _vstart "$current_word"
+         ;;
+      --delay|-w|--wait)
+         # These options take parameters that are not autocompletable
+         COMPREPLY=( );;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # -F, --force-lab, --help, -l, --list, -p, -s, --sequential,
+         # --tmux-attached, --tmux-detached, -v, --verbose, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for vclean to fill the COMPREPLY array
+# Usage:
+#   _vclean
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vclean() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options vclean)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -u|--user)
+         mapfile -t COMPREPLY < <(compgen -A user -- "$current_word");;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --clean-all, --clean-directories, -f, --force, -H, --help, -K,
+         # --kill-machines, -q, --quick, --remove-hubs, --remove-tunnels, -T,
+         # --test, -v, --verbose, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for vcommand to fill the COMPREPLY array
+# Usage:
+#   _vcommand
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vcommand() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options vcommand)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -n|--timeout)
+         # These options take parameters that are not autocompletable
+         COMPREPLY=( );;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --help, -v, --verbose, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for vconf to fill the COMPREPLY array
+# Usage:
+#   _vconf
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vconf() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options vconf)
+   mapfile -t options < <(_expand_eth_option "${options[@]}")
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      --eth*)
+         # TODO: fix this?
+         WORDLIST="$(vlist --no-header | awk '{print $NF}' | sort | uniq) tap,"
+         mapfile -t COMPREPLY < <(compgen -W "$WORDLIST" -- "$current_word");;
+      -u|--user)
+         mapfile -t COMPREPLY < <(compgen -A user -- "$current_word");;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --dry-run, --help, --just-print, -n, --recon, -v, --verbose,
+         # --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for vconnect to fill the COMPREPLY array
+# Usage:
+#   _vconnect
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vconnect() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options vconnect)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      --interval|-n|-r|--retry-count)
+         # These options take parameters that are not autocompletable
+         COMPREPLY=( );;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --help, -l, --list, -t, --terminal, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for vcrash to fill the COMPREPLY array
+# Usage:
+#   _vcrash
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vcrash() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options vcrash)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -u|--user)
+         mapfile -t COMPREPLY < <(compgen -A user -- "$current_word");;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --help, --just-kill, -k, -q, --quick, -r, --remove-fs, --test, -v,
+         # --verbose, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for vdump to fill the COMPREPLY array
+# Usage:
+#   _vdump
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vdump() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options vdump)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      *)
+         # TODO: complete collision domain names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --help, -v, --verbose, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for vhalt to fill the COMPREPLY array
+# Usage:
+#   _vhalt
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vhalt() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options vhalt)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -u|--user)
+         mapfile -t COMPREPLY < <(compgen -A user -- "$current_word");;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --help, -q, --quick, -r, --remove-fs, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for vlist to fill the COMPREPLY array
+# Usage:
+#   _vlist
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vlist() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options vlist)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -u|--user)
+         mapfile -t COMPREPLY < <(compgen -A user -- "$current_word");;
+      *)
+         # TODO: complete machine names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --help, -n, --no-header, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for vpackage to fill the COMPREPLY array
+# Usage:
+#   _vpackage
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vpackage() {
+   local options
+   local subcommands
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options vpackage)
+   mapfile -t subcommands < <(_get_command_subcommands vpackage)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      case $current_word in
+         -*)
+            mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+         *)
+            mapfile -t COMPREPLY < <(compgen -W "${subcommands[*]}" -- "$current_word");;
+      esac
+
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -d)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
+      -f|--filesystem)
+         mapfile -t COMPREPLY < <(compgen -A file -- "$current_word");;
+      -o|--pass)
+         # These options take parameters that are not autocompletable
+         COMPREPLY=( );;
+      *)
+         # TODO: complete subcommand-specific non-option arguments (like
+         # package names).
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --assume-yes, --dry-run, --help, --just-print, -n, --only-upgrade,
+         # --recon, --version, -y, --yes
+         case $current_word in
+            -*)
+               mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+            *)
+               mapfile -t COMPREPLY < <(compgen -W "${subcommands[*]}" -- "$current_word");;
+         esac
+   esac
+}
+
+
+###############################################################################
+# Bash completion function for vstart to fill the COMPREPLY array. Can
+# optionally be used by other functions that have passthrough options.
+# Usage:
+#   _vstart [CURRENT_WORD]
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   $1 - set to 1 if used for passthrough completion, otherwise pass an empty
+#        string.
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vstart() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   local con0_args=( "xterm" "this" "tmux" "pty" "port:" "none" )
+   local con1_args=( "xterm" "this" "pty" "port:" "none" )
+   local xterm_args=( "alacritty" "gnome" "kitty" "konsole" "konsole-tab" "wsl" "wt" "xterm" )
+
+   mapfile -t options < <(_get_command_options vstart)
+   mapfile -t options < <(_expand_eth_option "${options[@]}")
+
+   if [ -n "$1" ]; then
+      # Passthrough options to vstart are being autocompleted (the parent
+      # command is lstart or ltest).
+      # TODO: this is not perfect. In the following scenario:
+      #   --pass --model-fs=./foo
+      # the previous_word variable should be set to '--model-fs' because
+      # COMP_WORDBREAKS usually contains an equals sign.
+      local previous_word=""
+   fi
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      --con0)
+         mapfile -t COMPREPLY < <(compgen -W "${con0_args[*]}" -- "$current_word");;
+      --con1)
+         mapfile -t COMPREPLY < <(compgen -W "${con1_args[*]}" -- "$current_word");;
+      -e|--exec)
+         mapfile -t COMPREPLY < <(compgen -A command -- "$current_word");;
+      --eth*)
+         # TODO: fix this
+         WORDLIST="$(vlist --no-header | awk -v FS="@ *|, *" '{for (i=2; i<=NF; i+=2) {print $i}}' | sort | uniq) tap,"
+         mapfile -t COMPREPLY < <(compgen -W "$WORDLIST" -- "$current_word");;
+      -f|--filesystem)
+         mapfile -t COMPREPLY < <(compgen -A file -- "$current_word");;
+      -k|--kernel)
+         mapfile -t COMPREPLY < <(compgen -A file -- "$current_word");;
+      -l|--hostlab)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
+      -m|--model-fs)
+         mapfile -t COMPREPLY < <(compgen -A file -- "$current_word");;
+      --xterm)
+         mapfile -t COMPREPLY < <(compgen -W "${xterm_args[*]}" -- "$current_word");;
+      --append|-M|--mem|--mount)
+         # These options take parameters that are not autocompletable
+         # TODO: might be able to autocomplete --mount
+         COMPREPLY=( );;
+      *)
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # -D, --debug, --dry-run, -F, --foreground, -H, --hide-disk-file,
+         # --help, --just-print, -n, --no-cow, --no-hosthome, --recon,
+         # --show-boot-log, --tmux-attached, --tmux-detached, -v, --verbose,
+         # --version, -W
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+SCRIPTNAME=$(basename -- "$0")
+
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
-# The following is required to get the value of MAX_INTERFACES. Since this file
-# is expected to be sourced, we should avoid sourcing the script_utils file here
-# because this would result in several environment variables (e.g., VM_MEMORY,
-# etc.) being permanently fixed in the user's environment, which is not what we
-# want.
-# shellcheck source=./script_utils
-MAX_INTERFACES=$( . "$NETKIT_HOME/bin/script_utils"; echo $MAX_INTERFACES; )
 
-_command_options() {
-   # Long options
-   $NETKIT_HOME/bin/$1 --help | sed -r '/^ +-/!d; /--[-[:alnum:]]+=?/!d; s/.*(--[-[:alnum:]]+=?).*/\1/' | sort | uniq
-   # Short options
-   $NETKIT_HOME/bin/$1 --help | sed -r '/^ +-/!d; /^ +-[^ -]/!d; s/^ +(-[^ -]).*/\1/' | sort | uniq
-}
-
-_intelligent_space() {
-   while [[ $# -gt 0 ]]; do
-      # Append a space if the current completion does not end in "=" or ","
-      if echo "$1" | grep -q "=$" || echo "$1" | grep -q ",$"; then
-         COMPREPLY=( "${COMPREPLY[@]}" "$1" )
-      else
-         COMPREPLY=( "${COMPREPLY[@]}" "$1 " )
-      fi
-      shift
-   done
-}
-
-_intelligent_file_dir() {
-   # Append "/" or a space at the end of a path name, if that is the only
-   # possible completion. The first argument must be "f" if we are attempting
-   # to complete a file name, or "d" if we are attempting to complete a directory
-   # name.
-   local MODE
-   MODE=$1
-   shift
-   if [[ $# -eq 1 ]]; then
-      # Single completion available
-      if [[ -d "$1" ]]; then
-         if [[ "$MODE" = "d" ]]; then
-            # Check whether there are other directories in the subtree
-            if [[ -z "$(find "$1" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)" ]]; then
-               COMPREPLY=( "$1/ " )
-            else
-               COMPREPLY=( "$1/" )
-            fi
-         else
-            COMPREPLY=( "$1/" )
-         fi
-      else
-         [[ "$MODE" = "d" ]] && COMPREPLY=( "$1" ) || COMPREPLY=( "$1 " )
-      fi
-   else
-      # Multiple completions: pass them over
-      while [[ $# -gt 0 ]]; do
-         COMPREPLY=( "${COMPREPLY[@]}" "$1" )
-         shift
-      done
-   fi
-}
-
-_expand_eth_options() {
-   local WORDLIST
-   WORDLIST=""
-   while [[ $# -gt 0 ]]; do
-      if [[ "${1#--eth}" != "$1" ]]; then
-         for ((j=0; j<=$MAX_INTERFACES; j++)); do
-            WORDLIST="$WORDLIST --eth$j="
-         done
-      else
-         WORDLIST="$WORDLIST $1"
-      fi
-      shift
-   done
-   echo $WORDLIST
-}
-
-_set_cword_and_opts() {
-   CWORD=${COMP_WORDS[$COMP_CWORD]}
-   PREV_CWORD=""; OPT_NAME=""; OPT_VAL=""
-   [[ $COMP_CWORD -gt 1 ]] && PREV_CWORD=${COMP_WORDS[$COMP_CWORD-1]}
-   if [[ "$PREV_CWORD" = "=" ]]; then
-      OPT_VAL=$CWORD
-      PREV_CWORD=${COMP_WORDS[$COMP_CWORD-2]}
-      OPT_NAME=$PREV_CWORD
-   fi
-   [[ "$CWORD" = "=" ]] && OPT_NAME=$PREV_CWORD
-}
-
-_vstart() {
-   if [[ -z "$VSTART_ARGS" ]]; then
-      _set_cword_and_opts
-   fi
-   shopt -s extglob
-   case $PREV_CWORD in
-      --con[01])
-         _intelligent_space $(compgen -W "xterm this pty port: none" -- "$OPT_VAL");;
-      --eth+([0-9]))
-         WORDLIST="$(vlist -n | awk -v FS="@ *|, *" '{for (i=2; i<=NF; i+=2) {print $i}}' | sort | uniq) tap,"
-         _intelligent_space $(compgen -W "$WORDLIST" -- "$OPT_VAL");;
-      --mem|--append|-M)
-         COMPREPLY=( );;
-      --xterm)
-         _intelligent_space $(compgen -W "gnome konsole konsole-tab xterm" -- "$OPT_VAL");;
-      --hostlab|--hostwd)
-         _intelligent_file_dir d $(compgen -A directory -- "$OPT_VAL");;
-      --model-fs|--filesystem|--kernel|--exec)
-         _intelligent_file_dir f $(compgen -A file -- "$OPT_VAL");;
-      -k|-m|-f|-e)
-         _intelligent_file_dir f $(compgen -A file -- "$CWORD");;
-      -l|-w)
-         _intelligent_file_dir d $(compgen -A directory -- "$CWORD");;
-      *)
-         case $CWORD in
-            -*)
-               WORDLIST="$(_expand_eth_options $(_command_options vstart))"
-              _intelligent_space $(compgen -W "$WORDLIST" -- "$CWORD");;
-         esac;;
-   esac
-   unset VSTART_ARGS
-}
-
-_vconfig() {
-   _set_cword_and_opts
-   shopt -s extglob
-   case $PREV_CWORD in
-      --eth+([0-9]))
-         WORDLIST="$(vlist -n | awk '{print $NF}' | sort | uniq) tap,"
-         _intelligent_space $(compgen -W "$WORDLIST" -- "$OPT_VAL");;
-      --user)
-         WORDLIST=$(cat /etc/passwd | cut -d : -f 1)
-         _intelligent_space $(compgen -W "$WORDLIST" -- "$OPT_VAL");;
-      -u)
-         WORDLIST=$(cat /etc/passwd | cut -d : -f 1)
-         _intelligent_space $(compgen -W "$WORDLIST" -- "$CWORD");;
-      *)
-         case $CWORD in
-            -*)
-               WORDLIST="$(_expand_eth_options $(_command_options vconfig))"
-               _intelligent_space $(compgen -W "$WORDLIST" -- "$CWORD");;
-            *)
-               WORDLIST=$(vlist -n | awk '{print $2}')
-               _intelligent_space $(compgen -W "$WORDLIST" "$CWORD");;
-         esac;;
-   esac
-}
-
-_vmanage() {
-   _set_cword_and_opts
-   case $PREV_CWORD in
-      --user)
-         WORDLIST=$(cat /etc/passwd | cut -d : -f 1)
-         _intelligent_space $(compgen -W "$WORDLIST" -- "$OPT_VAL");;
-      -u)
-         WORDLIST=$(cat /etc/passwd | cut -d : -f 1)
-         _intelligent_space $(compgen -W "$WORDLIST" -- "$CWORD");;
-      *)
-         case $CWORD in
-            -*)
-               WORDLIST="$(_command_options $1)"
-               _intelligent_space $(compgen -W "$WORDLIST" -- "$CWORD");;
-            *)
-               WORDLIST=$(vlist -n | awk '{print $2}')
-               _intelligent_space $(compgen -W "$WORDLIST" -- "$CWORD");;
-         esac;;
-   esac
-}
-
-_vclean() {
-   _set_cword_and_opts
-   case $PREV_CWORD in
-      --user)
-         WORDLIST=$(cat /etc/passwd | cut -d : -f 1)
-         _intelligent_space $(compgen -W "$WORDLIST" -- "$OPT_VAL");;
-      -u)
-         WORDLIST=$(cat /etc/passwd | cut -d : -f 1)
-         _intelligent_space $(compgen -W "$WORDLIST" -- "$CWORD");;
-      *)
-         WORDLIST="$(_command_options vclean)"
-         _intelligent_space $(compgen -W "$WORDLIST" -- "$CWORD")
-   esac
-}
-
-_get_lab_dir() {
-   local GETDIR=0
-   for i in "${COMP_WORDS[@]}"; do
-      if [[ $GETDIR = 1 ]]; then
-         echo "$i"
-         return
-      fi
-      [[ "$i" = "-d" ]] && GETDIR=1
-   done
-   echo "$PWD"
-}
-
-# As long as there is no overlap on the option names of lcommands, the same
-# command line completion function can be used for all the commands.
-_lmanage() {
-   _set_cword_and_opts
-   case $PREV_CWORD in
-      --map)
-         _intelligent_space $(compgen -A file -- "$OPT_VAL");;
-      --pass)
-         CWORD="${OPT_VAL:--}"
-         PREV_CWORD=""
-         VSTART_ARGS=1
-         _vstart;;
-      -p|--wait) ;;
-      --verify)
-         _intelligent_space $(compgen -W "user builtin both" -- "$OPT_VAL");;
-      -w) ;;
-      -o)
-         CWORD="${CWORD:--}"
-         PREV_CWORD=""
-         VSTART_ARGS=1
-         _vstart;;
-      -d)
-         _intelligent_file_dir d $(compgen -A directory -- "$CWORD");;
-      -m)
-         _intelligent_file_dir f $(compgen -A file -- "$CWORD");;
-      *)
-         if ( ( [[ $COMP_CWORD -gt 3 ]] && [[ "${COMP_WORDS[$COMP_CWORD-3]}" = "--pass" ]] ) || \
-            ( [[ $COMP_CWORD -gt 4 ]] && [[ "${COMP_WORDS[$COMP_CWORD-4]}" = "--pass" ]] ) || \
-            ( [[ $COMP_CWORD -gt 2 ]] && [[ "${COMP_WORDS[$COMP_CWORD-2]}" = "-o" ]] ) || \
-            ( [[ $COMP_CWORD -gt 3 ]] && [[ "${COMP_WORDS[$COMP_CWORD-3]}" = "-o" ]] ) ) && \
-            ( [[ $CWORD = "=" ]] || [[ ${COMP_WORDS[$COMP_CWORD-1]} = "=" ]] ); then
-            [[ $CWORD = "=" ]] && CWORD=${COMP_WORDS[$COMP_CWORD-1]}
-            PREV_CWORD=${COMP_WORDS[$COMP_CWORD-1]}
-            [[ $PREV_CWORD = "=" ]] && PREV_CWORD=${COMP_WORDS[$COMP_CWORD-2]}
-            _vstart
-         else
-            WORDLIST="$(_command_options $1)"
-            LABDIR="$(_get_lab_dir)"
-            for i in $(compgen -A directory -- $LABDIR/$CWORD); do
-               MACHINE_NAME="$(basename $i)"
-               if [[ "$MACHINE_NAME" != "CVS" ]] && [[ "$MACHINE_NAME" != "_test" ]]; then
-                  WORDLIST="$WORDLIST $(basename $i)"
-               fi
-            done
-            _intelligent_space $(compgen -W "$WORDLIST" -- "$CWORD")
-         fi;;
-   esac
-}
-
-complete -o nospace -F _vstart vstart
+complete -o nospace -F _lclean lclean
+complete -o nospace -F _lcrash lcrash
+complete -o nospace -F _lhalt lhalt
+complete -o nospace -F _linfo linfo
+complete -o nospace -F _lstart lstart
+complete -o nospace -F _ltest ltest
 complete -o nospace -F _vclean vclean
-complete -o nospace -F _vconfig vconfig
-complete -o nospace -F _vmanage vcrash
-complete -o nospace -F _vmanage vhalt
-complete -o nospace -F _vmanage vlist
-complete -o nospace -F _lmanage lclean
-complete -o nospace -F _lmanage lcrash
-complete -o nospace -F _lmanage lhalt
-complete -o nospace -F _lmanage linfo
-complete -o nospace -F _lmanage lstart
-complete -o nospace -F _lmanage lrestart
-complete -o nospace -F _lmanage ltest
-
+complete -o nospace -F _vcommand vcommand
+complete -o nospace -F _vconf vconf
+complete -o nospace -F _vconnect vconnect
+complete -o nospace -F _vcrash vcrash
+complete -o nospace -F _vdump vdump
+complete -o nospace -F _vhalt vhalt
+complete -o nospace -F _vlist vlist
+complete -o nospace -F _vpackage vpackage
+complete -o nospace -F _vstart vstart
