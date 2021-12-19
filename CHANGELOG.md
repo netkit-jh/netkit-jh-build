@@ -51,6 +51,7 @@
 ### Other Removed
 - Port helper compatibility
 - `-w`|`--hostwd` option from `vstart` (it did not provide any purpose)
+- `lrestart` symbolic link (pointed to `lstart` and provided no default or additional functionality)
 
 # Development Changelog
 ## Added

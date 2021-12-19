@@ -63,7 +63,7 @@ ${NETKIT_BUILD_DIR}: $(COPY_FILES) $(SUBDIR_BINS)
 	done
 
 	# Create symlinks
-	(cd $(NETKIT_BUILD_DIR)/bin && ln -sf lstart lrestart; ln -sf lstart ltest && cd -)
+	(cd $(NETKIT_BUILD_DIR)/bin && ln -sf lstart ltest && cd -)
 
 	# Update version
 	echo "Netkit version $(NETKIT_BUILD_RELEASE)" > $(NETKIT_BUILD_DIR)/netkit-version
