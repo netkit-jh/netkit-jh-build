@@ -152,11 +152,13 @@ case $1 in
 
 
       if [ -d /hostlab/ ]; then
-         lab_version=$(get_lab_variable "LAB_VERSION" "/hostlab/")
-         lab_author=$(get_lab_variable "LAB_AUTHOR" "/hostlab/")
-         lab_email=$(get_lab_variable "LAB_EMAIL" "/hostlab/")
-         lab_web=$(get_lab_variable "LAB_WEB" "/hostlab/")
-         lab_description=$(get_lab_variable "LAB_DESCRIPTION" "/hostlab/")
+         # We ignore errors (missing lab.conf) in the case where the lab was
+         # force-started.
+         lab_version=$(get_lab_variable "LAB_VERSION" "/hostlab/" 2> /dev/null)
+         lab_author=$(get_lab_variable "LAB_AUTHOR" "/hostlab/" 2> /dev/null)
+         lab_email=$(get_lab_variable "LAB_EMAIL" "/hostlab/" 2> /dev/null)
+         lab_web=$(get_lab_variable "LAB_WEB" "/hostlab/" 2> /dev/null)
+         lab_description=$(get_lab_variable "LAB_DESCRIPTION" "/hostlab/" 2> /dev/null)
 
          echo
          echo -e "$color_bold_blue##################################################"
