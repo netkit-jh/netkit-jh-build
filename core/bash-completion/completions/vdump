@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+#     Copyright 2021 Adam Bromiley - Warwick Manufacturing Group, University of
+#     Warwick.
+#
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+# Bash completion function for vdump
+
+
+###############################################################################
+# Bash completion function for vdump to fill the COMPREPLY array
+# Usage:
+#   _vdump
+# Globals:
+#   r- COMP_CWORD
+#   -w COMPREPLY
+#   r- COMP_WORDS
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_vdump() {
+   local options
+
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+
+   mapfile -t options < <(_get_command_options vdump)
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      return
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      *)
+         # TODO: complete collision domain names
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # --help, -v, --verbose, --version
+         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+   esac
+}
+
+
+# shellcheck source=../helpers
+. "$NETKIT_HOME/bash-completion/helpers"
+
+complete -F _vdump vdump

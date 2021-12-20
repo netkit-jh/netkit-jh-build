@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+
+#     Copyright 2021 Adam Bromiley - Warwick Manufacturing Group, University of
+#     Warwick.
+#     
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+# Utility functions for the Netkit Bash completion scripts
+
+
+###############################################################################
+# Write a newline-separated list of long options for the given command to
+# standard output.
+# Usage:
+#   _get_get_command_options COMMAND
+# Globals:
+#   r- NETKIT_HOME
+# Arguments:
+#   $1 - command name (must be present in $NETKIT_HOME/bin/)
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_get_command_options() {
+   # Get long options
+   "$NETKIT_HOME/bin/$1" --help | grep --extended-regexp --only-matching "^(  -[[:alnum:]], | {6})--[[:alnum:]-]+=?" | awk --field-separator "," '{ gsub(/[[:blank:]]/, "", $NF); print $NF }'
+   # Get short options
+   # NOTE: we don't gather the short options because conventionally linux
+   # utilities only autocomplete long ones.
+   #"$NETKIT_HOME/bin/$1" --help | grep --extended-regexp --only-matching '^  -[[:alnum:]]' | tr -d "[:blank:]"
+}
+
+
+###############################################################################
+# Expand '--ethN=' in a command's option array to '--eth1= --eth2= ...
+# --eth${MAX_INTERFACES}='. The option list wrote to standard output will be
+# space-separated, which should be fine given that command-line options do not
+# have whitespace in.
+# Usage:
+#   _expand_eth_option [OPTION]...
+# Globals:
+#   None
+# Arguments:
+#   $1 - command name (must be present in $NETKIT_HOME/bin/)
+# Returns:
+#   None
+# Example:
+#   mapfile -t options < <(_get_command_options vstart)
+#   mapfile -t options < <(_expand_eth_option "${options[@]}")
+###############################################################################
+_expand_eth_option() {
+   local option i max_interfaces
+
+   # We only want the value of MAX_INTERFACES from script_utils. Sourcing
+   # script_utils in this shell would flood the user's environment with other
+   # Netkit environment variables when they source this script inside .bashrc
+   # (or similar) to get the completions. Therefore, we source in a subshell
+   # and extract just the value of MAX_INTERFACES.
+   # shellcheck source=../bin/script_utils
+   max_interfaces=$(. "$NETKIT_HOME/bin/script_utils"; echo "$MAX_INTERFACES")
+
+   for option in "$@"; do
+      [ "$option" = "--ethN=" ] && continue
+      echo "$option"
+   done
+
+   for ((i = 0; i <= max_interfaces; ++i)) do
+      echo "--eth$i="
+   done
+}
+
+
+###############################################################################
+# Write a newline-separated list of subcommands for the given command to
+# standard output.
+# Usage:
+#   _get_command_subcommands COMMAND
+# Globals:
+#   r- NETKIT_HOME
+# Arguments:
+#   $1 - command name (must be present in $NETKIT_HOME/bin/)
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_get_command_subcommands() {
+   "$NETKIT_HOME/bin/$1" --help | grep --extended-regexp --only-matching "^  [[:alnum:]][[:alnum:]-]+" | tr -d "[:blank:]"
+}
+
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$(basename -- "$0"): The NETKIT_HOME environment variable is not set"
+   exit 1
+fi

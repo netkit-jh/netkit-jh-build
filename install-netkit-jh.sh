@@ -205,9 +205,15 @@ for RC_FILE in "${RC_FILES[@]}"; do
     # Append Netkit additions to bashrc
     echo "$NK_ENV_VARS" >> "${RC_FILE}"
 
-    # Source the Bash completion script
-    # shellcheck disable=SC2016
-    [ "$(basename -- "$RC_FILE")" = ".bashrc" ] && echo '. "$NETKIT_HOME/bin/netkit_bash_completion"' >> "${RC_FILE}"
+    # Source the Bash completion scripts
+    if [ "$(basename -- "$RC_FILE")" = ".bashrc" ]; then
+        cat << 'EOF' >> "${RC_FILE}"
+
+for file in "$NETKIT_HOME/bash-completion/completions/"*; do
+    . "$file"
+done
+EOF
+    fi
 
     echo "$NK_RC_FOOTER"
 done
