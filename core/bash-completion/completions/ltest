@@ -29,6 +29,7 @@
 #   r- COMP_CWORD
 #   -w COMPREPLY
 #   r- COMP_WORDS
+#   r- PWD
 # Arguments:
 #   None
 # Returns:
@@ -49,7 +50,18 @@ _ltest() {
    # If the current word is the first argument, it cannot be an option
    # parameter.
    if [ "$COMP_CWORD" -eq 1 ]; then
-      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      case $current_word in
+         -*)
+            # Current word is an option
+            mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+            ;;
+         *)
+            # Current word could be an option or machine name (non-option
+            # argument), so we complete as a machine name.
+            _get_lab_vhosts "lab_vhosts" "$PWD"
+            mapfile -t COMPREPLY < <(compgen -W "${lab_vhosts[*]}" -- "$current_word")
+            ;;
+      esac
       return
    fi
 
@@ -67,17 +79,27 @@ _ltest() {
       --delay|-w|--wait)
          # These options take parameters that are not autocompletable
          COMPREPLY=( );;
-      -*)
-         # These options do not take parameters:
+      *)
+         # The previous word is either a non-option or one that does not take a
+         # parameter. The current word is therefore a new option or non-option
+         # argument.
+         #
+         # Covered options:
          # -F, --force-lab, --help, -l, --list, -p, -s, --sequential,
          # --tmux-attached, --tmux-detached, -v, --verbose, --version
-         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
-      *)
-         # If previous word was not an option, it must be a non-option argument
-         # (machine name).
-         lab_directory=$(_get_lab_directory "${COMP_WORDS[@]}")
-         _get_lab_vhosts "lab_vhosts" "$lab_directory"
-         mapfile -t COMPREPLY < <(compgen -W "${lab_vhosts[*]}" -- "$current_word")
+         case $current_word in
+            -*)
+               # Current word is a new option
+               mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+               ;;
+            *)
+               # Current word could be an option or machine name (non-option
+               # argument), so we complete as a machine name.
+               lab_directory=$(_get_lab_directory "${COMP_WORDS[@]}")
+               _get_lab_vhosts "lab_vhosts" "$lab_directory"
+               mapfile -t COMPREPLY < <(compgen -W "${lab_vhosts[*]}" -- "$current_word")
+               ;;
+         esac
          ;;
    esac
 }
