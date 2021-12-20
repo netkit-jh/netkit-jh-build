@@ -39,6 +39,8 @@
 _vcommand() {
    local options
 
+   local active_vhosts
+
    local current_word=${COMP_WORDS[COMP_CWORD]}
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
 
@@ -47,7 +49,18 @@ _vcommand() {
    # If the current word is the first argument, it cannot be an option
    # parameter.
    if [ "$COMP_CWORD" -eq 1 ]; then
-      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      case $current_word in
+         -*)
+            # Current word is a new option
+            mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+            ;;
+         *)
+            # Current word could be an option or machine name (non-option
+            # argument), so we complete as a machine name.
+            mapfile -t active_vhosts < <("$NETKIT_HOME/bin/vlist" --no-header | head --lines -3 | awk '{ print $2 }')
+            mapfile -t COMPREPLY < <(compgen -W "${active_vhosts[*]}" -- "$current_word")
+            ;;
+      esac
       return
    fi
 
@@ -60,13 +73,25 @@ _vcommand() {
          # These options take parameters that are not autocompletable
          COMPREPLY=( );;
       *)
-         # TODO: complete machine names
-         # These options do not take parameters, so the current word is either
-         # an option or non-option argument.
+         # The previous word is either a non-option or one that does not take a
+         # parameter. The current word is therefore a new option or non-option
+         # argument.
          #
          # Covered options:
          # --help, -v, --verbose, --version
-         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+         case $current_word in
+            -*)
+               # Current word is a new option
+               mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+               ;;
+            *)
+               # Current word could be an option or machine name (non-option
+               # argument), so we complete as a machine name.
+               mapfile -t active_vhosts < <("$NETKIT_HOME/bin/vlist" --no-header | head --lines -3 | awk '{ print $2 }')
+               mapfile -t COMPREPLY < <(compgen -W "${active_vhosts[*]}" -- "$current_word")
+               ;;
+         esac
+         ;;
    esac
 }
 
