@@ -39,6 +39,8 @@
 _lclean() {
    local options
 
+   local lab_directory lab_vhosts
+
    local current_word=${COMP_WORDS[COMP_CWORD]}
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
 
@@ -58,14 +60,17 @@ _lclean() {
    case $previous_word in
       -d)
          mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
-      *)
-         # TODO: complete machine names
-         # These options do not take parameters, so the current word is either
-         # an option or non-option argument.
-         #
-         # Covered options:
+      -*)
+         # These options do not take parameters:
          # --help, -v, --verbose, --version
          mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+      *)
+         # If previous word was not an option, it must be a non-option argument
+         # (machine name).
+         lab_directory=$(_get_lab_directory "${COMP_WORDS[@]}")
+         _get_lab_vhosts "lab_vhosts" "$lab_directory"
+         mapfile -t COMPREPLY < <(compgen -W "${lab_vhosts[*]}" -- "$current_word")
+         ;;
    esac
 }
 

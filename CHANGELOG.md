@@ -1,6 +1,6 @@
 # User Experience Changelog
 ## Added
-- Command tab-completion (in Bash)
+- Command tab-completion (in Bash) including machine name completion for labs
 - `--mount` option to `vstart` - mount any host folder inside a machine
 - Ability to use a _test/shared.test script to run the same script for all hosts with `ltest`. Script output is stored in _test/results/$hostname.shared
 - Multiple taps can be created for machines to have their own unique interfaces (they can still share if the same collision domain is used)
