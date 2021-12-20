@@ -11,7 +11,8 @@ BUILD_DIR=build
 NETKIT_BUILD_DIR=$(BUILD_DIR)/netkit-jh
 TOOLS_DIR=$(NETKIT_BUILD_DIR)/tools
 
-COPY_FILES=bin setup_scripts man netkit.conf README.mdown LICENSE.txt
+COPY_FILES=bash-completion bin setup_scripts man netkit.conf README.mdown \
+	LICENSE.txt
 
 .DEFAULT_GOAL := ${NETKIT_BUILD_DIR}
 
