@@ -103,6 +103,124 @@ _get_command_subcommands() {
 }
 
 
+###############################################################################
+# Get lab directory parameter (option '-d') from the command-line array. If not
+# found, output the current working directory. Can be used to generate machine
+# name completions.
+# Usage:
+#   _get_lab_directory [ARGUMENT]...
+# Globals:
+#   r- COMP_WORDS
+#   r- PWD
+# Arguments:
+#  ... - command-line arguments
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_get_lab_directory() {
+   local d_flag
+
+   # Iterate over the command-line arguments
+   for word in "$@"; do
+      if [ -n "$d_flag" ]; then
+         echo "$word"
+         return
+      fi
+
+      # Check command-line arguments for -d. If found, the next argument will
+      # be the lab directory path.
+      [ "$word" = "-d" ] && d_flag=1
+   done
+
+   echo "$PWD"
+}
+
+
+###############################################################################
+# Check if an array contains a string.
+# Usage:
+#   _array_contains QUERY ARRAY
+# Globals:
+#   None
+# Arguments:
+#   $1 - string to search for
+#   $2 - word-expanded array to search
+# Returns:
+#   0 if array contains query, non-zero if not
+# Example:
+#   bar=( a b c )
+#   if _array_contains "a" "${bar[@]}"; then echo "Found!"; fi
+###############################################################################
+_array_contains() {
+   local query=$1
+   local array=( "${@:2}" )
+
+   local item
+
+   for item in "${array[@]}"; do
+      [ "$query" = "$item" ] && return 0
+   done
+
+   return 1
+}
+
+
+###############################################################################
+# Set array variable to a list of machines in the lab taken from the directory
+# listing. See $NETKIT_HOME/bin/script_utils for further information.
+# Usage:
+#   _get_lab_vhosts LAB_VHOSTS_NAME_REF DIR
+# Globals:
+#   None
+# Arguments:
+#   $1 - name reference to array variable
+#   $2 - lab directory
+# Returns:
+#   None
+# Example:
+#   local lab_vhosts
+#   _get_lab_vhosts "lab_vhosts" "/path/to/lab/directory"
+#   echo "${lab_vhosts[*]}"
+###############################################################################
+_get_lab_vhosts() {
+   local -n lab_vhosts=$1
+   local lab_directory=$2
+
+   local lab_machines
+   local vhost
+
+   # Invalid hostnames (see $NETKIT_HOME/bin/script_utils)
+   local invalid_hostnames=( "shared" "_test" )
+
+   # Get lab.conf's LAB_MACHINES variable. This will override the directory
+   # listing for the machine list.
+   lab_machines=$(sed --quiet "0,/^LAB_MACHINES=/s///p" "$lab_directory/lab.conf" 2> /dev/null)
+   IFS="," read -ra lab_vhosts <<< "$lab_machines"
+
+   if [ "${#lab_vhosts[@]}" -eq 0 ]; then
+      # Build list of virtual machines that are part of the lab from the
+      # directory listing if LAB_MACHINES is not set.
+      for dir in "$lab_directory/"*/; do
+         # If there are no subdirectories, "$lab_directory/"*/ will expand to a
+         # path to a directory named *; the for loop will still run over that
+         # one string. shopt -s nullglob will avoid this issue but has global
+         # implications. Avoid having to set nullglob by simply checking if the
+         # directory exists.
+         [ ! -d "$dir" ] && continue
+
+         vhost=$(basename -- "$dir")
+
+         # Avoid the shared and _test directories
+         _array_contains "$vhost" "${invalid_hostnames[@]}" && continue
+
+         lab_vhosts+=( "$vhost" )
+      done
+   fi
+}
+
+
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$(basename -- "$0"): The NETKIT_HOME environment variable is not set"
    exit 1
