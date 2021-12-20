@@ -104,6 +104,40 @@ _get_command_subcommands() {
 
 
 ###############################################################################
+# Get user parameter (option '-u|--user') from the command-line array. If not
+# found, output '-'. Can be used to generate machine name completions owned by
+# a specific user.
+# Usage:
+#   _get_netkit_user [ARGUMENT]...
+# Globals:
+#   r- COMP_WORDS
+# Arguments:
+#  ... - command-line arguments
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_get_netkit_user() {
+   local user_flag
+
+   # Iterate over the command-line arguments
+   for word in "$@"; do
+      if [ -n "$user_flag" ]; then
+         echo "$word"
+         return
+      fi
+
+      # Check command-line arguments for -u|--user. If found, the next argument
+      # will be the username.
+      [ "$word" = "-u" ] || [ "$word" = "--user" ] && user_flag=1
+   done
+
+   echo "-"
+}
+
+
+###############################################################################
 # Get lab directory parameter (option '-d') from the command-line array. If not
 # found, output the current working directory. Can be used to generate machine
 # name completions.
