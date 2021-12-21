@@ -909,16 +909,16 @@ get_vhost_info_by_pid() {
 
    declare -A -g vhost_info
 
-   vhost_info["pid"]=$pid
+   vhost_info[pid]=$pid
 
    # Effective user ID of the process (full username if not too long)
-   vhost_info["owner"]=$(ps --no-headers --format euser --pid "$pid")
+   vhost_info[owner]=$(ps --no-headers --format euser --pid "$pid")
 
    # Total virtual memory usage of the process.
    # Logically this should be the sum of every process in the group (PGID),
    # however in practice just taking the value of the parent process is enough.
    # The value should equate to roughly the size of the machine's memory.
-   vhost_info["memory_usage"]=$(ps --no-headers --format vsize --pid "$pid")
+   vhost_info[memory_usage]=$(ps --no-headers --format vsize --pid "$pid")
 
    # Full command used to invoke the process.
    # Why not parse the output of ps? Whitespace in the program name or
@@ -928,12 +928,12 @@ get_vhost_info_by_pid() {
    # vhost_info[full_command] will store a quoted and escaped command string
    # suitable for reuse as a shell command.
    mapfile -d "" -t full_command < "/proc/$pid/cmdline"
-   vhost_info["full_command"]=${full_command[*]@Q}
+   vhost_info[full_command]=${full_command[*]@Q}
 
    first_iteration=true
    for argument in "${full_command[@]}"; do
       if $first_iteration; then
-         vhost_info["kernel"]=$argument
+         vhost_info[kernel]=$argument
          first_iteration=false
          continue
       fi
@@ -968,49 +968,49 @@ get_vhost_info_by_pid() {
             # NOTE: tmux sessions are identified later in the command line with
             # a dummy option.
             case $value in
-               xterm)      vhost_info["con0"]=$value;;
-               fd:0,fd:1)  vhost_info["con0"]="this";;
-               pty)        vhost_info["con0"]=$value;;
-               port:*)     vhost_info["con0"]=$value;;
-               null)       vhost_info["con0"]="none";;
+               xterm)      vhost_info[con0]=$value;;
+               fd:0,fd:1)  vhost_info[con0]="this";;
+               pty)        vhost_info[con0]=$value;;
+               port:*)     vhost_info[con0]=$value;;
+               null)       vhost_info[con0]="none";;
             esac
             ;;
          con1)
             case $value in
-               xterm)      vhost_info["con1"]=$value;;
-               fd:0,fd:1)  vhost_info["con1"]="this";;
-               pty)        vhost_info["con1"]=$value;;
-               port:*)     vhost_info["con1"]=$value;;
-               null)       vhost_info["con1"]="none";;
+               xterm)      vhost_info[con1]=$value;;
+               fd:0,fd:1)  vhost_info[con1]="this";;
+               pty)        vhost_info[con1]=$value;;
+               port:*)     vhost_info[con1]=$value;;
+               null)       vhost_info[con1]="none";;
             esac
             ;;
-         \"exec)       vhost_info["boot_cmd"]=${value%\"};;
-         \"hosthome)   vhost_info["hosthome"]=${value%\"};;
-         \"hostlab)    vhost_info["hostlab"]=${value%\"};;
+         \"exec)       vhost_info[boot_cmd]=${value%\"};;
+         \"hosthome)   vhost_info[hosthome]=${value%\"};;
+         \"hostlab)    vhost_info[hostlab]=${value%\"};;
          # Memory is NOT adjusted by the skew here
-         mem)        vhost_info["mem"]=$value;;
-         \"modules)    vhost_info["modules"]=${value%\"};;
-         tmux)       vhost_info["con0"]="tmux";;
+         mem)        vhost_info[mem]=$value;;
+         \"modules)    vhost_info[modules]=${value%\"};;
+         tmux)       vhost_info[con0]="tmux";;
          \"ubd0)
             # The ubd0 value is disk,fs or fs
-            vhost_info["disk"]=${value%%,*}
-            vhost_info["fs"]=${value#*,}
+            vhost_info[disk]=${value%%,*}
+            vhost_info[fs]=${value#*,}
 
             # The parameter expansions result in equal values if a single,
             # shared filesystem is used.
-            [ "${vhost_info["disk"]}" = "${vhost_info["fs"]}" ] && unset vhost_info["disk"]
+            [ "${vhost_info[disk]}" = "${vhost_info[fs]}" ] && unset "vhost_info[disk]"
 
-            vhost_info["fs"]=${vhost_info[fs]%\"}
+            vhost_info[fs]=${vhost_info[fs]%\"}
             ;;
-         umid)       vhost_info["umid"]=$value;;
+         umid)       vhost_info[umid]=$value;;
          *)          vhost_info_other+=( "$argument" )
       esac
    done
 
-   vhost_info["other"]="${vhost_info_other[*]}"
+   vhost_info[other]=${vhost_info_other[*]}
 
    # The UML console socket filepath
-   vhost_info["mconsole"]="$MCONSOLE_DIR/${vhost_info[umid]}/mconsole"
+   vhost_info[mconsole]="$MCONSOLE_DIR/${vhost_info[umid]}/mconsole"
 }
 
 

@@ -155,16 +155,16 @@ generate_info_str() {
    # array with a value of directory listings. For example, for a lab_info
    # array of version numbers:
    #
-   #     lab_info["lab3a"]="1.0"
-   #     lab_info["lab3b"]="1.1"
-   #     lab_info["lab3c"]="1.0"
-   #     lab_info["lab3d"]="2.0"
+   #     lab_info[lab3a]="1.0"
+   #     lab_info[lab3b]="1.1"
+   #     lab_info[lab3c]="1.0"
+   #     lab_info[lab3d]="2.0"
    #
    # This would be transformed into collated_lab_info_values:
    #
-   #     collated_lab_info_values["1.0"]="lab3a, lab3c"
-   #     collated_lab_info_values["1.1"]="lab3b"
-   #     collated_lab_info_values["2.0"]="lab3d"
+   #     collated_lab_info_values[1.0]="lab3a, lab3c"
+   #     collated_lab_info_values[1.1]="lab3b"
+   #     collated_lab_info_values[2.0]="lab3d"
    for lab in "${!lab_info[@]}"; do
       value=${lab_info[$lab]:-"<unknown>"}
 
