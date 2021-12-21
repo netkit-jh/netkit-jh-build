@@ -209,4 +209,4 @@ bold_print "Lab has been crashed."
 bold_print "================================================================="
 
 # Show a list of running virtual machines, if asked to
-[ -n "$list_vhosts" ] && vlist
+[ -n "$list_vhosts" ] && "$NETKIT_HOME/bin/vlist"

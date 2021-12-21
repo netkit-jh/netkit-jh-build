@@ -309,7 +309,7 @@ while true; do
          shift
          if [ "$target_user" = "-" ]; then
             unset target_user
-         elif ! id "$target_user" > /dev/null 2>&1; then
+         elif ! id -- "$target_user" > /dev/null 2>&1; then
             echo 1>&2 "$SCRIPTNAME: $target_user: User does not exist"
             usage 1
          fi

@@ -36,8 +36,9 @@
 #   None
 ###############################################################################
 _get_command_options() {
+   local command=$1
    # Get long options
-   "$NETKIT_HOME/bin/$1" --help | grep --extended-regexp --only-matching "^(  -[[:alnum:]], | {6})--[[:alnum:]-]+=?" | awk --field-separator "," '{ gsub(/[[:blank:]]/, "", $NF); print $NF }'
+   "$NETKIT_HOME/bin/$command" --help | grep --extended-regexp --only-matching "^(  -[[:alnum:]], | {6})--[[:alnum:]-]+=?" | awk --field-separator "," '{ gsub(/[[:blank:]]/, "", $NF); print $NF }'
    # Get short options
    # NOTE: we don't gather the short options because conventionally linux
    # utilities only autocomplete long ones.
@@ -99,7 +100,8 @@ _expand_eth_option() {
 #   None
 ###############################################################################
 _get_command_subcommands() {
-   "$NETKIT_HOME/bin/$1" --help | grep --extended-regexp --only-matching "^  [[:alnum:]][[:alnum:]-]+" | tr -d "[:blank:]"
+   local command=$1
+   "$NETKIT_HOME/bin/$command" --help | grep --extended-regexp --only-matching "^  [[:alnum:]][[:alnum:]-]+" | tr -d "[:blank:]"
 }
 
 
@@ -230,7 +232,7 @@ _get_lab_vhosts() {
 
    # Get lab.conf's LAB_MACHINES variable. This will override the directory
    # listing for the machine list.
-   lab_machines=$(sed --quiet "0,/^LAB_MACHINES=/s///p" "$lab_directory/lab.conf" 2> /dev/null)
+   lab_machines=$(sed --quiet -- "0,/^LAB_MACHINES=/s///p" "$lab_directory/lab.conf" 2> /dev/null)
    IFS="," read -ra _get_lab_vhosts_lab_vhosts <<< "$lab_machines"
 
    if [ "${#_get_lab_vhosts_lab_vhosts[@]}" -eq 0 ]; then

@@ -261,7 +261,7 @@ show_version() {
    # Netkit version information
    echo -n "Netkit version:            "
 
-   netkit_version=$(grep "Netkit version" "$NETKIT_HOME/netkit-version" 2> /dev/null)
+   netkit_version=$(grep -- "Netkit version" "$NETKIT_HOME/netkit-version" 2> /dev/null)
    netkit_version=${netkit_version##"Netkit version "}
    echo "${netkit_version:-"<unknown>"}"
    
@@ -288,7 +288,7 @@ show_version() {
 
    # Netkit filesystem version information
    echo -n "Netkit filesystem version: "
-   filesystem_version_long=$(cat "$NETKIT_HOME/fs/netkit-filesystem-version" 2> /dev/null)
+   filesystem_version_long=$(cat -- "$NETKIT_HOME/fs/netkit-filesystem-version" 2> /dev/null)
    filesystem_version=${filesystem_version_long##"Netkit-JH filesystem version "}
    echo "${filesystem_version:-"<unknown>"}"
    
@@ -313,7 +313,8 @@ show_version() {
 #   None
 ###############################################################################
 file_in_use() {
-   lsof -f -- "$1" > /dev/null 2>&1
+   local file=$1
+   lsof -f -- "$file" > /dev/null 2>&1
 }
 
 
@@ -538,10 +539,10 @@ start_inet_hub() {
 
    # We need to disable buffering on standard output, otherwise the hub log
    # may miss vital log messages when uml_switch is killed.
-   line_buffered_uml_switch_cmd=( "stdbuf" "--output=0" "${uml_switch_cmd[@]}" )
+   line_buffered_uml_switch_cmd=( "stdbuf" "--output=0" "--" "${uml_switch_cmd[@]}" )
 
    # shellcheck disable=SC2016
-   hub_log_cmd=( "stdbuf" "--output=0" \
+   hub_log_cmd=( "stdbuf" "--output=0" "--" \
                   "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
                   '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
 
@@ -591,10 +592,10 @@ start_hub() {
 
       # We need to disable buffering on standard output, otherwise the hub log
       # may miss vital log messages when uml_switch is killed.
-      line_buffered_uml_switch_cmd=( "stdbuf" "--output=0" "${uml_switch_cmd[@]}" )
+      line_buffered_uml_switch_cmd=( "stdbuf" "--output=0" "--" "${uml_switch_cmd[@]}" )
    
       # shellcheck disable=SC2016
-      hub_log_cmd=( "stdbuf" "--output=0" \
+      hub_log_cmd=( "stdbuf" "--output=0" "--" \
                     "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
                     '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
       
@@ -698,7 +699,7 @@ clean_hubs() {
          hub_pid=$(pgrep --oldest --euid="$USER_ID" --full "^$NETKIT_HOME/bin/uml_switch[[:blank:]].*$hub_socket")
          if [ "$(lsof -a -U -p "$hub_pid" -Fn | grep --count "^n$hub_socket")" -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
-            kill "$hub_pid" 2> /dev/null && rm --force "$hub_socket"
+            kill "$hub_pid" 2> /dev/null && rm --force -- "$hub_socket"
          fi
       else
          # There are no switches connected to this socket - remove it
@@ -1112,8 +1113,8 @@ validate_netkit_conf_variables() {
 ###############################################################################
 netkit_dir_check() {
    local dir=$1
-   mkdir --parents "$dir" || exit 1
-   chmod 777 "$dir"
+   mkdir --parents -- "$dir" || exit 1
+   chmod -- 777 "$dir"
 }
 
 
@@ -1197,7 +1198,7 @@ validate_netkit_conf_variables
 
 
 # Set the global USER_ID variable
-USER_ID=$(id -un)
+USER_ID=$(id --name --user)
 
 
 # Ensure critical directories exist

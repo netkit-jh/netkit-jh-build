@@ -316,11 +316,11 @@ lab_clean() {
 
    for vhost in "${lab_vhosts[@]}"; do
       # Remove files from the lab directory
-      rm ${verbose:+"--verbose"} --force --recursive "${MCONSOLE_DIR:?}/$vhost"
-      rm ${verbose:+"--verbose"} --force             "$lab_directory/$vhost."{"ready","disk","log","testdone"}
+      rm ${verbose:+"--verbose"} --force --recursive -- "${MCONSOLE_DIR:?}/$vhost"
+      rm ${verbose:+"--verbose"} --force             -- "$lab_directory/$vhost."{"ready","disk","log","testdone"}
    done
 
-   rm ${verbose:+"--verbose"} --force "$lab_directory/readyfor.test"
+   rm ${verbose:+"--verbose"} --force -- "$lab_directory/readyfor.test"
 }
 
 
@@ -357,11 +357,11 @@ lab_crash() {
    
    for vhost in "${lab_vhosts[@]}"; do
       bold_print "Crashing '$vhost'..."
-      vcrash "${vcrash_args[@]}" "$vhost" && rm ${verbose:+"--verbose"} --force "$lab_directory/$vhost.ready"
+      "$NETKIT_HOME/bin/vcrash" "${vcrash_args[@]}" -- "$vhost" && rm ${verbose:+"--verbose"} --force -- "$lab_directory/$vhost.ready"
    done
    
    bold_print "Removing readyfor.test..."
-   rm --force "$lab_directory/readyfor.test"
+   rm --force -- "$lab_directory/readyfor.test"
 }
 
 

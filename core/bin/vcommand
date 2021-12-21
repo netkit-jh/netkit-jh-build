@@ -124,10 +124,10 @@ tmux_command() {
    fi
 
    # Run command prefixed with a NOP of the UUID for output harvesting
-   tmux -L netkit send-keys -t "$target" ": $cmd_uuid; $cmd" Enter
+   tmux -L netkit send-keys -t "$target" -- ": $cmd_uuid; $cmd" Enter
 
    # Wait for output to be generated
-   sleep "$timeout"
+   sleep -- "$timeout"
 
    # Get output buffer
    tmux_buffer=$(tmux -L netkit capture-pane -t "$target" -S - -p)

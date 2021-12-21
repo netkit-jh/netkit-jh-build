@@ -173,10 +173,10 @@ update_available() {
 
    if [ "$CHECK_FOR_UPDATES" = "yes" ]; then
       # Check whether we have polled in the last UPDATE_CHECK_PERIOD days
-      touch "$NETKIT_HOME/.new-version"
+      touch -- "$NETKIT_HOME/.new-version"
 
       if [ -f "$NETKIT_HOME/.last-update-check" ]; then
-         last_update_check=$(cat "$NETKIT_HOME/.last-update-check")
+         last_update_check=$(cat -- "$NETKIT_HOME/.last-update-check")
       else
          last_update_check=0
       fi
@@ -197,8 +197,8 @@ update_available() {
          curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"
       fi
 
-      current_version=$(sed "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
-      latest_version=$(cat "$NETKIT_HOME/.new-version")
+      current_version=$(sed -- "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
+      latest_version=$(cat -- "$NETKIT_HOME/.new-version")
 
       if [ "$latest_version" != "$current_version" ]; then
          echo "https://github.com/netkit-jh/netkit-jh-build/releases/$latest_version"
@@ -301,10 +301,10 @@ lab_start_parallel() {
 
    # Pass testmode along subsequent invocations of this script
    if [ -n "$test_delay" ]; then
-      program_name="ltest"
+      program_name="$NETKIT_HOME/bin/ltest"
       lstart_args+=( "--delay=$test_delay" )
    else
-      program_name="lstart"
+      program_name="$NETKIT_HOME/bin/lstart"
    fi
    
    # The make utility expects an empty argument to -j when infinitely many jobs
@@ -357,6 +357,7 @@ EOF
       --directory "$lab_directory" \
       --file - \
       --jobs ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} \
+      -- \
       "${lab_vhosts[@]}" \
       <<< "$makefile_contents"
 
@@ -421,13 +422,13 @@ single_lab_vhost_start() {
          # appending the argument must be made (an '=' is required for long
          # options, no delimiter for short ones).
          [ -n "$value" ] && vstart_args+=( "$value" )
-      done < <(grep "^$vhost\[.*\]=" "$lab_directory/lab.conf")
+      done < <(grep -- "^$vhost\[.*\]=" "$lab_directory/lab.conf")
    fi
    
    # Remove .ready file, if existing
-   rm --force "$lab_directory/$vhost.ready"
+   rm --force -- "$lab_directory/$vhost.ready"
 
-   if ! vstart "${vstart_args[@]}" "${passthrough_args[@]}" "$vhost"; then
+   if ! "$NETKIT_HOME/bin/vstart" "${vstart_args[@]}" "${passthrough_args[@]}" -- "$vhost"; then
       echo 2>&1 "Error while starting virtual machine '$vhost'"
       exit 1
    fi
@@ -438,11 +439,11 @@ single_lab_vhost_start() {
          sleep 1
       done
 
-      rm --force "$lab_directory/$vhost.ready"
+      rm --force -- "$lab_directory/$vhost.ready"
    fi
    
    # Wait for a specified amount of time before returning
-   [ "$GRACE_TIME" -gt 0 ] && sleep "$GRACE_TIME"
+   [ "$GRACE_TIME" -gt 0 ] && sleep -- "$GRACE_TIME"
 }
 
 
@@ -691,4 +692,4 @@ if [ -n "$test_delay" ]; then
 fi
 
 # Show a list of running virtual machines, if asked to
-[ -n "$list_vhosts" ] && vlist
+[ -n "$list_vhosts" ] && "$NETKIT_HOME/bin/vlist"

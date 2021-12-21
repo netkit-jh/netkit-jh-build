@@ -258,7 +258,7 @@ check_filesystem() {
    local fs_type
 
    # Get the host filesystem type
-   fs_type=$(stat --file-system --format "%T" "$filepath")
+   fs_type=$(stat --file-system --format "%T" -- "$filepath")
 
    if [[ ! "$fs_type" =~ ^(ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|(da|e|fute|v)?xfs)$ ]]; then
       echo 1>&2 "$SCRIPTNAME: Filesystem '$fs_type' may not support sparse files, this could result in performance loss and disk space consumption"
@@ -406,7 +406,7 @@ remove_fs_command() {
       sleep 1
    done
    
-   rm --force "$filepath"
+   rm --force -- "$filepath"
 }
 
 
@@ -648,7 +648,7 @@ if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "
       *)             term_executable=$TERM_TYPE;;
    esac
 
-   if ! command -v "$term_executable" > /dev/null 2>&1; then
+   if ! command -v -- "$term_executable" > /dev/null 2>&1; then
       echo 1>&2 "$SCRIPTNAME: $term_executable: Terminal emulator not found"
       exit 1
    fi
@@ -673,7 +673,7 @@ fi
 # Create file for machine details
 out_file=$(mktemp)
 # shellcheck disable=2064
-trap "rm --force '$out_file'" EXIT
+trap "rm --force -- '$out_file'" EXIT
 
 # Scoping the following block allows machine details to be outputted
 # sequentially, even when parallel startup is enabled.
@@ -719,7 +719,7 @@ trap "rm --force '$out_file'" EXIT
 
       # We check the directory because the .disk (if new) will not already be
       # there
-      check_filesystem "$(dirname "$filesystem")"
+      check_filesystem "$(dirname -- "$filesystem")"
 
       # Explicitly declaring the model fs name is redundant after the COW file
       # has been created. Nevertheless, this is needed in order to later get
@@ -800,7 +800,7 @@ trap "rm --force '$out_file'" EXIT
 
 
    ### KERNEL MODULES #################################### (non-UML option) ###
-   kernel_modules_dir="$(dirname "$VM_KERNEL")/modules"
+   kernel_modules_dir="$(dirname -- "$VM_KERNEL")/modules"
 
    if [ -d "$kernel_modules_dir" ]; then
       echo "   Modules:     $kernel_modules_dir"
@@ -860,8 +860,8 @@ trap "rm --force '$out_file'" EXIT
    echo
 } > "$out_file"
 
-[ -n "$verbose" ] && cat "$out_file"
-rm --force "$out_file"
+[ -n "$verbose" ] && cat -- "$out_file"
+rm --force -- "$out_file"
 
 
 ###############################################################################
@@ -921,5 +921,5 @@ fi
 
 # Connect to the tmux session if TMUX_OPEN_TERMS is set
 if [ "$TMUX_OPEN_TERMS" = "yes" ] && [ "$VM_CON0" = "tmux" ]; then
-    vconnect --terminal --interval 5 --retry-count 20 "$vhost" &> /dev/null &
+    vconnect --terminal --interval 5 --retry-count 20 -- "$vhost" &> /dev/null &
 fi

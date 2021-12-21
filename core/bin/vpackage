@@ -155,8 +155,8 @@ cleanup() {
 
    local mount_point_resolvconf="$mount_point/etc/resolv.conf"
 
-   sudo umount "$mount_point_resolvconf"
-   sudo umount "$mount_point"
+   sudo umount -- "$mount_point_resolvconf"
+   sudo umount -- "$mount_point"
 }
 
 
@@ -184,7 +184,7 @@ mount_fs() {
 
    echo "Mounting '$filesystem' to '$mount_point'"
 
-   sudo mkdir --parents "$mount_point"
+   sudo mkdir --parents -- "$mount_point"
    
    if ! sudo mount --options loop --source "$filesystem" --target "$mount_point"; then
       echo 1>&2 "$SCRIPTNAME: Could not mount filesystem"
@@ -193,9 +193,9 @@ mount_fs() {
 
    echo "Binding '$host_resolvconf' to '$mount_point_resolvconf'"
 
-   if ! sudo mount --bind "$host_resolvconf" "$mount_point_resolvconf"; then
+   if ! sudo mount --options bind --source "$host_resolvconf" --target "$mount_point_resolvconf"; then
       echo 1>&2 "$SCRIPTNAME: Could not bind mount name resolution file"
-      sudo umount "$mount_point"
+      sudo umount -- "$mount_point"
       exit 1
    fi
 
@@ -313,7 +313,7 @@ fi
 mount_fs "$filesystem" "$mount_point"
 
 
-chroot_cmd=( "sudo" "chroot" "$mount_point" )
+chroot_cmd=( "sudo" "chroot" -- "$mount_point" )
 
 # vpackage subcommands that use apt-get can simply be passed through as a valid
 # apt-get subcommand. This is not the case with dpkg.
@@ -330,12 +330,12 @@ case $subcommand in
       # We don't use --admindir in the event that the host system does not have
       # the dpkg. Instead, the dpkg binary on the Netkit filesystem will be
       # used.
-      "${chroot_cmd[@]}" dpkg --list "${passthrough_opts[@]}" "${packages[@]}"
+      "${chroot_cmd[@]}" dpkg --list "${passthrough_opts[@]}" -- "${packages[@]}"
       ;;
    update|upgrade|dist-upgrade|clean|autoremove|auto-remove)
       "${apt_get_cmd[@]}"
       ;;
    install|remove|purge)
-      "${apt_get_cmd[@]}" "${packages[@]}"
+      "${apt_get_cmd[@]}" -- "${packages[@]}"
       ;;
 esac

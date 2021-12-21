@@ -99,7 +99,8 @@ END_OF_HELP
 #   None
 ###############################################################################
 tmux_connect() {
-   tmux -L netkit attach -t="$1"
+   local vhost=$1
+   tmux -L netkit attach -t="$vhost"
 }
 
 ###############################################################################
@@ -238,7 +239,7 @@ while ! tmux -L netkit has-session -t="$vhost" 2> /dev/null; do
       exit 1
    fi
 
-   sleep "$retry_interval"
+   sleep -- "$retry_interval"
    echo -n "."
 done
 

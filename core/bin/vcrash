@@ -331,7 +331,7 @@ while true; do
          shift
          if [ "$target_user" = "-" ]; then
             unset target_user
-         elif ! id "$target_user" > /dev/null 2>&1; then
+         elif ! id -- "$target_user" > /dev/null 2>&1; then
             echo 1>&2 "$SCRIPTNAME: $target_user: User does not exist"
             usage 1
          fi
@@ -387,17 +387,17 @@ for vhost in "${vhosts[@]}"; do
       # successfully shut down (if the previous commands returned 0).
 
       # Kill tmux sessions
-      if tmux -L netkit has-session -t="$vhost" 2>/dev/null; then
+      if tmux -L netkit has-session -t "$vhost" 2>/dev/null; then
          echo "Killing tmux session '$vhost'"
-         tmux -L netkit kill-session -t="$vhost"
+         tmux -L netkit kill-session -t "$vhost"
       fi
 
-      if tmux -L netkit has-session -t="$vhost-dead" 2>/dev/null; then
+      if tmux -L netkit has-session -t "$vhost-dead" 2>/dev/null; then
          echo "Killing tmux session '$vhost-dead'"
-         tmux -L netkit kill-session -t="$vhost-dead"
+         tmux -L netkit kill-session -t "$vhost-dead"
       fi
 
       # Remove filesystem (.disk file)
-      [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] && rm --force --verbose "${vhost_info[disk]}"
+      [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] && rm --force --verbose -- "${vhost_info[disk]}"
    fi
 done

@@ -168,7 +168,7 @@ EOF
       else
          options[$vhost]+="$option = $value<BR/>"
       fi
-   done < <(grep --extended-regexp --no-filename "^$hostname_regex\[.*\]=" "${lab_confs[@]}")
+   done < <(grep --extended-regexp --no-filename -- "^$hostname_regex\[.*\]=" "${lab_confs[@]}")
 
    # Label each machine with its hostname and vstart options
    for vhost in "${lab_vhosts[@]}"; do
@@ -206,7 +206,7 @@ lab_map() {
 
    local graph_generator="neato"
 
-   if ! command -v "$graph_generator" > /dev/null 2>&1; then
+   if ! command -v -- "$graph_generator" > /dev/null 2>&1; then
       echo 1>&2 "$SCRIPTNAME: $graph_generator: Graphviz graph generator not found"
       exit 1
    fi

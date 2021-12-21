@@ -196,13 +196,13 @@ get_lab_vhosts "$lab_directory"
 
 for vhost in "${lab_vhosts[@]}"; do
    bold_print "Halting '$vhost'... "
-   vhalt ${quick_mode:+"--quick"} ${remove_filesystem:+"--remove-fs"} "$vhost" && rm --force "$lab_directory/$vhost.ready"
+   "$NETKIT_HOME/bin/vhalt" ${quick_mode:+"--quick"} ${remove_filesystem:+"--remove-fs"} -- "$vhost" && rm --force -- "$lab_directory/$vhost.ready"
 done
 
 bold_print "Removing readyfor.test..."
-rm --force "$lab_directory/readyfor.test"
+rm --force -- "$lab_directory/readyfor.test"
 bold_print "Lab has been halted."
 bold_print "================================================================="
 
 # Show a list of running virtual machines, if asked to
-[ -n "$list_vhosts" ] && vlist
+[ -n "$list_vhosts" ] && "$NETKIT_HOME/bin/vlist"
