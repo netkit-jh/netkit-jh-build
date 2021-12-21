@@ -49,7 +49,7 @@ LCOMMON_SRC=1
 #   None
 ###############################################################################
 bold_print() {
-   echo -e "$color_bold$1$color_normal"
+   echo "$color_bold$1$color_normal"
 }
 
 
@@ -195,7 +195,7 @@ generate_info_str() {
       lab_info_str="<unknown>"
    fi
 
-   echo "$lab_info_str"
+   printf "%s\n" "$lab_info_str"
 }
 
 
@@ -220,7 +220,7 @@ get_lab_variable() {
 
    # Set lab variables from lab.conf. The sed expression prints only the first
    # matching line and deletes the variable name and equals sign.
-   sed --quiet "0,/^$variable=/s///p" "$lab_conf"
+   sed --quiet -- "0,/^$variable=/s///p" "$lab_conf"
 }
 
 
@@ -370,6 +370,6 @@ lab_crash() {
 
 
 # ANSI color escape sequences
-color_normal='\033[0m'
-color_bold='\033[1m'
-color_blue='\033[34m'
+color_normal=$'\033[0m'
+color_bold=$'\033[1m'
+color_blue=$'\033[34m'

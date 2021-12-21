@@ -108,16 +108,16 @@ SCRIPTNAME=$(basename -- "$0")
 
 
 # ANSI color escape sequences
-color_normal='\033[0m'
-color_bold_blue='\033[34;1m'
-color_cyan='\033[36m'
+color_normal=$'\033[0m'
+color_bold_blue=$'\033[34;1m'
+color_cyan=$'\033[36m'
 
 
 case $1 in
    start) 
       echo
       # The information block between the two line delimeters is coloured cyan
-      echo -e "$color_bold_blue--- Starting Netkit phase 1 init script ---$color_normal$color_cyan"
+      echo "$color_bold_blue--- Starting Netkit phase 1 init script ---$color_normal$color_cyan"
 
 
       # This short GNU AWK script processes /proc/cmdline (the command line
@@ -235,12 +235,12 @@ EOF
       fi
 
 
-      echo -e "$color_bold_blue--- Netkit phase 1 initialization terminated ---$color_normal"
+      echo "$color_bold_blue--- Netkit phase 1 initialization terminated ---$color_normal"
       echo
       ;;
    stop)
       echo
-      echo -e "$color_bold_blue--- Starting Netkit phase 1 shutdown script ---$color_normal$color_cyan"
+      echo "$color_bold_blue--- Starting Netkit phase 1 shutdown script ---$color_normal$color_cyan"
 
       mapfile -d "" -t full_command < <(gawk '
          BEGIN {
@@ -276,7 +276,7 @@ EOF
          done
       fi
 
-      echo -e "$color_bold_blue--- Netkit phase 1 shutdown terminated ---$color_normal"
+      echo "$color_bold_blue--- Netkit phase 1 shutdown terminated ---$color_normal"
       echo
       ;;
    *)

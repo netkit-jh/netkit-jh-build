@@ -100,9 +100,9 @@ test_delay=${1:-"0"}
 
 
 # ANSI color escape sequences
-color_blue='\033[34m'
-color_bold_blue='\033[34;1m'
-color_normal='\033[0m'
+color_blue=$'\033[34m'
+color_bold_blue=$'\033[34;1m'
+color_normal=$'\033[0m'
 
 
 # Test directories
@@ -120,7 +120,7 @@ if [ ! -d "$hostlab_dir" ]; then
 fi
 
 # Wait for lab to start (wait for readyfor.test)
-echo -en "${color_blue}Waiting for virtual machines to start... "
+echo -n "${color_blue}Waiting for virtual machines to start... "
 until [ -e "$hostlab_dir/readyfor.test" ]; do
    sleep 1
 done
@@ -129,7 +129,7 @@ echo "ok."
 
 
 if [ "$test_delay" != "0" ]; then
-   echo -e "${color_bold_blue}Waiting for the lab to settle...$color_normal$color_blue"
+   echo "${color_bold_blue}Waiting for the lab to settle...$color_normal$color_blue"
 
    if ! sleep "$test_delay" 2> /dev/null; then
       echo 1>&2 "$SCRIPTNAME: Invalid sleep time '$test_delay'"

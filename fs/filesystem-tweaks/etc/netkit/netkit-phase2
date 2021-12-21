@@ -84,9 +84,9 @@ SCRIPTNAME=$(basename -- "$0")
 
 
 # ANSI color escape sequences
-color_normal='\033[0m'
-color_bold_blue='\033[34;1m'
-color_cyan='\033[36m'
+color_normal=$'\033[0m'
+color_bold_blue=$'\033[34;1m'
+color_cyan=$'\033[36m'
 
 
 # Hostname has been set in netkit-phase1
@@ -125,7 +125,7 @@ done
 case $1 in
    start) 
       echo
-      echo -e "$color_bold_blue--- Starting Netkit phase 2 init script ---$color_normal$color_cyan"
+      echo "$color_bold_blue--- Starting Netkit phase 2 init script ---$color_normal$color_cyan"
 
 
       if [ -f /hostlab/shared.startup ]; then
@@ -161,17 +161,17 @@ case $1 in
          lab_description=$(get_lab_variable "LAB_DESCRIPTION" "/hostlab/" 2> /dev/null)
 
          echo
-         echo -e "$color_bold_blue##################################################"
+         echo "$color_bold_blue##################################################"
          echo
-         echo -e                   "Lab directory: $color_normal$color_cyan$hostlab"
-         echo -e "${color_bold_blue}Version:       $color_normal$color_cyan$lab_version"
-         echo -e "${color_bold_blue}Author:        $color_normal$color_cyan$lab_author"
-         echo -e "${color_bold_blue}Email:         $color_normal$color_cyan$lab_email"
-         echo -e "${color_bold_blue}URL:           $color_normal$color_cyan$lab_web"
-         echo -e "${color_bold_blue}Description:"
-         echo -e "$color_normal$color_cyan$lab_description"
+         echo                   "Lab directory: $color_normal$color_cyan$hostlab"
+         echo "${color_bold_blue}Version:       $color_normal$color_cyan$lab_version"
+         echo "${color_bold_blue}Author:        $color_normal$color_cyan$lab_author"
+         echo "${color_bold_blue}Email:         $color_normal$color_cyan$lab_email"
+         echo "${color_bold_blue}URL:           $color_normal$color_cyan$lab_web"
+         echo "${color_bold_blue}Description:"
+         echo "$color_normal$color_cyan$lab_description"
          echo
-         echo -e "$color_bold_blue##################################################$color_normal"
+         echo "$color_bold_blue##################################################$color_normal"
          echo
 
          touch "/hostlab/$hostname.ready"
@@ -181,12 +181,12 @@ case $1 in
       [ -n "$test_delay" ] && /etc/netkit/netkit-test-phase "$test_delay"
       
 
-      echo -e "$color_bold_blue--- Netkit phase 2 initialization terminated ---$color_normal"
+      echo "$color_bold_blue--- Netkit phase 2 initialization terminated ---$color_normal"
       echo
       ;;
    stop)
       echo
-      echo -e "$color_bold_blue--- Starting Netkit phase 2 shutdown script ---$color_normal$color_cyan"
+      echo "$color_bold_blue--- Starting Netkit phase 2 shutdown script ---$color_normal$color_cyan"
 
 
       if [ -f "/hostlab/$hostname.shutdown" ]; then
@@ -206,7 +206,7 @@ case $1 in
       fi
 
 
-      echo -e "$color_bold_blue--- Netkit shutdown phase 2 terminated ---$color_normal"
+      echo "$color_bold_blue--- Netkit shutdown phase 2 terminated ---$color_normal"
       echo
       ;;
    *)
