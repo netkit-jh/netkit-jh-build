@@ -159,7 +159,7 @@ case $action in
                [ "$(id --user "$target_user")" != "$uid" ] && continue
             fi
 
-            device=$(basename "$sys_class_net_entry")
+            device=$(basename -- "$sys_class_net_entry")
 
             printf "\t%s...\t\t\t" "$device"
             if ! sudo ifconfig "$device" down > /dev/null 2>&1; then

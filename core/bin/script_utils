@@ -274,7 +274,7 @@ show_version() {
       # By default, the compiled kernel is a symbolic link
       [ -L "$kernel_filepath" ] && kernel_filepath=$(readlink "$kernel_filepath")
       
-      kernel_filename=$(basename "$kernel_filepath")
+      kernel_filename=$(basename -- "$kernel_filepath")
       kernel_version=${kernel_filename##"netkit-kernel-"}
 
       if [ "$kernel_version" = "$kernel_filename" ]; then

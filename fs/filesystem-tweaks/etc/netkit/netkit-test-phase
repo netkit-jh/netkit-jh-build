@@ -95,7 +95,7 @@ kill_heartbeat() {
 }
 
 
-SCRIPTNAME=$(basename "$0")
+SCRIPTNAME=$(basename -- "$0")
 test_delay=${1:-"0"}
 
 

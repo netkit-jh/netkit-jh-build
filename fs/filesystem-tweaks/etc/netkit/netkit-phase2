@@ -80,7 +80,7 @@ get_lab_variable() {
 }
 
 
-SCRIPTNAME=$(basename "$0")
+SCRIPTNAME=$(basename -- "$0")
 
 
 # ANSI color escape sequences

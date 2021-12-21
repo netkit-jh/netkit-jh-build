@@ -57,7 +57,7 @@ usage_line() {
 }
 
 
-SCRIPTNAME=$(basename "$0")
+SCRIPTNAME=$(basename -- "$0")
 
 
 case $1 in

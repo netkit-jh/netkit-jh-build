@@ -104,7 +104,7 @@ umount_host_dir() {
 }
 
 
-SCRIPTNAME=$(basename "$0")
+SCRIPTNAME=$(basename -- "$0")
 
 
 # ANSI color escape sequences

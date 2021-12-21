@@ -95,7 +95,7 @@ get_lab_vhosts() {
          # directory exists.
          [ ! -d "$dir" ] && continue
 
-         vhost=$(basename "$dir")
+         vhost=$(basename -- "$dir")
 
          # Avoid the shared and _test directories
          array_contains "$vhost" "${invalid_hostnames[@]}" && continue
@@ -256,7 +256,7 @@ lab_welcome() {
          exit 1
       fi
 
-      lab=$(basename "$dir")
+      lab=$(basename -- "$dir")
 
       lab_directories_str+=$indent$dir$'\n'
       indent="                    "

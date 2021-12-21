@@ -246,7 +246,7 @@ kill_hubs() {
 }
 
 
-SCRIPTNAME=$(basename "$0")
+SCRIPTNAME=$(basename -- "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
