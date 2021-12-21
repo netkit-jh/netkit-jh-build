@@ -154,6 +154,8 @@ print_vhost_summary() {
       # No column will be truncated on a value that is too long
       printf "%-20s %-20s %5d %9d   " "${vhost_info[owner]}" "${vhost_info[umid]}" "${vhost_info[pid]}" "${vhost_info[memory_usage]}"
 
+      separator=""
+
       for i in "${!vhost_sockets[@]}"; do
          socket_filepath=${vhost_sockets[$i]}
          hub_name=$(get_hub_socket_domain "$socket_filepath")
@@ -165,8 +167,6 @@ print_vhost_summary() {
          # Comma-separate subsequent interfaces
          separator=", "
       done
-
-      unset separator
 
       echo
    done
