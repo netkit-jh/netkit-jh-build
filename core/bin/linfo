@@ -268,7 +268,7 @@ while true; do
          fi
          ;;
       -d)
-         lab_directories+=( "$(readlink --canonicalize-missing "$2")" )
+         lab_directories+=( "$(readlink --canonicalize-missing -- "$2")" )
          shift
          ;;
       --help)

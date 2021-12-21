@@ -238,11 +238,11 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -d)
-         mount_point=$(readlink --canonicalize-missing "$2")
+         mount_point=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       -f|--filesystem)
-         filesystem=$(readlink --canonicalize-missing "$2")
+         filesystem=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       --help)

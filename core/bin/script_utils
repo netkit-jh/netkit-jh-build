@@ -272,7 +272,7 @@ show_version() {
       kernel_filepath=$VM_KERNEL
 
       # By default, the compiled kernel is a symbolic link
-      [ -L "$kernel_filepath" ] && kernel_filepath=$(readlink "$kernel_filepath")
+      [ -L "$kernel_filepath" ] && kernel_filepath=$(readlink -- "$kernel_filepath")
       
       kernel_filename=$(basename -- "$kernel_filepath")
       kernel_version=${kernel_filename##"netkit-kernel-"}

@@ -513,7 +513,7 @@ while true; do
          ;;
       -f|--filesystem)
          # Filepath is validated with validate_ubd_argument later
-         filesystem=$(readlink --canonicalize-missing "$2")
+         filesystem=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       -H|--no-hosthome)
@@ -523,7 +523,7 @@ while true; do
          usage 0
          ;;
       -k|--kernel)
-         VM_KERNEL=$(readlink --canonicalize-missing "$2")
+         VM_KERNEL=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       -l|--hostlab)
@@ -542,7 +542,7 @@ while true; do
          ;;
       -m|--model-fs)
          # Filepath is validated with validate_ubd_argument later
-         VM_MODEL_FS=$(readlink --canonicalize-missing "$2")
+         VM_MODEL_FS=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       --mount)
