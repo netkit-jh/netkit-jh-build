@@ -350,12 +350,12 @@ get_tap_interface() {
    # 'nk_foobarbarbaz'. Using the SHA-256 digest of the target user and
    # truncating to 12 chracters will be sufficient for ensuring uniqueness on a
    # system with many users.
-   # Appending "_$domain" allows users to have multiple tap interfaces. The
-   # underscore delimiter prevents collisions with other users.
+   # Appending the domain name's SHA-512 digest allows for a unique interface
+   # per (user, domain) tuple.
    user_sha256=$(echo -n "$target_user" | sha256sum | awk '{ print $1 }')
    domain_sha256=$(echo -n "$domain" | sha256sum | awk '{ print $1 }')
 
-   interface_sha256=$(echo -n "${user_sha256}_$domain_sha256" | sha256sum | awk '{ print $1 }')
+   interface_sha256=$(echo -n "$user_sha256$domain_sha256" | sha256sum | awk '{ print $1 }')
 
    echo "nk_${interface_sha256:0:12}"
 }
@@ -391,7 +391,65 @@ get_hub_socket() {
 
    # We truncate the SHA-256 digests to avoid hitting the maximum filename
    # length.
-   echo "$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${user_sha256:0:8}_${tap:+"tap_"}${domain_sha256:0:8}$HUB_SOCKET_EXTENSION"
+   echo "$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${user_sha256:0:8}_${tap:+"tap_"}${domain_sha256:0:8}_$domain$HUB_SOCKET_EXTENSION"
+}
+
+
+###############################################################################
+# Check if a given socket filepath is a UML 'tap' socket
+# Usage:
+#   is_tap HUB
+# Globals:
+#   r- HUB_SOCKET_PREFIX
+# Arguments:
+#   $1 - hub socket filepath
+# Returns:
+#   0 if file is a tap socket, non-zero if not
+# Example:
+#   None
+###############################################################################
+is_tap() {
+   # shellcheck disable=SC2155
+   local hub_socket=$(basename -- "$1")
+
+   # Remove prefix and user SHA-256
+   local hub_name_ext=${hub_socket#"$HUB_SOCKET_PREFIX"_*_}
+
+   [ "${hub_name_ext:0:4}" = "tap_" ] && return 0 || return 1
+}
+
+
+###############################################################################
+# Extract the collision domain name from a hub socket filepath
+# Usage:
+#   get_hub_socket_domain HUB
+# Globals:
+#   r- HUB_SOCKET_EXTENSION
+#   r- HUB_SOCKET_PREFIX
+# Arguments:
+#   $1 - hub socket filepath
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+get_hub_socket_domain() {
+   # shellcheck disable=SC2155
+   local hub_socket=$(basename -- "$1")
+
+   local hub_name_ext hub_name
+
+   # Remove prefix, user SHA-256, tap specifier (if exists), and collision
+   # domain SHA-256.
+   hub_name_ext=${hub_socket#"$HUB_SOCKET_PREFIX"_*_}
+   hub_name_ext=${hub_name_ext#"tap_"}
+   hub_name_ext=${hub_name_ext:8}
+   hub_name_ext=${hub_name_ext#"_"}
+
+   # Remove extension
+   hub_name=${hub_name_ext%"$HUB_SOCKET_EXTENSION"}
+
+   echo "$hub_name"
 }
 
 

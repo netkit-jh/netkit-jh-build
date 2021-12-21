@@ -118,7 +118,7 @@ print_vhost_summary() {
    local pid pgid
    local total_memory_usage
    local i separator
-   local socket_filename hub_name_and_ext hub_name
+   local socket_filepath hub_name tap
 
    # Column spacing:
    #   USER    20
@@ -155,12 +155,12 @@ print_vhost_summary() {
       printf "%-20s %-20s %5d %9d   " "${vhost_info[owner]}" "${vhost_info[umid]}" "${vhost_info[pid]}" "${vhost_info[memory_usage]}"
 
       for i in "${!vhost_sockets[@]}"; do
-         socket_filename=$(basename "${vhost_sockets[$i]}")
+         socket_filepath=${vhost_sockets[$i]}
+         hub_name=$(get_hub_socket_domain "$socket_filepath")
 
-         hub_name_and_ext=${socket_filename#${HUB_SOCKET_PREFIX}_*_}
-         hub_name=${hub_name_and_ext%$HUB_SOCKET_EXTENSION}
+         is_tap "$socket_filepath" && tap=" (tap)" || tap=""
 
-         echo -n "${separator}eth$i @ $hub_name"
+         echo -n "${separator}eth$i @ $hub_name$tap"
          
          # Comma-separate subsequent interfaces
          separator=", "
@@ -200,7 +200,7 @@ print_vhost_info_by_name() {
    local vhost=$2
 
    local i indent
-   local socket_filepath socket_filename hub_name_and_ext hub_name   
+   local socket_filepath hub_name tap
 
    # Fill vhost_info and vhost_sockets global arrays
    get_vhost_info_by_name "$target_user" "$vhost"
@@ -226,14 +226,11 @@ print_vhost_info_by_name() {
    if [ "${#vhost_sockets[@]}" -gt 0 ]; then
       for i in "${!vhost_sockets[@]}"; do
          socket_filepath=${vhost_sockets[$i]}
-         socket_filename=$(basename "$socket_filepath")
+         hub_name=$(get_hub_socket_domain "$socket_filepath")
 
-         # TODO: this does not get the hub name anymore (since sockets are
-         # named with the SHA-256 digest of the collision domain name).
-         hub_name_and_ext=${socket_filename#$HUB_SOCKET_PREFIX_*_}
-         hub_name=${hub_name_and_ext%$HUB_SOCKET_EXTENSION}
+         is_tap "$socket_filepath" && tap="tap; " || tap=""
 
-         echo "${indent}eth$i @ $hub_name ($socket_filepath)"
+         echo "${indent}eth$i @ $hub_name ($tap$socket_filepath)"
 
          # Indent subsequent lines
          indent="                    "

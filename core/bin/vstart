@@ -292,7 +292,7 @@ setup_interfaces() {
    local hub_specification hub_name tap_address guest_address
    local reg_hub_socket tap_hub_socket hub_socket
    local device used_devices
-   local enabled_default_route indent
+   local enabled_default_route indent tap
 
    unset HUB_LIST
 
@@ -361,6 +361,8 @@ setup_interfaces() {
             kernel_cmd+=( "def_route=$tap_address" )
             enabled_default_route=true
          fi
+
+         tap="tap; "
       else
          if [ -e "$tap_hub_socket" ]; then
             echo 1>&2 "$SCRIPTNAME: $hub_name: Tap hub socket under the same collision domain already exists"
@@ -370,11 +372,13 @@ setup_interfaces() {
          hub_socket=$reg_hub_socket
 
          HUB_LIST+=( "$hub_name" )
+
+         tap=""
       fi
 
       kernel_cmd+=( "$device=daemon,,,$hub_socket" )
 
-      echo "$indent$device @ $hub_name ($hub_socket)"
+      echo "$indent$device @ $hub_name ($tap$hub_socket)"
 
       # Indent subsequent lines
       indent="                "
