@@ -99,7 +99,7 @@ if [ -z "$NETKIT_HOME" ]; then
 fi
 
 # shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
+. -- "$NETKIT_HOME/bin/script_utils"
 
 # Write to the vcommands log
 log_write "$0 $*"

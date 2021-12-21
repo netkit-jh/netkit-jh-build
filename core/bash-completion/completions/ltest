@@ -106,8 +106,8 @@ _ltest() {
 
 
 # shellcheck source=../helpers
-. "$NETKIT_HOME/bash-completion/helpers"
+. -- "$NETKIT_HOME/bash-completion/helpers"
 # shellcheck source=./vstart
-. "$NETKIT_HOME/bash-completion/completions/vstart"
+. -- "$NETKIT_HOME/bash-completion/completions/vstart"
 
 complete -F _ltest ltest

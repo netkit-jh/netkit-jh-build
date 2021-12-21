@@ -97,6 +97,6 @@ _vlist() {
 
 
 # shellcheck source=../helpers
-. "$NETKIT_HOME/bash-completion/helpers"
+. -- "$NETKIT_HOME/bash-completion/helpers"
 
 complete -F _vlist vlist

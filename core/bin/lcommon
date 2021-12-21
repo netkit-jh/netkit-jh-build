@@ -31,7 +31,7 @@ LCOMMON_SRC=1
 
 
 # shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
+. -- "$NETKIT_HOME/bin/script_utils"
 
 
 ###############################################################################
@@ -366,7 +366,7 @@ lab_crash() {
 
 
 # shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
+. -- "$NETKIT_HOME/bin/script_utils"
 
 
 # ANSI color escape sequences

@@ -1157,9 +1157,9 @@ collision_domain_name_regex="([[:alnum:]_.-]+)"
 # shellcheck disable=SC1091
 [ -f /etc/netkit.conf ] && . "/etc/netkit.conf"
 # shellcheck source=../netkit.conf
-[ -f "$NETKIT_HOME/netkit.conf" ] && . "$NETKIT_HOME/netkit.conf"
+[ -f "$NETKIT_HOME/netkit.conf" ] && . -- "$NETKIT_HOME/netkit.conf"
 # shellcheck disable=SC1091
-[ -f "$HOME/.netkit/netkit.conf" ] && . "$HOME/.netkit/netkit.conf"
+[ -f "$HOME/.netkit/netkit.conf" ] && . -- "$HOME/.netkit/netkit.conf"
 
 
 # Assign default values to undefined parameters

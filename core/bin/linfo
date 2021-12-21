@@ -223,9 +223,9 @@ if [ -z "$NETKIT_HOME" ]; then
 fi
 
 # shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
+. -- "$NETKIT_HOME/bin/script_utils"
 # shellcheck source=./lcommon
-. "$NETKIT_HOME/bin/lcommon"
+. -- "$NETKIT_HOME/bin/lcommon"
 
 # Write to the vcommands log
 log_write "$0 $*"

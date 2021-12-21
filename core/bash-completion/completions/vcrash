@@ -98,6 +98,6 @@ _vcrash() {
 
 
 # shellcheck source=../helpers
-. "$NETKIT_HOME/bash-completion/helpers"
+. -- "$NETKIT_HOME/bash-completion/helpers"
 
 complete -F _vcrash vcrash
