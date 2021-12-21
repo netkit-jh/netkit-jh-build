@@ -58,7 +58,7 @@ _vstart() {
       #   --pass --model-fs=./foo
       # the previous_word variable should be set to '--model-fs' because
       # COMP_WORDBREAKS usually contains an equals sign.
-      local previous_word=""
+      previous_word=""
    fi
 
    # If the current word is the first argument, it cannot be an option
