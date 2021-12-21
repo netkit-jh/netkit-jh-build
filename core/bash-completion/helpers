@@ -255,6 +255,51 @@ _get_lab_vhosts() {
 }
 
 
+###############################################################################
+# Set array variable to a list of active collision domains taken from vlist
+# Usage:
+#   _get_active_collision_domains COLLISION_DOMAINS_NAME_REF
+# Globals:
+#   None
+# Arguments:
+#   $1 - name reference to array variable
+# Returns:
+#   None
+# Example:
+#   local collision_domains
+#   _get_active_collision_domains "collision_domains"
+#   echo "${collision_domains[*]}"
+###############################################################################
+_get_active_collision_domains() {
+   local -n _get_active_collision_domains_collision_domains=$1
+
+   local interfaces interface collision_domain
+
+   local -A collision_domains_dict
+
+   # Get array of 'eth0@CD0', 'eth1@CD1', 'eth0@CD1', 'eth1@TAP(tap)', ...
+   IFS="," read -r -a interfaces < <(
+      "$NETKIT_HOME/bin/vlist" --no-header |
+      head --lines -3 |
+      awk '{ for (i=5; i<=NF; ++i) printf $i; printf "," }'
+   )
+
+   for interface in "${interfaces[@]}"; do
+      # Extract just the right-hand side of the specification
+      collision_domain=${interface#*@}
+
+      # Remove possible '(tap)' indicator
+      collision_domain=${collision_domain%"(tap)"}
+
+      # We use an associative array because key values must be unique
+      collision_domains_dict[$collision_domain]=
+   done
+
+   # Convert the associative array back to a regular one
+   _get_active_collision_domains_collision_domains=( "${!collision_domains_dict[@]}" )
+}
+
+
 if [ -z "$NETKIT_HOME" ]; then
    echo 1>&2 "$(basename -- "$0"): The NETKIT_HOME environment variable is not set"
    exit 1
