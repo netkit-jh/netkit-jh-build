@@ -72,15 +72,15 @@ _expand_eth_option() {
    # (or similar) to get the completions. Therefore, we source in a subshell
    # and extract just the value of MAX_INTERFACES.
    # shellcheck source=../bin/script_utils
-   max_interfaces=$(. -- "$NETKIT_HOME/bin/script_utils"; echo "$MAX_INTERFACES")
+   max_interfaces=$(. -- "$NETKIT_HOME/bin/script_utils"; printf "%s\n" "$MAX_INTERFACES")
 
    for option in "$@"; do
       [ "$option" = "--ethN=" ] && continue
-      echo "$option"
+      printf "%s\n" "$option"
    done
 
    for ((i = 0; i <= max_interfaces; ++i)) do
-      echo "--eth$i="
+      printf "--eth%d=\n" "$i"
    done
 }
 
@@ -126,7 +126,7 @@ _get_netkit_user() {
    # Iterate over the command-line arguments
    for word in "$@"; do
       if [ -n "$user_flag" ]; then
-         echo "$word"
+         printf "%s\n" "$word"
          return
       fi
 
@@ -161,7 +161,7 @@ _get_lab_directory() {
    # Iterate over the command-line arguments
    for word in "$@"; do
       if [ -n "$d_flag" ]; then
-         echo "$word"
+         printf "%s\n" "$word"
          return
       fi
 
@@ -170,7 +170,7 @@ _get_lab_directory() {
       [ "$word" = "-d" ] && d_flag=1
    done
 
-   echo "$PWD"
+   printf "%s\n" "$PWD"
 }
 
 

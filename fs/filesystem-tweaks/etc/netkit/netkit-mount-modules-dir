@@ -88,13 +88,13 @@ case $1 in
 
          # Write access is needed for depmod in order to work properly
          mkdir --parents /lib/modules
-         mount none /lib/modules/ --types hostfs --options "rw,$modules"
+         mount --types hostfs --options "rw,$modules" --source none --target /lib/modules/
       else
          echo "Modules directory not mounted"
       fi
       ;;
    stop)
-      kernel_version=$(uname -r)
+      kernel_version=$(uname --kernel-release)
       if [ -f "/lib/modules/$kernel_version/modules.dep" ]; then
          echo "Unmounting /lib/modules"
          umount /lib/modules

@@ -56,8 +56,8 @@ usage_line() {
 #   None
 ###############################################################################
 heartbeat() {
-   local cursor_hide='\033[?25l'
-   echo -en "$cursor_hide"
+   local cursor_hide=$'\033[?25l'
+   echo -n "$cursor_hide"
 
    while true; do
       echo -en ".  \b\b\b"
@@ -89,9 +89,9 @@ heartbeat() {
 #   None
 ###############################################################################
 kill_heartbeat() {
-   local cursor_show='\033[?25h'
+   local cursor_show=$'\033[?25h'
    kill "$heartbeat_pid"
-   echo -en "$cursor_show"
+   echo -n "$cursor_show"
 }
 
 
@@ -131,7 +131,7 @@ echo "ok."
 if [ "$test_delay" != "0" ]; then
    echo "${color_bold_blue}Waiting for the lab to settle...$color_normal$color_blue"
 
-   if ! sleep "$test_delay" 2> /dev/null; then
+   if ! sleep -- "$test_delay" 2> /dev/null; then
       echo 1>&2 "$SCRIPTNAME: Invalid sleep time '$test_delay'"
       usage_line
       halt
@@ -139,7 +139,7 @@ if [ "$test_delay" != "0" ]; then
 fi
 
 
-mkdir --parents "$test_results_dir" || exit 1
+mkdir --parents -- "$test_results_dir" || exit 1
 
 ###############################################################################
 # Run user defined tests
@@ -193,5 +193,5 @@ kill_heartbeat
 
 echo "Done."
 echo "This virtual machine should automatically shut down in a while."
-touch "$hostlab_dir/$HOSTNAME.testdone"
+touch -- "$hostlab_dir/$HOSTNAME.testdone"
 halt

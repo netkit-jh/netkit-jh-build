@@ -74,9 +74,9 @@ mount_host_dir() {
    local guest_dir=$2
    local message=$3
 
-   [ -n "$message" ] && echo "$message"
-   mkdir --parents "$guest_dir"
-   mount none "$guest_dir" --types hostfs --options "rw,$host_dir"
+   [ -n "$message" ] && printf "%s\n" "$message"
+   mkdir --parents -- "$guest_dir"
+   mount --types hostfs --options "rw,$host_dir" --source none --target "$guest_dir"
 }
 
 
@@ -98,9 +98,9 @@ umount_host_dir() {
    local guest_dir=$1
    local message=$2
 
-   [ -n "$message" ] && echo "$message"
-   umount "$guest_dir"
-   rmdir "$guest_dir"
+   [ -n "$message" ] && printf "%s\n" "$message"
+   umount -- "$guest_dir"
+   rmdir -- "$guest_dir"
 }
 
 
@@ -159,7 +159,7 @@ case $1 in
 
 
       # Set title for the terminal window with special xterm escape sequence
-      [ -n "$hostname" ] && echo -en "\033]2;$hostname\a"
+      [ -n "$hostname" ] && printf "%b%s%b" "\033]2;" "$hostname" "\a"
 
       # Mount host directories inside the guest
       if [ "${#mount_specifications[@]}" -gt 0 ]; then
@@ -179,7 +179,7 @@ case $1 in
       if [ ! -e /etc/netkit/.vhostconfigured ]; then
          if [ -n "$hostname" ]; then
             echo "Configuring host name"
-            echo "$hostname" > /etc/hostname
+            printf "%s\n" "$hostname" > /etc/hostname
             hostname --file /etc/hostname
 
             # Prepend IPv4 localhost entry to hosts file
@@ -195,7 +195,7 @@ case $1 in
             echo "Copying shared files from '/hostlab/shared/'"
             # Copy shared files without following symbolic links. Ignore file
             # ownership.
-			   cp --recursive --no-preserve ownership --no-dereference --preserve=links --target-directory / "${shared_files[@]}"
+			   cp --recursive --no-preserve ownership --no-dereference --preserve=links --target-directory / -- "${shared_files[@]}"
          fi
 
          # File check avoids need to set the nullglob shell option
@@ -204,7 +204,7 @@ case $1 in
             echo "Copying $hostname-specific files from '/hostlab/$hostname/'"
             # Copy host-specific files without following symbolic links. Ignore
             # file ownership.
-            cp --recursive --no-preserve ownership --no-dereference --preserve=links --target-directory / "${host_files[@]}"
+            cp --recursive --no-preserve ownership --no-dereference --preserve=links --target-directory / -- "${host_files[@]}"
          fi
 
          # Only perform these actions on the machine's first boot (if a shared

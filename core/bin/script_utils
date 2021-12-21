@@ -263,7 +263,7 @@ show_version() {
 
    netkit_version=$(grep -- "Netkit version" "$NETKIT_HOME/netkit-version" 2> /dev/null)
    netkit_version=${netkit_version##"Netkit version "}
-   echo "${netkit_version:-"<unknown>"}"
+   printf "%s\n" "${netkit_version:-"<unknown>"}"
    
    # Netkit kernel version information
    echo -n "Netkit kernel version:     "
@@ -280,7 +280,7 @@ show_version() {
       if [ "$kernel_version" = "$kernel_filename" ]; then
          echo "<unknown>"
       else
-         echo "$kernel_version"
+         printf "%s\n" "$kernel_version"
       fi
    else
       echo "<unknown>"
@@ -290,11 +290,11 @@ show_version() {
    echo -n "Netkit filesystem version: "
    filesystem_version_long=$(cat -- "$NETKIT_HOME/fs/netkit-filesystem-version" 2> /dev/null)
    filesystem_version=${filesystem_version_long##"Netkit-JH filesystem version "}
-   echo "${filesystem_version:-"<unknown>"}"
+   printf "%s\n" "${filesystem_version:-"<unknown>"}"
    
    # Host kernel version information
    echo -n "Host kernel version:       "
-   uname -r
+   uname --kernel-release
 }
 
 
@@ -353,10 +353,10 @@ get_tap_interface() {
    # system with many users.
    # Appending the domain name's SHA-512 digest allows for a unique interface
    # per (user, domain) tuple.
-   user_sha256=$(echo -n "$target_user" | sha256sum | awk '{ print $1 }')
-   domain_sha256=$(echo -n "$domain" | sha256sum | awk '{ print $1 }')
+   user_sha256=$(printf "%s" "$target_user" | sha256sum | awk '{ print $1 }')
+   domain_sha256=$(printf "%s" "$domain" | sha256sum | awk '{ print $1 }')
 
-   interface_sha256=$(echo -n "$user_sha256$domain_sha256" | sha256sum | awk '{ print $1 }')
+   interface_sha256=$(printf "%s" "$user_sha256$domain_sha256" | sha256sum | awk '{ print $1 }')
 
    echo "nk_${interface_sha256:0:12}"
 }
@@ -387,8 +387,8 @@ get_hub_socket() {
    
    local user_sha256 domain_sha256
 
-   user_sha256=$(echo -n "$USER_ID" | sha256sum | awk '{ print $1 }')
-   domain_sha256=$(echo -n "$domain" | sha256sum | awk '{ print $1 }')
+   user_sha256=$(printf "%s" "$USER_ID" | sha256sum | awk '{ print $1 }')
+   domain_sha256=$(printf "%s" "$domain" | sha256sum | awk '{ print $1 }')
 
    # We truncate the SHA-256 digests to avoid hitting the maximum filename
    # length.
@@ -450,7 +450,7 @@ get_hub_socket_domain() {
    # Remove extension
    hub_name=${hub_name_ext%"$HUB_SOCKET_EXTENSION"}
 
-   echo "$hub_name"
+   printf "%s\n" "$hub_name"
 }
 
 

@@ -75,8 +75,8 @@ get_lab_variable() {
 
    # Set lab variables from lab.conf. The sed expression prints only the first
    # matching line and deletes the variable name and equals sign.
-   value=$(sed --quiet "0,/^$variable=/s///p" "$lab_conf")
-   echo "${value:-"<unknown>"}"
+   value=$(sed --quiet -- "0,/^$variable=/s///p" "$lab_conf")
+   printf "%s\n" "${value:-"<unknown>"}"
 }
 
 
