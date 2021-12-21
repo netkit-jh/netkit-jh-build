@@ -271,7 +271,7 @@ check_filesystem() {
 # Usage:
 #   setup_interfaces [INTERFACE]...
 # Globals:
-#   -w HUB_LIST
+#   -w hub_list
 #   r- HUB_SOCKET_DIR
 #   r- HUB_SOCKET_EXTENSION
 #   r- HUB_SOCKET_PREFIX
@@ -294,7 +294,7 @@ setup_interfaces() {
    local device used_devices
    local enabled_default_route indent tap
 
-   unset HUB_LIST
+   unset hub_list
 
    [ "${#interface_specifications[@]}" -eq 0 ] && return
 
@@ -352,7 +352,7 @@ setup_interfaces() {
 
          hub_socket=$tap_hub_socket
 
-         HUB_LIST+=( "$hub_name,$tap_address" )
+         hub_list+=( "$hub_name,$tap_address" )
 
          kernel_cmd+=( "autoconf_$device=$guest_address" )
 
@@ -371,7 +371,7 @@ setup_interfaces() {
 
          hub_socket=$reg_hub_socket
 
-         HUB_LIST+=( "$hub_name" )
+         hub_list+=( "$hub_name" )
 
          tap=""
       fi
@@ -416,7 +416,7 @@ remove_fs_command() {
 # Usage:
 #   run_kernel FILE KERNEL_CMD...
 # Globals:
-#   r- HUB_LIST
+#   r- hub_list
 # Arguments:
 #   $1 - filesystem (.disk) file to remove. Empty string to not remove it
 #  ... - kernel invocation command line arguments
@@ -432,7 +432,7 @@ run_kernel() {
    [ -n "$filesystem" ] && remove_fs_command "$filesystem" &
 
    "${kernel_cmd[@]}"
-   clean_hubs "${HUB_LIST[@]}"
+   clean_hubs "${hub_list[@]}"
 }
 
 
@@ -885,7 +885,7 @@ fi
 
 
 # Start network hubs
-run_hubs "$verbose" "$just_print" "${HUB_LIST[@]}"
+run_hubs "$verbose" "$just_print" "${hub_list[@]}"
 
 
 # Completely hide primary console, if requested to
