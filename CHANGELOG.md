@@ -2,7 +2,7 @@
 ## Added
 - Command tab-completion (in Bash) including machine name and collision domain completion
 - `--mount` option to `vstart` - mount any host folder inside a machine
-- Ability to use a _test/shared.test script to run the same script for all hosts with `ltest`. Script output is stored in _test/results/$hostname.shared
+- Ability to use a _test/shared.test script to run the same script for all hosts with `ltest`. Script output is stored in _test/results/`$hostname`.shared
 - Multiple taps can be created for machines to have their own unique interfaces (they can still share if the same collision domain is used)
 - Support for whitespace (and some other special characters) in arguments
 - Support for whitespace in the lab directory path
@@ -32,7 +32,8 @@
 - `-p`|`--print` option has been changed to `-n`|`--dry-run`|`--just-print`|`--recon` for `vconf`, `vpackage`, and `vstart`. This follows what the Make utility uses
 - `--clean-all` in `vclean` now removes all items inside Netkit directories (`$HOME`/.netkit/, `$MCONSOLE_DIR`/, and `$HUB_SOCKET_DIR`/)
 - `--clean-all` in `vclean` now affects machines owned by all users
-- Machine names must conform to the Debian standard (which conforms to the RFC standard too)
+- Machine names must conform to the Debian standard (which conforms to the RFC standard too). See `hostname_regex` in core/bin/script_utils for more guidance
+- Collision domain names must conform to a regular expression and length-check. See `collision_domain_name_regex` in core/bin/script_utils for more guidance
 - Better output when multiple labs are specified in `linfo -m`
 - tmux sessions are now named `netkit-vhost` (orig. `netkit-vm`)
 - Tap interfaces are named `nk_$interface_sha256`, where `interface_sha256` is an 12-character (truncated) SHA-256 digest of the collision domain name SHA-256 appended to the owner's username's SHA-256 for uniqueness and avoiding character set issues
