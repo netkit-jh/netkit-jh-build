@@ -57,7 +57,7 @@ _vdump() {
          *)
             # Current word could be an option or collision domain name (non-
             # option argument), so we complete as a collision domain name.
-            _get_active_collision_domains "collision_domains"
+            _get_active_collision_domains "collision_domains" "" "$(id --name --user)"
             mapfile -t COMPREPLY < <(compgen -W "${collision_domains[*]}" -- "$current_word")
             ;;
       esac
@@ -84,7 +84,7 @@ _vdump() {
                # Current word could be an option or collision domain name
                # (non-option argument), so we complete as a collision domain
                # name.
-               _get_active_collision_domains "collision_domains"
+               _get_active_collision_domains "collision_domains" "" "$(id --name --user)"
                mapfile -t COMPREPLY < <(compgen -W "${collision_domains[*]}" -- "$current_word")
                ;;
          esac
