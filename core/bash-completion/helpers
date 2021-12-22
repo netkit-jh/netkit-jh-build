@@ -260,6 +260,34 @@ _get_lab_vhosts() {
 ###############################################################################
 # Set array variable to a list of active collision domains taken from vlist
 # Usage:
+#   _get_active_vhosts ACTIVE_VHOSTS_NAME_REF [USER]
+# Globals:
+#   None
+# Arguments:
+#   $1 - name reference to array variable
+#   $2 - optional target user
+# Returns:
+#   None
+# Example:
+#   local active_vhosts
+#   _get_active_vhosts "active_vhosts" "," "$(id --name --user)"
+#   echo "${active_vhosts[*]}"
+###############################################################################
+_get_active_vhosts() {
+   local -n _get_active_vhosts_active_vhosts=$1
+   local target_user=$2
+
+   mapfile -t _get_active_vhosts_active_vhosts < <(
+      "$NETKIT_HOME/bin/vlist" --no-header ${target_user:+"--user=$target_user"} |
+      head --lines -3 |
+      awk '{ print $2 }'
+   )
+}
+
+
+###############################################################################
+# Set array variable to a list of active collision domains taken from vlist
+# Usage:
 #   _get_active_collision_domains COLLISION_DOMAINS_NAME_REF TAP_APPEND [USER]
 # Globals:
 #   None
