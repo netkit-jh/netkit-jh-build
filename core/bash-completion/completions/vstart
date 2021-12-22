@@ -41,6 +41,8 @@
 _vstart() {
    local options
 
+   local collision_domains
+
    local current_word=${COMP_WORDS[COMP_CWORD]}
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
 
@@ -80,9 +82,9 @@ _vstart() {
       -e|--exec)
          mapfile -t COMPREPLY < <(compgen -A command -- "$current_word");;
       --eth*)
-         # TODO: fix this
-         WORDLIST="$(vlist --no-header | awk -v FS="@ *|, *" '{for (i=2; i<=NF; i+=2) {print $i}}' | sort | uniq) tap,"
-         mapfile -t COMPREPLY < <(compgen -W "$WORDLIST" -- "$current_word");;
+         _get_active_collision_domains "collision_domains" "," "$(id --name --user)"
+         mapfile -t COMPREPLY < <(compgen -W "${collision_domains[*]}" -- "$current_word")
+         ;;
       -f|--filesystem)
          mapfile -t COMPREPLY < <(compgen -A file -- "$current_word");;
       -k|--kernel)

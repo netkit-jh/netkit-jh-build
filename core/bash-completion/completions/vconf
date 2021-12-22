@@ -39,7 +39,7 @@
 _vconf() {
    local options
 
-   local target_user active_vhosts
+   local active_vhosts target_user collision_domains
 
    local current_word=${COMP_WORDS[COMP_CWORD]}
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
@@ -71,11 +71,13 @@ _vconf() {
    # will be an option or another non-option argument.
    case $previous_word in
       --eth*)
-         # TODO: fix this?
-         WORDLIST="$(vlist --no-header | awk '{print $NF}' | sort | uniq) tap,"
-         mapfile -t COMPREPLY < <(compgen -W "$WORDLIST" -- "$current_word");;
+         target_user=$(_get_netkit_user "${COMP_WORDS[@]}")
+         _get_active_collision_domains "collision_domains" "," "$target_user" 2> /dev/null
+         mapfile -t COMPREPLY < <(compgen -W "${collision_domains[*]}" -- "$current_word")
+         ;;
       -u|--user)
-         mapfile -t COMPREPLY < <(compgen -A user -- "$current_word");;
+         mapfile -t COMPREPLY < <(compgen -A user -- "$current_word")
+         ;;
       *)
          # The previous word is either a non-option or one that does not take a
          # parameter. The current word is therefore a new option or non-option
@@ -93,7 +95,8 @@ _vconf() {
                # Current word could be an option or machine name (non-option
                # argument), so we complete as a machine name.
                target_user=$(_get_netkit_user "${COMP_WORDS[@]}")
-               mapfile -t active_vhosts < <("$NETKIT_HOME/bin/vlist" --no-header --user="$target_user" | head --lines -3 | awk '{ print $2 }')
+               # TODO: _get_active_vhosts
+               mapfile -t active_vhosts < <("$NETKIT_HOME/bin/vlist" --no-header --user="$target_user" 2> /dev/null | head --lines -3 | awk '{ print $2 }')
                mapfile -t COMPREPLY < <(compgen -W "${active_vhosts[*]}" -- "$current_word")
                ;;
          esac

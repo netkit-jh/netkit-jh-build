@@ -80,7 +80,7 @@ _expand_eth_option() {
    done
 
    for ((i = 0; i <= max_interfaces; ++i)) do
-      printf "--eth%d=\n" "$i"
+      printf -- "--eth%d=\n" "$i"
    done
 }
 
@@ -260,20 +260,24 @@ _get_lab_vhosts() {
 ###############################################################################
 # Set array variable to a list of active collision domains taken from vlist
 # Usage:
-#   _get_active_collision_domains COLLISION_DOMAINS_NAME_REF
+#   _get_active_collision_domains COLLISION_DOMAINS_NAME_REF TAP_APPEND [USER]
 # Globals:
 #   None
 # Arguments:
 #   $1 - name reference to array variable
+#   $2 - append string to tap collision domains (useful for adding a comma)
+#   $3 - optional target user
 # Returns:
 #   None
 # Example:
 #   local collision_domains
-#   _get_active_collision_domains "collision_domains"
+#   _get_active_collision_domains "collision_domains" "," "$(id --name --user)"
 #   echo "${collision_domains[*]}"
 ###############################################################################
 _get_active_collision_domains() {
    local -n _get_active_collision_domains_collision_domains=$1
+   local tap_append=$2
+   local target_user=$3
 
    local interfaces interface collision_domain
 
@@ -281,7 +285,7 @@ _get_active_collision_domains() {
 
    # Get array of 'eth0@CD0', 'eth1@CD1', 'eth0@CD1', 'eth1@TAP(tap)', ...
    IFS="," read -r -a interfaces < <(
-      "$NETKIT_HOME/bin/vlist" --no-header |
+      "$NETKIT_HOME/bin/vlist" --no-header ${target_user:+"--user=$target_user"} |
       head --lines -3 |
       awk '{ for (i=5; i<=NF; ++i) printf $i; printf "," }'
    )
@@ -291,7 +295,7 @@ _get_active_collision_domains() {
       collision_domain=${interface#*@}
 
       # Remove possible '(tap)' indicator
-      collision_domain=${collision_domain%"(tap)"}
+      [[ "$collision_domain" == *"(tap)" ]] && collision_domain="${collision_domain%"(tap)"}$tap_append"
 
       # We use an associative array because key values must be unique
       collision_domains_dict[$collision_domain]=
