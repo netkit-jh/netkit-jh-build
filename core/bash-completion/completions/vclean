@@ -89,7 +89,8 @@ _vclean() {
                # Current word could be an option or machine name (non-option
                # argument), so we complete as a machine name.
                target_user=$(_get_netkit_user "${COMP_WORDS[@]}")
-               mapfile -t active_vhosts < <("$NETKIT_HOME/bin/vlist" --no-header --user="$target_user" | head --lines -3 | awk '{ print $2 }')
+               # TODO: _get_active_vhosts
+               mapfile -t active_vhosts < <("$NETKIT_HOME/bin/vlist" --no-header --user="$target_user" 2> /dev/null | head --lines -3 | awk '{ print $2 }')
                mapfile -t COMPREPLY < <(compgen -W "${active_vhosts[*]}" -- "$current_word")
                ;;
          esac
