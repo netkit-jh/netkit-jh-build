@@ -186,48 +186,17 @@ for vhost in "${vhosts[@]}"; do
 
    echo -n "Halting '$vhost' (PID ${vhost_info[pid]})"
    [ -n "$target_user" ] && echo -n " owned by $target_user"
-   echo -en " [                         ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+   [ -z "$quick_mode" ] && echo -en " [                    ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
 
-   # Old method uses CTRL-ALT-DEL. This yields the error
-   #   harddog_open - run_helper failed, errno = -2
-   # and subsequently reboots (as opposed to powering off.)
-   #"$NETKIT_HOME/bin/uml_mconsole" "${vhost_info[mconsole]}" cad > /dev/null
-
-   # TODO: Try to use the old method - it uses /sbin/shutdown and is safer and
-   # quicker. Alternatively, use vcommand with shutdown -h now.
-   # New method uses the Magic SysRq key in the REISUO combination (R is not
-   # included because there is no X server).
-   # This method is not perfect; the timings required are rough estimates. The
-   # system will return "OK" to uml_mconsole upon a valid command being sent,
-   # NOT when the command has completed. e and i cannot be expected to finish
-   # in the time given by the delay. s, u, and o are almost instant.
-
-   # e: send a SIGTERM to all processes, except for init
-   "$NETKIT_HOME/bin/uml_mconsole" "${vhost_info[mconsole]}" sysrq e > /dev/null 2>&1
-   echo -n "."
-   sleep 2
-
-   # i: send a SIGKILL to all processes, except for init
-   "$NETKIT_HOME/bin/uml_mconsole" "${vhost_info[mconsole]}" sysrq i > /dev/null 2>&1
-   echo -n "."
-   sleep 2
-
-   # s: attempt to sync all mounted filesystems
-   "$NETKIT_HOME/bin/uml_mconsole" "${vhost_info[mconsole]}" sysrq s > /dev/null 2>&1
-   echo -n "."
-   sleep 0.2
-
-   # u: attempt to remount all mounted filesystems read-only
-   "$NETKIT_HOME/bin/uml_mconsole" "${vhost_info[mconsole]}" sysrq u > /dev/null 2>&1
-   echo -n "."
-   sleep 0.2
-
-   # o: shut the system off (if configured and supported)
-   "$NETKIT_HOME/bin/uml_mconsole" "${vhost_info[mconsole]}" sysrq o > /dev/null 2>&1
-   echo -n "."
+   # The recommended method to safely shut down a UML instance is with
+   # Ctrl-Alt-Del, which can be triggered with mconsole.
+   "$NETKIT_HOME/bin/uml_mconsole" "${vhost_info[mconsole]}" cad > /dev/null 2>&1
 
    if [ -z "$quick_mode" ]; then
-      for _ in {1..21}; do
+      # We wait until the machine's processes have terminated
+      echo -n "."
+
+      for _ in {1..19}; do
          get_machine_state "$target_user" "$vhost" || break
          sleep 1
          echo -n "."
