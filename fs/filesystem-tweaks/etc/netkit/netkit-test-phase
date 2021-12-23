@@ -113,7 +113,6 @@ test_results_dir="$test_dir/results/"
 
 
 # Check if hostlab is mounted
-# TODO: output errors to log or host terminal
 if [ ! -d "$hostlab_dir" ]; then
    echo 1>&2 "$SCRIPTNAME: '$hostlab_dir' does not exist"
    halt
@@ -139,7 +138,7 @@ if [ "$test_delay" != "0" ]; then
 fi
 
 
-mkdir --parents -- "$test_results_dir" || exit 1
+mkdir --parents -- "$test_results_dir" || halt
 
 ###############################################################################
 # Run user defined tests
