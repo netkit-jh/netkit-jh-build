@@ -37,7 +37,7 @@
 #   None
 ###############################################################################
 _vlist() {
-   local options
+   local options options_str
 
    local target_user active_vhosts
 
@@ -45,6 +45,7 @@ _vlist() {
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
 
    mapfile -t options < <(_get_command_options vlist)
+   options_str=$(_create_options_string "${options[@]}")
 
    # If the current word is the first argument, it cannot be an option
    # parameter.
@@ -52,7 +53,8 @@ _vlist() {
       case $current_word in
          -*)
             # Current word is a new option
-            mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+            compopt -o nospace
+            mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
             ;;
          *)
             # Current word could be an option or machine name (non-option
@@ -62,6 +64,17 @@ _vlist() {
             ;;
       esac
       return
+   fi
+
+   if [ "$current_word" = "=" ] && [[ "$previous_word" == --* ]]; then
+      # '--opt=' results in current_word="=", previous_word="--opt". We can
+      # model this as '--opt ' by just setting current_word to an empty string.
+      current_word=""
+   elif [ "$previous_word" = "=" ] && [ -n "$current_word" ]; then
+      # '--opt=param' results in current_word="param", previous_word="=". We
+      # therefore must get the option before the equals sign by tracking back
+      # another index of COMP_WORDS.
+      previous_word=${COMP_WORDS[COMP_CWORD - 2]}
    fi
 
    # If the previous word is an option, the current word will be an option
@@ -81,7 +94,8 @@ _vlist() {
          case $current_word in
             -*)
                # Current word is a new option
-               mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+               compopt -o nospace
+               mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
                ;;
             *)
                # Current word could be an option or machine name (non-option

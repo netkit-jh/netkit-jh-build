@@ -37,13 +37,15 @@
 #   None
 ###############################################################################
 _vpackage() {
-   local options
+   local options options_str
    local subcommands
 
    local current_word=${COMP_WORDS[COMP_CWORD]}
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
 
    mapfile -t options < <(_get_command_options vpackage)
+   options_str=$(_create_options_string "${options[@]}")
+
    mapfile -t subcommands < <(_get_command_subcommands vpackage)
 
    # If the current word is the first argument, it cannot be an option
@@ -51,12 +53,26 @@ _vpackage() {
    if [ "$COMP_CWORD" -eq 1 ]; then
       case $current_word in
          -*)
-            mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+            compopt -o nospace
+            mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+            ;;
          *)
-            mapfile -t COMPREPLY < <(compgen -W "${subcommands[*]}" -- "$current_word");;
+            mapfile -t COMPREPLY < <(compgen -W "${subcommands[*]}" -- "$current_word")
+            ;;
       esac
 
       return
+   fi
+
+   if [ "$current_word" = "=" ] && [[ "$previous_word" == --* ]]; then
+      # '--opt=' results in current_word="=", previous_word="--opt". We can
+      # model this as '--opt ' by just setting current_word to an empty string.
+      current_word=""
+   elif [ "$previous_word" = "=" ] && [ -n "$current_word" ]; then
+      # '--opt=param' results in current_word="param", previous_word="=". We
+      # therefore must get the option before the equals sign by tracking back
+      # another index of COMP_WORDS.
+      previous_word=${COMP_WORDS[COMP_CWORD - 2]}
    fi
 
    # If the previous word is an option, the current word will be an option
@@ -82,9 +98,12 @@ _vpackage() {
          # --recon, --version, -y, --yes
          case $current_word in
             -*)
-               mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+               compopt -o nospace
+               mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+               ;;
             *)
-               mapfile -t COMPREPLY < <(compgen -W "${subcommands[*]}" -- "$current_word");;
+               mapfile -t COMPREPLY < <(compgen -W "${subcommands[*]}" -- "$current_word")
+               ;;
          esac
 
          ;;

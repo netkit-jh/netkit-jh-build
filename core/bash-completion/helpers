@@ -56,7 +56,7 @@ _get_command_options() {
 # Globals:
 #   None
 # Arguments:
-#   $1 - command name (must be present in $NETKIT_HOME/bin/)
+#  ... - list of command options
 # Returns:
 #   None
 # Example:
@@ -82,6 +82,35 @@ _expand_eth_option() {
    for ((i = 0; i <= max_interfaces; ++i)) do
       printf -- "--eth%d=\n" "$i"
    done
+}
+
+
+###############################################################################
+# Expand array of options into quoted array suitable for compgen -W. Long
+# options taking parameters will be expanded with an appended space.
+# Usage:
+#   _create_options_string [OPTION]...
+# Globals:
+#   None
+# Arguments:
+#  ... - list of command options
+# Returns:
+#   None
+# Example:
+#   mapfile -t options < <(_get_command_options vstart)
+#   compgen -W "$(_create_options_string "${options[@]}")" -- "$word"
+###############################################################################
+_create_options_string() {
+   local options=( "$@" )
+
+   # Append a space to all options without parameters
+   for option in "${options[@]}"; do
+      [[ "$option" == *= ]] && space="" || space=" "
+      options_new+=( "$option$space" )
+   done
+
+   # Return quoted array
+   echo "${options_new[*]@Q}"
 }
 
 

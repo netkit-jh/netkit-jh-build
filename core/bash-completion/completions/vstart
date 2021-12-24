@@ -39,7 +39,7 @@
 #   None
 ###############################################################################
 _vstart() {
-   local options
+   local options options_str
 
    local collision_domains
 
@@ -52,6 +52,7 @@ _vstart() {
 
    mapfile -t options < <(_get_command_options vstart)
    mapfile -t options < <(_expand_eth_option "${options[@]}")
+   options_str=$(_create_options_string "${options[@]}")
 
    if [ "$1" = "1" ]; then
       # Passthrough options to vstart are being autocompleted (the parent
@@ -66,8 +67,20 @@ _vstart() {
    # If the current word is the first argument, it cannot be an option
    # parameter.
    if [ "$COMP_CWORD" -eq 1 ]; then
-      mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word")
+      compopt -o nospace
+      mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
       return
+   fi
+
+   if [ "$current_word" = "=" ] && [[ "$previous_word" == --* ]]; then
+      # '--opt=' results in current_word="=", previous_word="--opt". We can
+      # model this as '--opt ' by just setting current_word to an empty string.
+      current_word=""
+   elif [ "$previous_word" = "=" ] && [ -n "$current_word" ]; then
+      # '--opt=param' results in current_word="param", previous_word="=". We
+      # therefore must get the option before the equals sign by tracking back
+      # another index of COMP_WORDS.
+      previous_word=${COMP_WORDS[COMP_CWORD - 2]}
    fi
 
    # If the previous word is an option, the current word will be an option
@@ -108,7 +121,8 @@ _vstart() {
          # --help, --just-print, -n, --no-cow, --no-hosthome, --recon,
          # --show-boot-log, --tmux-attached, --tmux-detached, -v, --verbose,
          # --version, -W
-         mapfile -t COMPREPLY < <(compgen -W "${options[*]}" -- "$current_word");;
+         compopt -o nospace
+         mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word");;
    esac
 }
 
