@@ -155,6 +155,9 @@ _get_netkit_user() {
    # Iterate over the command-line arguments
    for word in "$@"; do
       if [ -n "$user_flag" ]; then
+         # Handle if argument is '--user=username'
+         [ "$word" = "=" ] && continue
+
          printf "%s\n" "$word"
          return
       fi
