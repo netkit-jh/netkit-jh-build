@@ -39,14 +39,14 @@
 _vconf() {
    local options options_str
 
-   local active_vhosts target_user collision_domains
+   local active_vhosts target_user collision_domains collision_domains_str
 
    local current_word=${COMP_WORDS[COMP_CWORD]}
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
 
    mapfile -t options < <(_get_command_options vconf)
    mapfile -t options < <(_expand_eth_option "${options[@]}")
-   options_str=$(_create_options_string "${options[@]}")
+   options_str=$(_option_array_to_string "=" "${options[@]}")
 
    # If the current word is the first argument, it cannot be an option
    # parameter.
@@ -84,9 +84,11 @@ _vconf() {
    # will be an option or another non-option argument.
    case $previous_word in
       --eth*)
+         compopt -o nospace
          target_user=$(_get_netkit_user "${COMP_WORDS[@]}")
          _get_active_collision_domains "collision_domains" "," "$target_user" 2> /dev/null
-         mapfile -t COMPREPLY < <(compgen -W "${collision_domains[*]}" -- "$current_word")
+         collision_domains_str=$(_option_array_to_string "," "${collision_domains[@]}")
+         mapfile -t COMPREPLY < <(compgen -W "$collision_domains_str" -- "$current_word")
          ;;
       -u|--user)
          mapfile -t COMPREPLY < <(compgen -A user -- "$current_word")
