@@ -94,8 +94,8 @@ log_write "$0 $*"
 
 
 # Get command line options
-long_opts="help,version"
-short_opts=""
+long_opts="help,verbose,version"
+short_opts="v"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
