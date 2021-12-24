@@ -64,7 +64,7 @@ _get_command_options() {
 #   mapfile -t options < <(_expand_eth_option "${options[@]}")
 ###############################################################################
 _expand_eth_option() {
-   local option i max_interfaces
+   local max_interfaces option i
 
    # We only want the value of MAX_INTERFACES from script_utils. Sourcing
    # script_utils in this shell would flood the user's environment with other
@@ -79,33 +79,38 @@ _expand_eth_option() {
       printf "%s\n" "$option"
    done
 
-   for ((i = 0; i <= max_interfaces; ++i)) do
+   for ((i = 0; i < max_interfaces; ++i)) do
       printf -- "--eth%d=\n" "$i"
    done
 }
 
 
 ###############################################################################
-# Expand array of options into quoted array suitable for compgen -W. Long
-# options taking parameters will be expanded with an appended space.
+# Expand array of options into quoted array suitable for compgen -W with
+# nospace enabled. Specify a parameter delimiter where a space should not be
+# appended to the completion.
 # Usage:
-#   _create_options_string [OPTION]...
+#   _option_array_to_string DELIMETER [OPTION]...
 # Globals:
 #   None
 # Arguments:
-#  ... - list of command options
+#   $1 - option-parameter delimeter (e.g. '=' for getopt longopts)
+#  ... - list of options
 # Returns:
 #   None
 # Example:
 #   mapfile -t options < <(_get_command_options vstart)
-#   compgen -W "$(_create_options_string "${options[@]}")" -- "$word"
+#   compgen -W "$(_option_array_to_string "=" "${options[@]}")" -- "$word"
 ###############################################################################
-_create_options_string() {
-   local options=( "$@" )
+_option_array_to_string() {
+   local delimeter=$1
+   local options=( "${@:2}" )
+
+   local option space options_new
 
    # Append a space to all options without parameters
    for option in "${options[@]}"; do
-      [[ "$option" == *= ]] && space="" || space=" "
+      [[ "$option" == *"$delimeter" ]] && space="" || space=" "
       options_new+=( "$option$space" )
    done
 
@@ -150,7 +155,7 @@ _get_command_subcommands() {
 #   None
 ###############################################################################
 _get_netkit_user() {
-   local user_flag
+   local word user_flag
 
    # Iterate over the command-line arguments
    for word in "$@"; do
@@ -188,7 +193,7 @@ _get_netkit_user() {
 #   None
 ###############################################################################
 _get_lab_directory() {
-   local d_flag
+   local word d_flag
 
    # Iterate over the command-line arguments
    for word in "$@"; do

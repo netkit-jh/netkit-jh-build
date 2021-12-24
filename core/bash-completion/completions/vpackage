@@ -44,7 +44,7 @@ _vpackage() {
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
 
    mapfile -t options < <(_get_command_options vpackage)
-   options_str=$(_create_options_string "${options[@]}")
+   options_str=$(_option_array_to_string "=" "${options[@]}")
 
    mapfile -t subcommands < <(_get_command_subcommands vpackage)
 
