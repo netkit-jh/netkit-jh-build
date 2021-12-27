@@ -2,8 +2,6 @@
 
 #     Copyright 2020-2021 Billy Bromell, Adam Bromiley, Mohammed Habib, Joshua
 #     Hawking - Warwick Manufacturing Group, University of Warwick.
-#     Copyright 2002-2009 Stefano Pettini, Fabio Ricci, Massimo Rimondini
-#     Computer Networks Research Group, Roma Tre University.
 #
 #     This file is part of Netkit.
 # 
@@ -86,8 +84,6 @@ case $terminal_emulator in
                   echo "tmux session in use - not starting $vhost."
                   exit
                   ;;
-               *)
-                  ;;
             esac
          done
       fi
@@ -98,7 +94,8 @@ case $terminal_emulator in
 
    *)
       echo "Terminal $terminal_emulator not supported, defaulting to xterm."
-      xterm -xrm 'XTerm*allowTitleOps: false' -T "$vhost" -e "${bash_cmd[@]}";;
+      xterm -xrm 'XTerm*allowTitleOps: false' -T "$vhost" -e "${bash_cmd[@]}"
+      ;;
 esac
 
 
