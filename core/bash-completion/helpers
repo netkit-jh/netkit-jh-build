@@ -293,7 +293,7 @@ _array_contains() {
 #   None
 # Example:
 #   local lab_vhosts
-#   _get_lab_vhosts "lab_vhosts" "/path/to/lab/directory"
+#   _get_lab_vhosts lab_vhosts "/path/to/lab/directory"
 #   echo "${lab_vhosts[*]}"
 ###############################################################################
 _get_lab_vhosts() {
@@ -346,7 +346,7 @@ _get_lab_vhosts() {
 #   None
 # Example:
 #   local active_vhosts
-#   _get_active_vhosts "active_vhosts" "," "$(id --name --user)"
+#   _get_active_vhosts active_vhosts "," "$(id --name --user)"
 #   echo "${active_vhosts[*]}"
 ###############################################################################
 _get_active_vhosts() {
@@ -375,7 +375,7 @@ _get_active_vhosts() {
 #   None
 # Example:
 #   local collision_domains
-#   _get_active_collision_domains "collision_domains" "," "$(id --name --user)"
+#   _get_active_collision_domains collision_domains "," "$(id --name --user)"
 #   echo "${collision_domains[*]}"
 ###############################################################################
 _get_active_collision_domains() {
@@ -433,7 +433,7 @@ _collision_domains_compgen() {
 
    : "${target_user:="$(_get_netkit_user "${COMP_WORDS[@]}")"}"
 
-   _get_active_collision_domains "collision_domains" "," "$target_user" 2> /dev/null
+   _get_active_collision_domains collision_domains "," "$target_user" 2> /dev/null
    collision_domains_str=$(_option_array_to_string "," "${collision_domains[@]}")
 
    compopt -o nospace

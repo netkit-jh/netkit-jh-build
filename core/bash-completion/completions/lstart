@@ -54,7 +54,7 @@ _lstart() {
          *)
             # Current word could be an option or machine name (non-option
             # argument), so we complete as a machine name.
-            _get_lab_vhosts "lab_vhosts" "$PWD"
+            _get_lab_vhosts lab_vhosts "$PWD"
             mapfile -t COMPREPLY < <(compgen -W "${lab_vhosts[*]}" -- "$current_word")
             ;;
       esac
@@ -166,7 +166,7 @@ _lstart() {
                # Current word could be an option or machine name (non-option
                # argument), so we complete as a machine name.
                lab_directory=$(_get_lab_directory "${COMP_WORDS[@]}")
-               _get_lab_vhosts "lab_vhosts" "$lab_directory"
+               _get_lab_vhosts lab_vhosts "$lab_directory"
                mapfile -t COMPREPLY < <(compgen -W "${lab_vhosts[*]}" -- "$current_word")
                ;;
          esac
