@@ -67,6 +67,64 @@ _lstart() {
       return
    fi
 
+   # The following section of code parses the -o|--pass command-line option,
+   # which is used to pass arguments through to vstart. There are six possible
+   # structures of the COMP_WORDS array when the option is used correctly,
+   # where the option and parameter structure could be up to five words long
+   # ('=' is usually in the COMP_WORDBREAKS variable, so counts as a word); any
+   # word could be getting completed.
+   #
+   #    Relative COMP_WORDS index                 Command
+   #      1     2     3     4     5
+   #    pas     =   arg     = param  ==> ./program --pass=arg=param
+   #    pas     =   arg              ==> ./program --pass=arg
+   #    pas   arg     = param        ==> ./program --pass arg=param
+   #    pas   arg                    ==> ./program --pass arg
+   #      o   arg     = param        ==> ./program -o arg=param
+   #      o   arg                    ==> ./program -o arg
+   #
+   if [ "$COMP_CWORD" -gt 4 ] && [ "${COMP_WORDS[COMP_CWORD - 4]}" = "--pass" ] && [ "${COMP_WORDS[COMP_CWORD - 3]}" = "=" ] && [ "$previous_word" = "=" ]; then
+      # '--pass=arg=param'
+      _vstart "" "" "" "${COMP_WORDS[COMP_CWORD - 2]}" "$current_word"
+      return
+   fi
+
+   if [ "$COMP_CWORD" -gt 3 ]; then
+      if [ "${COMP_WORDS[COMP_CWORD - 3]}" = "--pass" ]; then
+         if [ "$previous_word" = "=" ]; then
+            # '--pass arg=param'
+            _vstart "" "" "" "${COMP_WORDS[COMP_CWORD - 2]}" "$current_word"
+            return
+         elif [ "${COMP_WORDS[COMP_CWORD - 2]}" = "=" ] && [ "$current_word" = "=" ]; then
+            # '--pass=arg='
+            _vstart "" "" "" "$previous_word" ""
+            return
+         fi
+      elif [ "${COMP_WORDS[COMP_CWORD - 3]}" = "-o" ] && [ "$previous_word" = "=" ]; then
+         # '-o arg=param'
+         _vstart "" "" "" "${COMP_WORDS[COMP_CWORD - 2]}" "$current_word"
+         return
+      fi
+   fi
+
+   if [ "$COMP_CWORD" -gt 2 ]; then
+      if [ "${COMP_WORDS[COMP_CWORD - 2]}" = "--pass" ]; then
+         if [ "$previous_word" = "=" ]; then
+            # '--pass=arg'
+            _vstart "" "" "" "" "$current_word"
+            return
+         elif [ "$current_word" = "=" ]; then
+            # '--pass arg=param'
+            _vstart "" "" "" "$previous_word" ""
+            return
+         fi
+      elif [ "${COMP_WORDS[COMP_CWORD - 2]}" = "-o" ] && [ "$current_word" = "=" ]; then
+         # '-o opt='
+         _vstart "" "" "" "$previous_word" ""
+         return
+      fi
+   fi
+
    if [ "$current_word" = "=" ] && [[ "$previous_word" == --* ]]; then
       # '--opt=' results in current_word="=", previous_word="--opt". We can
       # model this as '--opt ' by just setting current_word to an empty string.
@@ -87,8 +145,7 @@ _lstart() {
          mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word")
          ;;
       -o|--pass)
-         # NOTE: _vstart will set COMPREPLY
-         _vstart "1"
+         _vstart "" "" "" "" "$current_word"
          ;;
       -w|--wait)
          # These options take parameters that are not autocompletable

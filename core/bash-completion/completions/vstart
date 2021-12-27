@@ -39,12 +39,10 @@
 #   None
 ###############################################################################
 _vstart() {
+   local previous_word current_word
    local options options_str
 
    local collision_domains collision_domains_str
-
-   local current_word=${COMP_WORDS[COMP_CWORD]}
-   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
 
    local con0_args=( "xterm" "this" "tmux" "pty" "port:" "none" )
    local con1_args=( "xterm" "this" "pty" "port:" "none" )
@@ -54,33 +52,33 @@ _vstart() {
    mapfile -t options < <(_expand_eth_option "${options[@]}")
    options_str=$(_option_array_to_string "=" "${options[@]}")
 
-   if [ "$1" = "1" ]; then
+   if [ "${#@}" -ge 5 ]; then
       # Passthrough options to vstart are being autocompleted (the parent
       # command is lstart or ltest).
-      # TODO: this is not perfect. In the following scenario:
-      #   --pass --model-fs=./foo
-      # the previous_word variable should be set to '--model-fs' because
-      # COMP_WORDBREAKS usually contains an equals sign.
-      previous_word=""
-   fi
+      previous_word=$4
+      current_word=$5
+   else
+      previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+      current_word=${COMP_WORDS[COMP_CWORD]}
 
-   # If the current word is the first argument, it cannot be an option
-   # parameter.
-   if [ "$COMP_CWORD" -eq 1 ]; then
-      compopt -o nospace
-      mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
-      return
-   fi
+      # If the current word is the first argument, it cannot be an option
+      # parameter.
+      if [ "$COMP_CWORD" -eq 1 ]; then
+         compopt -o nospace
+         mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+         return
+      fi
 
-   if [ "$current_word" = "=" ] && [[ "$previous_word" == --* ]]; then
-      # '--opt=' results in current_word="=", previous_word="--opt". We can
-      # model this as '--opt ' by just setting current_word to an empty string.
-      current_word=""
-   elif [ "$previous_word" = "=" ] && [ -n "$current_word" ]; then
-      # '--opt=param' results in current_word="param", previous_word="=". We
-      # therefore must get the option before the equals sign by tracking back
-      # another index of COMP_WORDS.
-      previous_word=${COMP_WORDS[COMP_CWORD - 2]}
+      if [ "$current_word" = "=" ] && [[ "$previous_word" == --* ]]; then
+         # '--opt=' results in current_word="=", previous_word="--opt". We can
+         # model this as '--opt ' by just setting current_word to an empty string.
+         current_word=""
+      elif [ "$previous_word" = "=" ] && [ -n "$current_word" ]; then
+         # '--opt=param' results in current_word="param", previous_word="=". We
+         # therefore must get the option before the equals sign by tracking back
+         # another index of COMP_WORDS.
+         previous_word=${COMP_WORDS[COMP_CWORD - 2]}
+      fi
    fi
 
    # If the previous word is an option, the current word will be an option
