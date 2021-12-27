@@ -40,17 +40,10 @@
 ###############################################################################
 _vstart() {
    local previous_word current_word
-   local options options_str
-
-   local collision_domains collision_domains_str
 
    local con0_args=( "xterm" "this" "tmux" "pty" "port:" "none" )
    local con1_args=( "xterm" "this" "pty" "port:" "none" )
    local xterm_args=( "alacritty" "gnome" "kitty" "konsole" "konsole-tab" "wsl" "wt" "xterm" )
-
-   mapfile -t options < <(_get_command_options vstart)
-   mapfile -t options < <(_expand_eth_option "${options[@]}")
-   options_str=$(_option_array_to_string "=" "${options[@]}")
 
    if [ "${#@}" -ge 5 ]; then
       # Passthrough options to vstart are being autocompleted (the parent
@@ -64,8 +57,7 @@ _vstart() {
       # If the current word is the first argument, it cannot be an option
       # parameter.
       if [ "$COMP_CWORD" -eq 1 ]; then
-         compopt -o nospace
-         mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+         _options_compgen "vstart" "1" "$current_word"
          return
       fi
 
@@ -93,11 +85,7 @@ _vstart() {
       -e|--exec)
          mapfile -t COMPREPLY < <(compgen -A command -- "$current_word");;
       --eth*)
-         compopt -o nospace
-         _get_active_collision_domains "collision_domains" "," "$(id --name --user)"
-         collision_domains_str=$(_option_array_to_string "," "${collision_domains[@]}")
-         mapfile -t COMPREPLY < <(compgen -W "$collision_domains_str" -- "$current_word")
-         ;;
+         _collision_domains_compgen "$(id --name --user)" "$current_word";;
       -f|--filesystem)
          mapfile -t COMPREPLY < <(compgen -A file -- "$current_word");;
       -k|--kernel)
@@ -121,8 +109,8 @@ _vstart() {
          # --help, --just-print, -n, --no-cow, --no-hosthome, --recon,
          # --show-boot-log, --tmux-attached, --tmux-detached, -v, --verbose,
          # --version, -W
-         compopt -o nospace
-         mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word");;
+         _options_compgen "vstart" "1" "$current_word"
+         ;;
    esac
 }
 

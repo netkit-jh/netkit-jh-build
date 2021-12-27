@@ -52,7 +52,7 @@ _get_command_options() {
 # space-separated, which should be fine given that command-line options do not
 # have whitespace in.
 # Usage:
-#   _expand_eth_option [OPTION]...
+#   _expand_ethn [OPTION]...
 # Globals:
 #   None
 # Arguments:
@@ -61,9 +61,9 @@ _get_command_options() {
 #   None
 # Example:
 #   mapfile -t options < <(_get_command_options vstart)
-#   mapfile -t options < <(_expand_eth_option "${options[@]}")
+#   mapfile -t options < <(_expand_ethn "${options[@]}")
 ###############################################################################
-_expand_eth_option() {
+_expand_ethn() {
    local max_interfaces option i
 
    # We only want the value of MAX_INTERFACES from script_utils. Sourcing
@@ -116,6 +116,38 @@ _option_array_to_string() {
 
    # Return quoted array
    echo "${options_new[*]@Q}"
+}
+
+
+###############################################################################
+# Generate option completions for a given command and set COMPREPLY
+# Usage:
+#   _options_compgen COMMAND EXPAND_ETHN [CURRENT_WORD]
+# Globals:
+#   -w COMPREPLY
+# Arguments:
+#   $1 - command name ("$NETKIT_HOME/bin/$1" must exist)
+#   $2 - set to 1 to expand '--ethN=', empty string otherwise
+#   $3 - current word to be completed
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_options_compgen() {
+   local command=$1
+   local expand_eth_option=$2
+   local current_word=$3
+
+   local options options_str
+
+   mapfile -t options < <(_get_command_options "$command")
+   [ -n "$expand_eth_option" ] && mapfile -t options < <(_expand_ethn "${options[@]}")
+
+   options_str=$(_option_array_to_string "=" "${options[@]}")
+
+   compopt -o nospace
+   mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
 }
 
 
@@ -368,6 +400,37 @@ _get_active_collision_domains() {
 
    # Convert the associative array back to a regular one
    _get_active_collision_domains_collision_domains=( "${!collision_domains_dict[@]}" )
+}
+
+
+###############################################################################
+# Generate collision domain completions for a given command and set COMPREPLY
+# Usage:
+#   _collision_domains_compgen USER [CURRENT_WORD]
+# Globals:
+#   -w COMPREPLY
+# Arguments:
+#   $1 - owner of the collision domains; pass an empty string to determine from
+#        a -u|--user option or (if not exists) gather from all users.
+#   $2 - current word to be completed
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+_collision_domains_compgen() {
+   local target_user=$1
+   local current_word=$2
+
+   local collision_domains collision_domains_str
+
+   : "${target_user:="$(_get_netkit_user "${COMP_WORDS[@]}")"}"
+
+   _get_active_collision_domains "collision_domains" "," "$target_user" 2> /dev/null
+   collision_domains_str=$(_option_array_to_string "," "${collision_domains[@]}")
+
+   compopt -o nospace
+   mapfile -t COMPREPLY < <(compgen -W "$collision_domains_str" -- "$current_word")
 }
 
 

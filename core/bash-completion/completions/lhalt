@@ -38,15 +38,10 @@
 #   None
 ###############################################################################
 _lhalt() {
-   local options options_str
-
    local lab_directory lab_vhosts
 
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
    local current_word=${COMP_WORDS[COMP_CWORD]}
-
-   mapfile -t options < <(_get_command_options lhalt)
-   options_str=$(_option_array_to_string "=" "${options[@]}")
 
    # If the current word is the first argument, it cannot be an option
    # parameter.
@@ -54,8 +49,7 @@ _lhalt() {
       case $current_word in
          -*)
             # Current word is an option
-            compopt -o nospace
-            mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+            _options_compgen "lhalt" "" "$current_word"
             ;;
          *)
             # Current word could be an option or machine name (non-option
@@ -95,8 +89,7 @@ _lhalt() {
          case $current_word in
             -*)
                # Current word is a new option
-               compopt -o nospace
-               mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+               _options_compgen "lhalt" "" "$current_word"
                ;;
             *)
                # Current word could be an option or machine name (non-option

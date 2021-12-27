@@ -37,16 +37,10 @@
 #   None
 ###############################################################################
 _vconf() {
-   local options options_str
-
-   local active_vhosts target_user collision_domains collision_domains_str
+   local active_vhosts target_user
 
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
    local current_word=${COMP_WORDS[COMP_CWORD]}
-
-   mapfile -t options < <(_get_command_options vconf)
-   mapfile -t options < <(_expand_eth_option "${options[@]}")
-   options_str=$(_option_array_to_string "=" "${options[@]}")
 
    # If the current word is the first argument, it cannot be an option
    # parameter.
@@ -54,8 +48,7 @@ _vconf() {
       case $current_word in
          -*)
             # Current word is a new option
-            compopt -o nospace
-            mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+            _options_compgen "vconf" "1" "$current_word"
             ;;
          *)
             # Current word could be an option or machine name (non-option
@@ -84,11 +77,7 @@ _vconf() {
    # will be an option or another non-option argument.
    case $previous_word in
       --eth*)
-         compopt -o nospace
-         target_user=$(_get_netkit_user "${COMP_WORDS[@]}")
-         _get_active_collision_domains "collision_domains" "," "$target_user" 2> /dev/null
-         collision_domains_str=$(_option_array_to_string "," "${collision_domains[@]}")
-         mapfile -t COMPREPLY < <(compgen -W "$collision_domains_str" -- "$current_word")
+         _collision_domains_compgen "" "$current_word"
          ;;
       -u|--user)
          mapfile -t COMPREPLY < <(compgen -A user -- "$current_word")
@@ -104,8 +93,7 @@ _vconf() {
          case $current_word in
             -*)
                # Current word is a new option
-               compopt -o nospace
-               mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+               _options_compgen "vconf" "1" "$current_word"
                ;;
             *)
                # Current word could be an option or machine name (non-option

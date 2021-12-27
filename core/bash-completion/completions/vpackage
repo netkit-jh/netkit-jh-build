@@ -37,14 +37,12 @@
 #   None
 ###############################################################################
 _vpackage() {
-   local options options_str
    local subcommands
 
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
    local current_word=${COMP_WORDS[COMP_CWORD]}
 
    mapfile -t options < <(_get_command_options vpackage)
-   options_str=$(_option_array_to_string "=" "${options[@]}")
 
    mapfile -t subcommands < <(_get_command_subcommands vpackage)
 
@@ -53,10 +51,12 @@ _vpackage() {
    if [ "$COMP_CWORD" -eq 1 ]; then
       case $current_word in
          -*)
-            compopt -o nospace
-            mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+            # Current word is a new option
+            _options_compgen "vpackage" "" "$current_word"
             ;;
          *)
+            # Current word could be an option or subcommand (non-option
+            # argument), so we complete as a subcommand.
             mapfile -t COMPREPLY < <(compgen -W "${subcommands[*]}" -- "$current_word")
             ;;
       esac
@@ -98,10 +98,12 @@ _vpackage() {
          # --recon, --version, -y, --yes
          case $current_word in
             -*)
-               compopt -o nospace
-               mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+               # Current word is a new option
+               _options_compgen "vpackage" "" "$current_word"
                ;;
             *)
+               # Current word could be an option or subcommand (non-option
+               # argument), so we complete as a subcommand.
                mapfile -t COMPREPLY < <(compgen -W "${subcommands[*]}" -- "$current_word")
                ;;
          esac
