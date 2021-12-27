@@ -38,7 +38,9 @@
 _get_command_options() {
    local command=$1
    # Get long options
-   "$NETKIT_HOME/bin/$command" --help | grep --extended-regexp --only-matching "^(  -[[:alnum:]], | {6})--[[:alnum:]-]+=?" | awk --field-separator "," '{ gsub(/[[:blank:]]/, "", $NF); print $NF }'
+   "$NETKIT_HOME/bin/$command" --help |
+      grep --extended-regexp --only-matching "^(  -[[:alnum:]], | {6})--[[:alnum:]-]+=?" |
+      awk --field-separator "," '{ gsub(/[[:blank:]]/, "", $NF); print $NF }'
    # Get short options
    # NOTE: we don't gather the short options because conventionally linux
    # utilities only autocomplete long ones.
@@ -72,7 +74,10 @@ _expand_ethn() {
    # (or similar) to get the completions. Therefore, we source in a subshell
    # and extract just the value of MAX_INTERFACES.
    # shellcheck source=../bin/script_utils
-   max_interfaces=$(. -- "$NETKIT_HOME/bin/script_utils"; printf "%s\n" "$MAX_INTERFACES")
+   max_interfaces=$(
+      . -- "$NETKIT_HOME/bin/script_utils";
+      printf "%s\n" "$MAX_INTERFACES"
+   )
 
    for option in "$@"; do
       [ "$option" = "--ethN=" ] && continue
@@ -167,7 +172,9 @@ _options_compgen() {
 ###############################################################################
 _get_command_subcommands() {
    local command=$1
-   "$NETKIT_HOME/bin/$command" --help | grep --extended-regexp --only-matching "^  [[:alnum:]][[:alnum:]-]+" | tr -d "[:blank:]"
+   "$NETKIT_HOME/bin/$command" --help |
+      grep --extended-regexp --only-matching "^  [[:alnum:]][[:alnum:]-]+" |
+      tr -d "[:blank:]"
 }
 
 

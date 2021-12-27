@@ -21,7 +21,7 @@
 # Bash completion function for lhalt.
 
 
-##############################################################################
+###############################################################################
 # Bash completion function for lhalt to fill the COMPREPLY array
 # Usage:
 #   _lhalt

@@ -77,7 +77,10 @@ _lstart() {
    #      o   arg     = param        ==> ./program -o arg=param
    #      o   arg                    ==> ./program -o arg
    #
-   if [ "$COMP_CWORD" -gt 4 ] && [ "${COMP_WORDS[COMP_CWORD - 4]}" = "--pass" ] && [ "${COMP_WORDS[COMP_CWORD - 3]}" = "=" ] && [ "$previous_word" = "=" ]; then
+   if [ "$COMP_CWORD" -gt 4 ] &&
+   [ "${COMP_WORDS[COMP_CWORD - 4]}" = "--pass" ] &&
+   [ "${COMP_WORDS[COMP_CWORD - 3]}" = "=" ] &&
+   [ "$previous_word" = "=" ]; then
       # '--pass=arg=param'
       _vstart "" "" "" "${COMP_WORDS[COMP_CWORD - 2]}" "$current_word"
       return

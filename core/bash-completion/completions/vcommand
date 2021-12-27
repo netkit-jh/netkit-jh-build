@@ -53,7 +53,11 @@ _vcommand() {
          *)
             # Current word could be an option or machine name (non-option
             # argument), so we complete as a machine name.
-            mapfile -t active_vhosts < <("$NETKIT_HOME/bin/vlist" --no-header | head --lines -3 | awk '{ print $2 }')
+            mapfile -t active_vhosts < <(
+               "$NETKIT_HOME/bin/vlist" --no-header |
+               head --lines -3 |
+               awk '{ print $2 }'
+            )
             mapfile -t COMPREPLY < <(compgen -W "${active_vhosts[*]}" -- "$current_word")
             ;;
       esac
@@ -94,7 +98,11 @@ _vcommand() {
             *)
                # Current word could be an option or machine name (non-option
                # argument), so we complete as a machine name.
-               mapfile -t active_vhosts < <("$NETKIT_HOME/bin/vlist" --no-header | head --lines -3 | awk '{ print $2 }')
+               mapfile -t active_vhosts < <(
+                  "$NETKIT_HOME/bin/vlist" --no-header |
+                  head --lines -3 |
+                  awk '{ print $2 }'
+               )
                mapfile -t COMPREPLY < <(compgen -W "${active_vhosts[*]}" -- "$current_word")
                ;;
          esac
