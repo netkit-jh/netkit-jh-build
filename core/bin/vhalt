@@ -3,7 +3,8 @@
 #     Copyright 2020-2021 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
 #     Group, University of Warwick.
 #     Copyright 2002-2009 Maurizio Patrignani, Maurizio Pizzonia, Fabio Ricci,
-#     Massimo Rimondini - Computer Networks Research Group, Roma Tre University.
+#     Massimo Rimondini - Computer Networks Research Group, Roma Tre
+#     University.
 #
 #     This file is part of Netkit.
 # 
@@ -209,7 +210,8 @@ for vhost in "${vhosts[@]}"; do
          echo 1>&2 "$SCRIPTNAME: could not shut down '$vhost'."
       else
          # Remove filesystem (.disk file)
-         [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] && rm --verbose -- "${vhost_info[disk]}"
+         [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] &&
+            rm --verbose -- "${vhost_info[disk]}"
       fi
    fi
 done

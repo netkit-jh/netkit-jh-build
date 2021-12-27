@@ -3,7 +3,8 @@
 #     Copyright 2020-2021 Adam Bromiley, Joseph Bunce, Joshua Hawking - Warwick
 #     Manufacturing Group, University of Warwick.
 #     Copyright 2002-2009 Maurizio Patrignani, Maurizio Pizzonia, Fabio Ricci,
-#     Massimo Rimondini - Computer Networks Research Group, Roma Tre University.
+#     Massimo Rimondini - Computer Networks Research Group, Roma Tre
+#     University.
 #
 #     This file is part of Netkit.
 # 
@@ -144,7 +145,9 @@ kill_all_vhosts() {
 
    local pids
 
-   mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL")
+   mapfile -t pids < <(
+      pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL"
+   )
 
    [ -n "$verbose" ] || [ -n "$test_mode" ] && echo "PIDs: ${pids[*]}"
 
@@ -171,7 +174,9 @@ kill_all_vhosts() {
    kill -TERM "${pids[@]}" 2> /dev/null
 
    sleep 1
-   mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL")
+   mapfile -t pids < <(
+      pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL"
+   )
 
    if [ "${#pids[@]}" -gt 0 ]; then
       echo -n "killing harder... "
@@ -180,7 +185,9 @@ kill_all_vhosts() {
       kill -CONT "${pids[@]}" 2> /dev/null
 
       sleep 1
-      mapfile -t pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL")
+      mapfile -t pids < <(
+         pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL"
+      )
 
       if [ "${#pids[@]}" -gt 0 ]; then
          echo "failed!"
@@ -264,7 +271,8 @@ target_user=$USER_ID
 
 
 # Get command line options
-long_opts="clean-all,clean-directories,force,help,kill-machines,quick,remove-hubs,remove-tunnels,test,user:,verbose,version"
+long_opts="clean-all,clean-directories,force,help,kill-machines,quick,\
+remove-hubs,remove-tunnels,test,user:,verbose,version"
 short_opts="fHKTu:qv"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -349,7 +357,8 @@ if [ -n "$remove_hubs" ] && [ -n "$kill_machines" ]; then
 fi
 
 # --force is only effective with --remove-hubs
-[ -n "$force" ] && [ -z "$remove_hubs" ] && echo 1>&2 "$SCRIPTNAME: --force is redundant when not used with --remove-hubs"
+[ -n "$force" ] && [ -z "$remove_hubs" ] &&
+   echo 1>&2 "$SCRIPTNAME: --force is redundant when not used with --remove-hubs"
 
 
 if [ -n "$clean_all" ]; then
@@ -373,7 +382,9 @@ if [ -n "$remove_hubs" ]; then
    echo "Killing $hub_state virtual hubs owned by $user_str:"
 
    # Get the process IDs of running UML virtual hubs
-   mapfile -t hub_pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/bin/uml_switch")
+   mapfile -t hub_pids < <(
+      pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/bin/uml_switch"
+   )
 
    # Kill uml_switch processes and clean up unused hub files
    kill_hubs "$force" "$test_mode" "${hub_pids[@]}"
@@ -389,7 +400,9 @@ if [ -n "$kill_machines" ]; then
    echo "Killing virtual hubs owned by $user_str:"
 
    # Get the process IDs of running UML virtual hubs
-   mapfile -t hub_pids < <(pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/bin/uml_switch")
+   mapfile -t hub_pids < <(
+      pgrep ${target_user:+"--euid=$target_user"} --full "^$NETKIT_HOME/bin/uml_switch"
+   )
 
    # Force kill all uml_switch processes and clean up their hub files
    kill_hubs "1" "$test_mode" "${hub_pids[@]}"
@@ -399,7 +412,11 @@ fi
 # Remove Netkit directories
 if [ -n "$clean_directories" ]; then
    echo "Removing Netkit directories"
-   rm ${verbose:+"--verbose"} --force --recursive -- "$HOME/.netkit/"* "${HUB_SOCKET_DIR:?}/"* "${MCONSOLE_DIR:?}/"*
+
+   rm ${verbose:+"--verbose"} --force --recursive -- \
+      "$HOME/.netkit/"* \
+      "${HUB_SOCKET_DIR:?}/"* \
+      "${MCONSOLE_DIR:?}/"*
 fi
 
 

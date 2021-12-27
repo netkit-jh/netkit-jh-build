@@ -194,7 +194,9 @@ update_available() {
          # NOTE: we assume the GitHub API will always return JSON formatted as
          # a key-value pair per line. The relevant line should be:
          # "tag_name": "1.2.3",
-         curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"
+         curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" |
+            grep '"tag_name":' |
+            sed -E 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"
       fi
 
       current_version=$(sed -- "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
@@ -394,7 +396,11 @@ single_lab_vhost_start() {
    local configuration option value
 
    # Specify host lab directory, and place filesystem inside it
-   local vstart_args=( "--hostlab" "$lab_directory" "--filesystem" "$lab_directory/$vhost.disk" ${verbose:+"--verbose"} )
+   local vstart_args=(
+      "--hostlab" "$lab_directory"
+      "--filesystem" "$lab_directory/$vhost.disk"
+      ${verbose:+"--verbose"}
+   )
 
    # Generate vstart argument list
    if [ -e "$lab_directory/lab.conf" ]; then
@@ -464,7 +470,8 @@ log_write "$0 $*"
 
 
 # Get command line options
-long_opts="force-lab,help,list,makefile,pass:,sequential,tmux-attached,tmux-detached,verbose,version,wait:"
+long_opts="force-lab,help,list,makefile,pass:,sequential,tmux-attached,\
+tmux-detached,verbose,version,wait:"
 short_opts="d:Flo:p::svw:"
 
 if [ "$SCRIPTNAME" = "lstart" ]; then
@@ -531,12 +538,12 @@ while true; do
                ;;
          esac
 
-         force_parallel_mode=1
-         unset force_sequential_mode
+         parallel_mode=1
+         unset sequential_mode
          ;;
       -s|--sequential)
-         force_sequential_mode=1
-         unset force_parallel_mode
+         sequential_mode=1
+         unset parallel_mode
          ;;
       --tmux-attached)
          passthrough_opts+=( "$1" )
@@ -592,7 +599,7 @@ fi
 
 
 # Check whether parallel startup and -f are being used together
-if [ -f "$lab_directory/lab.dep" ] && [ -n "$fast_mode" ] && [ -z "$force_sequential_mode" ]; then
+if [ -f "$lab_directory/lab.dep" ] && [ -n "$fast_mode" ] && [ -z "$sequential_mode" ]; then
    echo 1>&2 "$SCRIPTNAME: Fast mode is ignored when using parallel startup"
 fi
 
@@ -651,9 +658,9 @@ bold_print "================================================================="
 
 # Check whether a lab.dep file exists. If so, enable parallel startup of
 # virtual machines.
-if [ -z "$force_sequential_mode" ] && [ -f "$lab_directory/lab.dep" ] || [ -n "$force_parallel_mode" ]; then
+if [ -z "$sequential_mode" ] && [ -f "$lab_directory/lab.dep" ] || [ -n "$parallel_mode" ]; then
    # Use parallel startup if not forced to be sequential and either lab.dep or
-   # force_parallel_mode is enabled.
+   # parallel mode is enabled.
    bold_print "You chose to use parallel startup."
    lab_start_parallel "$test_delay" "$verbose" "$lab_directory" "${passthrough_opts[@]}"
 else

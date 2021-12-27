@@ -2,9 +2,9 @@
 
 #     Copyright 2020-2021 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
 #     Group, University of Warwick.
-#     Copyright 2002-2007 Maurizio Patrignani, Stefano Pettini, Maurizio Pizzonia,
-#     Fabio Ricci, Massimo Rimondini - Computer Networks Research Group, Roma Tre
-#     University.
+#     Copyright 2002-2007 Maurizio Patrignani, Stefano Pettini, Maurizio
+#     Pizzonia, Fabio Ricci, Massimo Rimondini - Computer Networks Research
+#     Group, Roma Tre University.
 #
 #     This file is part of Netkit.
 #
@@ -171,8 +171,10 @@ case $1 in
          done
       fi
 
-      [ -n "$hosthome" ] && mount_host_dir "$hosthome" /hosthome "Mounting '$hosthome' on '/hosthome/'"
-      [ -n "$hostlab" ] &&  mount_host_dir "$hostlab"  /hostlab  "Mounting '$hostlab' on '/hostlab/'"
+      [ -n "$hosthome" ] &&
+         mount_host_dir "$hosthome" /hosthome "Mounting '$hosthome' on '/hosthome/'"
+      [ -n "$hostlab" ] &&
+         mount_host_dir "$hostlab"  /hostlab  "Mounting '$hostlab' on '/hostlab/'"
 
 
       # Configure virtual host on the first boot
@@ -195,7 +197,13 @@ case $1 in
             echo "Copying shared files from '/hostlab/shared/'"
             # Copy shared files without following symbolic links. Ignore file
             # ownership.
-			   cp --recursive --no-preserve ownership --no-dereference --preserve=links --target-directory / -- "${shared_files[@]}"
+			   cp \
+               --recursive \
+               --no-preserve ownership \
+               --no-dereference \
+               --preserve=links \
+               --target-directory / \
+               -- "${shared_files[@]}"
          fi
 
          # File check avoids need to set the nullglob shell option
@@ -204,7 +212,13 @@ case $1 in
             echo "Copying $hostname-specific files from '/hostlab/$hostname/'"
             # Copy host-specific files without following symbolic links. Ignore
             # file ownership.
-            cp --recursive --no-preserve ownership --no-dereference --preserve=links --target-directory / -- "${host_files[@]}"
+            cp \
+               --recursive \
+               --no-preserve ownership \
+               --no-dereference \
+               --preserve=links \
+               --target-directory / \
+               -- "${host_files[@]}"
          fi
 
          # Only perform these actions on the machine's first boot (if a shared
@@ -266,8 +280,10 @@ EOF
 
 
       # Unmount host directories inside the guest
-      [ -n "$hostlab" ] &&  umount_host_dir "/hostlab"  "Unmounting and removing '/hostlab'"
-      [ -n "$hosthome" ] && umount_host_dir "/hosthome" "Unmounting and removing '/hosthome'"
+      [ -n "$hostlab" ] &&
+         umount_host_dir "/hostlab"  "Unmounting and removing '/hostlab'"
+      [ -n "$hosthome" ] &&
+         umount_host_dir "/hosthome" "Unmounting and removing '/hosthome'"
 
       if [ "${#mount_specifications[@]}" -gt 0 ]; then
          for mount_specification in "${mount_specifications[@]}"; do

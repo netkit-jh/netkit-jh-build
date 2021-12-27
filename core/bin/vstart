@@ -4,7 +4,8 @@
 #     Habib, Joshua Hawking - Warwick Manufacturing Group, University of
 #     Warwick.
 #     Copyright 2002-2009 Maurizio Patrignani, Maurizio Pizzonia, Fabio Ricci,
-#     Massimo Rimondini - Computer Networks Research Group, Roma Tre University.
+#     Massimo Rimondini - Computer Networks Research Group, Roma Tre
+#     University.
 #
 #     This file is part of Netkit.
 # 
@@ -21,8 +22,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This is the Netkit vstart script, which is used to start virtual machines with
-# given parameters.
+# This is the Netkit vstart script, which is used to start virtual machines
+# with given parameters.
 
 
 ###############################################################################
@@ -256,11 +257,12 @@ check_filesystem() {
    local filepath=$1
 
    local fs_type
+   local unsupportive_fs="ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|(da|e|fute|v)?xfs"
 
    # Get the host filesystem type
    fs_type=$(stat --file-system --format "%T" -- "$filepath")
 
-   if [[ ! "$fs_type" =~ ^(ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|(da|e|fute|v)?xfs)$ ]]; then
+   if [[ ! "$fs_type" =~ ^($unsupportive_fs)$ ]]; then
       echo 1>&2 "$SCRIPTNAME: Filesystem '$fs_type' may not support sparse files, this could result in performance loss and disk space consumption"
    fi
 }
@@ -622,13 +624,15 @@ if [ "$VM_CON0" = "this" ] && [ "$VM_CON1" = "this" ]; then
 fi
 
 if [ -n "$no_cow" ]; then
-   # Check whether a COW filesystem has been explictly provided when using the --no-cow option
+   # Check whether a COW filesystem has been explictly provided when using the
+   # '-W|--no-cow' option.
    if [ -n "$filesystem" ]; then
       echo 1>&2 "$SCRIPTNAME: Cannot provide a filesystem name with --no-cow"
       usage 1
    fi   
 
-   # Check whether the user asked to hide the virtual machine filesystem while using the --no-cow option
+   # Check whether the user asked to hide the virtual machine filesystem while
+   # using the '-W|--no-cow' option
    if [ -n "$remove_fs" ]; then
       echo 1>&2 "$SCRIPTNAME: Cannot hide the filesystem when using --no-cow"
       usage 1
@@ -896,7 +900,8 @@ fi
 
 
 # Background invocation commands if not running directly in the parent terminal
-[ -z "$foreground" ] && [ "$VM_CON0" != "this" ] && [ "$VM_CON1" != "this" ] && backgrounded=1
+[ -z "$foreground" ] && [ "$VM_CON0" != "this" ] && [ "$VM_CON1" != "this" ] &&
+   backgrounded=1
 
 if [ -n "$verbose" ]; then
    echo "Running ==> ${kernel_cmd[*]}"

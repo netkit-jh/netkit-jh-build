@@ -2,8 +2,6 @@
 
 #     Copyright 2021 Billy Bromell, Adam Bromiley, Joshua Hawking - Warwick
 #     Manufacturing Group, University of Warwick.
-#     Copyright 2002-2009 Maurizio Patrignani, Maurizio Pizzonia, Fabio Ricci,
-#     Massimo Rimondini - Computer Networks Research Group, Roma Tre University.
 #
 #     This file is part of Netkit.
 # 
@@ -136,7 +134,8 @@ tmux_command() {
 
    # Print all lines after the final match of ": $cmd_uuid" and remove the last
    # line (which should the next shell prompt.)
-   sed --quiet "/: $cmd_uuid/{n;h;b};H;\${x;p}" <<< "$tmux_buffer" | head --lines -1
+   sed --quiet "/: $cmd_uuid/{n;h;b};H;\${x;p}" <<< "$tmux_buffer" |
+      head --lines -1
 }
 
 

@@ -20,8 +20,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This script can be used to gracefully halt a Netkit lab. If asked to, it
-# also removes .disk files.
+# This script can be used to gracefully halt a Netkit lab. If asked to, it also
+# removes .disk files.
 
 
 ###############################################################################
@@ -140,7 +140,7 @@ while true; do
          usage 0
          ;;
       -r|--remove-fs)
-         remove_filesystem=1
+         remove_fs=1
          ;;
       -l|--list)
          list_vhosts=1
@@ -180,7 +180,7 @@ if [ ! -d "$lab_directory" ]; then
 fi
 
 # Filesystem cannot be removed if we are working in quick mode
-if [ -n "$remove_filesystem" ] && [ -z "$quick_mode" ]; then
+if [ -n "$remove_fs" ] && [ -z "$quick_mode" ]; then
    echo 1>&2 "$SCRIPTNAME: Filesystems cannot be removed (-r) when working in quick mode (-q)"
    exit 1
 fi
@@ -196,7 +196,8 @@ get_lab_vhosts "$lab_directory"
 
 for vhost in "${lab_vhosts[@]}"; do
    bold_print "Halting '$vhost'... "
-   "$NETKIT_HOME/bin/vhalt" ${quick_mode:+"--quick"} ${remove_filesystem:+"--remove-fs"} -- "$vhost" && rm --force -- "$lab_directory/$vhost.ready"
+   "$NETKIT_HOME/bin/vhalt" ${quick_mode:+"--quick"} ${remove_fs:+"--remove-fs"} -- "$vhost" &&
+      rm --force -- "$lab_directory/$vhost.ready"
 done
 
 bold_print "Removing readyfor.test..."

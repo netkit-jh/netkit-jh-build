@@ -38,11 +38,21 @@ target_user=$2
 domain=$3
 
 # Address of the (host side) tap interface
-tap_address=$4
+tap_addr=$4
 
 
-postrouting_rule=( "POSTROUTING" "!" "--out-interface" "lo" "--match" "comment" "--comment" "Netkit-JH" "--jump" "MASQUERADE" )
-forward_rule=( "FORWARD" "--in-interface" "nk_+" "--match" "comment" "--comment" "Netkit-JH" "--jump" "ACCEPT" )
+postrouting_rule=(
+   "POSTROUTING"
+   "!" "--out-interface" "lo"
+   "--match" "comment" "--comment" "Netkit-JH"
+   "--jump" "MASQUERADE"
+)
+forward_rule=(
+   "FORWARD"
+   "--in-interface" "nk_+"
+   "--match" "comment" "--comment" "Netkit-JH"
+   "--jump" "ACCEPT"
+)
 
 
 case $action in
@@ -67,8 +77,8 @@ case $action in
       sudo "$NETKIT_HOME/bin/tunctl" -d "$tap_device_name" > /dev/null 2>&1
       echo "done."
 
-      if ip addr show | grep --quiet "inet $tap_address"; then
-         echo 1>&2 "$tap_address: Tap address already allocated to another interface. Remove the interface or change the IP address"
+      if ip addr show | grep --quiet "inet $tap_addr"; then
+         echo 1>&2 "$tap_addr: Tap address already allocated to another interface. Remove the interface or change the IP address"
          exit 1
       fi
 
@@ -80,7 +90,7 @@ case $action in
       echo "done."
       
       printf "Bringing up %s...\t\t\t" "$tap_device_name"
-      if ! sudo ifconfig "$tap_device_name" "$tap_address" up; then
+      if ! sudo ifconfig "$tap_device_name" "$tap_addr" up; then
          echo "failed."
          exit 1
       fi

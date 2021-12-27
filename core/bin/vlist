@@ -3,7 +3,8 @@
 #     Copyright 2020-2021 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
 #     Group, University of Warwick.
 #     Copyright 2002-2009 Maurizio Patrignani, Maurizio Pizzonia, Fabio Ricci,
-#     Massimo Rimondini - Computer Networks Research Group, Roma Tre University.
+#     Massimo Rimondini - Computer Networks Research Group, Roma Tre
+#     University.
 #
 #     This file is part of Netkit.
 # 
@@ -20,8 +21,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This is the Netkit vlist script, which is used to list running virtual machines
-# and/or ask for details about a given machine.
+# This is the Netkit vlist script, which is used to list running virtual
+# machines and/or ask for details about a given machine.
 
 
 ###############################################################################
@@ -152,7 +153,11 @@ print_vhost_summary() {
       ((total_memory_usage += vhost_info[memory_usage]))
 
       # No column will be truncated on a value that is too long
-      printf "%-20s %-20s %5d %9d   " "${vhost_info[owner]}" "${vhost_info[umid]}" "${vhost_info[pid]}" "${vhost_info[memory_usage]}"
+      printf "%-20s %-20s %5d %9d   " \
+         "${vhost_info[owner]}" \
+         "${vhost_info[umid]}" \
+         "${vhost_info[pid]}" \
+         "${vhost_info[memory_usage]}"
 
       separator=""
 

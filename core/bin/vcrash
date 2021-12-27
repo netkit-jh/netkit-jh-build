@@ -3,7 +3,8 @@
 #     Copyright 2020-2021 Billy Bromell, Adam Bromiley, Joshua Hawking -
 #     Warwick Manufacturing Group, University of Warwick.
 #     Copyright 2002-2009 Maurizio Patrignani, Maurizio Pizzonia, Fabio Ricci,
-#     Massimo Rimondini - Computer Networks Research Group, Roma Tre University.
+#     Massimo Rimondini - Computer Networks Research Group, Roma Tre
+#     University.
 #
 #     This file is part of Netkit.
 # 
@@ -20,10 +21,10 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This is the Netkit vcrash script. This script can be used to kill running virtual
-# machines without shutting them down. This roughly corresponds to unplugging
-# their power cord. This script is also useful if you want to kill a hanging
-# virtual machine.
+# This is the Netkit vcrash script. This script can be used to kill running
+# virtual machines without shutting them down. This roughly corresponds to
+# unplugging their power cord. This script is also useful if you want to kill a
+# hanging virtual machine.
 
 
 ###############################################################################
@@ -145,7 +146,9 @@ kill_by_signaling() {
 
    # Signalling processes twice ensures they stop even if they need to be
    # killed in a certain order
-   IFS=" " read -ra pids <<< "$(get_vhost_all_pids_by_name "$target_user" "$vhost")"
+   IFS=" " read -ra pids <<< "$(
+      get_vhost_all_pids_by_name "$target_user" "$vhost"
+   )"
 
    [ -n "$verbose" ] || [ -n "$test_mode" ] && echo "PIDs: ${pids[*]}"
 
@@ -172,7 +175,9 @@ kill_by_signaling() {
    kill -TERM "${pids[@]}"
 
    sleep 1
-   IFS=" " read -ra pids <<< "$(get_vhost_all_pids_by_name "$target_user" "$vhost")"
+   IFS=" " read -ra pids <<< "$(
+      get_vhost_all_pids_by_name "$target_user" "$vhost"
+   )"
 
    if [ "${#pids[@]}" -gt 0 ]; then
       echo -n "killing harder... "
@@ -398,6 +403,7 @@ for vhost in "${vhosts[@]}"; do
       fi
 
       # Remove filesystem (.disk file)
-      [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] && rm --force --verbose -- "${vhost_info[disk]}"
+      [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] &&
+         rm --force --verbose -- "${vhost_info[disk]}"
    fi
 done

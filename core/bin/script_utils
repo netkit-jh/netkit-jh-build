@@ -4,7 +4,8 @@
 #     Copyright 2020-2021 Billy Bromell, Adam Bromiley, Joseph Bunce, Joshua
 #     Hawking - Warwick Manufacturing Group, University of Warwick.
 #     Copyright 2002-2009 Maurizio Patrignani, Maurizio Pizzonia, Fabio Ricci,
-#     Massimo Rimondini - Computer Networks Research Group, Roma Tre University.
+#     Massimo Rimondini - Computer Networks Research Group, Roma Tre
+#     University.
 #
 #     This file is part of Netkit.
 # 
@@ -356,7 +357,11 @@ get_tap_interface() {
    user_sha256=$(printf "%s" "$target_user" | sha256sum | awk '{ print $1 }')
    domain_sha256=$(printf "%s" "$domain" | sha256sum | awk '{ print $1 }')
 
-   interface_sha256=$(printf "%s" "$user_sha256$domain_sha256" | sha256sum | awk '{ print $1 }')
+   interface_sha256=$(
+      printf "%s" "$user_sha256$domain_sha256" |
+      sha256sum |
+      awk '{ print $1 }'
+   )
 
    echo "nk_${interface_sha256:0:12}"
 }
@@ -392,7 +397,17 @@ get_hub_socket() {
 
    # We truncate the SHA-256 digests to avoid hitting the maximum filename
    # length.
-   echo "$HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${user_sha256:0:8}_${tap:+"tap_"}${domain_sha256:0:8}_$domain$HUB_SOCKET_EXTENSION"
+   hub_socket_path=(
+      "$HUB_SOCKET_DIR/"
+      "${HUB_SOCKET_PREFIX}_"
+      "${user_sha256:0:8}_"
+      "${tap:+"tap_"}"
+      "${domain_sha256:0:8}_"
+      "$domain"
+      "$HUB_SOCKET_EXTENSION"
+   )
+
+   printf "%s" "${hub_socket_path[*]}" $'\n'
 }
 
 
@@ -514,7 +529,13 @@ start_inet_hub() {
    fi
 
    # Socket does not exist yet or it is going unused
-   manage_tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "start" "$USER_ID" "$domain" "$tap_address" )
+   manage_tuntap_cmd=(
+      "$NETKIT_HOME/bin/manage_tuntap"
+      "start"
+      "$USER_ID"
+      "$domain"
+      "$tap_address"
+   )
 
    echo "******** Starting Internet connected virtual hub ********"
    echo "   (host) $tap_address"
@@ -534,23 +555,39 @@ start_inet_hub() {
    echo "************** Abandoning root privileges ***************"
 
    interface_name=$(get_tap_interface "$USER_ID" "$domain")
-   uml_switch_cmd=( "$NETKIT_HOME/bin/uml_switch" "-tap" "$interface_name" "-hub" "-unix" "$hub_socket" )
+   
+   uml_switch_cmd=(
+      "$NETKIT_HOME/bin/uml_switch"
+      "-tap" "$interface_name"
+      "-hub"
+      "-unix" "$hub_socket"
+   )
    printed_uml_switch_cmd="${uml_switch_cmd[*]} < /dev/null &"
 
    # We need to disable buffering on standard output, otherwise the hub log
    # may miss vital log messages when uml_switch is killed.
-   line_buffered_uml_switch_cmd=( "stdbuf" "--output=0" "--" "${uml_switch_cmd[@]}" )
+   line_buffered_uml_switch_cmd=(
+      "stdbuf" "--output=0" "--"
+      "${uml_switch_cmd[@]}"
+   )
 
    # shellcheck disable=SC2016
-   hub_log_cmd=( "stdbuf" "--output=0" "--" \
-                  "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
-                  '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
+   hub_log_cmd=(
+      "stdbuf" "--output=0" "--"
+      "awk"
+         "--assign" "HUB=$hub_socket"
+         "--assign" "USER=$USER_ID"
+         "--assign" "TIME=$(date --iso-8601=seconds)"
+         '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}'
+   )
 
    if [ -n "$just_print" ]; then
       echo "Not running ==> $printed_uml_switch_cmd"
    else
       [ -n "$verbose" ] && echo "Running ==> $printed_uml_switch_cmd"
-      "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
+      
+      "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 |
+         "${hub_log_cmd[@]}" >> "$HUB_LOG" &
    fi
 
    # Wait for uml_switch to start
@@ -587,23 +624,37 @@ start_hub() {
 
    # Socket already exists but is not used
    if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
-      uml_switch_cmd=( "$NETKIT_HOME/bin/uml_switch" "-hub" "-unix" "$hub_socket" )
+      uml_switch_cmd=(
+         "$NETKIT_HOME/bin/uml_switch"
+         "-hub"
+         "-unix" "$hub_socket"
+      )
       printed_uml_switch_cmd="${uml_switch_cmd[*]} < /dev/null &"
 
       # We need to disable buffering on standard output, otherwise the hub log
       # may miss vital log messages when uml_switch is killed.
-      line_buffered_uml_switch_cmd=( "stdbuf" "--output=0" "--" "${uml_switch_cmd[@]}" )
+      line_buffered_uml_switch_cmd=(
+         "stdbuf" "--output=0" "--"
+         "${uml_switch_cmd[@]}"
+      )
    
       # shellcheck disable=SC2016
-      hub_log_cmd=( "stdbuf" "--output=0" "--" \
-                    "awk" "--assign" "HUB=$hub_socket" "--assign" "USER=$USER_ID" "--assign" "TIME=$(date --iso-8601=seconds)" \
-                    '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}' )
+      hub_log_cmd=(
+         "stdbuf" "--output=0" "--"
+         "awk"
+            "--assign" "HUB=$hub_socket"
+            "--assign" "USER=$USER_ID"
+            "--assign" "TIME=$(date --iso-8601=seconds)"
+            '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}'
+      )
       
       if [ -n "$just_print" ]; then
          echo "Not running ==> $printed_uml_switch_cmd"
       else
          [ -n "$verbose" ] && echo "Running ==> $printed_uml_switch_cmd"
-         "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 | "${hub_log_cmd[@]}" >> "$HUB_LOG" &
+         
+         "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 |
+            "${hub_log_cmd[@]}" >> "$HUB_LOG" &
       fi
    fi
 

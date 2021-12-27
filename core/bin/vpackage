@@ -130,7 +130,9 @@ END_OF_HELP
 validate_vpackage_subcommand() {
    local subcommand=$1
 
-   if [[ ! "$subcommand" =~ ^(list|update|upgrade|dist-upgrade|clean|autoremove|auto-remove|install|remove|purge)$ ]]; then
+   local subcommands="list|update|upgrade|dist-upgrade|clean|autoremove|auto-remove|install|remove|purge"
+
+   if [[ ! "$subcommand" =~ ^($subcommands)$ ]]; then
       echo 1>&2 "$SCRIPTNAME: Invalid subcommand '$subcommand'"
       usage 1
    fi
@@ -224,7 +226,8 @@ mount_point=$VPACKAGE_MOUNT_POINT
 
 
 # Get command line options
-long_opts="assume-yes,dry-run,filesystem:,help,just-print,only-upgrade,pass:,recon,version,yes"
+long_opts="assume-yes,dry-run,filesystem:,help,just-print,only-upgrade,pass:,\
+recon,version,yes"
 short_opts="d:no:y"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -320,7 +323,12 @@ chroot_cmd=( "sudo" "chroot" -- "$mount_point" )
 # NOTE: for an unknown reason, apt-get --option RootDir does not work for
 # installing packages, rather the packages get installed to the host system.
 # chroot is not required for dpkg commands.
-apt_get_cmd=( "${chroot_cmd[@]}" "apt-get" "${passthrough_opts[@]}" "$subcommand" )
+apt_get_cmd=(
+   "${chroot_cmd[@]}"
+   "apt-get"
+   "${passthrough_opts[@]}"
+   "$subcommand"
+)
 
 # The following apt-get commands are not supported for reasons relating to
 # complexity or lack of necessity for most users: dselect-upgrade, source,

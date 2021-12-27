@@ -3,7 +3,8 @@
 #     Copyright 2020-2021 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
 #     Group, University of Warwick.
 #     Copyright 2002-2009 Maurizio Patrignani, Maurizio Pizzonia, Fabio Ricci,
-#     Massimo Rimondini - Computer Networks Research Group, Roma Tre University.
+#     Massimo Rimondini - Computer Networks Research Group, Roma Tre
+#     University.
 #
 #     This file is part of Netkit.
 # 
@@ -285,13 +286,20 @@ invoke_mconsole() {
          action_desc="remove"
       fi
 
-      uml_mconsole_cmd=( "$NETKIT_HOME/bin/uml_mconsole" "$mconsole" "$action" "$device" )
+      uml_mconsole_cmd=(
+         "$NETKIT_HOME/bin/uml_mconsole"
+         "$mconsole"
+         "$action"
+         "$device"
+      )
 
       if [ -n "$just_print" ]; then
          echo "Not running ==> ${uml_mconsole_cmd[*]}"
       else
          [ -n "$verbose" ] && echo "Running ==> ${uml_mconsole_cmd[*]}"
-         "${uml_mconsole_cmd[@]}" > /dev/null 2>&1 || echo 2>&1 "Failed to $action_desc interface '$device'"
+
+         "${uml_mconsole_cmd[@]}" > /dev/null 2>&1 ||
+            echo 2>&1 "Failed to $action_desc interface '$device'"
       fi
    done
 }

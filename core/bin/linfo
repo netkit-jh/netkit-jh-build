@@ -211,7 +211,8 @@ lab_map() {
       exit 1
    fi
 
-   generate_dot_graph "${lab_confs[@]}" | "$graph_generator" -Tpng -o"$map_file"
+   generate_dot_graph "${lab_confs[@]}" |
+      "$graph_generator" -Tpng -o"$map_file"
 }
 
 
