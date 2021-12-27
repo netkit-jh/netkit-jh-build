@@ -18,7 +18,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# Bash completion function for lcrash
+# Bash completion function for lcrash.
 
 
 ###############################################################################
