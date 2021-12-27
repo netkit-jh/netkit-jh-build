@@ -42,8 +42,8 @@ _lhalt() {
 
    local lab_directory lab_vhosts
 
-   local current_word=${COMP_WORDS[COMP_CWORD]}
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+   local current_word=${COMP_WORDS[COMP_CWORD]}
 
    mapfile -t options < <(_get_command_options lhalt)
    options_str=$(_option_array_to_string "=" "${options[@]}")

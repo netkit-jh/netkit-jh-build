@@ -39,8 +39,8 @@
 _vclean() {
    local options options_str
 
-   local current_word=${COMP_WORDS[COMP_CWORD]}
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+   local current_word=${COMP_WORDS[COMP_CWORD]}
 
    mapfile -t options < <(_get_command_options vclean)
    options_str=$(_option_array_to_string "=" "${options[@]}")
