@@ -19,99 +19,111 @@
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Check that NETKIT_HOME is set
-if [ -z "${NETKIT_HOME}" ]; then
-    echo "NETKIT_HOME is not configured, please ensure you have run the installation script and reloaded your environmental variables."
-    exit 1
+SCRIPTNAME=$(basename -- "$0")
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
 fi
 
-# Check netkit.conf exists
-if [ ! -f "${NETKIT_HOME}/netkit.conf" ]; then
-    echo "${NETKIT_HOME}/netkit.conf does not exist, please try running the installation script again."
+
+if [ -f /etc/netkit.conf ]; then
+   netkit_conf="/etc/netkit.conf"
+elif [ -f "$NETKIT_HOME/netkit.conf" ]; then
+   netkit_conf="$NETKIT_HOME/netkit.conf"
+elif [ -f "$HOME/.netkit/netkit.conf" ]; then
+   netkit_conf="$HOME/.netkit/netkit.conf"
+else
+   echo 1>&2 "$SCRIPTNAME: netkit.conf not found"
+   exit 1
 fi
 
-echo ""
-echo "Which terminal emulator would you like to use for Netkit machines?
+# shellcheck source=../netkit.conf
+. -- "$netkit_conf"
+
+
+cat << END_OF_DIALOG
+Current terminal emulator (TERM_TYPE): '$TERM_TYPE'
+Which terminal emulator would you like to use for Netkit machines?
 
 (1) xterm - reliable, stable but ancient UI (default installation)
-(2) alacritty - lightweight, modern UI (recommended)
-(3) kitty -  another lightweight, modern UI
-(4) gnome-terminal - default terminal of Ubuntu 
-(5) wsl - wsl compatiblity through windows conhost
-(6) wt - wsl compatability through windows terminal (recommended for wsl hosts)
+(2) Alacritty - modern and GPU-accelerated terminal emulator
+(3) kitty -  another modern and GPU-accelerated emulator
+(4) GNOME Terminal - default terminal for Ubuntu
+(5) wsl - provides WSL compatiblity through the Windows Console (conhost.exe)
+(6) wt - WSL compatibility via Windows Terminal (recommended for WSL hosts)
 
-You will be asked to enter your password to install new repositories/packages where required.
-"
-successful=false
+NOTE: required repositories/packages will be installed. For WSL compatibility,
+/etc/wsl.conf must be configured to append the host's PATH to the virtual
+machine's PATH. Ensure Windows Terminal is already installed on the host if
+selecting option (6).
+END_OF_DIALOG
 
-while [ $successful = false ]; do
-    echo "Which terminal would you like to use (1/2/3/4/5/6)? "
-    read terminal
 
-    case $terminal in
-        1)
-            # xterm is available on Ubuntu by default
-            sudo apt install xterm -y
-            sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=xterm/g" ${NETKIT_HOME}/netkit.conf
-            successful=true
-            terminal="Xterm"
-        ;;
-        2)
-             # Requires the alacritty repo
+while true; do
+   read -rp "Which terminal would you like to use [1-6]? " response
+   case $response in
+      1)
+         if ! command -v -- "xterm" > /dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install xterm
+         fi
+
+         term_type="xterm"
+         terminal="xterm"
+         ;;
+      2)
+         if ! command -v -- "alacritty" > /dev/null 2>&1; then
             sudo add-apt-repository ppa:mmstick76/alacritty
-            sudo apt update
-            sudo apt install alacritty -y
-            sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=alacritty/g" ${NETKIT_HOME}/netkit.conf
-            successful=true
-            terminal="Alacritty"
-            echo "
-If you get 'libEGL warning: DRI2: failed to authenticate' when running a machine, try running 'apt upgrade'. This is a harmless warning related to virtual machine graphical drivers and will not impact running the lab."
+            sudo apt-get update
+            sudo apt-get install alacritty
+         fi
+
+         term_type="alacritty"
+         terminal="Alacritty"
         ;;
-        3)
-            # Kitty is available on Ubuntu by default
-            sudo apt install kitty -y
-            sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=kitty/g" ${NETKIT_HOME}/netkit.conf
-            successful=true
-            terminal="Kitty"
-        ;;
-        4)
-            # gnome is pre installed
-            sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=gnome/g" ${NETKIT_HOME}/netkit.conf
-            successful=true
-            terminal="Gnome"
-        ;;
-        5)
-            # check if we're on a wsl host
-            if which wsl.exe > /dev/null; then
-                sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=wsl/g" ${NETKIT_HOME}/netkit.conf
-                successful=true
-                terminal="Windows Conhost"
-            else
-                echo "You are not on a wsl host."
-            fi
-        ;;
-        6)
-            # check if we're on a wsl host
-            if which wsl.exe > /dev/null; then
-                # check if windows terminal is present on the Windows host
-                if which wt.exe > /dev/null; then
-                    sed -i "s/TERM_TYPE=[a-zA-Z]*/TERM_TYPE=wt/g" ${NETKIT_HOME}/netkit.conf
-                    successful=true
-                    terminal="Windows Terminal"
-                else
-                    echo "Windows Terminal was not detected on your Windows Host"
-                    echo "Please install it by following the instructions at"
-                    echo "https://docs.microsoft.com/en-us/windows/terminal/get-started"
-                fi
-            else
-                echo "You are not on a wsl host."
-            fi
-        ;;
-        *)
-            echo "Please pick one of the available options."
-        ;;
-    esac
+      3)
+         if ! command -v -- "kitty" > /dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install kitty
+         fi
+
+         term_type="kitty"
+         terminal="kitty"
+         ;;
+      4)
+         if ! command -v -- "gnome-terminal" > /dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install gnome-terminal
+         fi
+
+         term_type="gnome"
+         terminal="GNOME Terminal"
+         ;;
+      5)
+         if ! command -v -- "wsl.exe" > /dev/null 2>&1; then
+            echo 1>&2
+               "$SCRIPTNAME: wsl.exe: command not found. Is WSL configured to share environment variables with Windows?"
+            exit 1
+         fi
+
+         term_type="wsl"
+         terminal="Windows Console"
+         ;;
+      6)
+         if ! command -v -- "wt.exe" > /dev/null 2>&1; then
+            echo 1>&2
+               "$SCRIPTNAME: wt.exe: command not found. Is WSL configured to share environment variables with Windows?"
+            exit 1
+         fi
+
+         term_type="wt"
+         terminal="Windows Terminal"
+         ;;
+   esac
 done
 
-echo "
-Done! Your Netkit installation has been updated and you are now using ${terminal} as your terminal emulator."
+# Change TERM_TYPE in netkit.conf
+sed --in-place -- "s/TERM_TYPE=.*/TERM_TYPE=$term_type/g" "$netkit_conf"
+
+echo "$terminal will now be used as Netkit's default terminal emulator."
