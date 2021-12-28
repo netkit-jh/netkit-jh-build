@@ -1224,15 +1224,6 @@ fi
 [ -f "$HOME/.netkit/netkit.conf" ] && . -- "$HOME/.netkit/netkit.conf"
 
 
-# Check whether some environment variables override default settings
-# shellcheck disable=SC2034
-[ -n "$NETKIT_MEMORY" ] &&     VM_MEMORY=$NETKIT_MEMORY
-[ -n "$NETKIT_FILESYSTEM" ] && VM_MODEL_FS=$NETKIT_FILESYSTEM
-[ -n "$NETKIT_KERNEL" ] &&     VM_KERNEL=$NETKIT_KERNEL
-# shellcheck disable=SC2034
-[ -n "$NETKIT_TERM" ] &&       TERM_TYPE=$NETKIT_TERM
-
-
 # Check for invalid values in netkit.conf variables
 validate_netkit_conf_variables
 

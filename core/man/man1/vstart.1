@@ -506,33 +506,6 @@ a non-standard Netkit kernel or filesystem is being used).
 All Netkit commands require that the \fBNETKIT_HOME\fR variable contains
 the name of the directory Netkit is installed in.
 
-Default settings for newly started virtual machines can be overridden if the
-following environment variables are defined:
-
-.TP 20
-.B
-NETKIT_FILESYSTEM
-Name of the default model filesystem (must be the name of a file storing the whole
-model filesystem). Can be changed by using the \fB\-m\fR or \fB\-\-model\-fs\fR
-option.
-.TP
-.B
-NETKIT_MEMORY
-Amount of available RAM inside the virtual machine (in megabytes). Can be
-changed by using the \fB\-M\fR or \fB\-\-mem\fR option.
-.TP
-.B
-NETKIT_KERNEL
-Name of the virtual machine kernel (must be the name of a UML kernel). Can be
-changed by using the \fB\-k\fR or \fB\-\-kernel\fR option.
-.TP
-.B
-NETKIT_TERM
-Terminal emulator program to be used for consoles in \fBxterm\fR mode. Can be
-changed by using the \fB\-\-xterm\fR option (see above the documentation of this
-option for a list of permitted values).
-
-
 \" ########################################
 
 .SH FILES
