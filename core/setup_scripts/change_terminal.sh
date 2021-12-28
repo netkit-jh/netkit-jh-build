@@ -27,23 +27,48 @@ if [ -z "$NETKIT_HOME" ]; then
 fi
 
 
-if [ -f /etc/netkit.conf ]; then
-   netkit_conf="/etc/netkit.conf"
-elif [ -f "$NETKIT_HOME/netkit.conf" ]; then
-   netkit_conf="$NETKIT_HOME/netkit.conf"
-elif [ -f "$HOME/.netkit/netkit.conf" ]; then
+# Read user-defined Netkit configurations in reverse order of file localisation
+# (per user, per install, per system).
+# The variable term_type_netkit_conf stores the path of the most local
+# netkit.conf file defining TERM_TYPE. This is only used in messages to the
+# user.
+# The variable netkit_conf stores the path of the most local netkit.conf file
+# irrespective of whether it already sets TERM_TYPE or not. This will be used
+# to declare the user's new chosen terminal emulator. By default, this is in
+# $NETKIT_HOME.
+netkit_conf="$NETKIT_HOME/netkit.conf"
+
+if [ -f "$HOME/.netkit/netkit.conf" ]; then
+   # shellcheck disable=SC1091
+   . -- "$HOME/.netkit/netkit.conf"
    netkit_conf="$HOME/.netkit/netkit.conf"
-else
-   echo 1>&2 "$SCRIPTNAME: netkit.conf not found"
-   exit 1
+   [ -n "$TERM_TYPE" ] && term_type_netkit_conf=$netkit_conf
 fi
 
-# shellcheck source=../netkit.conf
-. -- "$netkit_conf"
+if [ -z "$TERM_TYPE" ] && [ -f "$NETKIT_HOME/netkit.conf" ]; then
+   # shellcheck source=../netkit.conf
+   . -- "$NETKIT_HOME/netkit.conf"
+   netkit_conf="$NETKIT_HOME/netkit.conf"
+   [ -n "$TERM_TYPE" ] && term_type_netkit_conf=$netkit_conf
+fi
+
+if [ -z "$TERM_TYPE" ] && [ -f /etc/netkit.conf ]; then
+   # shellcheck disable=SC1091
+   . "/etc/netkit.conf"
+   netkit_conf="/etc/netkit.conf"
+   [ -n "$TERM_TYPE" ] && term_type_netkit_conf=$netkit_conf
+fi
+
+# Read default Netkit configuration if user has not overrode TERM_TYPE
+if [ -z "$TERM_TYPE" ] && [ -f "$NETKIT_HOME/netkit.conf.default" ]; then
+   # shellcheck source=../netkit.conf.default
+   . -- "$NETKIT_HOME/netkit.conf.default"
+   [ -n "$TERM_TYPE" ] && term_type_netkit_conf=$netkit_conf
+fi
 
 
 cat << END_OF_DIALOG
-Current terminal emulator (TERM_TYPE): '$TERM_TYPE'
+Current terminal emulator (TERM_TYPE): '$TERM_TYPE' ($term_type_netkit_conf)
 Which terminal emulator would you like to use for Netkit machines?
 
 (1) xterm - reliable, stable but ancient UI (default installation)
@@ -123,7 +148,13 @@ while true; do
    esac
 done
 
-# Change TERM_TYPE in netkit.conf
-sed --in-place -- "s/TERM_TYPE=.*/TERM_TYPE=$term_type/g" "$netkit_conf"
+# Change TERM_TYPE in netkit.conf or append it as a new option if not already
+# defined.
+comment="# Added by \$NETKIT_HOME\/setup_scripts\/change_terminal.sh"
+sed \
+   --in-place \
+   -- \
+   "/^TERM_TYPE=/{h;s/=.*/=$term_type/};\${x;/^$/{s//\n$comment\nTERM_TYPE=$term_type/;H};x}" \
+   "$netkit_conf"
 
 echo "$terminal will now be used as Netkit's default terminal emulator."
