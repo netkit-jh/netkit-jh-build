@@ -34,8 +34,7 @@
 # Check for the availability of some system commands and utilities which are
 # required for Netkit to work properly
 
-check_message "Checking for availability of auxiliary tools:"
-echo
+echo ">  Checking for availability of auxiliary tools:"
 
 OK=1
 TEMP_PATH=":$PATH"
@@ -48,7 +47,6 @@ for CURRENT_COMMAND in $SYSTEM_COMMANDS; do
    printf "\t%-13s: " $CURRENT_COMMAND
    
    COMMAND_DIR=$(which $CURRENT_COMMAND 2>/dev/null)
-   ADD_TO_PATH=0
    
    # If the requested executable has not been found in the PATH,
    # try looking in standard directories

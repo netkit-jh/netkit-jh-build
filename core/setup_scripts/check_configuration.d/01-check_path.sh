@@ -33,7 +33,7 @@
 
 # Check if the path to the Netkit directory contains spaces
 
-check_message "Checking path correctness... "
+echo -n ">  Checking path correctness... "
 
 if echo "$CHECK_NETKIT_HOME" | grep -q " "; then
    echo "failed!"

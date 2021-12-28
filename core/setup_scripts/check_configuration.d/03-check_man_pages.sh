@@ -33,7 +33,7 @@
 
 # Check whether Netkit man pages are reachable
 
-check_message "Checking for availability of man pages... "
+echo -n ">  Checking for availability of man pages... "
 
 if ! echo "${MANPATH}" | grep -qE "(:$NETKIT_HOME\/man\/?$)|(^$NETKIT_HOME\/man\/?:)|(:$NETKIT_HOME\/man\/?:)"; then
    echo "failed!"

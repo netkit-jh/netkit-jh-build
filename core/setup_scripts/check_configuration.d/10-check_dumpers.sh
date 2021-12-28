@@ -33,8 +33,7 @@
 
 # Check for the availability of uml_dump and eventually wireshark or tcpdump
 
-check_message "Checking for availability of dumper tools:"
-echo
+echo ">  Checking for availability of dumper tools:"
 
 OK=1
 TEMP_PATH=":$PATH"
@@ -48,7 +47,6 @@ for CURRENT_COMMAND in $SYSTEM_COMMANDS $NETKIT_UTILITIES; do
    printf "\t%-13s: " $CURRENT_COMMAND
    
    COMMAND_DIR=$(which $CURRENT_COMMAND 2>/dev/null)
-   ADD_TO_PATH=0
    
    # If the requested executable has not been found in the PATH,
    # try looking in standard directories
@@ -59,7 +57,6 @@ for CURRENT_COMMAND in $SYSTEM_COMMANDS $NETKIT_UTILITIES; do
       COMMAND_DIR=${COMMAND_DIR##* }
       if [ ! -z "$COMMAND_DIR" -a -f "$COMMAND_DIR" ]; then
          echo -n "ok, not in PATH"
-         ADD_TO_PATH=1
       fi
    else
       echo -n "ok"

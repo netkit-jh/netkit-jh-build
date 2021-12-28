@@ -33,7 +33,7 @@
 
 # Check whether NETKIT_HOME has been set
 
-check_message "Checking environment... "
+echo -n ">  Checking environment... "
 
 if [ -z "$NETKIT_HOME" ]; then
    echo "failed!"

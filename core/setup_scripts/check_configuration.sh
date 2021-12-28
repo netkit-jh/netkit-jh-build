@@ -39,12 +39,6 @@ ISSUE_WARNING=0
 CHECK_NETKIT_HOME=$(dirname -- "$PWD")
 
 
-# This function is used by check_configuration.d scripts to notify that a
-# particular check is taking place
-check_message() {
-   echo -en ">  $1"
-}
-
 # This function is used by check_configuration.d scripts to raise warnings.
 check_warning() {
    ISSUE_WARNING=1

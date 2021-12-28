@@ -34,7 +34,7 @@
 # Check whether the filesystem Netkit is running from is capable of handling sparse
 # files.
 
-check_message "Checking filesystem type... "
+echo -n ">  Checking filesystem type... "
 
 FS_TYPE=$(stat -f . | grep -w Type)
 FS_TYPE=${FS_TYPE#*Type: }

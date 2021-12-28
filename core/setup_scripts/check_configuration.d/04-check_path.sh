@@ -33,7 +33,7 @@
 
 # Check whether the PATH environment variable is properly set
 
-check_message "Checking for proper directories in the PATH... "
+echo -n ">  Checking for proper directories in the PATH... "
 
 if ! echo "${PATH}" | grep -qE "(:$NETKIT_HOME\/bin\/?$)|(^$NETKIT_HOME\/bin\/?:)|(:$NETKIT_HOME\/bin\/?:)"; then
    echo "failed!"

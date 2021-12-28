@@ -33,8 +33,7 @@
 
 # Check whether there are available terminal emulators
 
-check_message "Checking for availability of terminal emulator applications:"
-echo
+echo ">  Checking for availability of terminal emulator applications:"
 
 OK=0
 TEMP_PATH=":$PATH"
@@ -49,7 +48,6 @@ for CURRENT_COMMAND in $TERMINAL_EMULATORS; do
    printf "\t%-15s: " $CURRENT_COMMAND
    
    COMMAND_DIR=$(which $CURRENT_COMMAND 2>/dev/null)
-   ADD_TO_PATH=0
    
    # If the requested executable has not been found in the PATH,
    # try looking in standard directories

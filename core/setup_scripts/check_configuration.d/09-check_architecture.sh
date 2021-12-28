@@ -33,7 +33,7 @@
 
 # Check whether executables can be run.
 
-check_message "Checking whether executables can run... "
+echo -n ">  Checking whether executables can run... "
 
 ARCH=$(uname -m)
 
