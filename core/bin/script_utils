@@ -1118,7 +1118,7 @@ validate_variable() {
    local queries=( "${@:3}" )
 
    if string_contains "$value" "${queries[@]}"; then
-      echo 1>&2 "$variable: Invalid character in configuration parameter"
+      echo 1>&2 "netkit.conf: $variable: Invalid character in configuration parameter"
       exit 1
    fi
 }
@@ -1203,8 +1203,18 @@ netkit_dir_check() {
 export LC_ALL=C
 
 
-# Read Netkit configuration in order of file localisation (per system, per
-# install, per user).
+# Read default Netkit configuration
+if [ -f "$NETKIT_HOME/netkit.conf.default" ]; then
+   # shellcheck source=../netkit.conf.default
+   . -- "$NETKIT_HOME/netkit.conf.default"
+else
+   echo 1>&2 "script_utils: netkit.conf.default: file not found"
+   exit 1
+fi
+
+
+# Read user-defined Netkit configuration override in order of file localisation
+# (per system, per install, per user).
 # TODO: move into own source script
 # shellcheck disable=SC1091
 [ -f /etc/netkit.conf ] && . "/etc/netkit.conf"
@@ -1214,35 +1224,14 @@ export LC_ALL=C
 [ -f "$HOME/.netkit/netkit.conf" ] && . -- "$HOME/.netkit/netkit.conf"
 
 
-# Assign default values to undefined parameters
-: "${LOGFILENAME=""}"
-: "${MCONSOLE_DIR:="$HOME/.netkit/mconsole"}"
-: "${HUB_SOCKET_DIR:="$HOME/.netkit/hubs"}"
-: "${HUB_SOCKET_PREFIX="vhub"}"
-: "${HUB_SOCKET_EXTENSION=".cnct"}"
-: "${HUB_LOG:="$HUB_SOCKET_DIR/vhubs.log"}"
-: "${VPACKAGE_MOUNT_POINT:="/mnt/netkit-fs-mount-point/"}"
-: "${VM_MEMORY:=128}"
-: "${VM_MEMORY_SKEW:=4}"
-: "${MIN_MEM:=8}"
-: "${MAX_MEM:=512}"
-: "${MAX_INTERFACES:=40}"
-: "${VM_MODEL_FS:="$NETKIT_HOME/fs/netkit-fs"}"
-: "${VM_KERNEL:="$NETKIT_HOME/kernel/netkit-kernel"}"
-: "${VM_CON0:=xterm}"
-: "${VM_CON1:=none}"
-: "${TMUX_OPEN_TERMS:="no"}"
-: "${TERM_TYPE:=xterm}"
-: "${MAX_SIMULTANEOUS_VMS:=20}"
-: "${GRACE_TIME:=1}"
-: "${CHECK_FOR_UPDATES:="yes"}"
-: "${UPDATE_CHECK_PERIOD:=5}"
-
 # Check whether some environment variables override default settings
-[ -n "$NETKIT_FILESYSTEM" ] && VM_MODEL_FS=$NETKIT_FILESYSTEM
+# shellcheck disable=SC2034
 [ -n "$NETKIT_MEMORY" ] &&     VM_MEMORY=$NETKIT_MEMORY
+[ -n "$NETKIT_FILESYSTEM" ] && VM_MODEL_FS=$NETKIT_FILESYSTEM
 [ -n "$NETKIT_KERNEL" ] &&     VM_KERNEL=$NETKIT_KERNEL
+# shellcheck disable=SC2034
 [ -n "$NETKIT_TERM" ] &&       TERM_TYPE=$NETKIT_TERM
+
 
 # Check for invalid values in netkit.conf variables
 validate_netkit_conf_variables

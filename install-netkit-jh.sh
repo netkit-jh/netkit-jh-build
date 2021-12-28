@@ -230,7 +230,7 @@ fi
 if [ "${PREVIOUS_INSTALL_FOUND}" = true ]; then
     echo ""
     echo "Restoring configuration from previous installation."
-    ${TARGET_INSTALL_DIR}/setup_scripts/handle_config.sh "${BACKUP_INSTALL_DIR}" "${TARGET_INSTALL_DIR}"
+    cp "$BACKUP_INSTALL_DIR/netkit.conf" "$TARGET_INSTALL_DIR"
 fi
 
 echo "Netkit-JH should now be installed. Checking configuration..."
