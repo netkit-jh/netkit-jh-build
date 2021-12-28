@@ -56,6 +56,7 @@
 - Port helper compatibility
 - `-w`|`--hostwd` option from `vstart` (it did not provide any purpose)
 - `lrestart` symbolic link (pointed to `lstart` and provided no default or additional functionality)
+- `--fix` option from check_configuration.sh
 - `MCONSOLE_DIR` environment variable detection from uml_mconsole
 - Support for netkit.conf overriding with the `NETKIT_FILESYSTEM`, `NETKIT_MEMORY`, `NETKIT_KERNEL`, and `NETKIT_TERM` environment variables
 

@@ -76,13 +76,6 @@ for CURRENT_COMMAND in $SYSTEM_COMMANDS $NETKIT_UTILITIES; do
          # list of candidate user signalled paths (PATH_TO_BE_USED).
          PATH_TO_BE_USED="$PATH_TO_BE_USED$COMMAND_PATH:"
       fi
-      if [ "$FIXMODE" = "1" -a $ADD_TO_PATH -eq 1 ]; then
-         # Clean the PATH_TO_BE_USED variable, so that no warning is presented
-         # to the user about the unavailability of the current tool.
-         PATH_TO_BE_USED=":"
-         ln -fs "$COMMAND_DIR" "${NETKIT_HOME%/}/bin"
-         echo -n " (fixed)"
-      fi
       echo
    else
       # If the command has not been found even after looking into standard

@@ -59,7 +59,6 @@ for CURRENT_COMMAND in $SYSTEM_COMMANDS; do
       COMMAND_DIR=${COMMAND_DIR##* }
       if [ ! -z "$COMMAND_DIR" -a -f "$COMMAND_DIR" ]; then
          echo -n "ok, not in PATH"
-         ADD_TO_PATH=1
       fi
    else
       echo -n "ok"
@@ -75,13 +74,6 @@ for CURRENT_COMMAND in $SYSTEM_COMMANDS; do
          # located. Moreover, such directory has not been inserted into the
          # list of candidate user signalled paths (PATH_TO_BE_USED).
          PATH_TO_BE_USED="$PATH_TO_BE_USED$COMMAND_PATH:"
-      fi
-      if [ "$FIXMODE" = "1" -a $ADD_TO_PATH -eq 1 ]; then
-         # Clean the PATH_TO_BE_USED variable, so that no warning is presented
-         # to the user about the unavailability of the current tool.
-         PATH_TO_BE_USED=":"
-         ln -fs "$COMMAND_DIR" "${NETKIT_HOME%/}/bin"
-         echo -n " (fixed)"
       fi
       echo
    else

@@ -24,14 +24,19 @@
 # It performs several tests to verify that your system meets fundamental
 # requirements
 
-FIXMODE=0
+
+# Force language to avoid localization errors
+export LANG=C
+
+
+SCRIPTNAME=$(basename -- "$0")
+
+
 ISSUE_WARNING=0
 
-# Get the assumed Netkit install directory
-CHECK_NETKIT_HOME=$(dirname "$PWD")
 
-# force language to avoid localization errors
-export LANG=C
+# Get the assumed Netkit install directory
+CHECK_NETKIT_HOME=$(dirname -- "$PWD")
 
 
 # This function is used by check_configuration.d scripts to notify that a
@@ -66,24 +71,6 @@ check_failure() {
 }
 
 
-# Parse command line options
-parseOptions() {
-   while [ $# -gt 0 ]; do
-      case "$1" in
-      
-         --fix)
-            FIXMODE=1;;
-
-         *)
-            echo "$0: unrecognized option ($1)"
-            echo "$0 should be launched without arguments or with the --fix"
-            echo "option (if requested by the script itself)."
-            exit 1;;
-      esac
-      shift
-   done
-}
-
 if [ "$(basename "$PWD")" != "setup_scripts" ]; then
    echo "Please run this script from inside the setup_scripts subdirectory of the Netkit"
    echo "install directory."
@@ -101,8 +88,6 @@ if [ ! -d "${CHECK_NETKIT_HOME}/bin" \
    echo
    exit 1
 fi
-
-eval parseOptions "$@"
 
 for CHECK_SCRIPT in check_configuration.d/*; do
    [ -f $CHECK_SCRIPT ] && . $CHECK_SCRIPT
