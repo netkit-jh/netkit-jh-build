@@ -20,9 +20,8 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This is the Netkit check_configuration.sh script.
-# It performs several tests to verify that your system meets fundamental
-# requirements
+# This is the Netkit check_configuration.sh script. It performs several tests
+# to verify that the user's system meets fundamental requirements.
 
 
 # Force language to avoid localization errors
@@ -32,65 +31,47 @@ export LANG=C
 SCRIPTNAME=$(basename -- "$0")
 
 
-ISSUE_WARNING=0
+# ANSI color escape sequences
+color_normal=$'\033[0m'
+color_red=$'\033[31;1m'
+color_green=$'\033[32;1m'
+color_yellow=$'\033[33;1m'
 
+warning_count=0
 
-# Get the assumed Netkit install directory
-CHECK_NETKIT_HOME=$(dirname -- "$PWD")
-
-
-# This function is used by check_configuration.d scripts to raise warnings.
-check_warning() {
-   ISSUE_WARNING=1
-}
-
-# This function actually prints a recoverable warning message
-issue_warning() {
-   echo
-   echo -e "\033[33;1m[WARNING]\033[0m Some configuration settings should be changed."
-   echo                     "          You may also ignore this message, but doing so may result in Netkit"
-   echo                     "          not working properly on your system."
-   echo
-}
-
-# This function is used by check_configuration.d scripts to signal that
-# something must be configured differently before proceeding with the other
-# checks.
-check_failure() {
-   echo
-   echo -e "\033[31;1m[ ERROR ]\033[0m Your system is not configured properly. Please correct the"
-   echo                     "          above errors before starting to use Netkit."
-   echo
-   exit 1
-}
-
-
-if [ "$(basename "$PWD")" != "setup_scripts" ]; then
-   echo "Please run this script from inside the setup_scripts subdirectory of the Netkit"
-   echo "install directory."
-   echo
-   exit 1
-fi
-
-if [ ! -d "${CHECK_NETKIT_HOME}/bin" \
-     -o ! -d "${CHECK_NETKIT_HOME}/fs" \
-     -o ! -d "${CHECK_NETKIT_HOME}/kernel" \
-     -o ! -d "${CHECK_NETKIT_HOME}/man" \
-     -o ! -d "check_configuration.d" ]; then
-   echo "Netkit does not appear to be installed in \"$CHECK_NETKIT_HOME\"."
-   echo "Please run this script from inside the directory Netkit is installed in."
-   echo
-   exit 1
-fi
-
-for CHECK_SCRIPT in check_configuration.d/*; do
-   [ -f $CHECK_SCRIPT ] && . $CHECK_SCRIPT
+for script in check_configuration.d/*; do
+   "$script"
+   return_value=$?
+   
+   case $return_value in
+      255)
+         cat << END_OF_DIALOG
+${color_red}[ ERROR ]$color_normal Your system is not configured properly. Correct the above errors and
+verify with $SCRIPTNAME before using Netkit.
+END_OF_DIALOG
+         exit "$return_value"
+         ;;
+      *)
+         # On success, 0 is returned. If there are warnings (no errors), the
+         # warning count is returned.
+         (( warning_count += return_value ))
+         ;;
+   esac
 done
-if [ $ISSUE_WARNING = 1 ]; then
-   issue_warning
-else
-   echo
-   echo -e "\033[32;1m[ READY ]\033[0m Congratulations! Your Netkit setup is now complete!"
-   echo                     "          Enjoy Netkit!"
+
+
+if [ "$warning_count" -gt 0 ]; then
+   cat << END_OF_DIALOG
+${color_yellow}[WARNING]$color_normal It has been advised that $warning_count configuration setting(s) should be
+          changed. You may also ignore this message, but doing so may limit
+          available features, or result in Netkit not functioning correctly on
+          your system.
+END_OF_DIALOG
+   exit "$warning_count"
 fi
 
+
+cat << END_OF_DIALOG
+${color_green}[ READY ]$color_normal Congratulations! Your Netkit setup is now complete; enjoy Netkit!
+END_OF_DIALOG
+exit 0
