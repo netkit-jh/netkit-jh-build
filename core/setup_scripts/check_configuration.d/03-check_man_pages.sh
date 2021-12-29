@@ -33,7 +33,7 @@ echo -n ">  Checking for availability of man pages... "
 # trailing and back-to-back forward slashes, and more importantly symbolic
 # links. This means the test depends on the man/ directory having netkit.7.
 if [ "$(man --where 7 netkit)" -ef "$NETKIT_HOME/man/man7/netkit.7" ]; then
-   new_manpath="${MANPATH:+"\$MANPATH:"}:$NETKIT_HOME/man"
+   new_manpath="${MANPATH:+"\$MANPATH:"}:$NETKIT_HOME/man/"
    
    cat << END_OF_DIALOG
 failed.
