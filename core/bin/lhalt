@@ -84,8 +84,8 @@ only a subset of the virtual machines that make up the lab.
                         shut down. It cannot be used together
                         with -r
   -r, --remove-fs     delete virtual machines filesystems after halting them.
-                      This never impacts the model filesystem. This option
-                      cannot be used together with -q
+                        This never impacts the model filesystem. This option
+                        cannot be used together with -q
 
 Miscellaneous:
 $(help_option)
