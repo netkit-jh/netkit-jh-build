@@ -1,5 +1,4 @@
-#!/bin/false
-# shellcheck shell=bash
+#!/usr/bin/env bash
 
 #     Copyright 2021 Adam Bromiley, Joshua Hawking, Alex McCoy - Warwick
 #     Manufacturing Group, University of Warwick.
