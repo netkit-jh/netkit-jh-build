@@ -68,7 +68,7 @@ failed.
            it requires a glibc version of $required_glibc_version or higher. Your system
            currently uses version $current_glibc_version.
 END_OF_DIALOG
-   exit 1
+   exit 255
 fi
 
 

@@ -62,9 +62,7 @@ if [ -z "$ok" ]; then
              'xterm' or 'tmux'.
 END_OF_DIALOG
    exit 1
-fi
-
-if [ -n "$xterm_warning" ]; then
+elif [ -n "$xterm_warning" ]; then
    cat << END_OF_DIALOG
 
 *** Warning: xterm could not be detected on your system. Since xterm is the

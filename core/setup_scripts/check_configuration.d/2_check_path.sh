@@ -46,7 +46,7 @@ failed.
            This should be set in your .bashrc file with:
               export PATH="$new_path"
 END_OF_DIALOG
-   exit 1
+   exit 255
 fi
 
 

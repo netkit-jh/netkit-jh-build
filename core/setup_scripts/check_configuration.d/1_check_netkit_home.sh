@@ -44,7 +44,7 @@ failed.
            Ensure that a new shell session is used, the current one has been
            reset, or .bashrc has been sourced before rerunning this script.
 END_OF_DIALOG
-   exit 1
+   exit 255
 fi
 
 
@@ -65,7 +65,7 @@ failed.
            points to Netkit's installation directory; if it does, consider
            reinstallation.
 END_OF_DIALOG
-      exit 1
+      exit 255
    fi
 done
 
