@@ -1,251 +1,379 @@
 #!/usr/bin/env bash
 
-# Download and install netkit-jh in home directory
-# Modified from Peter Norris' original install script
+#     Copyright 2020-2021 Max Barstow, Adam Bromiley, Edwin Foudil, Joshua
+#     Hawking, Peter Norris - Warwick Manufacturing Group, University of Warwick.
+#
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-#
-# Users experiencing issues during the installation process
-# should be able to report back with the exact command that
-# has failed.
-#
+# Download and install Netkit-JH in the user's home directory.
+
+
+###############################################################################
+# Write install-netkit-jh's usage line to standard output.
+# Usage:
+#   usage_line
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   None
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]..."
+}
+
+
+###############################################################################
+# Write install-netkit-jh's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+# Example:
+#   None
+###############################################################################
+usage() {
+   local status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
+   cat << END_OF_HELP
+$(usage_line)
+Install Netkit-JH $netkit_version.
+
+By default, the pre-built core of Netkit and its filesystem and kernel is
+downloaded from the project's GitHub repository to the system's /tmp directory.
+The archives are then extracted to the Netkit install directory
+(\$HOME/netkit-jh/) and the shell's rc file is set accordingly to add the
+install to PATH.
+
+      --backup-dir=DIR  path to store a backup of the existing Netkit
+                         installation
+      --download-dir=DIR  download directory
+      --download-url=URL  specify the directory to download the files from
+                           as a URL
+      --no-download   do not download pre-built Netkit modules if they are not
+                        found inside the download directory
+      --no-packages   do not download dependencies from APT
+      --target-dir=DIR  directory to install Netkit to
+
+For development purposes, the user may already have the pre-built components on
+their system. The following options are provided for such a scenario (note that
+DIR should be structured as if it were the install directory. As an example,
+when using the --kernel-files option DIR must have a subdirectory named
+kernel/):
+
+      --core-files=DIR  path to core files if they have already been downloaded
+                         and extracted
+      --fs-files=DIR  path to filesystem files if they have already been
+                        downloaded and extracted
+      --kernel-files=DIR  path to kernel files if they have already been
+                           downloaded and extracted
+
+
+Miscellaneous:
+$(help_option)
+$(version_option)
+
+END_OF_HELP
+
+   exit "$status"
+}
+
+
+# Exit on a failed (non-zero return code) install command
 set -e
 
-# Default variables
-VERSION="VERSION_NUMBER"
-TARGET_INSTALL_DIR="${HOME}/netkit-jh"
-BACKUP_INSTALL_DIR="${HOME}/netkit-jh-$(date '+%F_%H-%M-%S')"
-INSTALL_APT_PACKAGES=true
-DOWNLOAD_FILES=true
-DOWNLOAD_DIR="/tmp"
-DOWNLOAD_URL_PREFIX="https://github.com/netkit-jh/netkit-jh-build/releases/download/$VERSION/"
+
+SCRIPTNAME=$(basename -- "$0")
+
+
+# ANSI color escape sequences
+color_normal=$'\033[0m'
+color_bold=$'\033[1m'
+
+
+# Variable is initialised by Makefile
+netkit_version="VERSION_NUMBER"
+
+install_dir="$HOME/netkit-jh"
+backup_dir="$install_dir-$(date '+%F_%H-%M-%S')"
+
+download_dir="/tmp"
+download_url="https://github.com/netkit-jh/netkit-jh-build/releases/download/$netkit_version/"
+
+
+# Get command line options
+long_opts="backup-dir:,core-files:,download-dir:,download-url:,fs-files:,help,\
+kernel-files:,no-download,no-packages,target-dir:"
+short_opts=""
+
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
+fi
+
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$getopt_opts"
+
+while true; do
+   case $1 in
+      --backup-dir)
+         backup_dir=$(readlink --canonicalize-missing -- "$2")
+         shift
+         ;;
+      --core-files)
+         existing_core_files=$(readlink --canonicalize-missing -- "$2")
+         shift
+         ;;
+      --download-dir)
+         download_dir=$(readlink --canonicalize-missing -- "$2")
+         shift
+         ;;
+      --download-url)
+         download_url=$2
+         shift
+         ;;
+      --fs-files)
+         existing_fs_files=$(readlink --canonicalize-missing -- "$2")
+         shift
+         ;;
+      --help)
+         usage 0
+         ;;
+      --kernel-files)
+         existing_kernel_files=$(readlink --canonicalize-missing -- "$2")
+         shift
+         ;;
+      --no-download)
+         no_download=1
+         ;;
+      --no-packages)
+         no_packages=1
+         ;;
+      --target-dir)
+         install_dir=$(readlink --canonicalize-missing -- "$2")
+         shift
+         ;;
+      --version)
+         echo "Netkit version: $netkit_version"
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
+
+# Check for further arguments
+if [ $# -gt 0 ]; then
+   echo 1>&2 "$SCRIPTNAME: Too many arguments"
+   usage 1
+fi
+
+
+if [ -d "$install_dir/" ]; then
+   # Backup existing directory
+   echo "$install_dir: Directory exists; renaming to $backup_dir so contents are not disturbed"
+   mv -- "$install_dir/" "$backup_dir/"
+else
+   mkdir --parents -- "$install_dir"
+   unset backup_dir
+fi
+
+
+# Check whether they've specified extracted files
+if [ -n "$existing_kernel_files" ] && [ -n "$existing_fs_files" ] && [ -n "$existing_core_files" ]; then
+   cp --archive -- "$existing_kernel_files/." "$install_dir/"
+   cp --archive -- "$existing_fs_files/."     "$install_dir/"
+   cp --archive -- "$existing_core_files/."   "$install_dir/"
+else
+   netkit_files=(
+      "release-$netkit_version.sha256"
+      "netkit-core-$netkit_version.tar.bz2"
+      "netkit-fs-$netkit_version.tar.bz2"
+      "netkit-kernel-$netkit_version.tar.bz2"
+   )
+
+   mkdir --parents -- "$download_dir"
+
+   for file in "${netkit_files[@]}"; do
+      if [ -f "$download_dir/$file" ]; then
+         echo "$download_dir/$file: file already exists; skipping"
+         continue
+      elif [ -n "$no_download" ]; then
+         echo "$download_dir/$file: file does not exist and download has been disabled"
+         exit 1
+      fi
+
+      wget --show-progress --output-document "$download_dir/$file" -- "$download_url/$file"
+   done
+
+   # Verify SHA-256 digests of each file. Files that failed the check will be
+   # wrote to standard output of the subshell and hence into the corrupt_files
+   # variable.
+   corrupt_files=$(
+      cd -- "$download_dir" || exit 1
+      sha256sum --check --quiet "release-$netkit_version.sha256" 2> /dev/null |
+         cut --delimeter ":" --fields 1
+   )
+
+   if [ -n "$corrupt_files" ]; then
+      echo 1>&2 "$SCRIPTNAME: $corrupt_files: File checksums failed verification; try downloading again"
+      exit 1
+   fi
+
+   for file in "${netkit_files[@]}"; do
+      # Extract the downloaded archives. The '--strip-components' option
+      # removes the root netkit-jh/ directory.
+      tar \
+         --bzip2 \
+         --extract \
+         --verbose \
+         --directory "$install_dir" \
+         --strip-components 1 \
+         -- \
+         "$download_dir/$file"
+   done
+fi
+
 
 # Start and end delimeters for Netkit-related stuff in the shell's rc file
-NK_RC_HEADER="#=== NETKIT VARIABLES ==="
-NK_RC_FOOTER="#=== NETKIT VARIABLES END ==="
+rc_section_header="#=== NETKIT VARIABLES ==="
+rc_section_footer="#=== NETKIT VARIABLES END ==="
 
-# Environment variables required for Netkit-JH to run
-NK_ENV_VARS="
-export NETKIT_HOME=\"${TARGET_INSTALL_DIR}\"
+# Environment variable definitions required for Netkit to run
+nk_env_var_defs="export NETKIT_HOME=\"$install_dir\"
 export MANPATH=\"\$MANPATH:\$NETKIT_HOME/man\"
 export PATH=\"\$PATH:\$NETKIT_HOME/bin\""
 
-# If desired, you can specify a directory where the files have already been 
-# extracted (primarily for development purposes)
-KERNEL_EXTRACTED_FILES=""
-FS_EXTRACTED_FILES=""
-CORE_EXTRACTED_FILES="" 
+rc_files=(
+   "$HOME/.bashrc"
+   "$HOME/.zshrc"
+)
 
-# Process arguments
-for i in "$@"
-do
-case $i in
-    --target-dir=*)
-    TARGET_INSTALL_DIR="${i#*=}"
-    shift # past argument=value
-    ;;
-    --backup-dir=*)
-    BACKUP_INSTALL_DIR="${i#*=}"
-    shift # past argument=value
-    ;;
-    --no-packages)
-    INSTALL_APT_PACKAGES=false
-    shift # past argument=value
-    ;;
-    --no-packages)
-    DOWNLOAD_FILES=false
-    shift # past argument=value
-    ;;
-    --download-url=*)
-    DOWNLOAD_URL_PREFIX="${i#*=}"
-    shift # past argument=value
-    ;;
-    --download-dir=*)
-    DOWNLOAD_DIR="${i#*=}"
-    shift # past argument=value
-    ;;
-    --kernel-files=*)
-    KERNEL_EXTRACTED_FILES="${i#*=}"
-    shift # past argument=value
-    ;;
-    --fs-files=*)
-    FS_EXTRACTED_FILES="${i#*=}"
-    shift # past argument=value
-    ;;
-    --core-files=*)
-    CORE_EXTRACTED_FILES="${i#*=}"
-    shift # past argument=value
-    ;;
-    -h|--help)
-    echo "Netkit-JH Installation script
-usage: install-netkit-jh-${VERSION}.sh [arguments]
+# Append Netkit additions to Bash and Zsh "run commands" files.
+for rc_file in "${rc_files[@]}"; do
+   [ ! -f "$rc_file" ] && continue
+   
+   # Backup existing rc file
+   rc_file_bak="${rc_file}_$(date '+%F_%H-%M-%S').bak"
+   cp -- "$rc_file" "$rc_file_bak"
 
-Available arguments:
---target-dir            : Absolute path to a folder to install Netkit to.
---backup-dir            : Absolute path to where the previous installation of Netkit should be moved to.
---no-packages           : Do not download packages required to run Netkit from apt.
---no-download           : Do not download kernel/fs/core files if they are not found inside download-dir.
---download-url          : Specify the URL prefix to download the files from.
---download-dir          : Path to where the files are downloaded to.
---kernel-files          : Absolute path to where the kernel files have been extracted. This path should
-                          point to the netkit-jh folder within the extracted archive.
---fs-files              : Absolute path to where the filesystem files have been extracted. This path should
-                          point to the netkit-jh folder within the extracted archive.
---core-files            : Absolute path to where the core files have been extracted. This path should point
-                          to the netkit-jh folder within the extracted archive.
+   # Strip all content between the Netkit rc section header and footer
+   sed --in-place "/^$rc_section_header/,/^$rc_section_footer/d;" "$rc_file"
 
-"
-    exit 0
-    ;;
-    *)
-          # unknown option
-    ;;
-esac
-done
 
-# Runtime variables
-PREVIOUS_INSTALL_FOUND=false # Was a previous installation found and backed up?
+   # Append Netkit additions to the rc file
+   printf "%s\n" "$rc_section_header" >> "${rc_file}"
 
-# Takes in a directory and array of file names and returns 0 if all were found, else 1 if any of them weren't failed
-check_files_exist() 
-{
-    DIRECTORY="$1"
-    shift;
-    FILES=("$@")
-    
-    FAILED=0
-    
-    for FILE in "${FILES[@]}"; do
-        if [ ! -f "${DIRECTORY}/${FILE}" ]; then
-            echo "Cannot find file ${DIRECTORY}/${FILE}."
-            FAILED=1
-        fi
-    done
-    
-    return ${FAILED}
-}
+   # Environment variable definitions
+   printf "%s\n" "$nk_env_var_defs" >> "${rc_file}"
 
-# Rename target dir if already exists
-if [ -d "${TARGET_INSTALL_DIR}" ] ; then
-    echo "${TARGET_INSTALL_DIR} already exists. Renaming it to ${BACKUP_INSTALL_DIR} so contents are not disturbed."
-    mv "${TARGET_INSTALL_DIR}" "${BACKUP_INSTALL_DIR}"
-    PREVIOUS_INSTALL_FOUND=true
-fi
-
-mkdir -p "${TARGET_INSTALL_DIR}"
-
-# Check whether they've specified extracted files
-if [ -n "${KERNEL_EXTRACTED_FILES}" -a -n "${FS_EXTRACTED_FILES}" -a -n "${CORE_EXTRACTED_FILES}" ]; then
-    cp -r "${KERNEL_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
-    cp -r "${FS_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
-    cp -r "${CORE_EXTRACTED_FILES}/." "${TARGET_INSTALL_DIR}"
-else
-    files_expected=("release-${VERSION}.sha256" "netkit-core-${VERSION}.tar.bz2" "netkit-fs-${VERSION}.tar.bz2" "netkit-kernel-${VERSION}.tar.bz2")
-
-    # Temporarily disable error checking as this function will return a non-zero code, causing bash to stop running the script
-    set +e
-    check_files_exist "${DOWNLOAD_DIR}" "${files_expected[@]}"
-    files_exist=$?
-    set -e
-
-    if [ ${files_exist} -eq 0 ]; then
-        # If all expected files are found, we can continue
-        echo "Downloaded files found in ${DOWNLOAD_DIR}, continuing..."
-    else
-        # Otherwise, we can download the files
-        if [ "${DOWNLOAD_FILES}" = "true" ]; then
-            mkdir -p "${DOWNLOAD_DIR}"
-
-            wget -O "${DOWNLOAD_DIR}/release-${VERSION}.sha256" --show-progress "${DOWNLOAD_URL_PREFIX}/release-${VERSION}.sha256"
-            wget -O "${DOWNLOAD_DIR}/netkit-core-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-core-${VERSION}.tar.bz2"
-            wget -O "${DOWNLOAD_DIR}/netkit-fs-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-fs-${VERSION}.tar.bz2"
-            wget -O "${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2" --show-progress "${DOWNLOAD_URL_PREFIX}/netkit-kernel-${VERSION}.tar.bz2"
-        else
-            echo "The files above were not found and downloading is disabled, exiting installation."
-            exit 1
-        fi
-    fi
-
-    (cd ${DOWNLOAD_DIR}; sha256sum -c release-${VERSION}.sha256)
-    FILES_INVALID=$?
-
-    if [ ${FILES_INVALID} -eq 1 ]; then
-        echo "File checksums failed to verify, please delete the downloaded files and re-run this script." >&2
-        exit 1
-    fi
-
-    # strip-components removes the netkit-jh directory
-    tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-core-${VERSION}.tar.bz2
-    tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-fs-${VERSION}.tar.bz2
-    tar -xjvC "${TARGET_INSTALL_DIR}" --strip-components=1 -f ${DOWNLOAD_DIR}/netkit-kernel-${VERSION}.tar.bz2
-fi
-
-RC_FILES=("${HOME}/.bashrc" "${HOME}/.zshrc")
-
-for RC_FILE in "${RC_FILES[@]}"; do
-    # Check whether this file exists
-    if [ ! -f ${RC_FILE} ]; then
-        continue
-    fi
-    
-    # Backup existing file with date and time as part of filename
-    BAK_FILE="${RC_FILE}_$(date "+%F_%H-%M-%S").bak"
-    cp "${RC_FILE}" "${BAK_FILE}"
-
-    # Check whether the netkit variables header exists, if not, wipe all cases of netkit
-    if [ -z "$(grep "$NK_RC_HEADER" "${RC_FILE}")" ]; then
-        # strip out any lines containing the word "netkit" (case insensitive) from bashrc
-        grep -iv "netkit" "${BAK_FILE}" > "${RC_FILE}"
-    else
-        # Otherwise, just wipe between the headers
-        sed -i "/^$NK_RC_HEADER/,/^$NK_RC_FOOTER/d;" ${RC_FILE}
-    fi
-
-    echo "$NK_RC_HEADER" >> "${RC_FILE}"
-
-    # Append Netkit additions to bashrc
-    echo "$NK_ENV_VARS" >> "${RC_FILE}"
-
-    # Source the Bash completion scripts
-    if [ "$(basename -- "$RC_FILE")" = ".bashrc" ]; then
-        cat << 'EOF' >> "${RC_FILE}"
+   if [ "$(basename -- "$rc_file")" = ".bashrc" ]; then
+      # Source the Bash completion scripts if operating on .bashrc
+      cat << 'EOF' >> "$rc_file"
 
 for file in "$NETKIT_HOME/bash-completion/completions/"*; do
-    . "$file"
+   . "$file"
 done
 EOF
-    fi
+   fi
 
-    echo "$NK_RC_FOOTER"
+   # Terminate section with footer
+   echo "$rc_section_footer"
 done
-
-# make (processing lab.dep)
-# net-tools (manage_tuntap)
-# coreutils (sha256sum and stdbuf)
-if [ "${INSTALL_APT_PACKAGES}" = true ]; then
-    echo "Installing packages to run netkit..."
-    sudo apt-get update && sudo apt-get install xterm make net-tools curl coreutils util-linux lsof
-fi
-
-# Restore config + handle updating config
-if [ "${PREVIOUS_INSTALL_FOUND}" = true ]; then
-    echo ""
-    echo "Restoring configuration from previous installation."
-    cp "$BACKUP_INSTALL_DIR/netkit.conf" "$TARGET_INSTALL_DIR"
-fi
-
-echo "Netkit-JH should now be installed. Checking configuration..."
 
 # Ubuntu (and similar) distributions prevent .bashrc from running in a
 # non-interactive shell. So here we can just evaluate the environment variables
 # export commands
-eval "$NK_ENV_VARS"
+eval "$nk_env_var_defs"
 
-cd "${TARGET_INSTALL_DIR}/setup_scripts"
-./check_configuration.sh || exit 1
+
+# Download and install dependencies from APT
+if [ -z "$no_packages" ]; then
+   dependencies=(
+      "bash"         # Required by every Netkit script
+      "binutils"     # For objdump in 4_check_architecture.sh
+      "coreutils"    # readlink, sha256sum, stdbuf, etc
+      "curl"         # For update checking in lstart
+      "iproute2"     # Interface management in manage_tuntap
+      "iptables"     # To manage TUN/TAP traffic
+      "lsof"         # To find unused virtual network hubs
+      "make"         # Parallel lab start
+      "net-tools"    # Interface management in manage_tuntap (TODO: iproute2)
+      "util-linux"   # kill, getopt, mount, etc (should already be installed)
+      "xterm"        # Default terminal emulator for Netkit
+   )
+
+   echo "Installing packages required to run Netkit-JH"
+   sudo apt-get update
+   sudo apt-get install "${dependencies[@]}"
+fi
+
+
+# Restore existing configuration file, if exists
+if [ -n "$backup_dir" ]; then
+   echo "Restoring previous configuration ($backup_dir/netkit.conf)"
+   cp -- "$backup_dir/netkit.conf" "$install_dir"
+fi
+
+
+echo "${color_bold}Netkit-JH is now installed$color_normal"
+
+
+# Verify system and Netkit install directory
+echo "Checking configuration..."
+"$install_dir/setup_scripts/check_configuration.sh" || exit 1
 
 # Encourage user to set environment variables for the current terminal
-echo ""
-echo "To use Netkit-JH now, open a new terminal window or run source ~/.bashrc (or .zshrc if using Zsh)"
+cat << END_OF_DIALOG
 
-echo ""
-echo -e "\033[1mRun ${TARGET_INSTALL_DIR}/setup_scripts/change_terminal.sh to change your terminal emulator (highly recommended!)\033[0m"
+${color_bold}To use Netkit-JH now, open a new terminal window or run:$color_normal
+   source ~/.bashrc
+
+(or .zshrc if using Zsh).
+
+It is recommended to change the terminal emulator that Netkit uses, since the
+default is xterm (an old but portable emulator). This can be done with the
+folling command:
+   "$install_dir/setup_scripts/change_terminal.sh"
+
+or by manually setting the TERM_TYPE in one of the configuration files:
+   (user)      "$HOME/.netkit/netkit.conf"
+   (install)   "$install_dir/netkit.conf"
+   (system)    /etc/netkit.conf
+END_OF_DIALOG
