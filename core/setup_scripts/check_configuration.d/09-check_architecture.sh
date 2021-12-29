@@ -20,42 +20,57 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This script is part of the Netkit configuration checker. Do not attempt to run
-# it as a standalone script.
+# This script is part of the Netkit configuration checker. It checks if the
+# user's GNU C Library version is new enough to support the Linux kernel used
+# by Netkit.
 
-# This script should perform (and, optionally, output information about) a test
-# to see if the host on which Netkit is run satisfies a specific requirement.
-# The script is expected to always run till its end (i.e., there must be no exit
-# instructions). If the host configuration does not comply to the requirement
-# you should call one of the functions "check_warning" or "check_failure"
-# (depending on the severity of the problem).
-
-# Check whether executables can be run.
 
 echo -n ">  Checking whether executables can run... "
 
-ARCH=$(uname -m)
 
-if ! $NETKIT_HOME/kernel/netkit-kernel --help >/dev/null 2>&1; then
-   echo "failed!"
-   echo
-   echo "*** Error: Your system appears not to be able to run the linux kernel."
-   echo "Ensure your Linux system has glibc version 2.28 or higher by running 'ldd --version'"
-   echo
-   check_failure
+# Read user-defined Netkit configuration override in order of file localisation
+# (Netkit defaults, per system, per install, per user) to get the kernel binary
+# location.
+# shellcheck source=../../netkit.conf.default
+[ -f "$NETKIT_HOME/netkit.conf.default" ] && . -- "$NETKIT_HOME/netkit.conf.default"
+# shellcheck disable=SC1091
+[ -f /etc/netkit.conf ] && . "/etc/netkit.conf"
+# shellcheck source=../../netkit.conf
+[ -f "$NETKIT_HOME/netkit.conf" ] && . -- "$NETKIT_HOME/netkit.conf"
+# shellcheck disable=SC1091
+[ -f "$HOME/.netkit/netkit.conf" ] && . -- "$HOME/.netkit/netkit.conf"
+
+
+# Get minimum glibc version required by the kernel binary
+required_glibc_version=$(
+   objdump --dynamic-syms "$VM_KERNEL" |
+   grep --extended-regexp --only-matching "GLIBC_[0-9.]+" |
+   sort --version-sort |
+   tail --lines 1
+)
+
+# Get current glibc version used by the system
+current_glibc_version=$(ldd --version | awk 'NR==1 { print $NF }')
+
+# Compare the two versions and get the lowest version number
+oldest_glibc_version=$(
+   printf "%s\n%s\n" "$current_glibc_version" "$required_glibc_version" |
+   sort --version-sort |
+   head --lines 1
+)
+
+if [  "$current_glibc_version" = "$oldest_glibc_version" ]; then
+   # The required glibc version number is greater than what is installed on the
+   # user's system
+   cat << END_OF_DIALOG
+failed.
+*** Error: Your system cannot execute the Linux kernel used by Netkit because
+           it requires a glibc version of $required_glibc_version or higher. Your system
+           currently uses version $current_glibc_version.
+END_OF_DIALOG
+   exit 1
 fi
 
-$NETKIT_HOME/bin/uml_switch --help >/dev/null 2>&1
-RETVAL=$?
 
-if [ $RETVAL -ne 1 ]
-then
-   echo "failed!"
-   echo
-   echo "*** Error: Your system appears not to be able to run UML executables."
-   echo
-   check_failure
-else
-   echo "passed."
-fi
-
+echo "passed."
+exit 1
