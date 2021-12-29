@@ -25,7 +25,7 @@
 # by Netkit.
 
 
-echo -n ">  Checking whether executables can run... "
+echo -n ">  Checking GNU C Library version... "
 
 
 # Read user-defined Netkit configuration override in order of file localisation

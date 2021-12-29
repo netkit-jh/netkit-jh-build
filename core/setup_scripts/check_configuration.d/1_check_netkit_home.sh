@@ -24,7 +24,7 @@
 # NETKIT_HOME environment variable is set to a valid Netkit install directory.
 
 
-echo -n ">  Checking environment... "
+echo -n ">  Checking Netkit home... "
 
 
 # Check for existence of the NETKIT_HOME environment variable
