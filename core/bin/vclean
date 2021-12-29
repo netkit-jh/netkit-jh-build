@@ -72,7 +72,7 @@ $(usage_line)
 Perform a Netkit cleanup operation:
 - Kill processes associated to unused (or all) virtual hubs
 - Kill running virtual machines
-- Wipe the mconsole, hub socket, and .netkit directories
+- Wipe the mconsole, hub socket, and .netkit directories (besides netkit.conf)
 - Remove host-side configurations set up for tap interfaces
 By default, the script just removes unused virtual hubs.
 
@@ -82,7 +82,7 @@ By default, the script just removes unused virtual hubs.
       --clean-directories  Empty the following directories:
                               - MCONSOLE_DIR
                               - HUB_SOCKET_DIR
-                              - \$HOME/.netkit
+                              - \$HOME/.netkit (leaves netkit.conf)
                             This option affects all users.
   -f, --force         When used with --remove-hubs, kill all (not just unused)
                         virtual hubs and clean their files.
@@ -346,7 +346,6 @@ done
 if [ $# -gt 0 ]; then
    echo 1>&2 "$SCRIPTNAME: Too many arguments"
    usage 1
-   exit 1
 fi
 
 
@@ -414,9 +413,13 @@ if [ -n "$clean_directories" ]; then
    echo "Removing Netkit directories"
 
    rm ${verbose:+"--verbose"} --force --recursive -- \
-      "$HOME/.netkit/"* \
       "${HUB_SOCKET_DIR:?}/"* \
       "${MCONSOLE_DIR:?}/"*
+
+   # Clear out .netkit/ but keep netkit.conf
+   find "$HOME/.netkit/"* \
+      ! -name "netkit.conf" \
+      -exec rm ${verbose:+"--verbose"} --force --recursive {} +
 fi
 
 

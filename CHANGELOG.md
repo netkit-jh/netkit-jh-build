@@ -6,7 +6,7 @@
 - Multiple taps can be created for machines to have their own unique interfaces (they can still share if the same collision domain is used)
 - Support for whitespace (and some other special characters) in arguments
 - Support for whitespace in the lab directory path
-- `--clean-directories` option to `vclean` to wipe `$HOME`/.netkit/, `$MCONSOLE_DIR`/, and `$HUB_SOCKET_DIR`/ (now included in `--clean-all`)
+- `--clean-directories` option to `vclean` to wipe `$HOME`/.netkit/ (ignoring netkit.conf), `$MCONSOLE_DIR`/, and `$HUB_SOCKET_DIR`/ (now included in `--clean-all`)
 
 ### Other Added
 - `-v`|`--verbose` option to `lcrash`, `vclean`, `vconf`, `vcrash`, and `vdump`
