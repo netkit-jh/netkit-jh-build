@@ -1,5 +1,4 @@
-#!/bin/false
-# shellcheck shell=bash
+#!/usr/bin/env bash
 
 #     Copyright 2020-2021 Billy Bromell, Adam Bromiley, Mohammed Habib, Joshua
 #     Hawking - Warwick Manufacturing Group, University of Warwick.
@@ -21,121 +20,62 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This script is part of the Netkit configuration checker. Do not attempt to run
-# it as a standalone script.
+# This script is part of the Netkit configuration checker. It checks for
+# available terminal emulators.
 
-# This script should perform (and, optionally, output information about) a test
-# to see if the host on which Netkit is run satisfies a specific requirement.
-# The script is expected to always run till its end (i.e., there must be no exit
-# instructions). If the host configuration does not comply to the requirement
-# you should call one of the functions "check_warning" or "check_failure"
-# (depending on the severity of the problem).
 
-# Check whether there are available terminal emulators
+echo ">  Checking availability of terminal emulator applications:"
 
-echo ">  Checking for availability of terminal emulator applications:"
 
-OK=0
-TEMP_PATH=":$PATH"
-# Always initialize this variable with a space character
-PATH_TO_BE_USED=":"
+terminal_emulators=(
+   "alacritty"
+   "gnome-terminal"
+   "kitty"
+   "konsole"
+   "tmux"
+   "wsl.exe"
+   "wt.exe"
+   "xterm"
+)
 
-XTERM_WARNING=0
-
-TERMINAL_EMULATORS="xterm konsole gnome-terminal alacritty kitty wsl.exe wt.exe tmux"
-
-for CURRENT_COMMAND in $TERMINAL_EMULATORS; do
-   printf "\t%-15s: " $CURRENT_COMMAND
+for term_executable in "${terminal_emulators[@]}"; do
+   printf "%14s: " "$term_executable"
    
-   COMMAND_DIR=$(which $CURRENT_COMMAND 2>/dev/null)
-   
-   # If the requested executable has not been found in the PATH,
-   # try looking in standard directories
-   if [ -z "$COMMAND_DIR" ]; then
-      if [ "$CURRENT_COMMAND" = "xterm" ]; then
-         XTERM_WARNING=1
-      fi
-      COMMAND_DIR=$(whereis -b $CURRENT_COMMAND)
-      # Clean up the output of whereis
-      COMMAND_DIR=${COMMAND_DIR##*$CURRENT_COMMAND:}
-      COMMAND_DIR=${COMMAND_DIR##* }
-      if [ ! -z "$COMMAND_DIR" -a -f "$COMMAND_DIR" ]; then
-         echo -n "found, but not in PATH"
-      fi
-   else
-      echo -n "found"
-      OK=1
-   fi
-
-   if [ ! -z "$COMMAND_DIR" -a -f "$COMMAND_DIR" ]; then
-      COMMAND_PATH=${COMMAND_DIR%/${CURRENT_COMMAND}}
-      if echo "$TEMP_PATH" | grep -qvE "(:$COMMAND_PATH$)|(^$COMMAND_PATH:)|(:$COMMAND_PATH:)" && echo "${PATH_TO_BE_USED}" | grep -qv ":$COMMAND_PATH:"; then
-         # PATH does not contain the directory where the current command is
-         # located. Moreover, such directory has not been inserted into the
-         # list of candidate user signalled paths (PATH_TO_BE_USED).
-         PATH_TO_BE_USED="$PATH_TO_BE_USED$COMMAND_PATH:"
-      fi
-      echo
+   if command -v -- "$term_executable" > /dev/null 2>&1; then
+      echo "found"
+      ok=1
    else
       echo "not found"
+      [ "$term_executable" = "xterm" ] && xterm_warning=1
    fi
 done
 
-WARNING=0
-if [ $OK = 1 -a $XTERM_WARNING = 1 ]; then
-   echo "failed!"
-   echo
-   echo "Warning: either xterm is not installed on your system or it is not"
-   echo "currently available in the PATH. Since xterm is the default terminal"
-   echo "emulator application used by Netkit virtual machines, this may prevent"
-   echo "them from starting up properly. Please refer to the Netkit"
-   echo "documentation for information about using terminal emulators that are"
-   echo "different from xterm."
-   echo
-   WARNING=1
-   check_warning
+if [ -z "$ok" ]; then
+   cat << END_OF_DIALOG
+
+*** Warning: None of the supported terminal emulators appear to be installed on
+             your system, meaning Netkit virtual machines cannot run in
+             separate windows. Install terminal emulator(s) manually or with:
+                "\$NETKIT_HOME/setup_scripts/change_terminal.sh"
+
+             Netkit can still be used with the console options that are not
+             'xterm' or 'tmux'.
+END_OF_DIALOG
+   exit 1
 fi
 
-if [ $OK = 0  -a "$PATH_TO_BE_USED" = ":" ]; then
-   echo "failed!"
-   echo
-   echo "Warning: none of the supported terminal emulator applications appears"
-   echo "to be properly installed on your system. This means that you will not"
-   echo "be able to run virtual machines inside separate windows. Netkit can"
-   echo "still be used by redirecting virtual machines I/O to a text-mode"
-   echo "console (see the Netkit documentation for information about how to do"
-   echo "this). Please refer to the documentation of your Linux installation"
-   echo "for instructions about installing terminal emulators and try again."
-   echo
-   WARNING=1
-   check_warning
+if [ -n "$xterm_warning" ]; then
+   cat << END_OF_DIALOG
+
+*** Warning: xterm could not be detected on your system. Since xterm is the
+             default terminal emulator used by Netkit virtual machines, it is
+             recommended to have installed unless TERM_TYPE in netkit.conf has
+             been suitably configured to use a different emulator. Install
+             xterm manually or with:
+                "\$NETKIT_HOME/setup_scripts/change_terminal.sh"
+END_OF_DIALOG
+   exit 1
 fi
 
 
-if [ $OK = 0 -a "$PATH_TO_BE_USED" != ":" ]; then
-   echo "failed!"
-   echo
-   echo "Warning: some terminal emulator applications have been found, but if"
-   echo "you want to use them you should update the PATH environment variable"
-   echo "with the following entries:"
-   echo
-   echo $PATH_TO_BE_USED
-   echo
-   PATH_TO_BE_USED=${PATH_TO_BE_USED%:}
-   echo "In order to do this, you can use one of the following commands, depending"
-   echo "on the shell you are using:"
-   echo
-   echo "(for bash) export PATH=\$PATH$PATH_TO_BE_USED"
-   echo "(for tcsh) setenv PATH \$PATH$PATH_TO_BE_USED"
-   echo
-   echo "Alternatively, you can run this script with the --fix option, which"
-   echo "automatically creates symbolic links for missing tools inside the"
-   echo "$NETKIT_BIN_DIR directory."
-   echo
-   WARNING=1
-   check_warning
-fi
-
-if [ $WARNING = 0 ]; then
-   echo "passed."
-fi
+exit 0
