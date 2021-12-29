@@ -257,12 +257,14 @@ check_filesystem() {
    local filepath=$1
 
    local fs_type
-   local unsupportive_fs="ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|(da|e|fute|v)?xfs"
+
+   # Non-exhaustive list of filesystems that support sparse files
+   local supportive_fs="ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|xfs|zfs"
 
    # Get the host filesystem type
    fs_type=$(stat --file-system --format "%T" -- "$filepath")
 
-   if [[ ! "$fs_type" =~ ^($unsupportive_fs)$ ]]; then
+   if [[ ! "$fs_type" =~ ^($supportive_fs)$ ]]; then
       echo 1>&2 "$SCRIPTNAME: Filesystem '$fs_type' may not support sparse files, this could result in performance loss and disk space consumption"
    fi
 }
