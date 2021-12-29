@@ -15,6 +15,8 @@
 - `--show-boot-log` option to `vstart` to display the boot log (replaced the `-v`|`--verbose` option, see [Other Modified](#other-modified))
 - Ability to affect a specific user for `-T`|`--remove-tunnels` in `vclean`
 - `coreutils` as a required package to run Netkit (for `sha256sum` and `stdbuf`)
+- `util-linux` as a required package to run Netkit (for `getopt` and maybe other commands)
+- `lsof` as a required package to run Netkit (for `lsof`)
 
 ## Modified
 - Netkit's default configuration is stored in netkit.conf.default. This should not be modified and can be overridden with netkit.conf
@@ -60,6 +62,7 @@
 - `MCONSOLE_DIR` environment variable detection from uml_mconsole
 - Support for netkit.conf overriding with the `NETKIT_FILESYSTEM`, `NETKIT_MEMORY`, `NETKIT_KERNEL`, and `NETKIT_TERM` environment variables
 - 01-check_path.sh setup script (whitespace in paths is safely handled now)
+- 06-check_aux_tools.sh setup script
 
 # Development Changelog
 ## Added
