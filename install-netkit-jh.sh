@@ -223,7 +223,7 @@ done
 # coreutils (sha256sum and stdbuf)
 if [ "${INSTALL_APT_PACKAGES}" = true ]; then
     echo "Installing packages to run netkit..."
-    sudo apt-get update && sudo apt-get install xterm make net-tools curl coreutils util-linux
+    sudo apt-get update && sudo apt-get install xterm make net-tools curl coreutils util-linux lsof
 fi
 
 # Restore config + handle updating config
