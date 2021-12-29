@@ -21,55 +21,55 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This script is part of the Netkit configuration checker. Do not attempt to run
-# it as a standalone script.
+# This script is part of the Netkit configuration checker. It verifies that the
+# NETKIT_HOME environment variable is set to a valid Netkit install directory.
 
-# This script should perform (and, optionally, output information about) a test
-# to see if the host on which Netkit is run satisfies a specific requirement.
-# The script is expected to always run till its end (i.e., there must be no exit
-# instructions). If the host configuration does not comply to the requirement
-# you should call one of the functions "check_warning" or "check_failure"
-# (depending on the severity of the problem).
-
-# Check whether NETKIT_HOME has been set
 
 echo -n ">  Checking environment... "
 
+
+# Check for existence of the NETKIT_HOME environment variable
 if [ -z "$NETKIT_HOME" ]; then
-   echo "failed!"
-   echo
-   echo "*** Error: the environment variable NETKIT_HOME is not set. You should"
-   echo "set it to the following value:"
-   echo
-   echo $CHECK_NETKIT_HOME
-   echo
-   echo "You can use one of the following commands, depending on the shell you"
-   echo "are using:"
-   echo
-   echo "(for bash) export NETKIT_HOME=$CHECK_NETKIT_HOME"
-   echo "(for csh)  setenv NETKIT_HOME $CHECK_NETKIT_HOME"
-   echo
-   check_failure
-else
-   if [ "$NETKIT_HOME" != "$CHECK_NETKIT_HOME" -a "$NETKIT_HOME" != "$CHECK_NETKIT_HOME/" ]; then
-      echo "failed!"
-      echo
-      echo "*** Error: the environment variable NETKIT_HOME currently points at the"
-      echo "wrong directory:"
-      echo
-      echo "(current value) $NETKIT_HOME"
-      echo "(should be)     $CHECK_NETKIT_HOME"
-      echo
-      echo "In order to fix this, you can use one of the following commands, depending"
-      echo "on the shell you are using:"
-      echo
-      echo "(for bash) export NETKIT_HOME=$CHECK_NETKIT_HOME"
-      echo "(for csh)  setenv NETKIT_HOME $CHECK_NETKIT_HOME"
-      echo
-      check_failure
-   else
-      echo "passed."
-   fi
+   script_directory=$(dirname "$(readlink --canonicalize "$0")")
+   install_directory=$(dirname "$(dirname "$script_directory")")
+
+   cat << END_OF_DIALOG
+failed.
+*** Error: The environment variable NETKIT_HOME is not set. Assuming a standard
+           install environment, the Netkit installation directory should be:
+              $install_directory
+
+           This should be set in your .bashrc file with:
+              export NETKIT_HOME="$install_directory"
+
+           Ensure that a new shell session is used, the current one has been
+           reset, or .bashrc has been sourced before rerunning this script.
+END_OF_DIALOG
+   exit 1
 fi
 
-NETKIT_BIN_DIR=$NETKIT_HOME/bin
+
+# Directories critical to Netkit's operation
+netkit_directories=(
+   "$NETKIT_HOME/bin/"
+   "$NETKIT_HOME/fs/"
+   "$NETKIT_HOME/kernel/"
+)
+
+# Check for critical Netkit directories. If they are not present, we assume
+# NETKIT_HOME is not the install directory.
+for directory in "${netkit_directories[@]}"; do
+   if [ ! -d "$directory" ]; then
+      cat << END_OF_DIALOG
+failed.
+*** Error: Critical directory '$directory' does not exist. Ensure NETKIT_HOME
+           points to Netkit's installation directory; if it does, consider
+           reinstallation.
+END_OF_DIALOG
+      exit 1
+   fi
+done
+
+
+echo "passed."
+exit 0
