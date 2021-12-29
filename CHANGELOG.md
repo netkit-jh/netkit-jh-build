@@ -62,7 +62,7 @@
 - `MCONSOLE_DIR` environment variable detection from uml_mconsole
 - Support for netkit.conf overriding with the `NETKIT_FILESYSTEM`, `NETKIT_MEMORY`, `NETKIT_KERNEL`, and `NETKIT_TERM` environment variables
 - 01-check_path.sh setup script (whitespace in paths is safely handled now)
-- 06-check_aux_tools.sh setup script
+- 06-check_aux_tools.sh and 10-check_dumpers.sh setup scripts
 
 # Development Changelog
 ## Added
