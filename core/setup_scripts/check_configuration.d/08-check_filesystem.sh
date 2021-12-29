@@ -1,5 +1,4 @@
-#!/bin/false
-# shellcheck shell=bash
+#!/usr/bin/env bash
 
 #     Copyright 2021 Adam Bromiley - Warwick Manufacturing Group, University of
 #     Warwick.
@@ -21,35 +20,34 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This script is part of the Netkit configuration checker. Do not attempt to run
-# it as a standalone script.
+# This script is part of the Netkit configuration checker. It checks if the
+# filesystem Netkit is running from is capable of handling sparse files.
 
-# This script should perform (and, optionally, output information about) a test
-# to see if the host on which Netkit is run satisfies a specific requirement.
-# The script is expected to always run till its end (i.e., there must be no exit
-# instructions). If the host configuration does not comply to the requirement
-# you should call one of the functions "check_warning" or "check_failure"
-# (depending on the severity of the problem).
 
-# Check whether the filesystem Netkit is running from is capable of handling sparse
-# files.
+echo -n ">  Checking host filesystem... "
 
-echo -n ">  Checking filesystem type... "
 
-FS_TYPE=$(stat -f . | grep -w Type)
-FS_TYPE=${FS_TYPE#*Type: }
+# Non-exhaustive list of filesystems that support sparse files
+supportive_fs="ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|xfs|zfs"
 
-if echo $FS_TYPE | grep -vqE "(ext[2,3,4])|(ntfs)|(ntfs-3g)|(fuse)|(reiser)|(jfs)|(xfs)"; then
-   echo "failed!"
-   echo
-   echo "*** Warning: You appear to be running Netkit on a filesystem ($FS_TYPE)"
-   echo "that does not support sparse files. This may result in dramatic performance"
-   echo "loss and disk space consumption. It is strongly advised to run Netkit"
-   echo "on a filesystem that supports sparse files (e.g., extX, NTFS, ReiserFS do;"
-   echo "FAT32 does not)."
-   echo
-   check_warning
-else
-   echo "passed."
+# Get the host filesystem type
+fs_type=$(stat --file-system --format "%T" -- "$NETKIT_HOME")
+
+if [[ ! "$fs_type" =~ ^($supportive_fs)$ ]]; then
+   cat << END_OF_DIALOG
+failed.
+*** Warning: Filesystem '$fs_type' may not support sparse files, this could
+             result in significant performance loss and increased disk space
+             consumption due to larger COW ('.disk') files. It is strongly
+             advised to run Netkit on a filesystem that supports sparse files,
+             such as ext (any version), NTFS, and XFS.
+
+             It is possible this is a false alarm - the list of supportive
+             filesystems cross-referenced is non-exhaustive.
+END_OF_DIALOG
+   exit 1
 fi
 
+
+echo "passed."
+exit 0
