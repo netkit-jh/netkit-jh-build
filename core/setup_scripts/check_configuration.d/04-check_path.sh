@@ -21,37 +21,35 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This script is part of the Netkit configuration checker. Do not attempt to run
-# it as a standalone script.
+# This script is part of the Netkit configuration checker. It verifies that
+# the Netkit executable directory is searchable with the PATH environment
+# variable.
 
-# This script should perform (and, optionally, output information about) a test
-# to see if the host on which Netkit is run satisfies a specific requirement.
-# The script is expected to always run till its end (i.e., there must be no exit
-# instructions). If the host configuration does not comply to the requirement
-# you should call one of the functions "check_warning" or "check_failure"
-# (depending on the severity of the problem).
 
-# Check whether the PATH environment variable is properly set
+echo -n ">  Checking for the Netkit executable directory in PATH... "
 
-echo -n ">  Checking for proper directories in the PATH... "
 
-if ! echo "${PATH}" | grep -qE "(:$NETKIT_HOME\/bin\/?$)|(^$NETKIT_HOME\/bin\/?:)|(:$NETKIT_HOME\/bin\/?:)"; then
-   echo "failed!"
-   echo
-   NEW_PATH="${NETKIT_HOME%/}/bin:\$PATH"
-   echo "*** Error: the environment variable PATH is not properly set. This"
-   echo "will prevent fundamental Netkit tools from being functional. You should"
-   echo "set the variable to the following value (all colons must be included):"
-   echo
-   echo $NEW_PATH
-   echo
-   echo "You can use one of the following commands, depending on the shell you"
-   echo "are using:"
-   echo
-   echo "(for bash) export PATH=$NEW_PATH"
-   echo "(for csh)  setenv PATH $NEW_PATH"
-   echo
-   check_failure
-else
-   echo "passed."
+# PATH could alternatively be matched to the Netkit executable directory with
+# a regular expression, however this would be messy with the allowance of
+# trailing and back-to-back forward slashes, and more importantly symbolic
+# links. This means the test depends on the bin/ directory having vstart.
+if [ "$(command -v vstart)" -ef "$NETKIT_HOME/bin/vstart" ]; then
+   new_path="${PATH:+"\$PATH:"}$NETKIT_HOME/bin/"
+
+   cat << END_OF_DIALOG
+failed.
+*** Error: The PATH environment variable is not properly set. This will make
+           Netkit executables inaccessible without specifying their filepath.
+           You should set it to the following value (all colons must be
+           included):
+              $new_path
+
+           This should be set in your .bashrc file with:
+              export PATH="$new_path"
+END_OF_DIALOG
+   exit 1
 fi
+
+
+echo "passed."
+exit 0
