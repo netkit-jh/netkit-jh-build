@@ -21,41 +21,33 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This script is part of the Netkit configuration checker. Do not attempt to run
-# it as a standalone script.
+# This script is part of the Netkit configuration checker. It verifies that
+# Netkit man pages are searchable via the MANPATH environment variable.
 
-# This script should perform (and, optionally, output information about) a test
-# to see if the host on which Netkit is run satisfies a specific requirement.
-# The script is expected to always run till its end (i.e., there must be no exit
-# instructions). If the host configuration does not comply to the requirement
-# you should call one of the functions "check_warning" or "check_failure"
-# (depending on the severity of the problem).
-
-# Check whether Netkit man pages are reachable
 
 echo -n ">  Checking for availability of man pages... "
 
-if ! echo "${MANPATH}" | grep -qE "(:$NETKIT_HOME\/man\/?$)|(^$NETKIT_HOME\/man\/?:)|(:$NETKIT_HOME\/man\/?:)"; then
-   echo "failed!"
-   echo
-   if [ -z "$MANPATH" ]; then
-      NEW_MANPATH=":${NETKIT_HOME%/}/man"
-   else
-      NEW_MANPATH="\$MANPATH::${NETKIT_HOME%/}/man"
-   fi
-   echo "*** Warning: the environment variable MANPATH is not properly set. This"
-   echo "will make man pages inaccessible. You should set it to the following"
-   echo "value (all colons must be included):"
-   echo
-   echo $NEW_MANPATH
-   echo
-   echo "You can use one of the following commands, depending on the shell you"
-   echo "are using:"
-   echo
-   echo "(for bash) export MANPATH=$NEW_MANPATH"
-   echo "(for csh)  setenv MANPATH $NEW_MANPATH"
-   echo
-   check_warning
-else
-   echo "passed."
+
+# MANPATH could alternatively be matched to the Netkit man page directory with
+# a regular expression, however this would be messy with the allowance of
+# trailing and back-to-back forward slashes, and more importantly symbolic
+# links. This means the test depends on the man/ directory having netkit.7.
+if [ "$(man --where 7 netkit)" -ef "$NETKIT_HOME/man/man7/netkit.7" ]; then
+   new_manpath="${MANPATH:+"\$MANPATH:"}:$NETKIT_HOME/man"
+   
+   cat << END_OF_DIALOG
+failed.
+*** Warning: The MANPATH environment variable is not properly set. This will
+             make Netkit man pages inaccessible. You should set it to the
+             following value (all colons must be included):
+                $new_manpath
+
+             This should be set in your .bashrc file with:
+                export MANPATH="$new_manpath"
+END_OF_DIALOG
+   exit 1
 fi
+
+
+echo "passed."
+exit 0
