@@ -1,93 +1,157 @@
 #!/usr/bin/env bash
 
-set -e 
+#     Copyright 2020-2021 Max Barstow, Adam Bromiley, Joshua Hawking, Luke
+#     Spademan - Warwick Manufacturing Group, University of Warwick.
+#
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
+# Initialise the Netkit filesystem by installing packages, kernel modules, and
+# setting up critical services.
+
+
+set -e
+
+
+# Override locale to avoid localization errors
 export LC_ALL=C 
 
-# First argument is the work directory, that contains the packages list, package selections, service lists
-WORK_DIRECTORY="$1"
-# Second argument is the build directory, that contains the filesystem version file
-BUILD_DIRECTORY="$2"
-# Third argument is the directory which the filesystem is mounted at
-MOUNT_DIRECTORY="$3"
-# Forth argument is the kernel module directory which should be copied
-KERNEL_MODULES="$4"
 
+# First argument is the current working directory. At its top level, there
+# should be the following:
+#    packages-list
+#       - List of APT packages to install on the filesystem.
+#    disabled-services
+#       - List of services to disable autostart for.
+#    debconf-package-selections
+#       - Package configuration data suitable for input to
+#         debconf-set-selections.
+#    filesystem-tweaks
+#       - A directory with the same structure as the to-be-produced filesystem.
+#         Any file present will be copied into the filesystem at the same
+#         location (and overwrite any existing file).
+work_directory=$1
+
+# Build directory that contains the netkit-filesystem-version file
+build_directory=$2
+
+# Mount point of the filesystem
+mount_directory=$3
+
+# Kernel module directory to copy into the filesystem at /lib/modules
+kernel_modules=$4
+
+
+### INSTALL APT PACKAGES ######################################################
 # Load debconf-package-selections
-cat $WORK_DIRECTORY/debconf-package-selections | chroot $MOUNT_DIRECTORY debconf-set-selections
-
-# Install packages in packages-list
-PACKAGES_LIST=$(cat $WORK_DIRECTORY/packages-list | grep -v '#')
+chroot -- "$mount_directory" debconf-set-selections < "$work_directory/debconf-package-selections"
 
 # Install add-apt-repository command
-chroot $MOUNT_DIRECTORY apt update
-chroot $MOUNT_DIRECTORY apt install --assume-yes software-properties-common
+chroot -- "$mount_directory" apt-get update
+chroot -- "$mount_directory" apt-get --assume-yes install software-properties-common
 
-# Install custom repositories
-# chroot $MOUNT_DIRECTORY add-apt-repository ppa:cz.nic-labs/bird  # for Bird Internet routing daemon
+# Add additional repositories in this section
+# chroot -- "$mount_directory" add-apt-repository ...
+# chroot -- "$mount_directory" apt-get update
 
-# Install packages inside packages_list
-chroot $MOUNT_DIRECTORY apt update
-chroot $MOUNT_DIRECTORY apt install --assume-yes ${PACKAGES_LIST}
+# Install packages listed in packages-list
+mapfile -t packages_list < <(grep --invert-match -- "^#" "$work_directory/packages-list")
+chroot -- "$mount_directory" apt-get --assume-yes -- install "${packages_list[@]}"
 
-# Now install any additional packages which require specific options
-# We want wireguard without installing wireguard-dkms because we have it built into the kernel tree
-chroot $MOUNT_DIRECTORY apt install --no-install-recommends wireguard-tools
+# Install packages which require specific APT options
+# We want wireguard without installing wireguard-dkms because we have it built
+# into the kernel tree.
+chroot -- "$mount_directory" apt-get --no-install-recommends install wireguard-tools
 
-# We want iptables legacy, rather than nftables
-chroot $MOUNT_DIRECTORY update-alternatives --set iptables /usr/sbin/iptables-legacy
+# Install legacy iptables over nftables
+chroot -- "$mount_directory" update-alternatives --set iptables /usr/sbin/iptables-legacy
 
-# Copy netkit filesystem files
-# we want to keep the destination mode/ownership (--no-preserve)
-# we want to keep symlinks and not de-reference them (-d)
-cp -r --no-preserve=mode,ownership -d $WORK_DIRECTORY/filesystem-tweaks/* $MOUNT_DIRECTORY/
 
-# However, some files in filesystem tweaks do need to be executable, so we set them again here
-chmod +x $MOUNT_DIRECTORY/usr/local/bin/tcpdump $MOUNT_DIRECTORY/etc/netkit/*
+### COPY OVER PRECONFIGURED FILES FOR NETKIT ##################################
+# Copy preconfigured files into the filesystem, overriding with the destination
+# permissions/ownership (--no-preserve) and keeping symlinks (--no-dereference
+# --preserve=links).
+cp \
+   --recursive \
+   --no-preserve=mode,ownership \
+   --no-dereference \
+   --preserve=links \
+   --target-directory "$mount_directory/" \
+   -- \
+   "$work_directory/filesystem-tweaks/"*
 
-# Copy in version file
-cp $BUILD_DIRECTORY/netkit-filesystem-version $MOUNT_DIRECTORY/etc/netkit-filesystem-version
+# Some files in filesystem-tweaks need to be executable, so we set their mode
+# correctly here.
+fs_tweaks_executables=(
+   "$mount_directory/usr/local/bin/tcpdump"
+   "$mount_directory/etc/netkit/"*
+)
+chmod -- +x "${fs_tweaks_executables[@]}"
 
-# Create kernel module directory
-mkdir -p $MOUNT_DIRECTORY/lib/modules
+# Copy the version file in
+cp -- "$build_directory/netkit-filesystem-version" "$mount_directory/etc/netkit-filesystem-version"
 
-# Copy in kernel modules (kernel modules can instead by mounted at runtime by enabling the netkit-mount service)
-cp -r $KERNEL_MODULES/* $MOUNT_DIRECTORY/lib/modules/
 
-# Install netkit services
-chroot $MOUNT_DIRECTORY systemctl enable netkit-startup-phase1.service
-chroot $MOUNT_DIRECTORY systemctl enable netkit-startup-phase2.service
-chroot $MOUNT_DIRECTORY systemctl enable netkit-shutdown.service
+### MANAGE SERVICES ###########################################################
+# Enable Netkit services
+chroot -- "$mount_directory" systemctl enable \
+   netkit-startup-phase1.service \
+   netkit-startup-phase2.service \
+   netkit-shutdown.service
 
 # Sort out ttys and auto-logon
-ln -s $MOUNT_DIRECTORY/lib/systemd/system/getty@.service $MOUNT_DIRECTORY/etc/systemd/system/getty.target.wants/getty@tty0.service
+ln \
+   --symbolic \
+   -- \
+   "$mount_directory/lib/systemd/system/getty@.service" \
+   "$mount_directory/etc/systemd/system/getty.target.wants/getty@tty0.service"
 
-chroot $MOUNT_DIRECTORY systemctl mask getty-static
+chroot -- "$mount_directory" systemctl mask getty-static "getty@tty"{2..6}".service"
 
-for i in {2..6}; do
-  chroot $MOUNT_DIRECTORY systemctl mask getty@tty${i}.service
-done
+# Disable autostart for some services
+mapfile -t disabled_services < <(grep --invert-match -- "^#" "$work_directory/disabled-services")
+chroot -- "$mount_directory" systemctl disable "${disabled_services[@]}"
+
+
+### INSTALL KERNEL MODULES ####################################################
+# Create kernel module directory
+mkdir --parents -- "$mount_directory/lib/modules"
+
+# Copy in kernel modules (kernel modules can instead by mounted at runtime by
+# enabling the netkit-mount service).
+cp --recursive -- "$kernel_modules/"* "$mount_directory/lib/modules/"
 
 # Required for mounting kernel modules at runtime
-#chroot $MOUNT_DIRECTORY systemctl enable netkit-mount.service
-#chroot $MOUNT_DIRECTORY systemctl enable netkit-unmount.service
+# chroot -- "$mount_directory" systemctl enable netkit-mount.service
+# chroot -- "$mount_directory" systemctl enable netkit-unmount.service
 
-# Disable system services not required
-for SERVICE in $(cat $WORK_DIRECTORY/disabled-services); do
-  chroot $MOUNT_DIRECTORY systemctl disable ${SERVICE}
-done
 
+### USER MANAGEMENT ###########################################################
 # Set root to use no password
-chroot $MOUNT_DIRECTORY passwd -d root
+chroot -- "$mount_directory" passwd --delete root
 
 # Update SSH keys in /etc/ssh to remove builder's hostname
-sed -i "s/$(whoami)@$(hostname)/root@netkit/g" $MOUNT_DIRECTORY/etc/ssh/*.pub
+sed --in-place -- "s/$(whoami)@$(hostname)/root@netkit/g" "$mount_directory/etc/ssh/"*.pub
 
+
+### CLEANUP ###################################################################
 # Save debconf-package-selections
-(chroot $MOUNT_DIRECTORY debconf-get-selections) > $WORK_DIRECTORY/build/debconf-package-selections.last
+chroot -- "$mount_directory" debconf-get-selections > "$work_directory/build/debconf-package-selections.last"
 
-# Empty caches
-chroot $MOUNT_DIRECTORY apt clean
+# Empty package cache
+chroot -- "$mount_directory" apt-get clean
 
 # Delete bootstrap log
-rm -f $MOUNT_DIRECTORY/var/log/bootstrap.log
+rm --force -- "$mount_directory/var/log/bootstrap.log"
