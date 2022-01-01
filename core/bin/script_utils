@@ -489,7 +489,7 @@ start_inet_hub() {
    local domain=$4
    local tap_addr=$5
 
-   local tap_device_name
+   local tap_name
    local manage_tuntap_cmd
    local interface_name uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
    local hub_log_cmd
@@ -498,14 +498,14 @@ start_inet_hub() {
       # The socket already exists and is in use
 
       # Get name for the user's tap interface
-      tap_device_name=$(get_tap_interface "$USER_ID" "$domain")
+      tap_name=$(get_tap_interface "$USER_ID" "$domain")
 
       # Check to see if interface already exists
-      if ip addr show "$tap_device_name" > /dev/null 2>&1; then
+      if ip addr show "$tap_name" > /dev/null 2>&1; then
          # If the interface already exists, it must have the same IP as
          # requested.
-         if ! ip addr show "$tap_device_name" | grep --quiet "inet $tap_addr"; then
-            echo 1>&2 "$SCRIPTNAME: $tap_device_name: Interface already exists and is in usage with a different IP. Remove the interface or change the IP address"
+         if ! ip addr show "$tap_name" | grep --quiet "inet $tap_addr"; then
+            echo 1>&2 "$SCRIPTNAME: $tap_name: Interface already exists and is in usage with a different IP. Remove the interface or change the IP address"
             usage 1
          else
             # Interface-address pair exists; wait for uml_switch to start
@@ -942,7 +942,7 @@ get_vhost_info_by_pid() {
 
    local kernel_cmd
    local first_iteration argument option value
-   local device_id
+   local interface_id
    local vhost_info_other
 
    # Unset the globals
@@ -990,14 +990,14 @@ get_vhost_info_by_pid() {
       # extglob enabled, which cannot be done.)
       if [[ "$option" =~ ^eth([0-9]|[1-9][0-9]+)$ ]]; then
          # Interface number
-         device_id=${option#eth}
+         interface_id=${option#eth}
 
          # Array of UML socket filepaths indexed by the interface number.
          # NOTE: we assume transport mode is 'daemon'
          # Disable SC2034 check (unused variable) - it is used elsewhere as a
          # global.
          # shellcheck disable=SC2034
-         vhost_sockets[$device_id]=${value#daemon,,,}
+         vhost_sockets[$interface_id]=${value#daemon,,,}
          continue
       fi
 

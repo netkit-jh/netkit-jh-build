@@ -67,14 +67,14 @@ case $action in
       fi
 
       # Get name for the user's tap interface
-      tap_device_name=$(get_tap_interface "$target_user" "$domain")
+      tap_name=$(get_tap_interface "$target_user" "$domain")
 
-      printf "Bringing down %s (if any)...\t" "$tap_device_name"
-      sudo --prompt $'\n'"[sudo] password for %p: " -- ifconfig "$tap_device_name" down > /dev/null 2>&1
+      printf "Bringing down %s (if any)...\t" "$tap_name"
+      sudo --prompt $'\n'"[sudo] password for %p: " -- ifconfig "$tap_name" down > /dev/null 2>&1
       echo "done."
 
       printf "Bringing down tunnel (if any)...\t\t"
-      sudo "$NETKIT_HOME/bin/tunctl" -d "$tap_device_name" > /dev/null 2>&1
+      sudo "$NETKIT_HOME/bin/tunctl" -d "$tap_name" > /dev/null 2>&1
       echo "done."
 
       if ip addr show | grep --quiet "inet $tap_addr"; then
@@ -83,14 +83,14 @@ case $action in
       fi
 
       printf "Setting up tunnel...\t\t\t\t"
-      if ! sudo "$NETKIT_HOME/bin/tunctl" -u "$target_user" -t "$tap_device_name" > /dev/null; then
+      if ! sudo "$NETKIT_HOME/bin/tunctl" -u "$target_user" -t "$tap_name" > /dev/null; then
          echo "failed."
          exit 1
       fi
       echo "done."
       
-      printf "Bringing up %s...\t\t\t" "$tap_device_name"
-      if ! sudo ifconfig "$tap_device_name" "$tap_addr" up; then
+      printf "Bringing up %s...\t\t\t" "$tap_name"
+      if ! sudo ifconfig "$tap_name" "$tap_addr" up; then
          echo "failed."
          exit 1
       fi
@@ -169,17 +169,17 @@ case $action in
                [ "$(id --user "$target_user")" != "$uid" ] && continue
             fi
 
-            device=$(basename -- "$sys_class_net_entry")
+            tap_name=$(basename -- "$sys_class_net_entry")
 
-            printf "\t%s...\t\t\t" "$device"
-            if ! sudo ifconfig "$device" down > /dev/null 2>&1; then
+            printf "\t%s...\t\t\t" "$tap_name"
+            if ! sudo ifconfig "$tap_name" down > /dev/null 2>&1; then
                echo "failed."
                continue
             fi
             echo "done."
 
-            printf "\t%s tunnel...\t\t" "$device"
-            if ! sudo "$NETKIT_HOME/bin/tunctl" -d "$device" > /dev/null 2>&1; then
+            printf "\t%s tunnel...\t\t" "$tap_name"
+            if ! sudo "$NETKIT_HOME/bin/tunctl" -d "$tap_name" > /dev/null 2>&1; then
                echo "failed."
                continue
             fi

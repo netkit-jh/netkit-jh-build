@@ -294,7 +294,7 @@ setup_interfaces() {
    local interface_specification
    local hub_specification hub_name tap_addr guest_addr
    local reg_hub_socket tap_hub_socket hub_socket
-   local device used_devices
+   local interface used_interfaces
    local enabled_default_route indent tap
 
    unset hub_list
@@ -306,17 +306,17 @@ setup_interfaces() {
    enabled_default_route=false
 
    for interface_specification in "${interface_specifications[@]}"; do
-      device=${interface_specification%%=*}
+      interface=${interface_specification%%=*}
       hub_specification=${interface_specification#*=}
 
       # Check if interface has already been configured
-      if array_contains "$device" "${used_devices[@]}"; then
-         echo 1>&2 "$SCRIPTNAME: $device: Duplicate interface"
+      if array_contains "$interface" "${used_interfaces[@]}"; then
+         echo 1>&2 "$SCRIPTNAME: $interface: Duplicate interface"
          usage 1
       fi
 
       # Remember that this network interface has been configured
-      used_devices+=( "$device" )
+      used_interfaces+=( "$interface" )
 
       # Check if tap interface (regular hubs cannot be named with commas)
       if [[ "$hub_specification" == *,* ]]; then
@@ -357,7 +357,7 @@ setup_interfaces() {
 
          hub_list+=( "$hub_name,$tap_addr" )
 
-         kernel_cmd+=( "autoconf_$device=$guest_addr" )
+         kernel_cmd+=( "autoconf_$interface=$guest_addr" )
 
          # Ensure the default route is specified only once
          if ! $enabled_default_route; then
@@ -379,9 +379,9 @@ setup_interfaces() {
          tap=""
       fi
 
-      kernel_cmd+=( "$device=daemon,,,$hub_socket" )
+      kernel_cmd+=( "$interface=daemon,,,$hub_socket" )
 
-      echo "$indent$device @ $hub_name ($tap$hub_socket)"
+      echo "$indent$interface @ $hub_name ($tap$hub_socket)"
 
       # Indent subsequent lines
       indent="                "
@@ -504,12 +504,12 @@ while true; do
          shift
          ;;
       --eth*)
-         device=${1#--}
+         interface=${1#--}
          hub_name=$2
          shift
 
          # Collision domain names are validated later in setup_interfaces
-         interface_specifications+=( "$device=$hub_name" )
+         interface_specifications+=( "$interface=$hub_name" )
          ;;
       -F|--foreground)
          foreground=1

@@ -122,7 +122,7 @@ generate_dot_graph() {
    local configuration vhost option value
    local hub_name hub_names
 
-   declare -A device_ids options
+   declare -A interface_ids options
 
    # Global map parameters
    cat << EOF
@@ -149,7 +149,7 @@ EOF
       # If option is all-digit, it must be a network interface specification
       if [[ "$option" =~ ^([0-9]|[1-9][0-9]+)$ ]]; then
          # Ignore if it has already been seen
-         [[ "${device_ids[$vhost]}" =~ \ $option\  ]] && continue
+         [[ "${interface_ids[$vhost]}" =~ \ $option\  ]] && continue
 
          # Add an edge between the machine and its collision domain
          cat << EOF
@@ -161,9 +161,9 @@ EOF
 EOF
          array_contains "$value" "${hub_names[@]}" || hub_names+=( "$value" )
 
-         # Device IDs cannot have whitespace, so a space-separated list is
+         # Interface IDs cannot have whitespace, so a space-separated list is
          # safe.
-         device_ids[$vhost]+=" $option "
+         interface_ids[$vhost]+=" $option "
       else
          options[$vhost]+="$option = $value<BR/>"
       fi

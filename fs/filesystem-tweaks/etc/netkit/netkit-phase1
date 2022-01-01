@@ -150,9 +150,9 @@ case $1 in
             ubd0)          fs=${value#*,};;
             autoconf_*)
                # Get interface name
-               device=${option#autoconf_}
+               interface=${option#autoconf_}
                # Array of alternating interface names and IP addresses
-               autoconf_interfaces+=( "$device" "$value" )
+               autoconf_interfaces+=( "$interface" "$value" )
             ;;
          esac
       done
@@ -235,11 +235,11 @@ EOF
 
       # Autoconfigure interfaces
       for (( i = 0; i < ${#autoconf_interfaces[@]}; i += 2 )); do
-         device=${autoconf_interfaces[$i]}
+         interface=${autoconf_interfaces[$i]}
          addr=${autoconf_interfaces[$(( i + 1 ))]}
 
-         echo "Bringing up interface $device ($addr)"
-         ifconfig "$device" "$addr" up
+         echo "Bringing up interface $interface ($addr)"
+         ifconfig "$interface" "$addr" up
       done
 
       # Insert a default entry in the routing table, if asked to

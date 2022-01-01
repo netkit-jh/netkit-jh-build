@@ -157,7 +157,7 @@ END_OF_HELP
 setup_interfaces() {
    local interface_specifications=( "$@" )
 
-   local interface_specification device hub_specification used_devices
+   local interface_specification interface hub_specification used_interfaces
    local hub_name tap_addr guest_addr
    local reg_hub_socket tap_hub_socket hub_socket
    local indent
@@ -166,17 +166,17 @@ setup_interfaces() {
    unset vconf_devices
 
    for interface_specification in "${interface_specifications[@]}"; do
-      device=${interface_specification%%=*}
+      interface=${interface_specification%%=*}
       hub_specification=${interface_specification#*=}
 
       # Check if interface has already been configured
-      if array_contains "$device" "${used_devices[@]}"; then
-         echo 1>&2 "$SCRIPTNAME: $device: Duplicate interface"
+      if array_contains "$interface" "${used_interfaces[@]}"; then
+         echo 1>&2 "$SCRIPTNAME: $interface: Duplicate interface"
          usage 1
       fi
 
       # Remember that this network interface has been configured
-      used_devices+=( "$device" )
+      used_interfaces+=( "$interface" )
 
       # Check if tap interface (regular hubs cannot be named with commas)
       if [[ "$hub_specification" == *,* ]]; then
@@ -228,11 +228,11 @@ setup_interfaces() {
             hub_list+=( "$hub_name" )
          fi
 
-         vconf_devices+=( "$device=daemon,,,$hub_socket" )
-         echo "$indent$device @ $hub_name ($hub_socket)"
+         vconf_devices+=( "$interface=daemon,,,$hub_socket" )
+         echo "$indent$interface @ $hub_name ($hub_socket)"
       else
-         vconf_devices+=( "$device" )
-         echo "$indent$device removed"
+         vconf_devices+=( "$interface" )
+         echo "$indent$interface removed"
       fi
 
       # Indent subsequent lines
@@ -264,18 +264,18 @@ invoke_mconsole() {
    local mconsole=$3
    local vconf_devices=( "${@:4}" )
 
-   local device_specification device hub_specification
+   local interface_specification interface hub_specification
    local action action_desc
    local uml_mconsole_cmd
 
-   for device_specification in "${vconf_devices[@]}"; do
+   for interface_specification in "${vconf_devices[@]}"; do
       # Format is either:
       #   To add an interface:
       #     ethN=daemon,,,path/to/socket
       #   To remove an interface:
       #     ethN
-      device=${device_specification%%=*}
-      hub_specification=${device_specification#*=}
+      interface=${interface_specification%%=*}
+      hub_specification=${interface_specification#*=}
 
       if [ -n "$hub_specification" ]; then
          action="config"
@@ -289,7 +289,7 @@ invoke_mconsole() {
          "$NETKIT_HOME/bin/uml_mconsole"
          "$mconsole"
          "$action"
-         "$device"
+         "$interface"
       )
 
       if [ -n "$just_print" ]; then
@@ -298,7 +298,7 @@ invoke_mconsole() {
          [ -n "$verbose" ] && echo "Running ==> ${uml_mconsole_cmd[*]}"
 
          "${uml_mconsole_cmd[@]}" > /dev/null 2>&1 ||
-            echo 2>&1 "Failed to $action_desc interface '$device'"
+            echo 2>&1 "Failed to $action_desc interface '$interface'"
       fi
    done
 }
@@ -341,12 +341,12 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       --eth*)
-         device=${1#--}
+         interface=${1#--}
          hub_name=$2
          shift
 
          # Collision domain names are validated later in setup_interfaces
-         network_interfaces+=( "$device=$hub_name" )
+         network_interfaces+=( "$interface=$hub_name" )
          ;;
       --help)
          usage 0
