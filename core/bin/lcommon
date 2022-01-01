@@ -149,7 +149,7 @@ generate_info_str() {
    local -n lab_info=$1
 
    local lab value
-   local lab_info_str separator
+   local lab_info_str fs
 
    declare -A collated_lab_info_values
 
@@ -183,10 +183,10 @@ generate_info_str() {
    # lab_welcome dialog.
    if [ ${#collated_lab_info_values[@]} -gt 1 ]; then
       for value in "${!collated_lab_info_values[@]}"; do
-         lab_info_str+="$separator$value (${collated_lab_info_values[$value]})"
+         lab_info_str+="$fs$value (${collated_lab_info_values[$value]})"
 
          # Comma-separate subsequent interfaces
-         separator=", "
+         fs=", "
       done
    elif [ ${#collated_lab_info_values[@]} -eq 1 ]; then
       # If all labs share the same value, it is not necessary to display the

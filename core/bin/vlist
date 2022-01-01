@@ -118,7 +118,7 @@ print_vhost_summary() {
    local machine_count
    local pid pgid
    local total_memory_usage
-   local i separator
+   local i fs
    local socket_file hub_name tap
 
    # Column spacing:
@@ -159,7 +159,7 @@ print_vhost_summary() {
          "${vhost_info[pid]}" \
          "${vhost_info[memory_usage]}"
 
-      separator=""
+      fs=""
 
       for i in "${!vhost_sockets[@]}"; do
          socket_file=${vhost_sockets[$i]}
@@ -167,10 +167,10 @@ print_vhost_summary() {
 
          is_tap "$socket_file" && tap=" (tap)" || tap=""
 
-         echo -n "${separator}eth$i @ $hub_name$tap"
+         echo -n "${fs}eth$i @ $hub_name$tap"
          
          # Comma-separate subsequent interfaces
-         separator=", "
+         fs=", "
       done
 
       echo
