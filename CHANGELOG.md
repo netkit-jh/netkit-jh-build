@@ -87,6 +87,7 @@
 ## Removed
 - `name` and `title` parameters in `kernel_cmd`
 - /etc/netkit/netkit-welcome script (was disabled anyway)
+- check.sh filesystem check script
 
 # Bug Fixes
 - `uml_switch` logging now works
