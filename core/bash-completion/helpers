@@ -183,7 +183,7 @@ _get_command_subcommands() {
 # found, output '-'. Can be used to generate machine name completions owned by
 # a specific user.
 # Usage:
-#   _get_netkit_user [ARGUMENT]...
+#   _get_nk_user [ARGUMENT]...
 # Globals:
 #   r- COMP_WORDS
 # Arguments:
@@ -193,7 +193,7 @@ _get_command_subcommands() {
 # Example:
 #   None
 ###############################################################################
-_get_netkit_user() {
+_get_nk_user() {
    local word user_flag
 
    # Iterate over the command-line arguments
@@ -431,7 +431,7 @@ _collision_domains_compgen() {
 
    local collision_domains collision_domains_str
 
-   : "${target_user:="$(_get_netkit_user "${COMP_WORDS[@]}")"}"
+   : "${target_user:="$(_get_nk_user "${COMP_WORDS[@]}")"}"
 
    _get_active_collision_domains collision_domains "," "$target_user" 2> /dev/null
    collision_domains_str=$(_option_array_to_string "," "${collision_domains[@]}")
