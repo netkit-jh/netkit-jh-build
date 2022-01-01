@@ -33,7 +33,7 @@
 
 
 # We shift the argument list for assignment of kernel_cmd
-terminal_emulator=$1
+term=$1
 vhost=$2
 kernel_cmd=( "${@:3}" )
 
@@ -60,7 +60,7 @@ bash_cmd=( "bash" "-c" "$pid_cmd; ${kernel_cmd[*]@Q}" )
 wt_safe_bash_cmd=( "bash" "-c" "$pid_cmd\\; ${kernel_cmd[*]@Q}" )
 
 
-case $terminal_emulator in
+case $term in
    alacritty)     alacritty                                                  --command "${bash_cmd[@]}";;
    gnome)         gnome-terminal --title "$vhost"                            --        "${bash_cmd[@]}";;
    kitty)         kitty --title "$vhost"                                               "${bash_cmd[@]}";;
@@ -93,7 +93,7 @@ case $terminal_emulator in
       ;;
 
    *)
-      echo "Terminal $terminal_emulator not supported, defaulting to xterm."
+      echo "Terminal $term not supported, defaulting to xterm."
       xterm -xrm 'XTerm*allowTitleOps: false' -T "$vhost" -e "${bash_cmd[@]}"
       ;;
 esac

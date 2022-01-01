@@ -97,7 +97,7 @@ while true; do
          fi
 
          term_type="xterm"
-         terminal="xterm"
+         term_name="xterm"
          ;;
       2)
          if ! command -v -- "alacritty" > /dev/null 2>&1; then
@@ -107,7 +107,7 @@ while true; do
          fi
 
          term_type="alacritty"
-         terminal="Alacritty"
+         term_name="Alacritty"
         ;;
       3)
          if ! command -v -- "kitty" > /dev/null 2>&1; then
@@ -116,7 +116,7 @@ while true; do
          fi
 
          term_type="kitty"
-         terminal="kitty"
+         term_name="kitty"
          ;;
       4)
          if ! command -v -- "gnome-terminal" > /dev/null 2>&1; then
@@ -125,7 +125,7 @@ while true; do
          fi
 
          term_type="gnome"
-         terminal="GNOME Terminal"
+         term_name="GNOME Terminal"
          ;;
       5)
          if ! command -v -- "wsl.exe" > /dev/null 2>&1; then
@@ -135,7 +135,7 @@ while true; do
          fi
 
          term_type="wsl"
-         terminal="Windows Console"
+         term_name="Windows Console"
          ;;
       6)
          if ! command -v -- "wt.exe" > /dev/null 2>&1; then
@@ -145,7 +145,7 @@ while true; do
          fi
 
          term_type="wt"
-         terminal="Windows Terminal"
+         term_name="Windows Terminal"
          ;;
    esac
 done
@@ -159,4 +159,4 @@ sed \
    "/^TERM_TYPE=/{h;s/=.*/=$term_type/};\${x;/^$/{s//\n$comment\nTERM_TYPE=$term_type/;H};x}" \
    "$netkit_conf"
 
-echo "$terminal will now be used as Netkit's default terminal emulator."
+echo "$term_name will now be used as Netkit's default terminal emulator."
