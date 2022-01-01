@@ -109,32 +109,32 @@ of the virtual machine is not automatically updated. In particular, assume that
 interface eth0 has been set up using \fIvconf\fR with the following option:
 
 .nf
---eth\fIN\fR=\fIDOMAIN\fR,\fITAP\-ADDRESS\fR,\fIGUEST\-ADDRESS\fR
+--eth\fIN\fR=\fIDOMAIN\fR,\fITAP\-ADDR\fR,\fIGUEST\-ADDR\fR
 .fi
 
 After doing so, the following operations must be performed inside the virtual
 machine in order to make the interface operational:
 
 .IP 1) 3
-Interface eth0 must be assigned IP address \fIGUEST\-ADDRESS\fR. You can do this
+Interface eth0 must be assigned IP address \fIGUEST\-ADDR\fR. You can do this
 by using the following command:
 
 .nf
-ifconfig eth0 \fIGUEST\-ADDRESS\fR up
+ifconfig eth0 \fIGUEST\-ADDR\fR up
 .fi
 
-Notice that \fIvconf\fR does not consider the \fIGUEST\-ADDRESS\fR parameter,
+Notice that \fIvconf\fR does not consider the \fIGUEST\-ADDR\fR parameter,
 even if the command syntax requires it. Hence, you are free to use any IP
 address in configuring interface eth0 (provided that it is on the same (sub)network
-as \fITAP\-ADDRESS\fR). Nevertheless, it is a good rule to be coherent with the
-\fIGUEST\-ADDRESS\fR provided on the \fIvconf\fR command line.
+as \fITAP\-ADDR\fR). Nevertheless, it is a good rule to be coherent with the
+\fIGUEST\-ADDR\fR provided on the \fIvconf\fR command line.
 
 .IP 2) 3
 A default route must be configured to point to the host side of the "\fBtap\fR"
 interface. This can be achieved by issuing the following command:
 
 .nf
-route add default gw \fITAP\-ADDRESS\fR dev eth0
+route add default gw \fITAP\-ADDR\fR dev eth0
 .fi
 
 .PP
@@ -143,7 +143,7 @@ Once this is done, the interface is ready for use.
 Please make sure you run 'vclean -H' (see \fBvclean\fR(1)) when a "\fBtap\fR"
 interface is no more used. Not doing so may result in the impossibility to
 correctly configure new "\fBtap\fR" interfaces. For example, this may prevent
-from correctly setting the \fITAP\-ADDRESS\fR for a new "\fBtap\fR" interface.
+from correctly setting the \fITAP\-ADDR\fR for a new "\fBtap\fR" interface.
 
 
 

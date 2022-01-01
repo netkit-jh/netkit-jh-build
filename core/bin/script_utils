@@ -495,7 +495,7 @@ start_inet_hub() {
    local just_print=$2
    local hub_socket=$3
    local domain=$4
-   local tap_address=$5
+   local tap_addr=$5
 
    local tap_device_name
    local manage_tuntap_cmd
@@ -512,7 +512,7 @@ start_inet_hub() {
       if ip addr show "$tap_device_name" > /dev/null 2>&1; then
          # If the interface already exists, it must have the same IP as
          # requested.
-         if ! ip addr show "$tap_device_name" | grep --quiet "inet $tap_address"; then
+         if ! ip addr show "$tap_device_name" | grep --quiet "inet $tap_addr"; then
             echo 1>&2 "$SCRIPTNAME: $tap_device_name: Interface already exists and is in usage with a different IP. Remove the interface or change the IP address"
             usage 1
          else
@@ -534,11 +534,11 @@ start_inet_hub() {
       "start"
       "$USER_ID"
       "$domain"
-      "$tap_address"
+      "$tap_addr"
    )
 
    echo "******** Starting Internet connected virtual hub ********"
-   echo "   (host) $tap_address"
+   echo "   (host) $tap_addr"
    echo "********     (root privileges are required)      ********"
 
    if [ -n "$just_print" ]; then
@@ -691,15 +691,15 @@ run_hubs() {
    local just_print=$2
    local hub_specifications=( "${@:3}" )
 
-   local hub_specification hub_name tap_address hub_socket
+   local hub_specification hub_name tap_addr hub_socket
 
    for hub_specification in "${hub_specifications[@]}"; do
-      IFS=, read -r hub_name tap_address <<< "$hub_specification"
+      IFS=, read -r hub_name tap_addr <<< "$hub_specification"
 
-      hub_socket=$(get_hub_socket "${tap_address:+"1"}" "$hub_name")
+      hub_socket=$(get_hub_socket "${tap_addr:+"1"}" "$hub_name")
 
-      if [ -n "$tap_address" ]; then
-         start_inet_hub "$verbose" "$just_print" "$hub_socket" "$hub_name" "$tap_address"
+      if [ -n "$tap_addr" ]; then
+         start_inet_hub "$verbose" "$just_print" "$hub_socket" "$hub_name" "$tap_addr"
       else
          start_hub "$verbose" "$just_print" "$hub_socket"
       fi
@@ -730,13 +730,13 @@ run_hubs() {
 clean_hubs() {
    local hub_specifications=( "$@" )
 
-   local hub_specification hub_name tap_address hub_socket
+   local hub_specification hub_name tap_addr hub_socket
    local hub_pid
 
    for hub_specification in "${hub_specifications[@]}"; do
-      IFS=, read -r hub_name tap_address <<< "$hub_specification"
+      IFS=, read -r hub_name tap_addr <<< "$hub_specification"
 
-      hub_socket=$(get_hub_socket "${tap_address:+"1"}" "$hub_name")
+      hub_socket=$(get_hub_socket "${tap_addr:+"1"}" "$hub_name")
 
       # Avoid attempting to kill hubs for which the socket file does not exist
       # any more. Such situation may occur if user accidentally deleted it

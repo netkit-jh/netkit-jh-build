@@ -19,7 +19,7 @@
 
 ## Modified
 - Netkit's default configuration is stored in netkit.conf.default. This should not be modified and can be overridden with netkit.conf
-- Tap interfaces are specified with `DOMAIN,TAP-ADDRESS,GUEST-ADDRESS` (`DOMAIN` does not have to be `tap` now, it should be a regular collision domain name). See [Added](#added) for information on multiple tap interface specifications
+- Tap interfaces are specified with `DOMAIN,TAP-ADDR,GUEST-ADDR` (`DOMAIN` does not have to be `tap` now, it should be a regular collision domain name). See [Added](#added) for information on multiple tap interface specifications
 - `vcommand` usage signature is now `vcommand [OPTION]... MACHINE [COMMAND]`
 - `vconnect` usage signature is now `vconnect [OPTION]... MACHINE`
 - `machines` lab.conf variable is now `LAB_MACHINES`

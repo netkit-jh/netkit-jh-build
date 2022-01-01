@@ -85,28 +85,27 @@ Attach network interfaces to running virtual machines.
                         This is a special socket that allows an external
                         to be reached in the virtual machine. A 'tap' interface
                         must be declared with the following syntax:
-                          --ethX=DOMAIN,TAP_ADDRESS,GUEST_ADDRESS
+                          --ethX=DOMAIN,TAP_ADDR,GUEST_ADDR
                         where DOMAIN is a valid collision domain name,
-                        TAP_ADDRESS is the IP address of the 'host side' of the
-                        interface and GUEST_ADDRESS is the IP address of the
-                        interface inside the virtual machine. TAP_ADDRESS and
-                        GUEST_ADDRESS must be on the same /8 network. Machines
-                        can share a 'tap' interface if one uses the same DOMAIN
-                        and TAP_ADDRESS for them. If an interface on the same
-                        DOMAIN with a different TAP_ADDRESS already exists, an
-                        error will be thrown. Another interface with a
-                        TAP_ADDRESS within the /8 subnet of another cannot be
-                        created; likewise, like a regular collision domain, two
-                        machines using the same 'tap' interface cannot share an
-                        IP address (there will be no explicit error for either
-                        of these scenarios.)
+                        TAP_ADDR is the IP address of the 'host side' of the
+                        interface and GUEST_ADDR is the IP address of the
+                        interface inside the virtual machine. TAP_ADDR and
+                        GUEST_ADDR must be on the same /8 network. Machines can
+                        share a 'tap' interface if one uses the same DOMAIN and
+                        TAP_ADDR for them. If an interface on the same DOMAIN
+                        with a different TAP_ADDR already exists, an error will
+                        be thrown. Another interface with a TAP_ADDR within the
+                        /8 subnet of another cannot be created; likewise, like
+                        a regular collision domain, two machines using the same
+                        'tap' interface cannot share an IP address (there will
+                        be no explicit error for either of these scenarios.)
                         Notices:
                         - Using 'tap' interfaces requires administrative
                           privileges. This script will take care of asking you
                           for the root password when needed.
-                        - TAP_ADDRESS is mandatory, but is only taken into
-                          account when a 'tap' interface with such a collision
-                          domain is first used.
+                        - TAP_ADDR is mandatory, but is only taken into account
+                          when a 'tap' interface with such a collision domain
+                          is first used.
                         - Tunnel configurations are not automatically removed
                           when halting machines: you should use the vclean
                           script for this purpose.
@@ -159,7 +158,7 @@ setup_interfaces() {
    local interface_specifications=( "$@" )
 
    local interface_specification device hub_specification used_devices
-   local hub_name tap_address guest_address
+   local hub_name tap_addr guest_addr
    local reg_hub_socket tap_hub_socket hub_socket
    local indent
 
@@ -181,21 +180,21 @@ setup_interfaces() {
 
       # Check if tap interface (regular hubs cannot be named with commas)
       if [[ "$hub_specification" == *,* ]]; then
-         # Format: hub_name,tap_address,guest_address
-         IFS=, read -r hub_name tap_address guest_address <<< "$hub_specification"
+         # Format: hub_name,tap_addr,guest_addr
+         IFS=, read -r hub_name tap_addr guest_addr <<< "$hub_specification"
 
-         if ! is_inet_addr "$tap_address"; then
-            echo 1>&2 "$SCRIPTNAME: $tap_address: Invalid tap address"
+         if ! is_inet_addr "$tap_addr"; then
+            echo 1>&2 "$SCRIPTNAME: $tap_addr: Invalid tap address"
             usage 1
          fi
 
-         if ! is_inet_addr "$guest_address"; then
-            echo 1>&2 "$SCRIPTNAME: $guest_address: Invalid guest address"
+         if ! is_inet_addr "$guest_addr"; then
+            echo 1>&2 "$SCRIPTNAME: $guest_addr: Invalid guest address"
             usage 1
          fi
       else
          # This is a normal interface
-         unset tap_address guest_address
+         unset tap_addr guest_addr
          hub_name=$hub_specification
       fi
 
@@ -209,7 +208,7 @@ setup_interfaces() {
          reg_hub_socket=$(get_hub_socket "" "$hub_name")
          tap_hub_socket=$(get_hub_socket "1" "$hub_name")
 
-         if [ -n "$tap_address" ]; then
+         if [ -n "$tap_addr" ]; then
             if [ -e "$reg_hub_socket" ]; then
                echo 1>&2 "$SCRIPTNAME: $hub_name: Regular (not tap) hub socket under the same collision domain already exists"
                usage 1
@@ -217,7 +216,7 @@ setup_interfaces() {
 
             hub_socket=$tap_hub_socket
 
-            hub_list+=( "$hub_name,$tap_address" )
+            hub_list+=( "$hub_name,$tap_addr" )
          else
             if [ -e "$tap_hub_socket" ]; then
                echo 1>&2 "$SCRIPTNAME: $hub_name: Tap hub socket under the same collision domain already exists"

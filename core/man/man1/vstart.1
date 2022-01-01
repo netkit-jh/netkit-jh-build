@@ -68,16 +68,16 @@ that allows an external to be reached in the virtual machine. A 'tap' interface
 must be declared with the following syntax:
 
 .nf
---eth\fIN\fR=\fIDOMAIN\fR,\fITAP\-ADDRESS\fR,\fIGUEST\-ADDRESS\fR
+--eth\fIN\fR=\fIDOMAIN\fR,\fITAP\-ADDR\fR,\fIGUEST\-ADDR\fR
 .fi
                         
-where \fIDOMAIN\fR is a valid collision domain name, \fITAP_ADDRESS\fR is the IP address of
-the 'host side' of the interface and \fIGUEST_ADDRESS\fR is the IP address of the
-interface inside the virtual machine. \fITAP_ADDRESS\fR and \fIGUEST_ADDRESS\fR must be on
+where \fIDOMAIN\fR is a valid collision domain name, \fITAP_ADDR\fR is the IP address of
+the 'host side' of the interface and \fIGUEST_ADDR\fR is the IP address of the
+interface inside the virtual machine. \fITAP_ADDR\fR and \fIGUEST_ADDR\fR must be on
 the same /8 network. Machines can share a 'tap' interface if one uses the same
-\fIDOMAIN\fR and \fITAP_ADDRESS\fR for them. If an interface on the same \fIDOMAIN\fR with a
-different \fITAP_ADDRESS\fR already exists, an error will be thrown. Another
-interface with a \fITAP_ADDRESS\fR within the /8 subnet of another cannot be created;
+\fIDOMAIN\fR and \fITAP_ADDR\fR for them. If an interface on the same \fIDOMAIN\fR with a
+different \fITAP_ADDR\fR already exists, an error will be thrown. Another
+interface with a \fITAP_ADDR\fR within the /8 subnet of another cannot be created;
 likewise, like a regular collision domain, two machines using the same 'tap'
 interface cannot share an IP address (there will be no explicit error for
 either of these scenarios.)
@@ -103,7 +103,7 @@ digests of the current username and collision domain name, truncated to 12
 characters long).
 .br
 4) A tap network device named 'nk_\fIINTERFACE_SHA256\fR' is created and configured to
-have IP address \fITAP\-ADDRESS\fR.
+have IP address \fITAP\-ADDR\fR.
 .br
 5) Kernel based IP forwarding is enabled via the '/proc/sys/net/ipv4/ip_forward'
 special file.
