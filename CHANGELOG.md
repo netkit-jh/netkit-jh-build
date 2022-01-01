@@ -23,6 +23,7 @@
 - `vcommand` usage signature is now `vcommand [OPTION]... MACHINE [COMMAND]`
 - `vconnect` usage signature is now `vconnect [OPTION]... MACHINE`
 - `machines` lab.conf variable is now `LAB_MACHINES`
+- Minimum Bash version (4.4) is enforced in the 1_check_shell.sh configuration check script
 - `LAB_MACHINES` variable is comma-delimited (orig. whitespace-delimited)
 - `ltest` user defined scripts should be stored in _test/scripts/
 - `ltest` script results are placed in _test/results/
@@ -72,18 +73,19 @@
 - Collision domain argument to `manage_tuntap`
 
 ## Modifed
-- All scripts are interpreted by Bash now
+- All scripts are interpreted by Bash now (minimum required version 4.4, see [Modified](#modified))
 - Script order:
     1. `/usr/bin/env bash` shebang
     2. Copyright notice
     3. Script description
     4. `usage_line` & `usage`
     5. Other function definitions in order of usage
-    6. `SCRIPTNAME` set, `NETKIT_HOME` check, and `script_utils` and/or `lcommon` source
+    6. `script_utils` and (optional) `lcommon` source
     7. `getopt` argument parsing
     8. Non-option argument parsing
     9. Remainder of script
 - `hostname` parameter in `kernel_cmd` (replaced `name` and `title`)
+- Renamed check_configuration.d/ scripts
 
 ## Removed
 - `name` and `title` parameters in `kernel_cmd`
