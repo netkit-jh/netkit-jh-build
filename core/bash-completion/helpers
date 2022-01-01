@@ -25,7 +25,7 @@
 # Write a newline-separated list of long options for the given command to
 # standard output.
 # Usage:
-#   _get_get_command_options COMMAND
+#   _get_cmd_options COMMAND
 # Globals:
 #   r- NETKIT_HOME
 # Arguments:
@@ -35,16 +35,17 @@
 # Example:
 #   None
 ###############################################################################
-_get_command_options() {
-   local command=$1
+_get_cmd_options() {
+   local cmd=$1
    # Get long options
-   "$NETKIT_HOME/bin/$command" --help |
+   "$NETKIT_HOME/bin/$cmd" --help |
       grep --extended-regexp --only-matching "^(  -[[:alnum:]], | {6})--[[:alnum:]-]+=?" |
       awk --field-separator "," '{ gsub(/[[:blank:]]/, "", $NF); print $NF }'
+
    # Get short options
    # NOTE: we don't gather the short options because conventionally linux
    # utilities only autocomplete long ones.
-   #"$NETKIT_HOME/bin/$1" --help | grep --extended-regexp --only-matching '^  -[[:alnum:]]' | tr -d "[:blank:]"
+   #"$NETKIT_HOME/bin/$cmd" --help | grep --extended-regexp --only-matching '^  -[[:alnum:]]' | tr -d "[:blank:]"
 }
 
 
@@ -62,7 +63,7 @@ _get_command_options() {
 # Returns:
 #   None
 # Example:
-#   mapfile -t options < <(_get_command_options vstart)
+#   mapfile -t options < <(_get_cmd_options vstart)
 #   mapfile -t options < <(_expand_ethn "${options[@]}")
 ###############################################################################
 _expand_ethn() {
@@ -104,7 +105,7 @@ _expand_ethn() {
 # Returns:
 #   None
 # Example:
-#   mapfile -t options < <(_get_command_options vstart)
+#   mapfile -t options < <(_get_cmd_options vstart)
 #   compgen -W "$(_option_array_to_str "=" "${options[@]}")" -- "$word"
 ###############################################################################
 _option_array_to_str() {
@@ -140,13 +141,13 @@ _option_array_to_str() {
 #   None
 ###############################################################################
 _options_compgen() {
-   local command=$1
+   local cmd=$1
    local expand_eth_option=$2
    local current_word=$3
 
    local options options_str
 
-   mapfile -t options < <(_get_command_options "$command")
+   mapfile -t options < <(_get_cmd_options "$cmd")
    [ -n "$expand_eth_option" ] && mapfile -t options < <(_expand_ethn "${options[@]}")
 
    options_str=$(_option_array_to_str "=" "${options[@]}")
@@ -160,7 +161,7 @@ _options_compgen() {
 # Write a newline-separated list of subcommands for the given command to
 # standard output.
 # Usage:
-#   _get_command_subcommands COMMAND
+#   _get_cmd_subcmds COMMAND
 # Globals:
 #   r- NETKIT_HOME
 # Arguments:
@@ -170,9 +171,9 @@ _options_compgen() {
 # Example:
 #   None
 ###############################################################################
-_get_command_subcommands() {
-   local command=$1
-   "$NETKIT_HOME/bin/$command" --help |
+_get_cmd_subcmds() {
+   local cmd=$1
+   "$NETKIT_HOME/bin/$cmd" --help |
       grep --extended-regexp --only-matching "^  [[:alnum:]][[:alnum:]-]+" |
       tr -d "[:blank:]"
 }

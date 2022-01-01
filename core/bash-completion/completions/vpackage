@@ -37,14 +37,14 @@
 #   None
 ###############################################################################
 _vpackage() {
-   local subcommands
+   local subcmds
 
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
    local current_word=${COMP_WORDS[COMP_CWORD]}
 
-   mapfile -t options < <(_get_command_options vpackage)
+   mapfile -t options < <(_get_cmd_options vpackage)
 
-   mapfile -t subcommands < <(_get_command_subcommands vpackage)
+   mapfile -t subcmds < <(_get_cmd_subcmds vpackage)
 
    # If the current word is the first argument, it cannot be an option
    # parameter.
@@ -57,7 +57,7 @@ _vpackage() {
          *)
             # Current word could be an option or subcommand (non-option
             # argument), so we complete as a subcommand.
-            mapfile -t COMPREPLY < <(compgen -W "${subcommands[*]}" -- "$current_word")
+            mapfile -t COMPREPLY < <(compgen -W "${subcmds[*]}" -- "$current_word")
             ;;
       esac
 
@@ -104,7 +104,7 @@ _vpackage() {
             *)
                # Current word could be an option or subcommand (non-option
                # argument), so we complete as a subcommand.
-               mapfile -t COMPREPLY < <(compgen -W "${subcommands[*]}" -- "$current_word")
+               mapfile -t COMPREPLY < <(compgen -W "${subcmds[*]}" -- "$current_word")
                ;;
          esac
 

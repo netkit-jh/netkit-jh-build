@@ -63,10 +63,10 @@ SCRIPTNAME=$(basename -- "$0")
 case $1 in
    start) 
       # Full command used to invoke the process
-      mapfile -d "" -t full_command < "/proc/cmdline"
+      mapfile -d "" -t kernel_cmd < "/proc/cmdline"
 
       first_iteration=true
-      for argument in "${full_command[@]}"; do
+      for argument in "${kernel_cmd[@]}"; do
          # Skip program name
          if $first_iteration; then
             first_iteration=false

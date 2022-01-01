@@ -791,8 +791,7 @@ get_vhost_pid_by_name() {
    local target_user=$1
    local vhost=$2
 
-   local full_command_regex
-   local pid pgid full_command
+   local pid pgid kernel_cmd
    local first_iteration argument umid
 
 
@@ -800,7 +799,7 @@ get_vhost_pid_by_name() {
    # instances if there is a machine called "foo" and "foo bar". We hence do
    # further processing - this filter just removes processes which definitely
    # are not matches.
-   full_command_regex="^$VM_KERNEL.*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
+   local kernel_cmd_regex="^$VM_KERNEL.*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
 
    # The process hierarchy looks like this:
    #
@@ -824,7 +823,7 @@ get_vhost_pid_by_name() {
    # are not group leaders.
 
    # Iterate over the PIDs of running Netkit instances with name matches.
-   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$full_command_regex"); do
+   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$kernel_cmd_regex"); do
       # Get the process group ID (PGID)
       pgid=$(ps --no-headers --format pgid --pid "$pid")
 
@@ -832,10 +831,10 @@ get_vhost_pid_by_name() {
       [ -z "$pgid" ] || [ "$pgid" -ne "$pid" ] && continue
 
       # Full command used to invoke the process
-      mapfile -d "" -t full_command < "/proc/$pid/cmdline"
+      mapfile -d "" -t kernel_cmd < "/proc/$pid/cmdline"
 
       first_iteration=true
-      for argument in "${full_command[@]}"; do
+      for argument in "${kernel_cmd[@]}"; do
          # Skip program name
          if $first_iteration; then
             first_iteration=false
@@ -879,8 +878,7 @@ get_vhost_all_pids_by_name() {
    local target_user=$1
    local vhost=$2
 
-   local full_command_regex
-   local pid full_command
+   local pid kernel_cmd
    local first_iteration argument umid pids
 
 
@@ -888,17 +886,17 @@ get_vhost_all_pids_by_name() {
    # instances if there is a machine called "foo" and "foo bar". We hence do
    # further processing - this filter just removes processes which definitely
    # are not matches.
-   full_command_regex="^$VM_KERNEL.*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
+   local kernel_cmd_regex="^$VM_KERNEL.*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
 
    # See get_vhost_pid_by_name for a process hierarchy explanation.
 
    # Iterate over the PIDs of running Netkit instances with name matches.
-   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$full_command_regex"); do
+   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$kernel_cmd_regex"); do
       # Full command used to invoke the process
-      mapfile -d "" -t full_command < "/proc/$pid/cmdline"
+      mapfile -d "" -t kernel_cmd < "/proc/$pid/cmdline"
 
       first_iteration=true
-      for argument in "${full_command[@]}"; do
+      for argument in "${kernel_cmd[@]}"; do
          # Skip program name
          if $first_iteration; then
             first_iteration=false
@@ -942,7 +940,7 @@ get_vhost_all_pids_by_name() {
 get_vhost_info_by_pid() {
    local pid=$1
 
-   local full_command
+   local kernel_cmd
    local first_iteration argument option value
    local device_id
    local vhost_info_other
@@ -969,13 +967,13 @@ get_vhost_info_by_pid() {
    # arguments is impossible to deal with. /proc/$pid/cmdline stores argv with
    # null-byte field separators, which is the only character that cannot be
    # present in a Linux filepath.
-   # vhost_info[full_command] will store a quoted and escaped command string
+   # vhost_info[kernel_cmd] will store a quoted and escaped command string
    # suitable for reuse as a shell command.
-   mapfile -d "" -t full_command < "/proc/$pid/cmdline"
-   vhost_info[full_command]=${full_command[*]@Q}
+   mapfile -d "" -t kernel_cmd < "/proc/$pid/cmdline"
+   vhost_info[kernel_cmd]=${kernel_cmd[*]@Q}
 
    first_iteration=true
-   for argument in "${full_command[@]}"; do
+   for argument in "${kernel_cmd[@]}"; do
       if $first_iteration; then
          vhost_info[kernel]=$argument
          first_iteration=false

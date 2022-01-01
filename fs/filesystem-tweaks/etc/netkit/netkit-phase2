@@ -93,13 +93,12 @@ color_cyan=$'\033[36m'
 hostname=$(hostname)
 
 
-# This short GNU AWK script processes /proc/cmdline (the command line
-# used to invoke the kernel). The script transforms it into a null-
-# delimited list of parameters by replacing all unquoted spaces with
-# a null byte, making the output similar to /proc/$pid/cmdline. The
-# full_command variable is a Bash array where each element is a
-# parameter=value specification.
-mapfile -d "" -t full_command < <(gawk '
+# This short GNU AWK script processes /proc/cmdline (the command line used to
+# invoke the kernel). The script transforms it into a null-delimited list of
+# parameters by replacing all unquoted spaces with a null byte, making the
+# output similar to /proc/$pid/cmdline. The kernel_cmd variable is a Bash array
+# where each element is a parameter=value specification.
+mapfile -d "" -t kernel_cmd < <(gawk '
    BEGIN {
       FPAT = "([^ ]+)|(\"[^\"]+\")"
       OFS = "\0"
@@ -110,7 +109,7 @@ mapfile -d "" -t full_command < <(gawk '
       printf $0
    }' < /proc/cmdline)
 
-for argument in "${full_command[@]}"; do
+for argument in "${kernel_cmd[@]}"; do
    option=${argument%%=*}
    value=${argument#*=}
 

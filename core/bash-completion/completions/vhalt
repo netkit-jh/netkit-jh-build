@@ -42,7 +42,7 @@ _vhalt() {
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
    local current_word=${COMP_WORDS[COMP_CWORD]}
 
-   mapfile -t options < <(_get_command_options vhalt)
+   mapfile -t options < <(_get_cmd_options vhalt)
 
    # If the current word is the first argument, it cannot be an option
    # parameter.

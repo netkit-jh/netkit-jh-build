@@ -124,9 +124,9 @@ case $1 in
       # used to invoke the kernel). The script transforms it into a null-
       # delimited list of parameters by replacing all unquoted spaces with
       # a null byte, making the output similar to /proc/$pid/cmdline. The
-      # full_command variable is a Bash array where each element is a
+      # kernel_cmd variable is a Bash array where each element is a
       # parameter=value specification.
-      mapfile -d "" -t full_command < <(gawk '
+      mapfile -d "" -t kernel_cmd < <(gawk '
          BEGIN {
             FPAT = "([^ ]+)|(\"[^\"]+\")"
             OFS = "\0"
@@ -137,7 +137,7 @@ case $1 in
             printf $0
          }' < /proc/cmdline)
 
-      for argument in "${full_command[@]}"; do
+      for argument in "${kernel_cmd[@]}"; do
          option=${argument%%=*}
          value=${argument#*=}
 
@@ -256,7 +256,7 @@ EOF
       echo
       echo "$color_bold_blue--- Starting Netkit phase 1 shutdown script ---$color_normal$color_cyan"
 
-      mapfile -d "" -t full_command < <(gawk '
+      mapfile -d "" -t kernel_cmd < <(gawk '
          BEGIN {
             FPAT = "([^ ]+)|(\"[^\"]+\")"
             OFS = "\0"
@@ -267,7 +267,7 @@ EOF
             printf $0
          }' < /proc/cmdline)
 
-      for argument in "${full_command[@]}"; do
+      for argument in "${kernel_cmd[@]}"; do
          option=${argument%%=*}
          value=${argument#*=}
 

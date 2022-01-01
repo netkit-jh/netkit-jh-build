@@ -117,7 +117,7 @@ END_OF_HELP
 ###############################################################################
 # Exit with usage 1 if string is not a valid vpackage subcommand.
 # Usage:
-#   validate_vpackage_subcommand COMMAND
+#   validate_vpackage_subcmd COMMAND
 # Globals:
 #   r- SCRIPTNAME
 # Arguments:
@@ -127,13 +127,13 @@ END_OF_HELP
 # Example:
 #   None
 ###############################################################################
-validate_vpackage_subcommand() {
-   local subcommand=$1
+validate_vpackage_subcmd() {
+   local subcmd=$1
 
-   local subcommands="list|update|upgrade|dist-upgrade|clean|autoremove|auto-remove|install|remove|purge"
+   local subcmds="list|update|upgrade|dist-upgrade|clean|autoremove|auto-remove|install|remove|purge"
 
-   if [[ ! "$subcommand" =~ ^($subcommands)$ ]]; then
-      echo 1>&2 "$SCRIPTNAME: Invalid subcommand '$subcommand'"
+   if [[ ! "$subcmd" =~ ^($subcmds)$ ]]; then
+      echo 1>&2 "$SCRIPTNAME: Invalid subcommand '$subcmd'"
       usage 1
    fi
 }
@@ -287,14 +287,14 @@ if [ "$#" -lt 1 ]; then
    usage 1
 fi
 
-subcommand=$1
-validate_vpackage_subcommand "$subcommand"
+subcmd=$1
+validate_vpackage_subcmd "$subcmd"
 
 packages=( "${@:2}" )
 
 
 # Warn for dangerous options
-if [ "$subcommand" = "dist-upgrade" ]; then
+if [ "$subcmd" = "dist-upgrade" ]; then
    while true; do
       read -rp "Warning: dist-upgrade has the potential to delete packages that may be critical to the operation of Netkit. Continue [y/N]? " response
       case $response in
@@ -327,13 +327,13 @@ apt_get_cmd=(
    "${chroot_cmd[@]}"
    "apt-get"
    "${passthrough_opts[@]}"
-   "$subcommand"
+   "$subcmd"
 )
 
 # The following apt-get commands are not supported for reasons relating to
 # complexity or lack of necessity for most users: dselect-upgrade, source,
 # build-dep, check, autoclean|auto-clean, changelog, and indextargets.
-case $subcommand in
+case $subcmd in
    list)
       # We don't use --admindir in the event that the host system does not have
       # the dpkg. Instead, the dpkg binary on the Netkit filesystem will be
