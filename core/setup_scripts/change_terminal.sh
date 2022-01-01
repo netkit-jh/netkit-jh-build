@@ -129,7 +129,7 @@ while true; do
          ;;
       5)
          if ! command -v -- "wsl.exe" > /dev/null 2>&1; then
-            echo 1>&2
+            echo 1>&2 \
                "$SCRIPTNAME: wsl.exe: command not found. Is WSL configured to share environment variables with Windows?"
             exit 1
          fi
@@ -139,7 +139,7 @@ while true; do
          ;;
       6)
          if ! command -v -- "wt.exe" > /dev/null 2>&1; then
-            echo 1>&2
+            echo 1>&2 \
                "$SCRIPTNAME: wt.exe: command not found. Is WSL configured to share environment variables with Windows?"
             exit 1
          fi
