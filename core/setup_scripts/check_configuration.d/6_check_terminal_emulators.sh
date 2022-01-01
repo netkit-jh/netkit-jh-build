@@ -40,7 +40,7 @@ terminal_emulators=(
 
 for term_executable in "${terminal_emulators[@]}"; do
    printf "%14s: " "$term_executable"
-   
+
    if command -v -- "$term_executable" > /dev/null 2>&1; then
       echo "found"
       ok=1

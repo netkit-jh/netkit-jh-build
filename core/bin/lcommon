@@ -105,7 +105,7 @@ get_lab_vhosts() {
          lab_vhosts_ref+=( "$vhost" )
       done
    fi
-   
+
    # If the user has explicitly provided a machine list via the command line
    # (i.e. lab_vhosts already contains values when calling the function),
    # verify that the given machines are in the lab (either LAB_MACHINES or
@@ -363,13 +363,13 @@ lab_crash() {
       ${keep_fs:-"--remove-fs"}
       ${just_kill:+"--just-kill"}
    )
-   
+
    for vhost in "${lab_vhosts[@]}"; do
       bold_print "Crashing '$vhost'..."
       "$NETKIT_HOME/bin/vcrash" "${vcrash_args[@]}" -- "$vhost" &&
          rm ${verbose:+"--verbose"} --force -- "$lab_dir/$vhost.ready"
    done
-   
+
    bold_print "Removing readyfor.test..."
    rm --force -- "$lab_dir/readyfor.test"
 }

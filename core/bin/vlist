@@ -140,7 +140,7 @@ print_vhost_summary() {
 
       # Ignore if no return or not a process leader
       [ -z "$pgid" ] || [ "$pgid" -ne "$pid" ] && continue
-   
+
       ((++machine_count))
 
       get_vhost_info_by_pid "$pid"
@@ -168,7 +168,7 @@ print_vhost_summary() {
          is_tap "$socket" && tap=" (tap)" || tap=""
 
          echo -n "${fs}eth$i @ $hub_name$tap"
-         
+
          # Comma-separate subsequent interfaces
          fs=", "
       done

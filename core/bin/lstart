@@ -183,7 +183,7 @@ update_available() {
 
       # Next check = date of the last one + UPDATE_CHECK_PERIOD (in seconds)
       next_update_check=$((last_update_check + UPDATE_CHECK_PERIOD * 86400))
-   
+
       current_date=$(date +%s)
 
       if [ "$current_date" -gt "$next_update_check" ]; then
@@ -253,7 +253,7 @@ lab_start() {
    for vhost in "${lab_vhosts[@]}"; do
       single_lab_vhost_start "$fast_mode" "$verbose" "$lab_dir" "$vhost" "${passthrough_args[@]}"
    done
-   
+
    # The readyfor.test file should not be created if lstart has been invoked
    # with the --makefile option (launch a single machine and exit).
    [ -n "$test_delay" ] && [ -z "$makefile" ] && : > "$lab_dir/readyfor.test"
@@ -288,12 +288,12 @@ lab_start_parallel() {
    local tab makefile_contents
 
    get_lab_vhosts "$lab_dir"
-   
+
    if [ "${#lab_vhosts[@]}" -eq 0 ]; then
       echo 1>&2 "Warning: there are no virtual machines to be started."
       return
    fi
-   
+
    # Pass "passthrough" options on to the second invocation of lstart/ltest
    [ -n "$verbose" ] && lstart_args+=( "--verbose" )
 
@@ -308,7 +308,7 @@ lab_start_parallel() {
    else
       program_name="$NETKIT_HOME/bin/lstart"
    fi
-   
+
    # The make utility expects an empty argument to -j when infinitely many jobs
    # should be used.
    [ "$MAX_SIMULTANEOUS_VMS" -eq 0 ] && unset MAX_SIMULTANEOUS_VMS
@@ -337,7 +337,7 @@ lab_start_parallel() {
    # for each machine with dependencies ("prerequisities" in Make).
    # NOTE: The dummy target is required, which has the unwanted side-effect
    # that machines cannot be named "dummy-prerequisite-to-force-remaking".
-   # 
+   #
    # The Makefile must use Bash as the shell for correct handling of ANSI-C
    # expansions present after the previous Q-operator array expansion.
    tab=$(printf '\t')
@@ -363,7 +363,7 @@ EOF
       "${lab_vhosts[@]}" \
       <<< "$makefile_contents"
 
-   
+
    # Signal that every machine is ready for testing once booted.
    [ -n "$test_delay" ] && : > "$lab_dir/readyfor.test"
 }
@@ -430,7 +430,7 @@ single_lab_vhost_start() {
          [ -n "$value" ] && vstart_args+=( "$value" )
       done < <(grep -- "^$vhost\[.*\]=" "$lab_dir/lab.conf")
    fi
-   
+
    # Remove .ready file, if existing
    rm --force -- "$lab_dir/$vhost.ready"
 
@@ -447,7 +447,7 @@ single_lab_vhost_start() {
 
       rm --force -- "$lab_dir/$vhost.ready"
    fi
-   
+
    # Wait for a specified amount of time before returning
    [ "$GRACE_TIME" -gt 0 ] && sleep -- "$GRACE_TIME"
 }
@@ -520,7 +520,7 @@ while true; do
          # Argument is optional - it will be an empty string if omitted.
          case $parallelisation in
             "")
-               # No argument implies MAX_SIMULTAENEOUS_VMS will be the 
+               # No argument means MAX_SIMULTAENEOUS_VMS is used
                ;;
             *[!0-9]*)
                warn "Argument to option '-p' must be a positive integer or 0"
@@ -575,7 +575,7 @@ while true; do
 
    shift
 done
-   
+
 # Non-option arguments are machine names
 lab_vhosts=( "$@" )
 validate_hostnames "${lab_vhosts[@]}"

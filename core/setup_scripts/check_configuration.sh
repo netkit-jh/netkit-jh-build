@@ -42,7 +42,7 @@ warning_count=0
 for script in check_configuration.d/*; do
    "$script"
    return_value=$?
-   
+
    case $return_value in
       255)
          cat << END_OF_DIALOG

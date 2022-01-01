@@ -187,7 +187,7 @@ mount_fs() {
    echo "Mounting '$fs' to '$mnt_point'"
 
    sudo mkdir --parents -- "$mnt_point"
-   
+
    if ! sudo mount --options loop --source "$fs" --target "$mnt_point"; then
       warn "Could not mount filesystem"
       exit 1
@@ -273,7 +273,7 @@ while true; do
 
    shift
 done
-   
+
 # The first non-option argument is the subcommand, the rest are package names
 if [ "$#" -lt 1 ]; then
    warn "Missing subcommand"

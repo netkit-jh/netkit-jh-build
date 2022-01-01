@@ -132,7 +132,7 @@ open_terminal() {
          echo "Terminal '$TERM_TYPE' not supported, defaulting to xterm."
          term_cmd=( "xterm" "-e" );;
    esac
-   
+
    nohup "${term_cmd[@]}" tmux -L netkit attach -t "$vhost" > /dev/null 2>&1 &
 }
 

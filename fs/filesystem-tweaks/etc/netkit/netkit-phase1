@@ -114,7 +114,7 @@ color_cyan=$'\033[36m'
 
 
 case $1 in
-   start) 
+   start)
       echo
       # The information block between the two line delimeters is coloured cyan
       echo "$color_bold_blue--- Starting Netkit phase 1 init script ---$color_normal$color_cyan"

@@ -284,7 +284,7 @@ show_version() {
    nk_version=$(grep -- "Netkit version" "$NETKIT_HOME/netkit-version" 2> /dev/null)
    nk_version=${nk_version##"Netkit version "}
    printf "%s\n" "${nk_version:-"<unknown>"}"
-   
+
    # Netkit kernel version information
    echo -n "Netkit kernel version:     "
 
@@ -303,7 +303,7 @@ show_version() {
    fs_version_long=$(cat -- "$NETKIT_HOME/fs/netkit-filesystem-version" 2> /dev/null)
    fs_version=${fs_version_long##"Netkit-JH filesystem version "}
    printf "%s\n" "${fs_version:-"<unknown>"}"
-   
+
    # Host kernel version information
    echo -n "Host kernel version:       "
    uname --kernel-release
@@ -400,7 +400,7 @@ get_tap_interface() {
 get_hub_socket() {
    local tap=$1
    local domain=$2
-   
+
    local user_sha256 domain_sha256 sock_path_components
 
    user_sha256=$(printf "%s" "$USER_ID" | sha256sum | awk '{ print $1 }')
@@ -566,7 +566,7 @@ start_inet_hub() {
    echo "************** Abandoning root privileges ***************"
 
    interface_name=$(get_tap_interface "$USER_ID" "$domain")
-   
+
    uml_switch_cmd=(
       "$NETKIT_HOME/bin/uml_switch"
       "-tap" "$interface_name"
@@ -596,7 +596,7 @@ start_inet_hub() {
       echo "Not running ==> $printed_uml_switch_cmd"
    else
       [ -n "$verbose" ] && echo "Running ==> $printed_uml_switch_cmd"
-      
+
       "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 |
          "${hub_log_cmd[@]}" >> "$HUB_LOG" &
    fi
@@ -648,7 +648,7 @@ start_hub() {
          "stdbuf" "--output=0" "--"
          "${uml_switch_cmd[@]}"
       )
-   
+
       # shellcheck disable=SC2016
       hub_log_cmd=(
          "stdbuf" "--output=0" "--"
@@ -658,12 +658,12 @@ start_hub() {
             "--assign" "TIME=$(date --iso-8601=seconds)"
             '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}'
       )
-      
+
       if [ -n "$just_print" ]; then
          echo "Not running ==> $printed_uml_switch_cmd"
       else
          [ -n "$verbose" ] && echo "Running ==> $printed_uml_switch_cmd"
-         
+
          "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 |
             "${hub_log_cmd[@]}" >> "$HUB_LOG" &
       fi

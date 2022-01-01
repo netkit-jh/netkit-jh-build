@@ -122,7 +122,7 @@ done
 
 
 case $1 in
-   start) 
+   start)
       echo
       echo "$color_bold_blue--- Starting Netkit phase 2 init script ---$color_normal$color_cyan"
 
@@ -178,7 +178,7 @@ case $1 in
 
 
       [ -n "$test_delay" ] && /etc/netkit/netkit-test-phase "$test_delay"
-      
+
 
       echo "$color_bold_blue--- Netkit phase 2 initialization terminated ---$color_normal"
       echo

@@ -126,7 +126,7 @@ END_OF_HELP
 # Usage:
 #   kill_all_vhosts VERBOSE TEST_MODE QUICK_MODE USER
 # Globals:
-#   None 
+#   None
 # Arguments:
 #   $1 - set to 1 for verbose, empty string otherwise
 #   $2 - set to 1 for test mode, empty string otherwise
@@ -221,10 +221,10 @@ kill_hubs() {
    local force=$1
    local test_mode=$2
    local hub_pids=( "${@:3}" )
-   
+
    local hub_pid hub_file
    local uml_switch_cmd
-   local found_unused_hub   
+   local found_unused_hub
 
    for hub_pid in "${hub_pids[@]}"; do
       # Safely extract the socket filename from argv.

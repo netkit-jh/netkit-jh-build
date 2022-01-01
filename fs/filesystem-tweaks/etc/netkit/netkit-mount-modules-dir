@@ -61,7 +61,7 @@ SCRIPTNAME=$(basename -- "$0")
 
 
 case $1 in
-   start) 
+   start)
       # Full command used to invoke the process
       mapfile -d "" -t kernel_cmd < "/proc/cmdline"
 

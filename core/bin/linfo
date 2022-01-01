@@ -331,7 +331,7 @@ done
 if [ -n "$map_file" ]; then
    for dir in "${lab_dirs[@]}"; do
       lab_conf="$dir/lab.conf"
-      
+
       if [ ! -f "$lab_conf" ]; then
          warn "Unable to find file $lab_conf: Skipping."
          continue

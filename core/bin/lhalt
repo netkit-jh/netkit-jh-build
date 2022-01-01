@@ -157,7 +157,7 @@ while true; do
 
    shift
 done
-   
+
 # Non-option arguments are machine names
 lab_vhosts=( "$@" )
 validate_hostnames "${lab_vhosts[@]}"

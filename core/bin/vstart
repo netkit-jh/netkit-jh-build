@@ -408,7 +408,7 @@ remove_fs() {
    while [ ! -f "$file" ]; do
       sleep 1
    done
-   
+
    rm --force -- "$file"
 }
 
@@ -623,7 +623,7 @@ if [ -n "$no_cow" ]; then
    if [ -n "$fs" ]; then
       warn "Cannot provide a filesystem name with --no-cow"
       usage 1
-   fi   
+   fi
 
    # Check whether the user asked to hide the virtual machine filesystem while
    # using the '-W|--no-cow' option

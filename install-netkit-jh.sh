@@ -288,7 +288,7 @@ rc_files=(
 # Append Netkit additions to Bash and Zsh "run commands" files.
 for rc_file in "${rc_files[@]}"; do
    [ ! -f "$rc_file" ] && continue
-   
+
    # Backup existing rc file
    rc_file_bak="${rc_file}_$(date '+%F_%H-%M-%S').bak"
    cp -- "$rc_file" "$rc_file_bak"

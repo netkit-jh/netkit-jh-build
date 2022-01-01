@@ -88,7 +88,7 @@ case $action in
          exit 1
       fi
       echo "done."
-      
+
       printf "Bringing up %s...\t\t\t" "$tap_name"
       if ! sudo ifconfig "$tap_name" "$tap_addr" up; then
          echo "failed."
@@ -102,7 +102,7 @@ case $action in
          exit 1
       fi
       echo "done."
-      
+
       printf "Enabling IP forwarding...\t\t\t"
       if ! echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward > /dev/null; then
          echo "failed."
@@ -186,7 +186,7 @@ case $action in
             echo "done."
          done
       fi
-      
+
       if [ -z "$target_user" ]; then
          printf "Resetting permissions for /dev/net/tun...\t"
          if ! sudo chmod 660 /dev/net/tun; then
