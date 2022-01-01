@@ -226,13 +226,13 @@ END_OF_HELP
 #   None
 ###############################################################################
 validate_ubd_argument() {
-   local filepaths=( "$@" )
+   local files=( "$@" )
 
-   local filepath
+   local file
 
-   for filepath in "${filepaths[@]}"; do
-      if string_contains "$filepath" "," ":"; then
-         echo 1>&2 "$SCRIPTNAME: $filepath: Invalid character in filesystem path"
+   for file in "${files[@]}"; do
+      if string_contains "$file" "," ":"; then
+         echo 1>&2 "$SCRIPTNAME: $file: Invalid character in filesystem path"
          usage 1
       fi
    done
@@ -253,7 +253,7 @@ validate_ubd_argument() {
 #   None
 ###############################################################################
 check_fs() {
-   local filepath=$1
+   local file=$1
 
    local fs_type
 
@@ -261,7 +261,7 @@ check_fs() {
    local supportive_fs="ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|xfs|zfs"
 
    # Get the host filesystem type
-   fs_type=$(stat --file-system --format "%T" -- "$filepath")
+   fs_type=$(stat --file-system --format "%T" -- "$file")
 
    if [[ ! "$fs_type" =~ ^($supportive_fs)$ ]]; then
       echo 1>&2 "$SCRIPTNAME: Filesystem '$fs_type' may not support sparse files, this could result in performance loss and disk space consumption"
@@ -400,16 +400,16 @@ setup_interfaces() {
 # Returns:
 #   None
 # Example:
-#   remove_fs "$filepath" &
+#   remove_fs "$file" &
 ###############################################################################
 remove_fs() {
-   local filepath=$1
+   local file=$1
 
-   while [ ! -f "$filepath" ]; do
+   while [ ! -f "$file" ]; do
       sleep 1
    done
    
-   rm --force -- "$filepath"
+   rm --force -- "$file"
 }
 
 
