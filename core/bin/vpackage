@@ -89,8 +89,8 @@ package management command:
   -d DIR              mount the filesystem at DIR. If the mount point does not
                         exist, Netkit will try to create it. The default is
                         $VPACKAGE_MOUNT_POINT
-  -f, --filesystem=FILENAME  use FILENAME as the filesystem to be mounted. By
-                              default, this is $VM_MODEL_FS
+  -f, --filesystem=FILE  use FILE as the filesystem to be mounted. By default,
+                          this is $VM_MODEL_FS
   -o, --pass=OPTION   pass OPTION unaltered to the underlying package
                         management command
       --only-upgrade  only install upgrades for the selected packages. This

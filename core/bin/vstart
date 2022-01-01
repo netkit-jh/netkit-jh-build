@@ -107,8 +107,8 @@ You can use the following options to adjust the virtual machine parameters:
                         - Tunnel configurations are not automatically removed
                           when halting machines: you should use the vclean
                           script for this purpose.
-  -k, --kernel=FILENAME  use FILENAME as the UML kernel for the virtual
-                          machine. The default kernel is:
+  -k, --kernel=FILE   use FILE as the UML kernel for the virtual machine. The
+                        default kernel is:
                           $VM_KERNEL
   -M, --mem=MEM       give the virtual machine MEM MB of RAM. Allowed values
                         span from $MIN_MEM MB to $MAX_MEM MB, defaulting to $VM_MEMORY MB
@@ -117,14 +117,14 @@ Filesystem settings can be tuned by using the following options:
   -H, --no-hosthome   do not mount host filesystem inside the machine
       --mount=SRC,DEST  mount SRC directory from the host to DEST directory in
                          the virtual machine
-  -m, --model-fs=FILENAME  use the specified filesystem image as a model for
-                            the virtual machine. FILENAME will not be altered
-                            in any way unless the --no-cow option is used. The
-                            default model filesystem is:
-                            $VM_MODEL_FS
-  -f, --filesystem=FILENAME  use FILENAME as a filesystem for the machine. By
-                              default, MACHINE.disk is used. Do not use this in
-                              conjunction with --no-cow
+  -m, --model-fs=FILE  use the specified filesystem image as a model for the
+                        virtual machine. FILE will not be altered in any way
+                        unless the --no-cow option is used. The default model
+                        filesystem is:
+                          $VM_MODEL_FS
+  -f, --filesystem=FILE  use FILE as a filesystem for the machine. By default,
+                          MACHINE.disk is used. Do not use this in conjunction
+                          with --no-cow
   -D, --hide-disk-file  hide the virtual machine filesystem (.disk file). The
                          virtual machine will continue to operate normally. Do
                          not use this in conjunction with --no-cow
@@ -148,7 +148,7 @@ Console settings can be altered by the following options:
                           port:N  attach to TCP port N
                           none    disable console
                         The default modes for con0 and con1, respectively, are
-                        ${VM_CON0} and ${VM_CON1}
+                        $VM_CON0 and $VM_CON1
       --xterm=TYPE    specify the terminal emulator application. The following
                         values are supported:
                           alacritty    use the lightweight Alacritty terminal
@@ -165,7 +165,7 @@ Console settings can be altered by the following options:
                           xterm        use the standard xterm (default)
 
 If wanting to set up a lab, the following options are relevant:
-  -e, --exec=FILENAME  run a specified command or script inside the virtual
+  -e, --exec=FILE     run a specified command or script inside the virtual
                         machine during the boot phase
   -l, --hostlab=DIR   tell the virtual machine that the base directory for a
                         Netkit-JH laboratory is DIR

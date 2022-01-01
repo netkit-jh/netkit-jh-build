@@ -4,7 +4,7 @@ MAKEFILE_DIR := $(realpath $(dir $(MAKEFILE_PATH)))
 include ../Makefile.am
 
 # FS parameters
-FS_FILE_NAME=netkit-fs-$(NETKIT_BUILD_RELEASE)
+FS_FILE=netkit-fs-$(NETKIT_BUILD_RELEASE)
 FS_RELEASE=bullseye
 FS_SIZE=4G
 DEBIAN_MIRROR=http://deb.debian.org/debian/
@@ -18,7 +18,7 @@ MOUNT_DIR=$(BUILD_DIR)/mount-point
 # Path to the build kernel modules
 MODULES_PATH=../kernel/build/kernel_modules/
 
-.DEFAULT_GOAL := $(FS_DIR)/$(FS_FILE_NAME)
+.DEFAULT_GOAL := $(FS_DIR)/$(FS_FILE)
 
 .PHONY: clean
 clean:
@@ -45,7 +45,7 @@ $(BUILD_DIR)/bootstrap-fs:
 	# Check directory isn't already mounted
 	umount $(MOUNT_DIR) || /bin/true
 
-	# Create an empty file FS_FILE_NAME and mount it to MOUNT_DIR
+	# Create an empty file FS_FILE and mount it to MOUNT_DIR
 	dd if=/dev/zero of=$(BUILD_DIR)/bootstrap-fs bs=1 count=0 seek=$(FS_SIZE)
 	mke2fs -F $(BUILD_DIR)/bootstrap-fs
 	mount $(BUILD_DIR)/bootstrap-fs $(MOUNT_DIR)
@@ -53,7 +53,7 @@ $(BUILD_DIR)/bootstrap-fs:
 	# Then debootstrap, installing to MOUNT_DIR
 	debootstrap $(FS_RELEASE) $(MOUNT_DIR) $(DEBIAN_MIRROR)
 
-$(FS_DIR)/$(FS_FILE_NAME): $(MODULES_PATH) $(BUILD_DIR)/bootstrap-fs
+$(FS_DIR)/$(FS_FILE): $(MODULES_PATH) $(BUILD_DIR)/bootstrap-fs
 	# Update version
 	echo "Netkit-JH filesystem version $(NETKIT_FS_RELEASE) ($(NETKIT_BUILD_RELEASE))" > $(FS_DIR)/netkit-filesystem-version
 
@@ -64,8 +64,8 @@ $(FS_DIR)/$(FS_FILE_NAME): $(MODULES_PATH) $(BUILD_DIR)/bootstrap-fs
 	umount $(MOUNT_DIR)
 
 	# Now create the sparse filesystem and create symlink
-	cp --sparse=always $(BUILD_DIR)/bootstrap-fs $(FS_DIR)/$(FS_FILE_NAME)
-	cd $(FS_DIR) ; ln -sf $(FS_FILE_NAME) netkit-fs
+	cp --sparse=always $(BUILD_DIR)/bootstrap-fs $(FS_DIR)/$(FS_FILE)
+	cd $(FS_DIR) ; ln -sf $(FS_FILE) netkit-fs
 	
-../$(FS_ARCHIVE_FILE): $(FS_DIR)/$(FS_FILE_NAME)
+../$(FS_ARCHIVE_FILE): $(FS_DIR)/$(FS_FILE)
 	cd $(BUILD_DIR)/ ; tar -cvSjf ../../$(FS_ARCHIVE_FILE) netkit-jh/

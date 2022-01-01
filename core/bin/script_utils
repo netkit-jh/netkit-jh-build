@@ -256,7 +256,7 @@ version_option() {
 ###############################################################################
 show_version() {
    local netkit_version
-   local kernel_filepath kernel_filename kernel_version
+   local kernel kernel_version
    local fs_version_long fs_version
 
    # Netkit version information
@@ -269,22 +269,14 @@ show_version() {
    # Netkit kernel version information
    echo -n "Netkit kernel version:     "
 
-   if [ -e "$VM_KERNEL" ]; then
-      kernel_filepath=$VM_KERNEL
+   # By default, the compiled kernel is a symbolic link
+   kernel=$(basename -- "$(readlink --canonicalize-missing -- "$VM_KERNEL")")
+   kernel_version=${kernel##"netkit-kernel-"}
 
-      # By default, the compiled kernel is a symbolic link
-      [ -L "$kernel_filepath" ] && kernel_filepath=$(readlink -- "$kernel_filepath")
-      
-      kernel_filename=$(basename -- "$kernel_filepath")
-      kernel_version=${kernel_filename##"netkit-kernel-"}
-
-      if [ "$kernel_version" = "$kernel_filename" ]; then
-         echo "<unknown>"
-      else
-         printf "%s\n" "$kernel_version"
-      fi
-   else
+   if [ "$kernel_version" = "$kernel" ]; then
       echo "<unknown>"
+   else
+      printf "%s\n" "$kernel_version"
    fi
 
    # Netkit filesystem version information
