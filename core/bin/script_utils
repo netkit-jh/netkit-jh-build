@@ -1127,7 +1127,7 @@ validate_variable() {
    local queries=( "${@:3}" )
 
    if str_contains "$value" "${queries[@]}"; then
-      echo 1>&2 "netkit.conf: $variable: Invalid character in configuration parameter"
+      warn "$variable: Invalid character in configuration parameter"
       exit 1
    fi
 }
@@ -1179,7 +1179,7 @@ get_max_collision_domain_name_len() {
    local max_collision_domain_name_len=$(( 107 - ${#min_socket_path} ))
 
    if [ "$max_collision_domain_name_len" -lt 1 ]; then
-      echo 1>&2 "netkit.conf: uml_switch sockets must have a filepath shorter than 108 characters (UNIX_PATH_MAX)"
+      warn "netkit.conf: uml_switch sockets must have a filepath shorter than 108 characters (UNIX_PATH_MAX)"
       exit 1
    fi
 
@@ -1212,12 +1212,23 @@ netkit_dir_check() {
 export LC_ALL=C
 
 
+# Set the script's name
+SCRIPTNAME=$(basename -- "$0")
+
+
+# Ensure NETKIT_HOME is set
+if [ -z "$NETKIT_HOME" ]; then
+   warn "The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+
 # Read default Netkit configuration
 if [ -f "$NETKIT_HOME/netkit.conf.default" ]; then
    # shellcheck source=../netkit.conf.default
    . -- "$NETKIT_HOME/netkit.conf.default"
 else
-   echo 1>&2 "script_utils: netkit.conf.default: file not found"
+   warn "netkit.conf.default: file not found"
    exit 1
 fi
 

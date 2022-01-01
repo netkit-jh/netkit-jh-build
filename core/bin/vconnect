@@ -137,15 +137,11 @@ open_terminal() {
 }
 
 
-SCRIPTNAME=$(basename -- "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   warn "The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
-
 # shellcheck source=./script_utils
 . -- "$NETKIT_HOME/bin/script_utils"
+
+# Write to the vcommands log
+log_write "$0 $*"
 
 
 retry_count=1
