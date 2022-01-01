@@ -342,11 +342,6 @@ konsole
 use the KDE Desktop Environment konsole.
 .TP
 .B
-konsole-tab
-same as \fBkonsole\fR, except different virtual machines are opened in different
-tabs of the same konsole window.
-.TP
-.B
 alacritty
 use the lightweight Alacritty terminal.
 .TP
@@ -615,10 +610,9 @@ to collision domains \fBA\fR and \fBB\fR and using filesystem
 .TP
 .B
 .nf
-vstart conTest --con0=xterm --con1=xterm --xterm=konsole-tab
+vstart conTest --con0=xterm --con1=xterm
 .fi
-Start a virtual machine named \fBconTest\fR having two consoles. They will be
-shown inside different tabs of the terminal emulator konsole.
+Start a virtual machine named \fBconTest\fR having two consoles.
 
 
 \" ########################################

@@ -124,7 +124,6 @@ open_terminal() {
       alacritty)     term_cmd=( "alacritty" "--command" );;
       kitty)         term_cmd=( "kitty" );;
       konsole)       term_cmd=( "konsole" "--nofork" "-e" );;
-      konsole-tab)   term_cmd=( "$NETKIT_HOME/bin/konsole-tabs.sh" "-e" );;
       wsl)           term_cmd=( "cmd.exe" "/c" "start" "wsl.exe" );;
       wt)            term_cmd=( "cmd.exe" "/c" "wt.exe" "--profile" "netkit" "wsl.exe" );;
       xterm)         term_cmd=( "xterm" "-e" );;

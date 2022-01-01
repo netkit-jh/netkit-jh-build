@@ -155,9 +155,6 @@ Console settings can be altered by the following options:
                           gnome        use the GNOME Terminal
                           kitty        use the lightweight Kitty terminal
                           konsole      use the KDE Konsole
-                          konsole-tab  same as above, but different virtual
-                                        machines are opened in different
-                                        Konsole tabs of the same window
                           wsl          use Windows Subsystem for Linux (WSL) in
                                         a conhost.exe window
                           wt           use Windows Subsystem for Linux (WSL) in
@@ -580,7 +577,7 @@ while true; do
          TERM_TYPE=$2
          shift
 
-         if [[ ! "$TERM_TYPE" =~ ^(konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl|wt)$ ]]; then
+         if [[ ! "$TERM_TYPE" =~ ^(konsole|gnome|xterm|alacritty|kitty|wsl|wt)$ ]]; then
             warn "$TERM_TYPE: Unsupported terminal emulator"
             usage 1
          fi
@@ -640,7 +637,6 @@ if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "
    # hence map these edge cases here.
    case $TERM_TYPE in
       gnome)         term_executable="gnome-terminal";;
-      konsole-tab)   term_executable="konsole";;
       wsl)           term_executable="wsl.exe";;
       wt)            term_executable="wt.exe";;
       *)             term_executable=$TERM_TYPE;;
@@ -776,7 +772,6 @@ trap "rm --force -- '$out_file'" EXIT
    case $TERM_TYPE in
       gnome)         kernel_cmd+=( "xterm=gnome-terminal,-t,-x" );;
       konsole)       kernel_cmd+=( "xterm=konsole,-T,-e" );;
-      konsole-tab)   kernel_cmd+=( "xterm=$NETKIT_HOME/bin/konsole-tabs.sh,-T,-e" );;
    esac
 
 

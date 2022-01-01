@@ -65,7 +65,6 @@ case $term in
    gnome)         gnome-terminal --title "$vhost"                            --        "${bash_cmd[@]}";;
    kitty)         kitty --title "$vhost"                                               "${bash_cmd[@]}";;
    konsole)       konsole --nofork --title "$vhost"                          -e        "${bash_cmd[@]}";;
-   konsole-tab)   "$NETKIT_HOME/bin/konsole-tabs.sh"                         -e        "${bash_cmd[@]}";;
    wsl)           cmd.exe /c start wsl.exe                                             "${bash_cmd[@]}";;
    wt)            wt.exe --suppressApplicationTitle --title "$vhost" wsl.exe --exec    "${wt_safe_bash_cmd[@]}";;
    xterm)         xterm -xrm 'XTerm*allowTitleOps: false' -T "$vhost"        -e        "${bash_cmd[@]}";;
