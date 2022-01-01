@@ -141,25 +141,25 @@ fi
 hub_name=$1
 
 
-reg_hub_socket=$(get_hub_socket "" "$hub_name")
-tap_hub_socket=$(get_hub_socket "1" "$hub_name")
+reg_socket=$(get_hub_socket "" "$hub_name")
+tap_socket=$(get_hub_socket "1" "$hub_name")
 
-if [ -e "$reg_hub_socket" ]; then
-   hub_socket=$reg_hub_socket
-elif [ -e "$tap_hub_socket" ]; then
-   hub_socket=$tap_hub_socket
+if [ -e "$reg_socket" ]; then
+   socket=$reg_socket
+elif [ -e "$tap_socket" ]; then
+   socket=$tap_socket
 else
    echo 1>&2 "$SCRIPTNAME: $hub_name: Cannot find hub socket for the collision domain"
    usage 1
 fi
 
-if [ ! -S "$hub_socket" ]; then
-   echo 1>&2 "$SCRIPTNAME: $hub_socket: File is not a socket"
+if [ ! -S "$socket" ]; then
+   echo 1>&2 "$SCRIPTNAME: $socket: File is not a socket"
    usage 1
 fi
 
 
-uml_dump_cmd=( "uml_dump" "$hub_socket" )
+uml_dump_cmd=( "uml_dump" "$socket" )
 
 [ -n "$verbose" ] && echo "Running ==> ${uml_dump_cmd[*]}"
 "${uml_dump_cmd[@]}"

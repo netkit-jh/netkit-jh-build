@@ -293,7 +293,7 @@ setup_interfaces() {
 
    local interface_specification
    local hub_specification hub_name tap_addr guest_addr
-   local reg_hub_socket tap_hub_socket hub_socket
+   local reg_socket tap_socket socket
    local interface used_interfaces
    local enabled_default_route indent tap
 
@@ -344,16 +344,16 @@ setup_interfaces() {
          usage 1
       fi
 
-      reg_hub_socket=$(get_hub_socket "" "$hub_name")
-      tap_hub_socket=$(get_hub_socket "1" "$hub_name")
+      reg_socket=$(get_hub_socket "" "$hub_name")
+      tap_socket=$(get_hub_socket "1" "$hub_name")
 
       if [ -n "$tap_addr" ]; then
-         if [ -e "$reg_hub_socket" ]; then
+         if [ -e "$reg_socket" ]; then
             echo 1>&2 "$SCRIPTNAME: $hub_name: Regular (not tap) hub socket under the same collision domain already exists"
             usage 1
          fi
 
-         hub_socket=$tap_hub_socket
+         socket=$tap_socket
 
          hub_list+=( "$hub_name,$tap_addr" )
 
@@ -367,21 +367,21 @@ setup_interfaces() {
 
          tap="tap; "
       else
-         if [ -e "$tap_hub_socket" ]; then
+         if [ -e "$tap_socket" ]; then
             echo 1>&2 "$SCRIPTNAME: $hub_name: Tap hub socket under the same collision domain already exists"
             usage 1
          fi
 
-         hub_socket=$reg_hub_socket
+         socket=$reg_socket
 
          hub_list+=( "$hub_name" )
 
          tap=""
       fi
 
-      kernel_cmd+=( "$interface=daemon,,,$hub_socket" )
+      kernel_cmd+=( "$interface=daemon,,,$socket" )
 
-      echo "$indent$interface @ $hub_name ($tap$hub_socket)"
+      echo "$indent$interface @ $hub_name ($tap$socket)"
 
       # Indent subsequent lines
       indent="                "

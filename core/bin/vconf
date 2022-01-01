@@ -159,7 +159,7 @@ setup_interfaces() {
 
    local interface_specification interface hub_specification used_interfaces
    local hub_name tap_addr guest_addr
-   local reg_hub_socket tap_hub_socket hub_socket
+   local reg_socket tap_socket socket
    local indent
 
    unset hub_list
@@ -205,31 +205,31 @@ setup_interfaces() {
             usage 1
          fi
 
-         reg_hub_socket=$(get_hub_socket "" "$hub_name")
-         tap_hub_socket=$(get_hub_socket "1" "$hub_name")
+         reg_socket=$(get_hub_socket "" "$hub_name")
+         tap_socket=$(get_hub_socket "1" "$hub_name")
 
          if [ -n "$tap_addr" ]; then
-            if [ -e "$reg_hub_socket" ]; then
+            if [ -e "$reg_socket" ]; then
                echo 1>&2 "$SCRIPTNAME: $hub_name: Regular (not tap) hub socket under the same collision domain already exists"
                usage 1
             fi
 
-            hub_socket=$tap_hub_socket
+            socket=$tap_socket
 
             hub_list+=( "$hub_name,$tap_addr" )
          else
-            if [ -e "$tap_hub_socket" ]; then
+            if [ -e "$tap_socket" ]; then
                echo 1>&2 "$SCRIPTNAME: $hub_name: Tap hub socket under the same collision domain already exists"
                usage 1
             fi
 
-            hub_socket=$reg_hub_socket
+            socket=$reg_socket
 
             hub_list+=( "$hub_name" )
          fi
 
-         vconf_devices+=( "$interface=daemon,,,$hub_socket" )
-         echo "$indent$interface @ $hub_name ($hub_socket)"
+         vconf_devices+=( "$interface=daemon,,,$socket" )
+         echo "$indent$interface @ $hub_name ($socket)"
       else
          vconf_devices+=( "$interface" )
          echo "$indent$interface removed"

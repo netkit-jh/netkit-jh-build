@@ -382,14 +382,14 @@ get_hub_socket() {
    local tap=$1
    local domain=$2
    
-   local user_sha256 domain_sha256
+   local user_sha256 domain_sha256 sock_path_components
 
    user_sha256=$(printf "%s" "$USER_ID" | sha256sum | awk '{ print $1 }')
    domain_sha256=$(printf "%s" "$domain" | sha256sum | awk '{ print $1 }')
 
    # We truncate the SHA-256 digests to avoid hitting the maximum filename
    # length.
-   hub_socket_path=(
+   sock_path_components=(
       "$HUB_SOCKET_DIR/"
       "${HUB_SOCKET_PREFIX}_"
       "${user_sha256:0:8}_"
@@ -399,7 +399,7 @@ get_hub_socket() {
       "$HUB_SOCKET_EXTENSION"
    )
 
-   printf "%s" "${hub_socket_path[*]}" $'\n'
+   printf "%s" "${sock_path_components[*]}" $'\n'
 }
 
 
@@ -418,10 +418,10 @@ get_hub_socket() {
 ###############################################################################
 is_tap() {
    # shellcheck disable=SC2155
-   local hub_socket=$(basename -- "$1")
+   local socket=$(basename -- "$1")
 
    # Remove prefix and user SHA-256
-   local hub_name_ext=${hub_socket#"$HUB_SOCKET_PREFIX"_*_}
+   local hub_name_ext=${socket#"$HUB_SOCKET_PREFIX"_*_}
 
    [ "${hub_name_ext:0:4}" = "tap_" ] && return 0 || return 1
 }
@@ -443,13 +443,13 @@ is_tap() {
 ###############################################################################
 get_hub_socket_domain() {
    # shellcheck disable=SC2155
-   local hub_socket=$(basename -- "$1")
+   local socket_name=$(basename -- "$1")
 
    local hub_name_ext hub_name
 
    # Remove prefix, user SHA-256, tap specifier (if exists), and collision
    # domain SHA-256.
-   hub_name_ext=${hub_socket#"$HUB_SOCKET_PREFIX"_*_}
+   hub_name_ext=${socket_name#"$HUB_SOCKET_PREFIX"_*_}
    hub_name_ext=${hub_name_ext#"tap_"}
    hub_name_ext=${hub_name_ext:8}
    hub_name_ext=${hub_name_ext#"_"}
@@ -485,7 +485,7 @@ get_hub_socket_domain() {
 start_inet_hub() {
    local verbose=$1
    local just_print=$2
-   local hub_socket=$3
+   local socket=$3
    local domain=$4
    local tap_addr=$5
 
@@ -494,7 +494,7 @@ start_inet_hub() {
    local interface_name uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
    local hub_log_cmd
 
-   if [ -S "$hub_socket" ] && file_in_use "$hub_socket"; then
+   if [ -S "$socket" ] && file_in_use "$socket"; then
       # The socket already exists and is in use
 
       # Get name for the user's tap interface
@@ -509,7 +509,7 @@ start_inet_hub() {
             usage 1
          else
             # Interface-address pair exists; wait for uml_switch to start
-            while [ -z "$just_print" ] && [ ! -S "$hub_socket" ]; do
+            while [ -z "$just_print" ] && [ ! -S "$socket" ]; do
                sleep 1
             done
 
@@ -552,7 +552,7 @@ start_inet_hub() {
       "$NETKIT_HOME/bin/uml_switch"
       "-tap" "$interface_name"
       "-hub"
-      "-unix" "$hub_socket"
+      "-unix" "$socket"
    )
    printed_uml_switch_cmd="${uml_switch_cmd[*]} < /dev/null &"
 
@@ -567,7 +567,7 @@ start_inet_hub() {
    hub_log_cmd=(
       "stdbuf" "--output=0" "--"
       "awk"
-         "--assign" "HUB=$hub_socket"
+         "--assign" "HUB=$socket"
          "--assign" "USER=$USER_ID"
          "--assign" "TIME=$(date --iso-8601=seconds)"
          '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}'
@@ -583,7 +583,7 @@ start_inet_hub() {
    fi
 
    # Wait for uml_switch to start
-   while [ -z "$just_print" ] && [ ! -S "$hub_socket" ]; do
+   while [ -z "$just_print" ] && [ ! -S "$socket" ]; do
       sleep 1
    done
 }
@@ -609,17 +609,17 @@ start_inet_hub() {
 start_hub() {
    local verbose=$1
    local just_print=$2
-   local hub_socket=$3
+   local socket=$3
 
    local uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
    local hub_log_cmd
 
    # Socket already exists but is not used
-   if [ ! -S "$hub_socket" ] || ! file_in_use "$hub_socket"; then
+   if [ ! -S "$socket" ] || ! file_in_use "$socket"; then
       uml_switch_cmd=(
          "$NETKIT_HOME/bin/uml_switch"
          "-hub"
-         "-unix" "$hub_socket"
+         "-unix" "$socket"
       )
       printed_uml_switch_cmd="${uml_switch_cmd[*]} < /dev/null &"
 
@@ -634,7 +634,7 @@ start_hub() {
       hub_log_cmd=(
          "stdbuf" "--output=0" "--"
          "awk"
-            "--assign" "HUB=$hub_socket"
+            "--assign" "HUB=$socket"
             "--assign" "USER=$USER_ID"
             "--assign" "TIME=$(date --iso-8601=seconds)"
             '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}'
@@ -651,7 +651,7 @@ start_hub() {
    fi
 
    # Wait for uml_switch to start
-   while [ -z "$just_print" ] && [ ! -S "$hub_socket" ]; do
+   while [ -z "$just_print" ] && [ ! -S "$socket" ]; do
       sleep 1
    done
 }
@@ -683,17 +683,17 @@ run_hubs() {
    local just_print=$2
    local hub_specifications=( "${@:3}" )
 
-   local hub_specification hub_name tap_addr hub_socket
+   local hub_specification hub_name tap_addr socket
 
    for hub_specification in "${hub_specifications[@]}"; do
       IFS=, read -r hub_name tap_addr <<< "$hub_specification"
 
-      hub_socket=$(get_hub_socket "${tap_addr:+"1"}" "$hub_name")
+      socket=$(get_hub_socket "${tap_addr:+"1"}" "$hub_name")
 
       if [ -n "$tap_addr" ]; then
-         start_inet_hub "$verbose" "$just_print" "$hub_socket" "$hub_name" "$tap_addr"
+         start_inet_hub "$verbose" "$just_print" "$socket" "$hub_name" "$tap_addr"
       else
-         start_hub "$verbose" "$just_print" "$hub_socket"
+         start_hub "$verbose" "$just_print" "$socket"
       fi
    done
 }
@@ -722,31 +722,31 @@ run_hubs() {
 clean_hubs() {
    local hub_specifications=( "$@" )
 
-   local hub_specification hub_name tap_addr hub_socket
+   local hub_specification hub_name tap_addr socket
    local hub_pid
 
    for hub_specification in "${hub_specifications[@]}"; do
       IFS=, read -r hub_name tap_addr <<< "$hub_specification"
 
-      hub_socket=$(get_hub_socket "${tap_addr:+"1"}" "$hub_name")
+      socket=$(get_hub_socket "${tap_addr:+"1"}" "$hub_name")
 
       # Avoid attempting to kill hubs for which the socket file does not exist
       # any more. Such situation may occur if user accidentally deleted it
       # (in which case the hub can safely be killed by using vclean), or if
       # a virtual machine has two (or more) network interfaces attached to the
       # same hub (in which case the script attempts to kill it twice).
-      [ ! -e "$hub_socket" ] && continue
+      [ ! -e "$socket" ] && continue
 
-      if file_in_use "$hub_socket"; then
+      if file_in_use "$socket"; then
          # We get the oldest process to limit output to a single PID
-         hub_pid=$(pgrep --oldest --euid="$USER_ID" --full "^$NETKIT_HOME/bin/uml_switch[[:blank:]].*$hub_socket")
-         if [ "$(lsof -a -U -p "$hub_pid" -Fn | grep --count "^n$hub_socket")" -le 1 ]; then
+         hub_pid=$(pgrep --oldest --euid="$USER_ID" --full "^$NETKIT_HOME/bin/uml_switch[[:blank:]].*$socket")
+         if [ "$(lsof -a -U -p "$hub_pid" -Fn | grep --count "^n$socket")" -le 1 ]; then
             # No more virtual machines are using the switch connected to this socket
-            kill "$hub_pid" 2> /dev/null && rm --force -- "$hub_socket"
+            kill "$hub_pid" 2> /dev/null && rm --force -- "$socket"
          fi
       else
          # There are no switches connected to this socket - remove it
-         rm "$hub_socket"
+         rm "$socket"
       fi
    done
 }
