@@ -243,7 +243,7 @@ validate_ubd_argument() {
 ###############################################################################
 # Warn if file is located on a filesystem that does not support sparse files.
 # Usage:
-#   check_filesystem FILE
+#   check_fs FILE
 # Globals:
 #   r- SCRIPTNAME
 # Arguments:
@@ -253,7 +253,7 @@ validate_ubd_argument() {
 # Example:
 #   None
 ###############################################################################
-check_filesystem() {
+check_fs() {
    local filepath=$1
 
    local fs_type
@@ -430,10 +430,10 @@ remove_fs_command() {
 #   None
 ###############################################################################
 run_kernel() {
-   local filesystem=$1
+   local fs=$1
 
    # Remove .disk file, if requested
-   [ -n "$filesystem" ] && remove_fs_command "$filesystem" &
+   [ -n "$fs" ] && remove_fs_command "$fs" &
 
    "${kernel_cmd[@]}"
    clean_hubs "${hub_list[@]}"
@@ -517,7 +517,7 @@ while true; do
          ;;
       -f|--filesystem)
          # Filepath is validated with validate_ubd_argument later
-         filesystem=$(readlink --canonicalize-missing -- "$2")
+         fs=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       -H|--no-hosthome)
@@ -628,7 +628,7 @@ fi
 if [ -n "$no_cow" ]; then
    # Check whether a COW filesystem has been explictly provided when using the
    # '-W|--no-cow' option.
-   if [ -n "$filesystem" ]; then
+   if [ -n "$fs" ]; then
       echo 1>&2 "$SCRIPTNAME: Cannot provide a filesystem name with --no-cow"
       usage 1
    fi   
@@ -711,28 +711,28 @@ trap "rm --force -- '$out_file'" EXIT
    if [ -n "$no_cow" ]; then
       echo "   Filesystem:  using model fs (no COW)"
       validate_ubd_argument "$VM_MODEL_FS"
-      check_filesystem "$VM_MODEL_FS"
+      check_fs "$VM_MODEL_FS"
 
       # Use model fs as virtual machine filesystem (do not use COW)
       kernel_cmd+=( "\"ubd0=$VM_MODEL_FS\"" )
 
-      filesystem=$VM_MODEL_FS
+      fs=$VM_MODEL_FS
    else
-      : "${filesystem:="$PWD/$vhost.disk"}"
+      : "${fs:="$PWD/$vhost.disk"}"
 
-      echo -n "   Filesystem:  $filesystem"
-      validate_ubd_argument "$VM_MODEL_FS" "$filesystem"
+      echo -n "   Filesystem:  $fs"
+      validate_ubd_argument "$VM_MODEL_FS" "$fs"
 
       # We check the directory because the .disk (if new) will not already be
       # there
-      check_filesystem "$(dirname -- "$filesystem")"
+      check_fs "$(dirname -- "$fs")"
 
       # Explicitly declaring the model fs name is redundant after the COW file
       # has been created. Nevertheless, this is needed in order to later get
       # information about the virtual machine (i.e., by using vlist).
-      kernel_cmd+=( "\"ubd0=$filesystem,$VM_MODEL_FS\"" )
+      kernel_cmd+=( "\"ubd0=$fs,$VM_MODEL_FS\"" )
 
-      [ ! -f "$filesystem" ] && echo " (new)" || echo
+      [ ! -f "$fs" ] && echo " (new)" || echo
    fi
 
 
@@ -883,8 +883,8 @@ if [ -z "$just_print" ]; then
    fi
 
    # Check whether filesystem is already in use
-   if file_in_use "$filesystem"; then
-      echo 1>&2 "$SCRIPTNAME: Filesystem '$filesystem' is already in use; specify a different filesystem"
+   if file_in_use "$fs"; then
+      echo 1>&2 "$SCRIPTNAME: Filesystem '$fs' is already in use; specify a different filesystem"
       exit 1
    fi
 fi
@@ -913,15 +913,15 @@ fi
 
 if [ "$VM_CON0" = "none" ]; then
    if [ -n "$backgrounded" ]; then
-      run_kernel "${remove_fs:+$filesystem}" "${kernel_cmd[@]}" > /dev/null 2>&1 &
+      run_kernel "${remove_fs:+$fs}" "${kernel_cmd[@]}" > /dev/null 2>&1 &
    else
-      run_kernel "${remove_fs:+$filesystem}" "${kernel_cmd[@]}" > /dev/null 2>&1
+      run_kernel "${remove_fs:+$fs}" "${kernel_cmd[@]}" > /dev/null 2>&1
    fi
 else
    if [ -n "$backgrounded" ]; then
-      run_kernel "${remove_fs:+$filesystem}" "${kernel_cmd[@]}" &
+      run_kernel "${remove_fs:+$fs}" "${kernel_cmd[@]}" &
    else
-      run_kernel "${remove_fs:+$filesystem}" "${kernel_cmd[@]}"
+      run_kernel "${remove_fs:+$fs}" "${kernel_cmd[@]}"
    fi
 fi
 

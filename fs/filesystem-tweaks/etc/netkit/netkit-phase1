@@ -147,7 +147,7 @@ case $1 in
             mount)         mount_specifications+=( "$value" );;
             hostlab)       hostlab=$value;;
             def_route)     default_route=$value;;
-            ubd0)          filesystem=${value#*,};;
+            ubd0)          fs=${value#*,};;
             autoconf_*)
                # Get interface name
                device=${option#autoconf_}
@@ -223,7 +223,7 @@ case $1 in
 
          # Only perform these actions on the machine's first boot (if a shared
          # filesystem is not being used).
-         if [ -n "$filesystem" ]; then
+         if [ -n "$fs" ]; then
             cat << EOF > /etc/netkit/.vhostconfigured
 # This file is created on the first boot to tell Netkit on successive reboots
 # not to regenerate the hosts file or resolv.conf, or to recopy hostlab files

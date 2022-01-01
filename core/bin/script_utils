@@ -257,7 +257,7 @@ version_option() {
 show_version() {
    local netkit_version
    local kernel_filepath kernel_filename kernel_version
-   local filesystem_version_long filesystem_version
+   local fs_version_long fs_version
 
    # Netkit version information
    echo -n "Netkit version:            "
@@ -289,9 +289,9 @@ show_version() {
 
    # Netkit filesystem version information
    echo -n "Netkit filesystem version: "
-   filesystem_version_long=$(cat -- "$NETKIT_HOME/fs/netkit-filesystem-version" 2> /dev/null)
-   filesystem_version=${filesystem_version_long##"Netkit-JH filesystem version "}
-   printf "%s\n" "${filesystem_version:-"<unknown>"}"
+   fs_version_long=$(cat -- "$NETKIT_HOME/fs/netkit-filesystem-version" 2> /dev/null)
+   fs_version=${fs_version_long##"Netkit-JH filesystem version "}
+   printf "%s\n" "${fs_version:-"<unknown>"}"
    
    # Host kernel version information
    echo -n "Host kernel version:       "

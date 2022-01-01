@@ -178,17 +178,17 @@ cleanup() {
 #   None
 ###############################################################################
 mount_fs() {
-   local filesystem=$1
+   local fs=$1
    local mount_point=$2
 
    local host_resolvconf="/etc/resolv.conf"
    local mount_point_resolvconf="$mount_point/etc/resolv.conf"
 
-   echo "Mounting '$filesystem' to '$mount_point'"
+   echo "Mounting '$fs' to '$mount_point'"
 
    sudo mkdir --parents -- "$mount_point"
    
-   if ! sudo mount --options loop --source "$filesystem" --target "$mount_point"; then
+   if ! sudo mount --options loop --source "$fs" --target "$mount_point"; then
       echo 1>&2 "$SCRIPTNAME: Could not mount filesystem"
       exit 1
    fi
@@ -221,7 +221,7 @@ fi
 log_write "$0 $*"
 
 
-filesystem=$VM_MODEL_FS
+fs=$VM_MODEL_FS
 mount_point=$VPACKAGE_MOUNT_POINT
 
 
@@ -245,7 +245,7 @@ while true; do
          shift
          ;;
       -f|--filesystem)
-         filesystem=$(readlink --canonicalize-missing -- "$2")
+         fs=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       --help)
@@ -313,7 +313,7 @@ fi
 
 # Mount the Netkit filesystem. An EXIT trap will be set so we do not need to
 # manually unmount the filesystem at each script exit point.
-mount_fs "$filesystem" "$mount_point"
+mount_fs "$fs" "$mount_point"
 
 
 chroot_cmd=( "sudo" "chroot" -- "$mount_point" )
