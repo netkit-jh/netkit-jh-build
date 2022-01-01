@@ -25,7 +25,7 @@
 # Write a newline-separated list of long options for the given command to
 # standard output.
 # Usage:
-#   _get_cmd_options COMMAND
+#   _get_cmd_opts COMMAND
 # Globals:
 #   r- NETKIT_HOME
 # Arguments:
@@ -35,7 +35,7 @@
 # Example:
 #   None
 ###############################################################################
-_get_cmd_options() {
+_get_cmd_opts() {
    local cmd=$1
    # Get long options
    "$NETKIT_HOME/bin/$cmd" --help |
@@ -63,11 +63,11 @@ _get_cmd_options() {
 # Returns:
 #   None
 # Example:
-#   mapfile -t options < <(_get_cmd_options vstart)
+#   mapfile -t options < <(_get_cmd_opts vstart)
 #   mapfile -t options < <(_expand_ethn "${options[@]}")
 ###############################################################################
 _expand_ethn() {
-   local max_interfaces option i
+   local max_interfaces opt i
 
    # We only want the value of MAX_INTERFACES from script_utils. Sourcing
    # script_utils in this shell would flood the user's environment with other
@@ -80,9 +80,9 @@ _expand_ethn() {
       printf "%s\n" "$MAX_INTERFACES"
    )
 
-   for option in "$@"; do
-      [ "$option" = "--ethN=" ] && continue
-      printf "%s\n" "$option"
+   for opt in "$@"; do
+      [ "$opt" = "--ethN=" ] && continue
+      printf "%s\n" "$opt"
    done
 
    for ((i = 0; i < max_interfaces; ++i)) do
@@ -96,7 +96,7 @@ _expand_ethn() {
 # nospace enabled. Specify a parameter delimiter where a space should not be
 # appended to the completion.
 # Usage:
-#   _option_array_to_str DELIMETER [OPTION]...
+#   _opt_array_to_str DELIMETER [OPTION]...
 # Globals:
 #   None
 # Arguments:
@@ -105,30 +105,30 @@ _expand_ethn() {
 # Returns:
 #   None
 # Example:
-#   mapfile -t options < <(_get_cmd_options vstart)
-#   compgen -W "$(_option_array_to_str "=" "${options[@]}")" -- "$word"
+#   mapfile -t options < <(_get_cmd_opts vstart)
+#   compgen -W "$(_opt_array_to_str "=" "${options[@]}")" -- "$word"
 ###############################################################################
-_option_array_to_str() {
+_opt_array_to_str() {
    local delimeter=$1
-   local options=( "${@:2}" )
+   local opts=( "${@:2}" )
 
-   local option space options_new
+   local opt space opts_new
 
    # Append a space to all options without parameters
-   for option in "${options[@]}"; do
-      [[ "$option" == *"$delimeter" ]] && space="" || space=" "
-      options_new+=( "$option$space" )
+   for opt in "${opts[@]}"; do
+      [[ "$opt" == *"$delimeter" ]] && space="" || space=" "
+      opts_new+=( "$opt$space" )
    done
 
    # Return quoted array
-   echo "${options_new[*]@Q}"
+   echo "${opts_new[*]@Q}"
 }
 
 
 ###############################################################################
 # Generate option completions for a given command and set COMPREPLY
 # Usage:
-#   _options_compgen COMMAND EXPAND_ETHN [CURRENT_WORD]
+#   _opts_compgen COMMAND EXPAND_ETHN [CURRENT_WORD]
 # Globals:
 #   -w COMPREPLY
 # Arguments:
@@ -140,20 +140,20 @@ _option_array_to_str() {
 # Example:
 #   None
 ###############################################################################
-_options_compgen() {
+_opts_compgen() {
    local cmd=$1
-   local expand_eth_option=$2
+   local expand_ethn=$2
    local current_word=$3
 
-   local options options_str
+   local opts opts_str
 
-   mapfile -t options < <(_get_cmd_options "$cmd")
-   [ -n "$expand_eth_option" ] && mapfile -t options < <(_expand_ethn "${options[@]}")
+   mapfile -t opts < <(_get_cmd_opts "$cmd")
+   [ -n "$expand_ethn" ] && mapfile -t opts < <(_expand_ethn "${opts[@]}")
 
-   options_str=$(_option_array_to_str "=" "${options[@]}")
+   opts_str=$(_opt_array_to_str "=" "${opts[@]}")
 
    compopt -o nospace
-   mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
+   mapfile -t COMPREPLY < <(compgen -W "$opts_str" -- "$current_word")
 }
 
 
@@ -435,7 +435,7 @@ _collision_domains_compgen() {
    : "${target_user:="$(_get_nk_user "${COMP_WORDS[@]}")"}"
 
    _get_active_collision_domains collision_domains "," "$target_user" 2> /dev/null
-   collision_domains_str=$(_option_array_to_str "," "${collision_domains[@]}")
+   collision_domains_str=$(_opt_array_to_str "," "${collision_domains[@]}")
 
    compopt -o nospace
    mapfile -t COMPREPLY < <(compgen -W "$collision_domains_str" -- "$current_word")

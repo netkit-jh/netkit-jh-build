@@ -57,7 +57,7 @@ _vstart() {
       # If the current word is the first argument, it cannot be an option
       # parameter.
       if [ "$COMP_CWORD" -eq 1 ]; then
-         _options_compgen "vstart" "1" "$current_word"
+         _opts_compgen "vstart" "1" "$current_word"
          return
       fi
 
@@ -109,7 +109,7 @@ _vstart() {
          # --help, --just-print, -n, --no-cow, --no-hosthome, --recon,
          # --show-boot-log, --tmux-attached, --tmux-detached, -v, --verbose,
          # --version, -W
-         _options_compgen "vstart" "1" "$current_word"
+         _opts_compgen "vstart" "1" "$current_word"
          ;;
    esac
 }

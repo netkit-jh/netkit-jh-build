@@ -43,7 +43,7 @@ _linfo() {
    # If the current word is the first argument, it cannot be an option
    # parameter.
    if [ "$COMP_CWORD" -eq 1 ]; then
-      _options_compgen "linfo" "" "$current_word"
+      _opts_compgen "linfo" "" "$current_word"
       return
    fi
 
@@ -76,7 +76,7 @@ _linfo() {
          #
          # Covered options:
          # --help, --version
-         _options_compgen "linfo" "" "$current_word"
+         _opts_compgen "linfo" "" "$current_word"
          ;;
    esac
 }

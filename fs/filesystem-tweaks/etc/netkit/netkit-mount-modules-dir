@@ -73,10 +73,10 @@ case $1 in
             continue
          fi
 
-         option=${argument%%=*}
+         opt=${argument%%=*}
          value=${argument#*=}
 
-         if [ "$option" = "modules" ]; then
+         if [ "$opt" = "modules" ]; then
             modules=$value
             break
          fi

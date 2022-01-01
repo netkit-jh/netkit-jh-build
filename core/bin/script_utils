@@ -941,7 +941,7 @@ get_vhost_info_by_pid() {
    local pid=$1
 
    local kernel_cmd
-   local first_iteration argument option value
+   local first_iteration argument opt value
    local interface_id
    local vhost_info_other
 
@@ -983,14 +983,14 @@ get_vhost_info_by_pid() {
       # UML options are key=value pairs. ${argument#*=} removes the key= prefix
       # from argument (the single # permits usage of further equals signs in
       # the argument).
-      option=${argument%%=*}
+      opt=${argument%%=*}
       value=${argument#*=}
 
       # Edge-cases that can only be matched with regular expressions (or with
       # extglob enabled, which cannot be done.)
-      if [[ "$option" =~ ^eth([0-9]|[1-9][0-9]+)$ ]]; then
+      if [[ "$opt" =~ ^eth([0-9]|[1-9][0-9]+)$ ]]; then
          # Interface number
-         interface_id=${option#eth}
+         interface_id=${opt#eth}
 
          # Array of UML socket filepaths indexed by the interface number.
          # NOTE: we assume transport mode is 'daemon'
@@ -1005,7 +1005,7 @@ get_vhost_info_by_pid() {
       # matching.
       # NOTE: some non-UML parameters will be enclosed in escaped double quotes
       # to allow for whitespace in them.
-      case $option in
+      case $opt in
          con0)
             # NOTE: tmux sessions are identified later in the command line with
             # a dummy option.

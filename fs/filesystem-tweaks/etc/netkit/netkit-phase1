@@ -138,10 +138,10 @@ case $1 in
          }' < /proc/cmdline)
 
       for argument in "${kernel_cmd[@]}"; do
-         option=${argument%%=*}
+         opt=${argument%%=*}
          value=${argument#*=}
 
-         case $option in
+         case $opt in
             hostname)      hostname=$value;;
             hosthome)      hosthome=$value;;
             mount)         mount_specifications+=( "$value" );;
@@ -150,7 +150,7 @@ case $1 in
             ubd0)          fs=${value#*,};;
             autoconf_*)
                # Get interface name
-               interface=${option#autoconf_}
+               interface=${opt#"autoconf_"}
                # Array of alternating interface names and IP addresses
                autoconf_interfaces+=( "$interface" "$value" )
             ;;
@@ -268,10 +268,10 @@ EOF
          }' < /proc/cmdline)
 
       for argument in "${kernel_cmd[@]}"; do
-         option=${argument%%=*}
+         opt=${argument%%=*}
          value=${argument#*=}
 
-         case $option in
+         case $opt in
             hosthome)      hosthome=$value;;
             mount)         mount_specifications+=( "$value" );;
             hostlab)       hostlab=$value;;

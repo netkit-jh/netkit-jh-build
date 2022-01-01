@@ -119,10 +119,10 @@ END_OF_HELP
 generate_dot_graph() {
    local lab_confs=( "$@" )
 
-   local configuration vhost option value
+   local configuration vhost opt value
    local hub_name hub_names
 
-   declare -A interface_ids options
+   declare -A interface_ids opts
 
    # Global map parameters
    cat << EOF
@@ -138,7 +138,7 @@ EOF
       # NOTE: we assume hostname_regex does not allow square brackets,
       # so the option string is the first instance of them.
       vhost=$(awk -F"[][]" '{ print $1 }' <<< "$configuration")
-      option=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
+      opt=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
 
       # Everything after the first '='
       value=${configuration#*=}
@@ -147,14 +147,14 @@ EOF
       array_contains "$vhost" "${lab_vhosts[@]}" || continue
 
       # If option is all-digit, it must be a network interface specification
-      if [[ "$option" =~ ^([0-9]|[1-9][0-9]+)$ ]]; then
+      if [[ "$opt" =~ ^([0-9]|[1-9][0-9]+)$ ]]; then
          # Ignore if it has already been seen
-         [[ "${interface_ids[$vhost]}" =~ \ $option\  ]] && continue
+         [[ "${interface_ids[$vhost]}" =~ \ $opt\  ]] && continue
 
          # Add an edge between the machine and its collision domain
          cat << EOF
    "$vhost" -- "$value" [
-      taillabel=<<TABLE BGCOLOR="white" BORDER="0" CELLPADDING="1" CELLSPACING="0"><TR><TD>eth$option</TD></TR></TABLE>>,
+      taillabel=<<TABLE BGCOLOR="white" BORDER="0" CELLPADDING="1" CELLSPACING="0"><TR><TD>eth$opt</TD></TR></TABLE>>,
       labeldistance=1.5,
       labelfontsize=8.0
    ]
@@ -163,9 +163,9 @@ EOF
 
          # Interface IDs cannot have whitespace, so a space-separated list is
          # safe.
-         interface_ids[$vhost]+=" $option "
+         interface_ids[$vhost]+=" $opt "
       else
-         options[$vhost]+="$option = $value<BR/>"
+         opts[$vhost]+="$opt = $value<BR/>"
       fi
    done < <(grep --extended-regexp --no-filename -- "^$hostname_regex\[.*\]=" "${lab_confs[@]}")
 
@@ -174,7 +174,7 @@ EOF
       cat << EOF
    "$vhost" [
       shape="box",
-      label=<$vhost<FONT POINT-SIZE="10"><BR/>${options[$vhost]}</FONT>>,
+      label=<$vhost<FONT POINT-SIZE="10"><BR/>${opts[$vhost]}</FONT>>,
       height=0.5,
       width=0.5
    ]

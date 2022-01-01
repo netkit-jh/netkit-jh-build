@@ -48,7 +48,7 @@ _vlist() {
       case $current_word in
          -*)
             # Current word is a new option
-            _options_compgen "vlist" "" "$current_word"
+            _opts_compgen "vlist" "" "$current_word"
             ;;
          *)
             # Current word could be an option or machine name (non-option
@@ -88,7 +88,7 @@ _vlist() {
          case $current_word in
             -*)
                # Current word is a new option
-               _options_compgen "vlist" "" "$current_word"
+               _opts_compgen "vlist" "" "$current_word"
                ;;
             *)
                # Current word could be an option or machine name (non-option

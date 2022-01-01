@@ -91,8 +91,8 @@ package management command:
                         $VPACKAGE_MOUNT_POINT
   -f, --filesystem=FILE  use FILE as the filesystem to be mounted. By default,
                           this is $VM_MODEL_FS
-  -o, --pass=OPTION   pass OPTION unaltered to the underlying package
-                        management command
+  -o, --pass=ARG      pass ARG unaltered to the underlying package management
+                        command
       --only-upgrade  only install upgrades for the selected packages. This
                         uses the --only-upgrade option to apt-get and must be
                         used with the install subcommand

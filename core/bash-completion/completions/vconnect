@@ -48,7 +48,7 @@ _vconnect() {
       case $current_word in
          -*)
             # Current word is a new option
-            _options_compgen "vconnect" "" "$current_word"
+            _opts_compgen "vconnect" "" "$current_word"
             ;;
          *)
             # Current word could be an option or machine name (non-option
@@ -89,7 +89,7 @@ _vconnect() {
          case $current_word in
             -*)
                # Current word is a new option
-               _options_compgen "vconnect" "" "$current_word"
+               _opts_compgen "vconnect" "" "$current_word"
                ;;
             *)
                # Current word could be an option or machine name (non-option

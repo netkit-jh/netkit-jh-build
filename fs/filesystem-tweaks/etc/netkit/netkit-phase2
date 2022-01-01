@@ -110,10 +110,10 @@ mapfile -d "" -t kernel_cmd < <(gawk '
    }' < /proc/cmdline)
 
 for argument in "${kernel_cmd[@]}"; do
-   option=${argument%%=*}
+   opt=${argument%%=*}
    value=${argument#*=}
 
-   case $option in
+   case $opt in
       hostlab) hostlab=$value;;
       exec)    exec_cmd=${value#*,};;
       test)    test_delay=$value;;

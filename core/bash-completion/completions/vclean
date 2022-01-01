@@ -43,7 +43,7 @@ _vclean() {
    # If the current word is the first argument, it cannot be an option
    # parameter.
    if [ "$COMP_CWORD" -eq 1 ]; then
-      _options_compgen "vclean" "" "$current_word"
+      _opts_compgen "vclean" "" "$current_word"
       return
    fi
 
@@ -73,7 +73,7 @@ _vclean() {
          # --clean-all, --clean-directories, -f, --force, -H, --help, -K,
          # --kill-machines, -q, --quick, --remove-hubs, --remove-tunnels, -T,
          # --test, -v, --verbose, --version
-         _options_compgen "vclean" "" "$current_word"
+         _opts_compgen "vclean" "" "$current_word"
          ;;
    esac
 }

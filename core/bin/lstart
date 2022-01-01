@@ -100,7 +100,7 @@ END_OF_HELP
                         in netkit.conf
   -l, --list          show a list of running virtual machines after starting up
                         the lab.
-  -o, --pass=OPTION   pass OPTION unaltered to vstart. This will affect all the
+  -o, --pass=ARG      pass ARG unaltered to vstart. This will affect all the
                         (newly started) virtual machines of the lab.
   -p[VALUE]           enable parallel startup, even if a lab.dep file does not
                         exist inside the lab directory. If a VALUE is provided,
@@ -393,7 +393,7 @@ single_lab_vhost_start() {
    local vhost=$4
    local passthrough_args=( "${@:5}" )
 
-   local configuration option value
+   local configuration opt value
 
    # Specify host lab directory, and place filesystem inside it
    local vstart_args=(
@@ -409,18 +409,18 @@ single_lab_vhost_start() {
          # closing square bracket.
          # NOTE: we assume hostname_regex does not allow square brackets, so
          # the option string is the first instance of them.
-         option=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
+         opt=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
 
          # Everything after the first '='
          value=${configuration#*=}
 
          # If option is all-digit, it must be a network interface specification
-         [[ "$option" =~ ^([0-9]|[1-9][0-9]+)$ ]] && option="eth$option"
+         [[ "$opt" =~ ^([0-9]|[1-9][0-9]+)$ ]] && opt="eth$opt"
 
-         if [ "${#option}" -eq 1 ]; then
-            vstart_args+=( "-$option" )
+         if [ "${#opt}" -eq 1 ]; then
+            vstart_args+=( "-$opt" )
          else
-            vstart_args+=( "--$option" )
+            vstart_args+=( "--$opt" )
          fi
 
          # NOTE: if vstart is ever changed to have an option with an optional

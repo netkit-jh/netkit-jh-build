@@ -49,7 +49,7 @@ _ltest() {
       case $current_word in
          -*)
             # Current word is an option
-            _options_compgen "ltest" "" "$current_word"
+            _opts_compgen "ltest" "" "$current_word"
             ;;
          *)
             # Current word could be an option or machine name (non-option
@@ -97,7 +97,7 @@ _ltest() {
          case $current_word in
             -*)
                # Current word is a new option
-               _options_compgen "ltest" "" "$current_word"
+               _opts_compgen "ltest" "" "$current_word"
                ;;
             *)
                # Current word could be an option or machine name (non-option

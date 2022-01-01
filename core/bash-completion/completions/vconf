@@ -48,7 +48,7 @@ _vconf() {
       case $current_word in
          -*)
             # Current word is a new option
-            _options_compgen "vconf" "1" "$current_word"
+            _opts_compgen "vconf" "1" "$current_word"
             ;;
          *)
             # Current word could be an option or machine name (non-option
@@ -93,7 +93,7 @@ _vconf() {
          case $current_word in
             -*)
                # Current word is a new option
-               _options_compgen "vconf" "1" "$current_word"
+               _opts_compgen "vconf" "1" "$current_word"
                ;;
             *)
                # Current word could be an option or machine name (non-option
