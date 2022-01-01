@@ -164,10 +164,10 @@ case $1 in
       # Mount host directories inside the guest
       if [ "${#mount_specifications[@]}" -gt 0 ]; then
          for mount_specification in "${mount_specifications[@]}"; do
-            source_mount=${mount_specification%%,*}
-            destination_mount=${mount_specification#*,}
+            src_mount=${mount_specification%%,*}
+            dst_mount=${mount_specification#*,}
 
-            mount_host_dir "$source_mount" "$destination_mount" "Mounting '$source_mount' on '$destination_mount'"
+            mount_host_dir "$src_mount" "$dst_mount" "Mounting '$src_mount' on '$dst_mount'"
          done
       fi
 
@@ -287,8 +287,8 @@ EOF
 
       if [ "${#mount_specifications[@]}" -gt 0 ]; then
          for mount_specification in "${mount_specifications[@]}"; do
-            destination_mount=${mount_specification#*,}
-            umount_host_dir "$destination_mount" "Unmounting and removing '$destination_mount'"
+            dst_mount=${mount_specification#*,}
+            umount_host_dir "$dst_mount" "Unmounting and removing '$dst_mount'"
          done
       fi
 

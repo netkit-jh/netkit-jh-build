@@ -115,8 +115,8 @@ You can use the following options to adjust the virtual machine parameters:
 
 Filesystem settings can be tuned by using the following options:
   -H, --no-hosthome   do not mount host filesystem inside the machine
-      --mount=SRC,DEST  mount SRC directory from the host to DEST directory in
-                         the virtual machine
+      --mount=SRC,DST  mount SRC directory from the host to DST directory in
+                        the virtual machine
   -m, --model-fs=FILE  use the specified filesystem image as a model for the
                         virtual machine. FILE will not be altered in any way
                         unless the --no-cow option is used. The default model
@@ -823,15 +823,15 @@ trap "rm --force -- '$out_file'" EXIT
    ### DIRECTORY MOUNTS ################################## (non-UML option) ###
    if [ "${#mount_specifications[@]}" -gt 0 ]; then
       for mount_specification in "${mount_specifications[@]}"; do
-         source_mount=${mount_specification%%,*}
-         destination_mount=${mount_specification#*,}
+         src_mount=${mount_specification%%,*}
+         dst_mount=${mount_specification#*,}
 
-         if str_contains "$source_mount$destination_mount" ","; then
+         if str_contains "$src_mount$dst_mount" ","; then
             echo 1>&2 "$SCRIPTNAME: $mount_specification: Invalid character in mount specification"
             usage 1
          fi
 
-         echo "   Mount:       $source_mount @ $destination_mount"
+         echo "   Mount:       $src_mount @ $dst_mount"
          kernel_cmd+=( "\"mount=$VM_MOUNT\"" )
       done
    fi
