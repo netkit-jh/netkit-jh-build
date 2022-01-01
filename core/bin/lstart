@@ -456,7 +456,7 @@ single_lab_vhost_start() {
 SCRIPTNAME=$(basename -- "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   warn "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
@@ -530,7 +530,7 @@ while true; do
                # No argument implies MAX_SIMULTAENEOUS_VMS will be the 
                ;;
             *[!0-9]*)
-               echo 1>&2 "$SCRIPTNAME: Argument to option '-p' must be a positive integer or 0"
+               warn "Argument to option '-p' must be a positive integer or 0"
                usage 1
                ;;
             *)
@@ -561,7 +561,7 @@ while true; do
       -w|--wait)
          case $2 in
             ""|*[!0-9]*)
-               echo 1>&2 "$SCRIPTNAME: Argument to option '-w' must be a positive integer or 0"
+               warn "Argument to option '-w' must be a positive integer or 0"
                usage 1
                ;;
             *)
@@ -575,7 +575,7 @@ while true; do
          break
          ;;
       *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         warn "Unknown error parsing command line arguments"
          usage 1
          ;;
    esac
@@ -593,14 +593,14 @@ validate_hostnames "${lab_vhosts[@]}"
 
 # Check that the lab directory exists
 if [ ! -d "$lab_dir" ]; then
-   echo 1>&2 "$SCRIPTNAME: $lab_dir: No such directory"
+   warn "$lab_dir: No such directory"
    exit 1
 fi
 
 
 # Check whether parallel startup and -f are being used together
 if [ -f "$lab_dir/lab.dep" ] && [ -n "$fast_mode" ] && [ -z "$sequential_mode" ]; then
-   echo 1>&2 "$SCRIPTNAME: Fast mode is ignored when using parallel startup"
+   warn "Fast mode is ignored when using parallel startup"
 fi
 
 
@@ -628,7 +628,7 @@ fi
 
 
 if [ ! -f "$lab_dir/lab.conf" ] && [ ! -f "$lab_dir/lab.dep" ] && [ -z "$force_lab" ]; then
-   echo 1>&2 "$SCRIPTNAME: This does not appear to be a lab directory. Use option '-F' to ignore this error"
+   warn "This does not appear to be a lab directory. Use option '-F' to ignore this error"
    exit 1
 fi
 

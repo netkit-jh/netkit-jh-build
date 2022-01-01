@@ -171,7 +171,7 @@ setup_interfaces() {
 
       # Check if interface has already been configured
       if array_contains "$interface" "${used_interfaces[@]}"; then
-         echo 1>&2 "$SCRIPTNAME: $interface: Duplicate interface"
+         warn "$interface: Duplicate interface"
          usage 1
       fi
 
@@ -184,12 +184,12 @@ setup_interfaces() {
          IFS=, read -r hub_name tap_addr guest_addr <<< "$hub_specification"
 
          if ! is_inet_addr "$tap_addr"; then
-            echo 1>&2 "$SCRIPTNAME: $tap_addr: Invalid tap address"
+            warn "$tap_addr: Invalid tap address"
             usage 1
          fi
 
          if ! is_inet_addr "$guest_addr"; then
-            echo 1>&2 "$SCRIPTNAME: $guest_addr: Invalid guest address"
+            warn "$guest_addr: Invalid guest address"
             usage 1
          fi
       else
@@ -201,7 +201,7 @@ setup_interfaces() {
       if [ -n "$hub_name" ]; then
          # Check for invalid characters in hub_name
          if ! validate_collision_domain_names "$hub_name"; then
-            echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid collision domain name"
+            warn "$hub_name: Invalid collision domain name"
             usage 1
          fi
 
@@ -210,7 +210,7 @@ setup_interfaces() {
 
          if [ -n "$tap_addr" ]; then
             if [ -e "$reg_socket" ]; then
-               echo 1>&2 "$SCRIPTNAME: $hub_name: Regular (not tap) hub socket under the same collision domain already exists"
+               warn "$hub_name: Regular (not tap) hub socket under the same collision domain already exists"
                usage 1
             fi
 
@@ -219,7 +219,7 @@ setup_interfaces() {
             hub_list+=( "$hub_name,$tap_addr" )
          else
             if [ -e "$tap_socket" ]; then
-               echo 1>&2 "$SCRIPTNAME: $hub_name: Tap hub socket under the same collision domain already exists"
+               warn "$hub_name: Tap hub socket under the same collision domain already exists"
                usage 1
             fi
 
@@ -304,10 +304,8 @@ invoke_mconsole() {
 }
 
 
-SCRIPTNAME=$(basename -- "$0")
-
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   warn "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
@@ -360,7 +358,7 @@ while true; do
          if [ "$target_user" = "-" ]; then
             unset target_user
          elif ! id -- "$target_user" > /dev/null 2>&1; then
-            echo 1>&2 "$SCRIPTNAME: $target_user: User does not exist"
+            warn "$target_user: User does not exist"
             usage 1
          fi
          ;;
@@ -376,7 +374,7 @@ while true; do
          break
          ;;
       *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         warn "Unknown error parsing command line arguments"
          usage 1
          ;;
    esac
@@ -386,10 +384,10 @@ done
 
 # Parse virtual machine name
 if [ $# -eq 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: Missing machine name"
+   warn "Missing machine name"
    usage 1
 elif [ $# -gt 1 ]; then
-   echo 1>&2 "$SCRIPTNAME: Can only specify one machine"
+   warn "Can only specify one machine"
    usage 1
 fi
 
@@ -398,8 +396,7 @@ validate_hostnames "$vhost"
 
 
 if ! get_vhost_info_by_name "$target_user" "$vhost"; then
-   echo -n 1>&2 "$SCRIPTNAME: no virtual machine named '$vhost' exists"
-   [ -n "$target_user" ] && echo " for user $target_user." || echo "."
+   warn "no virtual machine named '$vhost' exists${target_user:+" for user $target_user"}."
    exit 1
 fi
 

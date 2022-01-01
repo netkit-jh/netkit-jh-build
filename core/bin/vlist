@@ -275,7 +275,7 @@ print_vhost_info_by_name() {
 SCRIPTNAME=$(basename -- "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   warn "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
@@ -315,7 +315,7 @@ while true; do
          if [ "$target_user" = "-" ]; then
             unset target_user
          elif ! id -- "$target_user" > /dev/null 2>&1; then
-            echo 1>&2 "$SCRIPTNAME: $target_user: User does not exist"
+            warn "$target_user: User does not exist"
             usage 1
          fi
          ;;
@@ -328,7 +328,7 @@ while true; do
          break
          ;;
       *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         warn "Unknown error parsing command line arguments"
          usage 1
          ;;
    esac
@@ -343,7 +343,7 @@ validate_hostnames "${vhosts[@]}"
 
 # Check whether -u - is being used together with a virtual machine ID
 if [ -z "$target_user" ] && [ "${#vhosts[@]}" -ne 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: When giving VM names, a specific user ID must be provided"
+   warn "When giving VM names, a specific user ID must be provided"
    usage 1
 fi
 
@@ -357,6 +357,6 @@ for vhost in "${vhosts[@]}"; do
    if get_machine_state "$target_user" "$vhost"; then
       print_vhost_info_by_name "$target_user" "$vhost"
    else
-      echo 1>&2 "$SCRIPTNAME: no virtual machine named '$vhost' exists for $target_user"
+      warn "no virtual machine named '$vhost' exists for $target_user"
    fi
 done

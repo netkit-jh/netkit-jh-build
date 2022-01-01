@@ -82,7 +82,7 @@ END_OF_HELP
 SCRIPTNAME=$(basename -- "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   warn "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
@@ -122,7 +122,7 @@ while true; do
          break
          ;;
       *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         warn "Unknown error parsing command line arguments"
          usage 1
          ;;
    esac
@@ -131,10 +131,10 @@ while true; do
 done
 
 if [ $# -eq 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: Missing collision domain name"
+   warn "Missing collision domain name"
    usage 1
 elif [ $# -gt 1 ]; then
-   echo 1>&2 "$SCRIPTNAME: Can only specify one collision domain"
+   warn "Can only specify one collision domain"
    usage 1
 fi
 
@@ -149,12 +149,12 @@ if [ -e "$reg_socket" ]; then
 elif [ -e "$tap_socket" ]; then
    socket=$tap_socket
 else
-   echo 1>&2 "$SCRIPTNAME: $hub_name: Cannot find hub socket for the collision domain"
+   warn "$hub_name: Cannot find hub socket for the collision domain"
    usage 1
 fi
 
 if [ ! -S "$socket" ]; then
-   echo 1>&2 "$SCRIPTNAME: $socket: File is not a socket"
+   warn "$socket: File is not a socket"
    usage 1
 fi
 

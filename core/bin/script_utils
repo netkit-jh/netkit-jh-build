@@ -34,6 +34,25 @@ SCRIPT_UTILS_SRC=1
 
 
 ###############################################################################
+# Echo a message to standard error in the format "$SCRIPTNAME: $MESSAGE"
+# Usage:
+#   warn MESSAGE
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - message
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+warn() {
+   local message=$1
+   echo 1>&2 "$SCRIPTNAME: $message"
+}
+
+
+###############################################################################
 # Check if string is a valid IPv4 dotted-quad address.
 # Usage:
 #   is_inet_addr ADDR
@@ -73,7 +92,7 @@ validate_hostnames() {
 
    for hostname in "${hostnames[@]}"; do
       if [[ ! "$hostname" =~ ^$hostname_regex$ ]] || array_contains "$hostname" "${invalid_hostnames[@]}"; then
-         echo 1>&2 "$SCRIPTNAME: $hostname: Invalid hostname"
+         warn "$hostname: Invalid hostname"
          exit 1
       fi
    done
@@ -505,7 +524,7 @@ start_inet_hub() {
          # If the interface already exists, it must have the same IP as
          # requested.
          if ! ip addr show "$tap_name" | grep --quiet "inet $tap_addr"; then
-            echo 1>&2 "$SCRIPTNAME: $tap_name: Interface already exists and is in usage with a different IP. Remove the interface or change the IP address"
+            warn "$tap_name: Interface already exists and is in usage with a different IP. Remove the interface or change the IP address"
             usage 1
          else
             # Interface-address pair exists; wait for uml_switch to start

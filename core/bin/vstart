@@ -232,7 +232,7 @@ validate_ubd_argument() {
 
    for file in "${files[@]}"; do
       if str_contains "$file" "," ":"; then
-         echo 1>&2 "$SCRIPTNAME: $file: Invalid character in filesystem path"
+         warn "$file: Invalid character in filesystem path"
          usage 1
       fi
    done
@@ -264,7 +264,7 @@ check_fs() {
    fs_type=$(stat --file-system --format "%T" -- "$file")
 
    if [[ ! "$fs_type" =~ ^($supportive_fs)$ ]]; then
-      echo 1>&2 "$SCRIPTNAME: Filesystem '$fs_type' may not support sparse files, this could result in performance loss and disk space consumption"
+      warn "Filesystem '$fs_type' may not support sparse files, this could result in performance loss and disk space consumption"
    fi
 }
 
@@ -311,7 +311,7 @@ setup_interfaces() {
 
       # Check if interface has already been configured
       if array_contains "$interface" "${used_interfaces[@]}"; then
-         echo 1>&2 "$SCRIPTNAME: $interface: Duplicate interface"
+         warn "$interface: Duplicate interface"
          usage 1
       fi
 
@@ -324,12 +324,12 @@ setup_interfaces() {
          IFS=, read -r hub_name tap_addr guest_addr <<< "$hub_specification"
 
          if ! is_inet_addr "$tap_addr"; then
-            echo 1>&2 "$SCRIPTNAME: $tap_addr: Invalid tap address"
+            warn "$tap_addr: Invalid tap address"
             usage 1
          fi
 
          if ! is_inet_addr "$guest_addr"; then
-            echo 1>&2 "$SCRIPTNAME: $guest_addr: Invalid guest address"
+            warn "$guest_addr: Invalid guest address"
             usage 1
          fi
       else
@@ -340,7 +340,7 @@ setup_interfaces() {
 
       # Check for invalid characters in hub_name
       if ! validate_collision_domain_names "$hub_name"; then
-         echo 1>&2 "$SCRIPTNAME: $hub_name: Invalid collision domain name"
+         warn "$hub_name: Invalid collision domain name"
          usage 1
       fi
 
@@ -349,7 +349,7 @@ setup_interfaces() {
 
       if [ -n "$tap_addr" ]; then
          if [ -e "$reg_socket" ]; then
-            echo 1>&2 "$SCRIPTNAME: $hub_name: Regular (not tap) hub socket under the same collision domain already exists"
+            warn "$hub_name: Regular (not tap) hub socket under the same collision domain already exists"
             usage 1
          fi
 
@@ -368,7 +368,7 @@ setup_interfaces() {
          tap="tap; "
       else
          if [ -e "$tap_socket" ]; then
-            echo 1>&2 "$SCRIPTNAME: $hub_name: Tap hub socket under the same collision domain already exists"
+            warn "$hub_name: Tap hub socket under the same collision domain already exists"
             usage 1
          fi
 
@@ -442,7 +442,7 @@ run_kernel() {
 SCRIPTNAME=$(basename -- "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   warn "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
@@ -488,7 +488,7 @@ while true; do
                [ "$opt" = "--con0" ] && VM_CON0=$console || VM_CON1=$console
                ;;
             *)
-               echo 1>&2 "$SCRIPTNAME: $console: Unrecognized console"
+               warn "$console: Unrecognized console"
                usage 1
                ;;
          esac
@@ -537,7 +537,7 @@ while true; do
          VM_MEMORY=$2
 
          if [ "$VM_MEMORY" -lt "$MIN_MEM" ] || [ "$VM_MEMORY" -gt "$MAX_MEM" ]; then
-            echo 1>&2 "$SCRIPTNAME: Memory out of permitted range (min: $MIN_MEM MB; max: $MAX_MEM MB)"
+            warn "Memory out of permitted range (min: $MIN_MEM MB; max: $MAX_MEM MB)"
             usage 1
          fi
 
@@ -588,7 +588,7 @@ while true; do
          shift
 
          if [[ ! "$TERM_TYPE" =~ ^(konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl|wt)$ ]]; then
-            echo 1>&2 "$SCRIPTNAME: $TERM_TYPE: Unsupported terminal emulator"
+            warn "$TERM_TYPE: Unsupported terminal emulator"
             usage 1
          fi
          ;;
@@ -597,7 +597,7 @@ while true; do
          break
          ;;
       *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         warn "Unknown error parsing command line arguments"
          usage 1
          ;;
    esac
@@ -607,10 +607,10 @@ done
 
 # Parse virtual machine name
 if [ $# -eq 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: Missing machine name"
+   warn "Missing machine name"
    usage 1
 elif [ $# -gt 1 ]; then
-   echo 1>&2 "$SCRIPTNAME: Can only specify one machine"
+   warn "Can only specify one machine"
    usage 1
 fi
 
@@ -620,7 +620,7 @@ validate_hostnames "$vhost"
 
 # Check whether user is trying to attach more than one console to stdin/stdout
 if [ "$VM_CON0" = "this" ] && [ "$VM_CON1" = "this" ]; then
-   echo 1>&2 "$SCRIPTNAME: Only one console can be attached to the current terminal"
+   warn "Only one console can be attached to the current terminal"
    usage 1
 fi
 
@@ -628,14 +628,14 @@ if [ -n "$no_cow" ]; then
    # Check whether a COW filesystem has been explictly provided when using the
    # '-W|--no-cow' option.
    if [ -n "$fs" ]; then
-      echo 1>&2 "$SCRIPTNAME: Cannot provide a filesystem name with --no-cow"
+      warn "Cannot provide a filesystem name with --no-cow"
       usage 1
    fi   
 
    # Check whether the user asked to hide the virtual machine filesystem while
    # using the '-W|--no-cow' option
    if [ -n "$rm_fs" ]; then
-      echo 1>&2 "$SCRIPTNAME: Cannot hide the filesystem when using --no-cow"
+      warn "Cannot hide the filesystem when using --no-cow"
       usage 1
    fi
 fi
@@ -654,7 +654,7 @@ if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "
    esac
 
    if ! command -v -- "$term_executable" > /dev/null 2>&1; then
-      echo 1>&2 "$SCRIPTNAME: $term_executable: Terminal emulator not found"
+      warn "$term_executable: Terminal emulator not found"
       exit 1
    fi
 fi
@@ -827,7 +827,7 @@ trap "rm --force -- '$out_file'" EXIT
          dst_mnt=${mnt_specification#*,}
 
          if str_contains "$src_mnt$dst_mnt" ","; then
-            echo 1>&2 "$SCRIPTNAME: $mnt_specification: Invalid character in mount specification"
+            warn "$mnt_specification: Invalid character in mount specification"
             usage 1
          fi
 
@@ -877,13 +877,13 @@ rm --force -- "$out_file"
 if [ -z "$just_print" ]; then
    # Check whether the virtual machine already exists
    if get_machine_state "$USER_ID" "$vhost"; then
-      echo 1>&2 "$SCRIPTNAME: Virtual machine '$vhost' is already running; halt it or use a different hostname"
+      warn "Virtual machine '$vhost' is already running; halt it or use a different hostname"
       exit 1
    fi
 
    # Check whether filesystem is already in use
    if file_in_use "$fs"; then
-      echo 1>&2 "$SCRIPTNAME: Filesystem '$fs' is already in use; specify a different filesystem"
+      warn "Filesystem '$fs' is already in use; specify a different filesystem"
       exit 1
    fi
 fi

@@ -105,7 +105,7 @@ END_OF_HELP
 SCRIPTNAME=$(basename -- "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   warn "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
@@ -157,7 +157,7 @@ while true; do
          break
          ;;
       *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         warn "Unknown error parsing command line arguments"
          usage 1
          ;;
    esac
@@ -175,13 +175,13 @@ validate_hostnames "${lab_vhosts[@]}"
 
 # Check that the lab directory exists
 if [ ! -d "$lab_dir" ]; then
-   echo 1>&2 "$SCRIPTNAME: $lab_dir: Directory does not exist"
+   warn "$lab_dir: Directory does not exist"
    exit 1
 fi
 
 # Filesystem cannot be removed if we are working in quick mode
 if [ -n "$rm_fs" ] && [ -z "$quick_mode" ]; then
-   echo 1>&2 "$SCRIPTNAME: Filesystems cannot be removed (-r) when working in quick mode (-q)"
+   warn "Filesystems cannot be removed (-r) when working in quick mode (-q)"
    exit 1
 fi
 

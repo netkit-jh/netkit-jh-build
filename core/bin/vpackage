@@ -133,7 +133,7 @@ validate_vpackage_subcmd() {
    local subcmds="list|update|upgrade|dist-upgrade|clean|autoremove|auto-remove|install|remove|purge"
 
    if [[ ! "$subcmd" =~ ^($subcmds)$ ]]; then
-      echo 1>&2 "$SCRIPTNAME: Invalid subcommand '$subcmd'"
+      warn "Invalid subcommand '$subcmd'"
       usage 1
    fi
 }
@@ -189,14 +189,14 @@ mount_fs() {
    sudo mkdir --parents -- "$mnt_point"
    
    if ! sudo mount --options loop --source "$fs" --target "$mnt_point"; then
-      echo 1>&2 "$SCRIPTNAME: Could not mount filesystem"
+      warn "Could not mount filesystem"
       exit 1
    fi
 
    echo "Binding '$host_resolvconf' to '$mnt_point_resolvconf'"
 
    if ! sudo mount --options bind --source "$host_resolvconf" --target "$mnt_point_resolvconf"; then
-      echo 1>&2 "$SCRIPTNAME: Could not bind mount name resolution file"
+      warn "Could not bind mount name resolution file"
       sudo umount -- "$mnt_point"
       exit 1
    fi
@@ -210,7 +210,7 @@ mount_fs() {
 SCRIPTNAME=$(basename -- "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   warn "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
@@ -273,7 +273,7 @@ while true; do
          break
          ;;
       *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         warn "Unknown error parsing command line arguments"
          usage 1
          ;;
    esac
@@ -283,7 +283,7 @@ done
    
 # The first non-option argument is the subcommand, the rest are package names
 if [ "$#" -lt 1 ]; then
-   echo 1>&2 "$SCRIPTNAME: Missing subcommand"
+   warn "Missing subcommand"
    usage 1
 fi
 

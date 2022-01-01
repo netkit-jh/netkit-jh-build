@@ -254,7 +254,7 @@ lab_welcome() {
    for dir in "${lab_dirs[@]}"; do
          # Check that the lab directory exists
       if [ ! -d "$dir" ]; then
-         echo 1>&2 "$SCRIPTNAME: $dir: No such directory"
+         warn "$dir: No such directory"
          exit 1
       fi
 

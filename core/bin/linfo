@@ -206,7 +206,7 @@ lab_map() {
    local graph_generator="neato"
 
    if ! command -v -- "$graph_generator" > /dev/null 2>&1; then
-      echo 1>&2 "$SCRIPTNAME: $graph_generator: Graphviz graph generator not found"
+      warn "$graph_generator: Graphviz graph generator not found"
       exit 1
    fi
 
@@ -218,7 +218,7 @@ lab_map() {
 SCRIPTNAME=$(basename -- "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   warn "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
@@ -264,7 +264,7 @@ while true; do
          if [ -d "${dirs[0]}" ]; then
             lab_dirs+=( "${dirs[@]}" )
          else
-            echo 1>&2 "$SCRIPTNAME: List of lab directories could not be generated"
+            warn "List of lab directories could not be generated"
          fi
          ;;
       -d)
@@ -287,7 +287,7 @@ while true; do
          break
          ;;
       *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         warn "Unknown error parsing command line arguments"
          usage 1
          ;;
    esac
@@ -296,7 +296,7 @@ while true; do
 done
 
 if [ $# -gt 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: Too many arguments"
+   warn "Too many arguments"
    exit 1
 fi
 
@@ -308,7 +308,7 @@ fi
 for lab_dir in "${lab_dirs[@]}"; do
    # Check that the lab directory exists
    if [ ! -d "$lab_dir" ]; then
-      echo 1>&2 "$SCRIPTNAME: $lab_dir: No such directory"
+      warn "$lab_dir: No such directory"
       exit 1
    fi
 
@@ -340,7 +340,7 @@ if [ -n "$map_file" ]; then
       lab_conf="$dir/lab.conf"
       
       if [ ! -f "$lab_conf" ]; then
-         echo 1>&2 "$SCRIPTNAME: Unable to find file $lab_conf: Skipping."
+         warn "Unable to find file $lab_conf: Skipping."
          continue
       fi
 
@@ -348,7 +348,7 @@ if [ -n "$map_file" ]; then
    done
 
    if [ "${#lab_confs[@]}" -eq 0 ]; then
-      echo 1>&2 "$SCRIPTNAME: No valid lab.confs found - cannot create topology map."
+      warn "No valid lab.confs found - cannot create topology map."
       exit 1
    fi
 

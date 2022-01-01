@@ -288,7 +288,7 @@ kill_by_mconsole() {
 SCRIPTNAME=$(basename -- "$0")
 
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   warn "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
@@ -337,7 +337,7 @@ while true; do
          if [ "$target_user" = "-" ]; then
             unset target_user
          elif ! id -- "$target_user" > /dev/null 2>&1; then
-            echo 1>&2 "$SCRIPTNAME: $target_user: User does not exist"
+            warn "$target_user: User does not exist"
             usage 1
          fi
          ;;
@@ -353,7 +353,7 @@ while true; do
          break
          ;;
       *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         warn "Unknown error parsing command line arguments"
          usage 1
          ;;
    esac
@@ -363,7 +363,7 @@ done
 
 # Check whether virtual machine name is missing
 if [ $# -eq 0 ]; then
-   echo 1>&2 "$SCRIPTNAME: Missing machine name"
+   warn "Missing machine name"
    usage 1
 fi
 
