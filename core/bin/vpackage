@@ -146,19 +146,19 @@ validate_vpackage_subcmd() {
 # Globals:
 #   None
 # Arguments:
-#   $1 - directory used as the mount mount_point
+#   $1 - directory used as the mount point
 # Returns:
 #   None
 # Example:
 #   trap "cleanup /mnt/fs" EXIT; ... ; exit
 ###############################################################################
 cleanup() {
-   local mount_point=$1
+   local mnt_point=$1
 
-   local mount_point_resolvconf="$mount_point/etc/resolv.conf"
+   local mnt_point_resolvconf="$mnt_point/etc/resolv.conf"
 
-   sudo umount -- "$mount_point_resolvconf"
-   sudo umount -- "$mount_point"
+   sudo umount -- "$mnt_point_resolvconf"
+   sudo umount -- "$mnt_point"
 }
 
 
@@ -179,31 +179,31 @@ cleanup() {
 ###############################################################################
 mount_fs() {
    local fs=$1
-   local mount_point=$2
+   local mnt_point=$2
 
    local host_resolvconf="/etc/resolv.conf"
-   local mount_point_resolvconf="$mount_point/etc/resolv.conf"
+   local mnt_point_resolvconf="$mnt_point/etc/resolv.conf"
 
-   echo "Mounting '$fs' to '$mount_point'"
+   echo "Mounting '$fs' to '$mnt_point'"
 
-   sudo mkdir --parents -- "$mount_point"
+   sudo mkdir --parents -- "$mnt_point"
    
-   if ! sudo mount --options loop --source "$fs" --target "$mount_point"; then
+   if ! sudo mount --options loop --source "$fs" --target "$mnt_point"; then
       echo 1>&2 "$SCRIPTNAME: Could not mount filesystem"
       exit 1
    fi
 
-   echo "Binding '$host_resolvconf' to '$mount_point_resolvconf'"
+   echo "Binding '$host_resolvconf' to '$mnt_point_resolvconf'"
 
-   if ! sudo mount --options bind --source "$host_resolvconf" --target "$mount_point_resolvconf"; then
+   if ! sudo mount --options bind --source "$host_resolvconf" --target "$mnt_point_resolvconf"; then
       echo 1>&2 "$SCRIPTNAME: Could not bind mount name resolution file"
-      sudo umount -- "$mount_point"
+      sudo umount -- "$mnt_point"
       exit 1
    fi
 
    # Enable a trap to unmount the filesystem on exit
    # shellcheck disable=2064
-   trap "cleanup \"$mount_point\"" EXIT
+   trap "cleanup \"$mnt_point\"" EXIT
 }
 
 
@@ -222,7 +222,7 @@ log_write "$0 $*"
 
 
 fs=$VM_MODEL_FS
-mount_point=$VPACKAGE_MOUNT_POINT
+mnt_point=$VPACKAGE_MOUNT_POINT
 
 
 # Get command line options
@@ -241,7 +241,7 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -d)
-         mount_point=$(readlink --canonicalize-missing -- "$2")
+         mnt_point=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       -f|--filesystem)
@@ -313,10 +313,10 @@ fi
 
 # Mount the Netkit filesystem. An EXIT trap will be set so we do not need to
 # manually unmount the filesystem at each script exit point.
-mount_fs "$fs" "$mount_point"
+mount_fs "$fs" "$mnt_point"
 
 
-chroot_cmd=( "sudo" "chroot" -- "$mount_point" )
+chroot_cmd=( "sudo" "chroot" -- "$mnt_point" )
 
 # vpackage subcommands that use apt-get can simply be passed through as a valid
 # apt-get subcommand. This is not the case with dpkg.

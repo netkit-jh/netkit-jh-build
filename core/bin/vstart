@@ -549,7 +549,7 @@ while true; do
          shift
          ;;
       --mount)
-         mount_specifications+=( "$2" )
+         mnt_specifications+=( "$2" )
          shift
          ;;
       -n|--dry-run|--just-print|--recon)
@@ -821,17 +821,17 @@ trap "rm --force -- '$out_file'" EXIT
 
 
    ### DIRECTORY MOUNTS ################################## (non-UML option) ###
-   if [ "${#mount_specifications[@]}" -gt 0 ]; then
-      for mount_specification in "${mount_specifications[@]}"; do
-         src_mount=${mount_specification%%,*}
-         dst_mount=${mount_specification#*,}
+   if [ "${#mnt_specifications[@]}" -gt 0 ]; then
+      for mnt_specification in "${mnt_specifications[@]}"; do
+         src_mnt=${mnt_specification%%,*}
+         dst_mnt=${mnt_specification#*,}
 
-         if str_contains "$src_mount$dst_mount" ","; then
-            echo 1>&2 "$SCRIPTNAME: $mount_specification: Invalid character in mount specification"
+         if str_contains "$src_mnt$dst_mnt" ","; then
+            echo 1>&2 "$SCRIPTNAME: $mnt_specification: Invalid character in mount specification"
             usage 1
          fi
 
-         echo "   Mount:       $src_mount @ $dst_mount"
+         echo "   Mount:       $src_mnt @ $dst_mnt"
          kernel_cmd+=( "\"mount=$VM_MOUNT\"" )
       done
    fi

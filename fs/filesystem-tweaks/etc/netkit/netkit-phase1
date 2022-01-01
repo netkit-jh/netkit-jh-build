@@ -144,7 +144,7 @@ case $1 in
          case $opt in
             hostname)      hostname=$value;;
             hosthome)      hosthome=$value;;
-            mount)         mount_specifications+=( "$value" );;
+            mount)         mnt_specifications+=( "$value" );;
             hostlab)       hostlab=$value;;
             def_route)     default_route=$value;;
             ubd0)          fs=${value#*,};;
@@ -162,12 +162,12 @@ case $1 in
       [ -n "$hostname" ] && printf "%b%s%b" "\033]2;" "$hostname" "\a"
 
       # Mount host directories inside the guest
-      if [ "${#mount_specifications[@]}" -gt 0 ]; then
-         for mount_specification in "${mount_specifications[@]}"; do
-            src_mount=${mount_specification%%,*}
-            dst_mount=${mount_specification#*,}
+      if [ "${#mnt_specifications[@]}" -gt 0 ]; then
+         for mnt_specification in "${mnt_specifications[@]}"; do
+            src_mnt=${mnt_specification%%,*}
+            dst_mnt=${mnt_specification#*,}
 
-            mount_host_dir "$src_mount" "$dst_mount" "Mounting '$src_mount' on '$dst_mount'"
+            mount_host_dir "$src_mnt" "$dst_mnt" "Mounting '$src_mnt' on '$dst_mnt'"
          done
       fi
 
@@ -273,7 +273,7 @@ EOF
 
          case $opt in
             hosthome)      hosthome=$value;;
-            mount)         mount_specifications+=( "$value" );;
+            mount)         mnt_specifications+=( "$value" );;
             hostlab)       hostlab=$value;;
          esac
       done
@@ -285,10 +285,10 @@ EOF
       [ -n "$hosthome" ] &&
          umount_host_dir "/hosthome" "Unmounting and removing '/hosthome'"
 
-      if [ "${#mount_specifications[@]}" -gt 0 ]; then
-         for mount_specification in "${mount_specifications[@]}"; do
-            dst_mount=${mount_specification#*,}
-            umount_host_dir "$dst_mount" "Unmounting and removing '$dst_mount'"
+      if [ "${#mnt_specifications[@]}" -gt 0 ]; then
+         for mnt_specification in "${mnt_specifications[@]}"; do
+            dst_mnt=${mnt_specification#*,}
+            umount_host_dir "$dst_mnt" "Unmounting and removing '$dst_mnt'"
          done
       fi
 
