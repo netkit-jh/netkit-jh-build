@@ -295,7 +295,7 @@ while true; do
          force=1
          ;;
       -H|--remove-hubs)
-         remove_hubs=1
+         rm_hubs=1
          ;;
       --help)
          usage 0
@@ -307,7 +307,7 @@ while true; do
          quick_mode=1
          ;;
       -T|--remove-tunnels)
-         remove_tunnels=1
+         rm_tunnels=1
          ;;
       --test)
          test_mode=1
@@ -350,32 +350,32 @@ fi
 
 
 # Actions --remove-hubs and --kill-machines are incompatible
-if [ -n "$remove_hubs" ] && [ -n "$kill_machines" ]; then
+if [ -n "$rm_hubs" ] && [ -n "$kill_machines" ]; then
    echo 1>&2 "$SCRIPTNAME: Hub removal and machine kill cannot be performed simultaneously"
    exit 1
 fi
 
 # --force is only effective with --remove-hubs
-[ -n "$force" ] && [ -z "$remove_hubs" ] &&
+[ -n "$force" ] && [ -z "$rm_hubs" ] &&
    echo 1>&2 "$SCRIPTNAME: --force is redundant when not used with --remove-hubs"
 
 
 if [ -n "$clean_all" ]; then
    clean_directories=1
    kill_machines=1
-   remove_tunnels=1
+   rm_tunnels=1
    unset target_user
 fi
 
 # Enable default action (remove unused virtual hubs) if none has been requested
-[ -z "$kill_machines" ] && [ -z "$remove_tunnels" ] && remove_hubs=1
+[ -z "$kill_machines" ] && [ -z "$rm_tunnels" ] && rm_hubs=1
 
 
 [ -z "$target_user" ] && user_str="any user" || user_str=$target_user
 
 
 # Remove unused hubs (is default action)
-if [ -n "$remove_hubs" ]; then
+if [ -n "$rm_hubs" ]; then
    # Just remove unused switches
    [ -n "$force" ] && hub_state="all" || hub_state="unused"
    echo "Killing $hub_state virtual hubs owned by $user_str:"
@@ -424,7 +424,7 @@ fi
 
 
 # Remove tunnel configurations (if asked to)
-if [ -n "$remove_tunnels" ]; then
+if [ -n "$rm_tunnels" ]; then
    # Remove any previously configured tunnel
    echo "================== Removing tap configurations =================="
    echo "This will affect tap configurations for $user_str."

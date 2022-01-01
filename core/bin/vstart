@@ -392,7 +392,7 @@ setup_interfaces() {
 ###############################################################################
 # Delete .disk file as soon as it is created by the UML instance.
 # Usage:
-#   remove_fs_command FILE
+#   remove_fs FILE
 # Globals:
 #   None
 # Arguments:
@@ -400,9 +400,9 @@ setup_interfaces() {
 # Returns:
 #   None
 # Example:
-#   remove_fs_command "$filepath" &
+#   remove_fs "$filepath" &
 ###############################################################################
-remove_fs_command() {
+remove_fs() {
    local filepath=$1
 
    while [ ! -f "$filepath" ]; do
@@ -432,7 +432,7 @@ run_kernel() {
    local fs=$1
 
    # Remove .disk file, if requested
-   [ -n "$fs" ] && remove_fs_command "$fs" &
+   [ -n "$fs" ] && remove_fs "$fs" &
 
    "${kernel_cmd[@]}"
    clean_hubs "${hub_list[@]}"
@@ -494,7 +494,7 @@ while true; do
          esac
          ;;
       -D|--hide-disk-file)
-         remove_fs=1
+         rm_fs=1
          ;;
       --debug)
          debug=1
@@ -634,7 +634,7 @@ if [ -n "$no_cow" ]; then
 
    # Check whether the user asked to hide the virtual machine filesystem while
    # using the '-W|--no-cow' option
-   if [ -n "$remove_fs" ]; then
+   if [ -n "$rm_fs" ]; then
       echo 1>&2 "$SCRIPTNAME: Cannot hide the filesystem when using --no-cow"
       usage 1
    fi
@@ -912,15 +912,15 @@ fi
 
 if [ "$VM_CON0" = "none" ]; then
    if [ -n "$backgrounded" ]; then
-      run_kernel "${remove_fs:+$fs}" "${kernel_cmd[@]}" > /dev/null 2>&1 &
+      run_kernel "${rm_fs:+$fs}" "${kernel_cmd[@]}" > /dev/null 2>&1 &
    else
-      run_kernel "${remove_fs:+$fs}" "${kernel_cmd[@]}" > /dev/null 2>&1
+      run_kernel "${rm_fs:+$fs}" "${kernel_cmd[@]}" > /dev/null 2>&1
    fi
 else
    if [ -n "$backgrounded" ]; then
-      run_kernel "${remove_fs:+$fs}" "${kernel_cmd[@]}" &
+      run_kernel "${rm_fs:+$fs}" "${kernel_cmd[@]}" &
    else
-      run_kernel "${remove_fs:+$fs}" "${kernel_cmd[@]}"
+      run_kernel "${rm_fs:+$fs}" "${kernel_cmd[@]}"
    fi
 fi
 

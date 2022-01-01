@@ -326,7 +326,7 @@ while true; do
          quick_mode=1
          ;;
       -r|--remove-fs)
-         remove_fs=1
+         rm_fs=1
          ;;
       --test)
          test_mode=1
@@ -403,7 +403,7 @@ for vhost in "${vhosts[@]}"; do
       fi
 
       # Remove filesystem (.disk file)
-      [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] &&
+      [ -n "$rm_fs" ] && [ -n "${vhost_info[disk]}" ] &&
          rm --force --verbose -- "${vhost_info[disk]}"
    fi
 done

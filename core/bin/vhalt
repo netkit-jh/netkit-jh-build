@@ -130,7 +130,7 @@ while true; do
          quick_mode=1
          ;;
       -r|--remove-fs)
-         remove_fs=1
+         rm_fs=1
          ;;
       -u|--user)
          target_user=$2
@@ -172,7 +172,7 @@ validate_hostnames "${vhosts[@]}"
 
 # Virtual machine filesystem cannot be removed in quick mode because the
 # machine may write files during shutdown.
-if [ -n "$remove_fs" ] && [ -n "$quick_mode" ]; then
+if [ -n "$rm_fs" ] && [ -n "$quick_mode" ]; then
    echo 1>&2 "$SCRIPTNAME: Filesystem cannot be removed in quick mode"
    exit 1
 fi
@@ -210,8 +210,7 @@ for vhost in "${vhosts[@]}"; do
          echo 1>&2 "$SCRIPTNAME: could not shut down '$vhost'."
       else
          # Remove filesystem (.disk file)
-         [ -n "$remove_fs" ] && [ -n "${vhost_info[disk]}" ] &&
-            rm --verbose -- "${vhost_info[disk]}"
+         [ -n "$rm_fs" ] && [ -n "${vhost_info[disk]}" ] && rm --verbose -- "${vhost_info[disk]}"
       fi
    fi
 done
