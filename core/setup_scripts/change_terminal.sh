@@ -36,6 +36,8 @@ fi
 # irrespective of whether it already sets TERM_TYPE or not. This will be used
 # to declare the user's new chosen terminal emulator. By default, this is in
 # $NETKIT_HOME.
+# TODO: netkit_conf gets set to the most global netkit.conf. We want to set the
+# most local one.
 netkit_conf="$NETKIT_HOME/netkit.conf"
 
 if [ -f "$HOME/.netkit/netkit.conf" ]; then
