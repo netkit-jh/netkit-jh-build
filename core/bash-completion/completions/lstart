@@ -38,7 +38,7 @@
 #   None
 ###############################################################################
 _lstart() {
-   local lab_directory lab_vhosts
+   local lab_vhosts
 
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
    local current_word=${COMP_WORDS[COMP_CWORD]}
@@ -165,8 +165,7 @@ _lstart() {
             *)
                # Current word could be an option or machine name (non-option
                # argument), so we complete as a machine name.
-               lab_directory=$(_get_lab_directory "${COMP_WORDS[@]}")
-               _get_lab_vhosts lab_vhosts "$lab_directory"
+               _get_lab_vhosts lab_vhosts "$(_get_lab_dir "${COMP_WORDS[@]}")"
                mapfile -t COMPREPLY < <(compgen -W "${lab_vhosts[*]}" -- "$current_word")
                ;;
          esac

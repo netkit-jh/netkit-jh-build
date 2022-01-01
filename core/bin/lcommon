@@ -69,7 +69,7 @@ bold_print() {
 #   None
 ###############################################################################
 get_lab_vhosts() {
-   local lab_directory=$1
+   local lab_dir=$1
 
    local vhost
    local lab_vhosts_ref cmdline_vhosts
@@ -83,16 +83,16 @@ get_lab_vhosts() {
    # This means if hostname_regex allows, machine names cannot have commas in
    # them.
    IFS="," read -ra lab_vhosts_ref <<< "$(
-      get_lab_variable "LAB_MACHINES" "$lab_directory" 2> /dev/null
+      get_lab_variable "LAB_MACHINES" "$lab_dir" 2> /dev/null
    )"
 
    if [ "${#lab_vhosts_ref[@]}" -eq 0 ]; then
       # Build list of virtual machines that are part of the lab from the
       # directory listing if LAB_MACHINES is not set.
-      for dir in "$lab_directory/"*/; do
-         # If there are no subdirectories, "$lab_directory/"*/ will expand to a
-         # path to a directory named *; the for loop will still run over that
-         # one string. shopt -s nullglob will avoid this issue but has global
+      for dir in "$lab_dir/"*/; do
+         # If there are no subdirectories, "$lab_dir/"*/ will expand to a path
+         # to a directory named *; the for loop will still run over that one
+         # string. shopt -s nullglob will avoid this issue but has global
          # implications. Avoid having to set nullglob by simply checking if the
          # directory exists.
          [ ! -d "$dir" ] && continue
@@ -118,7 +118,7 @@ get_lab_vhosts() {
          if array_contains "$vhost" "${lab_vhosts_ref[@]}"; then
             lab_vhosts+=( "$vhost" )
          else
-            echo 1>&2 "Warning: '$vhost' is not part of the lab in '$lab_directory'"
+            echo 1>&2 "Warning: '$vhost' is not part of the lab in '$lab_dir'"
          fi
       done
    else
@@ -230,7 +230,7 @@ get_lab_variable() {
 # Print out information about the labs in the given directories. Unset values
 # will be outputted as "<unknown>".
 # Usage:
-#   lab_welcome [DIRECTORY]...
+#   lab_welcome [DIR]...
 # Globals:
 #   r- color_blue
 #   r- color_bold
@@ -244,14 +244,14 @@ get_lab_variable() {
 #   None
 ###############################################################################
 lab_welcome() {
-   local lab_directories=( "$@" )
+   local lab_dirs=( "$@" )
 
-   local indent lab_directories_str
+   local indent lab_dirs_str
    local dir lab
 
    declare -A lab_versions lab_authors lab_emails lab_webs lab_descriptions
 
-   for dir in "${lab_directories[@]}"; do
+   for dir in "${lab_dirs[@]}"; do
          # Check that the lab directory exists
       if [ ! -d "$dir" ]; then
          echo 1>&2 "$SCRIPTNAME: $dir: No such directory"
@@ -260,7 +260,7 @@ lab_welcome() {
 
       lab=$(basename -- "$dir")
 
-      lab_directories_str+=$indent$dir$'\n'
+      lab_dirs_str+=$indent$dir$'\n'
       indent="                    "
 
       # We use associative arrays for printing the values with their respective
@@ -278,10 +278,10 @@ lab_welcome() {
       lab_descriptions[$lab]=$(get_lab_variable "LAB_DESCRIPTION" "$dir")
    done
 
-   lab_directories_str=${lab_directories_str%$'\n'}
+   lab_dirs_str=${lab_dirs_str%$'\n'}
 
    # Convert the multi-lab arrays to flat, comma-separated lists and print
-   bold_print "Lab directory(ies): $color_blue$lab_directories_str"
+   bold_print "Lab directory(ies): $color_blue$lab_dirs_str"
    bold_print "Version(s):         $color_blue$(generate_info_str lab_versions)"
    bold_print "Author(s):          $color_blue$(generate_info_str lab_authors)"
    bold_print "Email(s):           $color_blue$(generate_info_str lab_emails)"
@@ -308,23 +308,23 @@ lab_welcome() {
 ###############################################################################
 lab_clean() {
    local verbose=$1
-   local lab_directory=$2
+   local lab_dir=$2
 
    local vhost
 
-   get_lab_vhosts "$lab_directory"
+   get_lab_vhosts "$lab_dir"
 
-   bold_print "Cleaning up lab inside '$lab_directory'..."
+   bold_print "Cleaning up lab inside '$lab_dir'..."
 
    for vhost in "${lab_vhosts[@]}"; do
       # Remove vhost's UML directory
       rm ${verbose:+"--verbose"} --force --recursive -- "${MCONSOLE_DIR:?}/$vhost"
 
       # Remove files from the lab directory
-      rm ${verbose:+"--verbose"} --force -- "$lab_directory/$vhost."{"ready","disk","log","testdone"}
+      rm ${verbose:+"--verbose"} --force -- "$lab_dir/$vhost."{"ready","disk","log","testdone"}
    done
 
-   rm ${verbose:+"--verbose"} --force -- "$lab_directory/readyfor.test"
+   rm ${verbose:+"--verbose"} --force -- "$lab_dir/readyfor.test"
 }
 
 
@@ -348,13 +348,13 @@ lab_clean() {
 lab_crash() {
    local verbose=$1
    local quick_mode=$2
-   local lab_directory=$3
+   local lab_dir=$3
    local keep_fs=$4
    local just_kill=$5
 
    local vcrash_args vhost
 
-   get_lab_vhosts "$lab_directory"
+   get_lab_vhosts "$lab_dir"
 
    # shellcheck disable=2206
    vcrash_args+=(
@@ -367,11 +367,11 @@ lab_crash() {
    for vhost in "${lab_vhosts[@]}"; do
       bold_print "Crashing '$vhost'..."
       "$NETKIT_HOME/bin/vcrash" "${vcrash_args[@]}" -- "$vhost" &&
-         rm ${verbose:+"--verbose"} --force -- "$lab_directory/$vhost.ready"
+         rm ${verbose:+"--verbose"} --force -- "$lab_dir/$vhost.ready"
    done
    
    bold_print "Removing readyfor.test..."
-   rm --force -- "$lab_directory/readyfor.test"
+   rm --force -- "$lab_dir/readyfor.test"
 }
 
 

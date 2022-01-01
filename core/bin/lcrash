@@ -74,8 +74,8 @@ but at the same time may cause filesystem inconsistencies inside virtual
 machines. Depending on the command line being used, it is possible to crash
 only a subset of the virtual machines that make up the lab.
 
-  -d DIRECTORY        crash the lab inside DIRECTORY. By default, the lab in
-                        the current directory is crashed
+  -d DIR              crash the lab inside DIR. By default, the lab in the
+                        current directory is crashed
   -F, --keep-fs       avoid deleting virtual machines filesystems. This is
                         useful when virtual machines are to be restarted while
                         preserving filesystem contents. By default, all the
@@ -145,7 +145,7 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -d)
-         lab_directory=$(readlink --canonicalize-missing -- "$2")
+         lab_dir=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       --help)
@@ -189,22 +189,22 @@ validate_hostnames "${lab_vhosts[@]}"
 
 
 # If no lab directory has been given, assume current directory
-lab_directory=${lab_directory:-$PWD}
+: "${lab_dir:=$PWD}"
 
 # Check that the lab directory exists
-if [ ! -d "$lab_directory" ]; then
-   echo 1>&2 "$SCRIPTNAME: $lab_directory: No such directory"
+if [ ! -d "$lab_dir" ]; then
+   echo 1>&2 "$SCRIPTNAME: $lab_dir: No such directory"
    exit 1
 fi
 
 
 # Print lab information
 bold_print "========================== Crashing lab ========================="
-lab_welcome "$lab_directory"
+lab_welcome "$lab_dir"
 bold_print "================================================================="
 
 # Crash virtual machines
-lab_crash "$verbose" "$quick_mode" "$lab_directory" "$keep_fs" "$just_kill"
+lab_crash "$verbose" "$quick_mode" "$lab_dir" "$keep_fs" "$just_kill"
 bold_print "Lab has been crashed."
 bold_print "================================================================="
 

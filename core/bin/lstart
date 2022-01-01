@@ -74,7 +74,7 @@ usage() {
    cat << END_OF_HELP
 It is possible to start up the whole lab or just some of the virtual machines
 that compose it.
-  -d DIRECTORY        $action the lab located inside DIRECTORY. By default, the
+  -d DIR              $action the lab located inside DIR. By default, the
                         process takes place in the current directory
   -F, --force-lab     by default, Netkit refuses to start a lab in a directory
                         that has neither a lab.conf nor a lab.dep file. Enable
@@ -236,12 +236,12 @@ lab_start() {
    local test_delay=$2
    local verbose=$3
    local makefile=$4
-   local lab_directory=$5
+   local lab_dir=$5
    local passthrough_args=( "${@:6}" )
 
    local vhost
 
-   get_lab_vhosts "$lab_directory"
+   get_lab_vhosts "$lab_dir"
 
    if [ "${#lab_vhosts[@]}" -eq 0 ]; then
       echo 1>&2 "Warning: there are no virtual machines to be started."
@@ -251,12 +251,12 @@ lab_start() {
    [ -n "$test_delay" ] && passthrough_args+=( "--test=$test_delay" )
 
    for vhost in "${lab_vhosts[@]}"; do
-      single_lab_vhost_start "$fast_mode" "$verbose" "$lab_directory" "$vhost" "${passthrough_args[@]}"
+      single_lab_vhost_start "$fast_mode" "$verbose" "$lab_dir" "$vhost" "${passthrough_args[@]}"
    done
    
    # The readyfor.test file should not be created if lstart has been invoked
    # with the --makefile option (launch a single machine and exit).
-   [ -n "$test_delay" ] && [ -z "$makefile" ] && : > "$lab_directory/readyfor.test"
+   [ -n "$test_delay" ] && [ -z "$makefile" ] && : > "$lab_dir/readyfor.test"
 }
 
 
@@ -280,14 +280,14 @@ lab_start() {
 lab_start_parallel() {
    local test_delay=$1
    local verbose=$2
-   local lab_directory=$3
+   local lab_dir=$3
    local passthrough_args=( "${@:4}" )
 
    local lstart_args arg
    local lstart_cmd escaped_lstart_cmd
    local tab makefile_contents
 
-   get_lab_vhosts "$lab_directory"
+   get_lab_vhosts "$lab_dir"
    
    if [ "${#lab_vhosts[@]}" -eq 0 ]; then
       echo 1>&2 "Warning: there are no virtual machines to be started."
@@ -314,7 +314,7 @@ lab_start_parallel() {
    [ "$MAX_SIMULTANEOUS_VMS" -eq 0 ] && unset MAX_SIMULTANEOUS_VMS
 
 
-   lstart_cmd=( "$program_name" "-d" "$lab_directory" "--makefile" "${lstart_args[@]}" )
+   lstart_cmd=( "$program_name" "-d" "$lab_dir" "--makefile" "${lstart_args[@]}" )
 
    # We expand this array with the Q operator when writing to the Makefile.
    # This ensures escaping sufficient for reuse in a shell command.
@@ -350,13 +350,13 @@ ${tab}[ '\$*' != "lab.dep" ] && $escaped_lstart_cmd '\$*'
 dummy-prerequisite-to-force-remaking:
 ${tab}# Dummy line. Unuseful, yet necessary
 
-$(cat "$lab_directory/lab.dep" 2> /dev/null)
+$(cat "$lab_dir/lab.dep" 2> /dev/null)
 EOF
 
    # Read the Makefile from stdin without implicit rules, and hide the output. It
    # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
    make --ignore-errors --no-builtin-rules --silent \
-      --directory "$lab_directory" \
+      --directory "$lab_dir" \
       --file - \
       --jobs ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} \
       -- \
@@ -365,7 +365,7 @@ EOF
 
    
    # Signal that every machine is ready for testing once booted.
-   [ -n "$test_delay" ] && : > "$lab_directory/readyfor.test"
+   [ -n "$test_delay" ] && : > "$lab_dir/readyfor.test"
 }
 
 
@@ -389,7 +389,7 @@ EOF
 single_lab_vhost_start() {
    local fast_mode=$1
    local verbose=$2
-   local lab_directory=$3
+   local lab_dir=$3
    local vhost=$4
    local passthrough_args=( "${@:5}" )
 
@@ -397,13 +397,13 @@ single_lab_vhost_start() {
 
    # Specify host lab directory, and place filesystem inside it
    local vstart_args=(
-      "--hostlab" "$lab_directory"
-      "--filesystem" "$lab_directory/$vhost.disk"
+      "--hostlab" "$lab_dir"
+      "--filesystem" "$lab_dir/$vhost.disk"
       ${verbose:+"--verbose"}
    )
 
    # Generate vstart argument list
-   if [ -e "$lab_directory/lab.conf" ]; then
+   if [ -e "$lab_dir/lab.conf" ]; then
       while IFS= read -r configuration; do
          # The [][] is ][ inside a bracket expression to match an opening or
          # closing square bracket.
@@ -428,11 +428,11 @@ single_lab_vhost_start() {
          # appending the argument must be made (an '=' is required for long
          # options, no delimiter for short ones).
          [ -n "$value" ] && vstart_args+=( "$value" )
-      done < <(grep -- "^$vhost\[.*\]=" "$lab_directory/lab.conf")
+      done < <(grep -- "^$vhost\[.*\]=" "$lab_dir/lab.conf")
    fi
    
    # Remove .ready file, if existing
-   rm --force -- "$lab_directory/$vhost.ready"
+   rm --force -- "$lab_dir/$vhost.ready"
 
    if ! "$NETKIT_HOME/bin/vstart" "${vstart_args[@]}" "${passthrough_args[@]}" -- "$vhost"; then
       echo 2>&1 "Error while starting virtual machine '$vhost'"
@@ -441,11 +441,11 @@ single_lab_vhost_start() {
 
    # Wait for virtual host startup script to create .ready file
    if [ -z "$fast_mode" ]; then
-      while [ ! -e "$lab_directory/$vhost.ready" ]; do
+      while [ ! -e "$lab_dir/$vhost.ready" ]; do
          sleep 1
       done
 
-      rm --force -- "$lab_directory/$vhost.ready"
+      rm --force -- "$lab_dir/$vhost.ready"
    fi
    
    # Wait for a specified amount of time before returning
@@ -492,7 +492,7 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -d)
-         lab_directory=$(readlink --canonicalize-missing -- "$2")
+         lab_dir=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       --delay)
@@ -589,17 +589,17 @@ validate_hostnames "${lab_vhosts[@]}"
 
 
 # If no lab directory has been given, assume current directory
-lab_directory=${lab_directory:-$PWD}
+: "${lab_dir:=$PWD}"
 
 # Check that the lab directory exists
-if [ ! -d "$lab_directory" ]; then
-   echo 1>&2 "$SCRIPTNAME: $lab_directory: No such directory"
+if [ ! -d "$lab_dir" ]; then
+   echo 1>&2 "$SCRIPTNAME: $lab_dir: No such directory"
    exit 1
 fi
 
 
 # Check whether parallel startup and -f are being used together
-if [ -f "$lab_directory/lab.dep" ] && [ -n "$fast_mode" ] && [ -z "$sequential_mode" ]; then
+if [ -f "$lab_dir/lab.dep" ] && [ -n "$fast_mode" ] && [ -z "$sequential_mode" ]; then
    echo 1>&2 "$SCRIPTNAME: Fast mode is ignored when using parallel startup"
 fi
 
@@ -622,12 +622,12 @@ if [ -n "$makefile" ]; then
    # Make sure to wait for .ready files to appear. Otherwise, no dependencies
    # would be satisfied!
    unset fast_mode
-   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
+   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_dir" "${passthrough_opts[@]}"
    exit 0
 fi
 
 
-if [ ! -f "$lab_directory/lab.conf" ] && [ ! -f "$lab_directory/lab.dep" ] && [ -z "$force_lab" ]; then
+if [ ! -f "$lab_dir/lab.conf" ] && [ ! -f "$lab_dir/lab.dep" ] && [ -z "$force_lab" ]; then
    echo 1>&2 "$SCRIPTNAME: This does not appear to be a lab directory. Use option '-F' to ignore this error"
    exit 1
 fi
@@ -640,7 +640,7 @@ else
    bold_print "========================== Starting lab ========================="
 fi
 
-lab_welcome "$lab_directory"
+lab_welcome "$lab_dir"
 echo
 bold_print "Having issues starting the lab? Run 'lclean' before running 'lstart'."
 
@@ -653,23 +653,23 @@ bold_print "================================================================="
 
 
 # Clean up the lab directory before starting
-[ -n "$test_delay" ] && lab_clean "$verbose" "$lab_directory" > /dev/null
+[ -n "$test_delay" ] && lab_clean "$verbose" "$lab_dir" > /dev/null
 
 
 # Check whether a lab.dep file exists. If so, enable parallel startup of
 # virtual machines.
-if [ -z "$sequential_mode" ] && [ -f "$lab_directory/lab.dep" ] || [ -n "$parallel_mode" ]; then
+if [ -z "$sequential_mode" ] && [ -f "$lab_dir/lab.dep" ] || [ -n "$parallel_mode" ]; then
    # Use parallel startup if not forced to be sequential and either lab.dep or
    # parallel mode is enabled.
    bold_print "You chose to use parallel startup."
-   lab_start_parallel "$test_delay" "$verbose" "$lab_directory" "${passthrough_opts[@]}"
+   lab_start_parallel "$test_delay" "$verbose" "$lab_dir" "${passthrough_opts[@]}"
 else
    # Use sequential startup
 
    # If lab_vhosts is not empty, then lab_start takes care of starting only the
    # machines listed in lab_vhosts; those appearing in lab_vhosts but that are
    # not part in the lab will simply be skipped.
-   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_directory" "${passthrough_opts[@]}"
+   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_dir" "${passthrough_opts[@]}"
 fi
 
 
@@ -684,7 +684,7 @@ if [ -n "$test_delay" ]; then
 
    tests_completed=0
    while [ "$tests_completed" -lt "$vhost_count" ]; do
-      testdone_files=( "$lab_directory/"*.testdone )
+      testdone_files=( "$lab_dir/"*.testdone )
 
       # Test avoids the need for shopt -s nullglob
       [ -f "${testdone_files[0]}" ] && tests_completed=${#testdone_files[@]}
@@ -693,8 +693,8 @@ if [ -n "$test_delay" ]; then
 
    # Test finished, now crash the lab
    bold_print "Stopping lab..."
-   lab_crash "$verbose" "" "$lab_directory" "" "" > /dev/null
-   lab_clean "$verbose" "$lab_directory" > /dev/null
+   lab_crash "$verbose" "" "$lab_dir" "" "" > /dev/null
+   lab_clean "$verbose" "$lab_dir" > /dev/null
    bold_print "Test completed."
 fi
 

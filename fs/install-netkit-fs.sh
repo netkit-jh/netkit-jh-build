@@ -42,13 +42,13 @@ export LC_ALL=C
 #       - A directory with the same structure as the to-be-produced filesystem.
 #         Any file present will be copied into the filesystem at the same
 #         location (and overwrite any existing file).
-work_directory=$1
+work_dir=$1
 
 # Build directory that contains the netkit-filesystem-version file
-build_directory=$2
+build_dir=$2
 
 # Mount point of the filesystem
-mount_directory=$3
+mount_dir=$3
 
 # Kernel module directory to copy into the filesystem at /lib/modules
 kernel_modules=$4
@@ -56,27 +56,27 @@ kernel_modules=$4
 
 ### INSTALL APT PACKAGES ######################################################
 # Load debconf-package-selections
-chroot -- "$mount_directory" debconf-set-selections < "$work_directory/debconf-package-selections"
+chroot -- "$mount_dir" debconf-set-selections < "$work_dir/debconf-package-selections"
 
 # Install add-apt-repository command
-chroot -- "$mount_directory" apt-get update
-chroot -- "$mount_directory" apt-get --assume-yes install software-properties-common
+chroot -- "$mount_dir" apt-get update
+chroot -- "$mount_dir" apt-get --assume-yes install software-properties-common
 
 # Add additional repositories in this section
-# chroot -- "$mount_directory" add-apt-repository ...
-# chroot -- "$mount_directory" apt-get update
+# chroot -- "$mount_dir" add-apt-repository ...
+# chroot -- "$mount_dir" apt-get update
 
 # Install packages listed in packages-list
-mapfile -t packages_list < <(grep --invert-match -- "^#" "$work_directory/packages-list")
-chroot -- "$mount_directory" apt-get --assume-yes -- install "${packages_list[@]}"
+mapfile -t packages_list < <(grep --invert-match -- "^#" "$work_dir/packages-list")
+chroot -- "$mount_dir" apt-get --assume-yes -- install "${packages_list[@]}"
 
 # Install packages which require specific APT options
 # We want wireguard without installing wireguard-dkms because we have it built
 # into the kernel tree.
-chroot -- "$mount_directory" apt-get --no-install-recommends install wireguard-tools
+chroot -- "$mount_dir" apt-get --no-install-recommends install wireguard-tools
 
 # Install legacy iptables over nftables
-chroot -- "$mount_directory" update-alternatives --set iptables /usr/sbin/iptables-legacy
+chroot -- "$mount_dir" update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 
 ### COPY OVER PRECONFIGURED FILES FOR NETKIT ##################################
@@ -88,25 +88,25 @@ cp \
    --no-preserve=mode,ownership \
    --no-dereference \
    --preserve=links \
-   --target-directory "$mount_directory/" \
+   --target-directory "$mount_dir" \
    -- \
-   "$work_directory/filesystem-tweaks/"*
+   "$work_dir/filesystem-tweaks/"*
 
 # Some files in filesystem-tweaks need to be executable, so we set their mode
 # correctly here.
 fs_tweaks_executables=(
-   "$mount_directory/usr/local/bin/tcpdump"
-   "$mount_directory/etc/netkit/"*
+   "$mount_dir/usr/local/bin/tcpdump"
+   "$mount_dir/etc/netkit/"*
 )
 chmod -- +x "${fs_tweaks_executables[@]}"
 
 # Copy the version file in
-cp -- "$build_directory/netkit-filesystem-version" "$mount_directory/etc/netkit-filesystem-version"
+cp -- "$build_dir/netkit-filesystem-version" "$mount_dir/etc/netkit-filesystem-version"
 
 
 ### MANAGE SERVICES ###########################################################
 # Enable Netkit services
-chroot -- "$mount_directory" systemctl enable \
+chroot -- "$mount_dir" systemctl enable \
    netkit-startup-phase1.service \
    netkit-startup-phase2.service \
    netkit-shutdown.service
@@ -115,43 +115,43 @@ chroot -- "$mount_directory" systemctl enable \
 ln \
    --symbolic \
    -- \
-   "$mount_directory/lib/systemd/system/getty@.service" \
-   "$mount_directory/etc/systemd/system/getty.target.wants/getty@tty0.service"
+   "$mount_dir/lib/systemd/system/getty@.service" \
+   "$mount_dir/etc/systemd/system/getty.target.wants/getty@tty0.service"
 
-chroot -- "$mount_directory" systemctl mask getty-static "getty@tty"{2..6}".service"
+chroot -- "$mount_dir" systemctl mask getty-static "getty@tty"{2..6}".service"
 
 # Disable autostart for some services
-mapfile -t disabled_services < <(grep --invert-match -- "^#" "$work_directory/disabled-services")
-chroot -- "$mount_directory" systemctl disable "${disabled_services[@]}"
+mapfile -t disabled_services < <(grep --invert-match -- "^#" "$work_dir/disabled-services")
+chroot -- "$mount_dir" systemctl disable "${disabled_services[@]}"
 
 
 ### INSTALL KERNEL MODULES ####################################################
 # Create kernel module directory
-mkdir --parents -- "$mount_directory/lib/modules"
+mkdir --parents -- "$mount_dir/lib/modules"
 
 # Copy in kernel modules (kernel modules can instead by mounted at runtime by
 # enabling the netkit-mount service).
-cp --recursive -- "$kernel_modules/"* "$mount_directory/lib/modules/"
+cp --recursive -- "$kernel_modules/"* "$mount_dir/lib/modules/"
 
 # Required for mounting kernel modules at runtime
-# chroot -- "$mount_directory" systemctl enable netkit-mount.service
-# chroot -- "$mount_directory" systemctl enable netkit-unmount.service
+# chroot -- "$mount_dir" systemctl enable netkit-mount.service
+# chroot -- "$mount_dir" systemctl enable netkit-unmount.service
 
 
 ### USER MANAGEMENT ###########################################################
 # Set root to use no password
-chroot -- "$mount_directory" passwd --delete root
+chroot -- "$mount_dir" passwd --delete root
 
 # Update SSH keys in /etc/ssh to remove builder's hostname
-sed --in-place -- "s/$(whoami)@$(hostname)/root@netkit/g" "$mount_directory/etc/ssh/"*.pub
+sed --in-place -- "s/$(whoami)@$(hostname)/root@netkit/g" "$mount_dir/etc/ssh/"*.pub
 
 
 ### CLEANUP ###################################################################
 # Save debconf-package-selections
-chroot -- "$mount_directory" debconf-get-selections > "$work_directory/build/debconf-package-selections.last"
+chroot -- "$mount_dir" debconf-get-selections > "$work_dir/build/debconf-package-selections.last"
 
 # Empty package cache
-chroot -- "$mount_directory" apt-get clean
+chroot -- "$mount_dir" apt-get clean
 
 # Delete bootstrap log
-rm --force -- "$mount_directory/var/log/bootstrap.log"
+rm --force -- "$mount_dir/var/log/bootstrap.log"

@@ -76,13 +76,12 @@ Multiple lab directories can be specified by using the -d option. A -d is
 needed per directory. The -a option will auto-detect other labs within the
 parent directory.
 
-  -d DIRECTORY        assume the lab is located inside DIRECTORY. By default,
-                        the lab is assumed to be located in the current
-                        directory
-  -m, --map=FILE      Create a graphical link-level topology map of the lab and
+  -d DIR              assume the lab is located inside DIR. By default, the lab
+                        is assumed to be located in the current directory
+  -m, --map=FILE      create a graphical link-level topology map of the lab and
                         save it into FILE in PNG format. This requires the
                         Graphviz library to be installed
-  -a, --auto[=GLOB]   Finds sibling folders which all share the same prefix as
+  -a, --auto[=GLOB]   finds sibling folders which all share the same prefix as
                         the current directory bar the final character. E.g.,
                         running in lab3a will find all directories starting
                         with lab3* (lab3a, lab3b, lab3c, etc). Alternatively, a
@@ -263,13 +262,13 @@ while true; do
 
          # The if-statement removes the need for nullglob to be set
          if [ -d "${dirs[0]}" ]; then
-            lab_directories+=( "${dirs[@]}" )
+            lab_dirs+=( "${dirs[@]}" )
          else
             echo 1>&2 "$SCRIPTNAME: List of lab directories could not be generated"
          fi
          ;;
       -d)
-         lab_directories+=( "$(readlink --canonicalize-missing -- "$2")" )
+         lab_dirs+=( "$(readlink --canonicalize-missing -- "$2")" )
          shift
          ;;
       --help)
@@ -303,20 +302,20 @@ fi
 
 
 # If no lab directory has been given, assume current directory
-[ "${#lab_directories[@]}" -eq 0 ] && lab_directories=( "$PWD" )
+[ "${#lab_dirs[@]}" -eq 0 ] && lab_dirs=( "$PWD" )
 
 
-for lab_directory in "${lab_directories[@]}"; do
+for lab_dir in "${lab_dirs[@]}"; do
    # Check that the lab directory exists
-   if [ ! -d "$lab_directory" ]; then
-      echo 1>&2 "$SCRIPTNAME: $lab_directory: No such directory"
+   if [ ! -d "$lab_dir" ]; then
+      echo 1>&2 "$SCRIPTNAME: $lab_dir: No such directory"
       exit 1
    fi
 
    # We must unset lab_vhosts when calling get_lab_vhosts in a loop because it
    # operates differently if already set.
    unset lab_vhosts
-   get_lab_vhosts "$lab_directory"
+   get_lab_vhosts "$lab_dir"
    cum_lab_vhosts+=( "${lab_vhosts[@]}" )
 done
 
@@ -329,15 +328,15 @@ cum_lab_vhosts_str=${cum_lab_vhosts_str%", "}
 
 # Print lab information
 bold_print "======================== Lab information ========================"
-lab_welcome "${lab_directories[@]}"
+lab_welcome "${lab_dirs[@]}"
 bold_print "The lab is made up of ${#cum_lab_vhosts[@]} virtual machines ($cum_lab_vhosts_str)."
 
-for dir in "${lab_directories[@]}"; do
+for dir in "${lab_dirs[@]}"; do
    [ -f "$dir/lab.dep" ] && bold_print "The lab part $dir supports parallel startup."
 done
 
 if [ -n "$map_file" ]; then
-   for dir in "${lab_directories[@]}"; do
+   for dir in "${lab_dirs[@]}"; do
       lab_conf="$dir/lab.conf"
       
       if [ ! -f "$lab_conf" ]; then

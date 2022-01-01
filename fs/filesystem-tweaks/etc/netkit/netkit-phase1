@@ -57,7 +57,7 @@ usage_line() {
 ###############################################################################
 # Mount a directory on the host filesystem to a directory on the guest.
 # Usage:
-#   mount_host_dir SOURCE DIRECTORY [MESSAGE]
+#   mount_host_dir SRC DIR [MESSAGE]
 # Globals:
 #   None
 # Arguments:
@@ -83,7 +83,7 @@ mount_host_dir() {
 ###############################################################################
 # Unmount a host directory that has been mounted into the guest
 # Usage:
-#   umount_host_dir DIRECTORY [MESSAGE]
+#   umount_host_dir DIR [MESSAGE]
 # Globals:
 #   None
 # Arguments:

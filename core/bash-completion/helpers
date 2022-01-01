@@ -220,7 +220,7 @@ _get_netkit_user() {
 # found, output the current working directory. Can be used to generate machine
 # name completions.
 # Usage:
-#   _get_lab_directory [ARGUMENT]...
+#   _get_lab_dir [ARGUMENT]...
 # Globals:
 #   r- COMP_WORDS
 #   r- PWD
@@ -231,7 +231,7 @@ _get_netkit_user() {
 # Example:
 #   None
 ###############################################################################
-_get_lab_directory() {
+_get_lab_dir() {
    local word d_flag
 
    # Iterate over the command-line arguments
@@ -298,7 +298,7 @@ _array_contains() {
 ###############################################################################
 _get_lab_vhosts() {
    local -n _get_lab_vhosts_lab_vhosts=$1
-   local lab_directory=$2
+   local lab_dir=$2
 
    local lab_machines
    local vhost
@@ -308,16 +308,16 @@ _get_lab_vhosts() {
 
    # Get lab.conf's LAB_MACHINES variable. This will override the directory
    # listing for the machine list.
-   lab_machines=$(sed --quiet -- "0,/^LAB_MACHINES=/s///p" "$lab_directory/lab.conf" 2> /dev/null)
+   lab_machines=$(sed --quiet -- "0,/^LAB_MACHINES=/s///p" "$lab_dir/lab.conf" 2> /dev/null)
    IFS="," read -ra _get_lab_vhosts_lab_vhosts <<< "$lab_machines"
 
    if [ "${#_get_lab_vhosts_lab_vhosts[@]}" -eq 0 ]; then
       # Build list of virtual machines that are part of the lab from the
       # directory listing if LAB_MACHINES is not set.
-      for dir in "$lab_directory/"*/; do
-         # If there are no subdirectories, "$lab_directory/"*/ will expand to a
-         # path to a directory named *; the for loop will still run over that
-         # one string. shopt -s nullglob will avoid this issue but has global
+      for dir in "$lab_dir/"*/; do
+         # If there are no subdirectories, "$lab_dir/"*/ will expand to a path
+         # to a directory named *; the for loop will still run over that one
+         # string. shopt -s nullglob will avoid this issue but has global
          # implications. Avoid having to set nullglob by simply checking if the
          # directory exists.
          [ ! -d "$dir" ] && continue

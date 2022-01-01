@@ -289,7 +289,7 @@ while true; do
          clean_all=1
          ;;
       --clean-directories)
-         clean_directories=1
+         clean_dirs=1
          ;;
       -f|--force)
          force=1
@@ -361,7 +361,7 @@ fi
 
 
 if [ -n "$clean_all" ]; then
-   clean_directories=1
+   clean_dirs=1
    kill_machines=1
    rm_tunnels=1
    unset target_user
@@ -409,7 +409,7 @@ fi
 
 
 # Remove Netkit directories
-if [ -n "$clean_directories" ]; then
+if [ -n "$clean_dirs" ]; then
    echo "Removing Netkit directories"
 
    rm ${verbose:+"--verbose"} --force --recursive -- \
