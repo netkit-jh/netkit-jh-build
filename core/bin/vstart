@@ -231,7 +231,7 @@ validate_ubd_argument() {
    local file
 
    for file in "${files[@]}"; do
-      if string_contains "$file" "," ":"; then
+      if str_contains "$file" "," ":"; then
          echo 1>&2 "$SCRIPTNAME: $file: Invalid character in filesystem path"
          usage 1
       fi
@@ -826,7 +826,7 @@ trap "rm --force -- '$out_file'" EXIT
          source_mount=${mount_specification%%,*}
          destination_mount=${mount_specification#*,}
 
-         if string_contains "$source_mount$destination_mount" ","; then
+         if str_contains "$source_mount$destination_mount" ","; then
             echo 1>&2 "$SCRIPTNAME: $mount_specification: Invalid character in mount specification"
             usage 1
          fi

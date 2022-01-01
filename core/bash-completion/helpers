@@ -95,7 +95,7 @@ _expand_ethn() {
 # nospace enabled. Specify a parameter delimiter where a space should not be
 # appended to the completion.
 # Usage:
-#   _option_array_to_string DELIMETER [OPTION]...
+#   _option_array_to_str DELIMETER [OPTION]...
 # Globals:
 #   None
 # Arguments:
@@ -105,9 +105,9 @@ _expand_ethn() {
 #   None
 # Example:
 #   mapfile -t options < <(_get_command_options vstart)
-#   compgen -W "$(_option_array_to_string "=" "${options[@]}")" -- "$word"
+#   compgen -W "$(_option_array_to_str "=" "${options[@]}")" -- "$word"
 ###############################################################################
-_option_array_to_string() {
+_option_array_to_str() {
    local delimeter=$1
    local options=( "${@:2}" )
 
@@ -149,7 +149,7 @@ _options_compgen() {
    mapfile -t options < <(_get_command_options "$command")
    [ -n "$expand_eth_option" ] && mapfile -t options < <(_expand_ethn "${options[@]}")
 
-   options_str=$(_option_array_to_string "=" "${options[@]}")
+   options_str=$(_option_array_to_str "=" "${options[@]}")
 
    compopt -o nospace
    mapfile -t COMPREPLY < <(compgen -W "$options_str" -- "$current_word")
@@ -434,7 +434,7 @@ _collision_domains_compgen() {
    : "${target_user:="$(_get_nk_user "${COMP_WORDS[@]}")"}"
 
    _get_active_collision_domains collision_domains "," "$target_user" 2> /dev/null
-   collision_domains_str=$(_option_array_to_string "," "${collision_domains[@]}")
+   collision_domains_str=$(_option_array_to_str "," "${collision_domains[@]}")
 
    compopt -o nospace
    mapfile -t COMPREPLY < <(compgen -W "$collision_domains_str" -- "$current_word")

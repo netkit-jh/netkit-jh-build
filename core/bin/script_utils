@@ -110,7 +110,7 @@ validate_collision_domain_names() {
 ###############################################################################
 # Check if a string contains sub-strings.
 # Usage:
-#   string_contains STRING [QUERY]...
+#   str_contains STR [QUERY]...
 # Globals:
 #   None
 # Arguments:
@@ -121,14 +121,14 @@ validate_collision_domain_names() {
 # Example:
 #   None
 ###############################################################################
-string_contains() {
-   local string=$1
+str_contains() {
+   local str=$1
    local queries=( "${@:2}" )
 
    local query
 
    for query in "${queries[@]}"; do
-      [[ "$string" == *"$query"* ]] && return 0
+      [[ "$str" == *"$query"* ]] && return 0
    done
 
    return 1
@@ -1109,7 +1109,7 @@ validate_variable() {
    local variable=$2
    local queries=( "${@:3}" )
 
-   if string_contains "$value" "${queries[@]}"; then
+   if str_contains "$value" "${queries[@]}"; then
       echo 1>&2 "netkit.conf: $variable: Invalid character in configuration parameter"
       exit 1
    fi
