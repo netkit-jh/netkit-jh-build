@@ -14,7 +14,7 @@ TOOLS_DIR=$(NETKIT_BUILD_DIR)/tools
 COPY_FILES=bash-completion bin setup_scripts man netkit.conf \
 	netkit.conf.default README.mdown LICENSE.txt
 
-.DEFAULT_GOAL := ${NETKIT_BUILD_DIR}
+.DEFAULT_GOAL := $(NETKIT_BUILD_DIR)
 
 .PHONY: clean clean-subdirs
 clean-subdirs:
@@ -27,10 +27,10 @@ clean: clean-subdirs
 
 .PHONY: mrproper
 mrproper: clean
-	rm -rf ../${CORE_ARCHIVE_FILE}
+	rm -rf ../$(CORE_ARCHIVE_FILE)
 
 .PHONY: archive
-archive: ../${CORE_ARCHIVE_FILE}
+archive: ../$(CORE_ARCHIVE_FILE)
 
 $(NETKIT_BUILD_DIR)/bin: 
 	mkdir -p $(NETKIT_BUILD_DIR)/bin
@@ -44,7 +44,7 @@ $(SUBDIR_BINS):
 		$(MAKE) -C $$dir; \
 	done
 
-${NETKIT_BUILD_DIR}: $(COPY_FILES) $(SUBDIR_BINS)
+$(NETKIT_BUILD_DIR): $(COPY_FILES) $(SUBDIR_BINS)
 	mkdir -p $(TOOLS_DIR)
   
 	# Copy relavant files into build directory
@@ -69,5 +69,5 @@ ${NETKIT_BUILD_DIR}: $(COPY_FILES) $(SUBDIR_BINS)
 	# Update version
 	echo "Netkit version $(NETKIT_BUILD_RELEASE)" > $(NETKIT_BUILD_DIR)/netkit-version
 
-../${CORE_ARCHIVE_FILE}: ${NETKIT_BUILD_DIR}
+../$(CORE_ARCHIVE_FILE): $(NETKIT_BUILD_DIR)
 	tar -C $(BUILD_DIR) --owner=0 --group=0 -cjf ../$(CORE_ARCHIVE_FILE) netkit-jh
