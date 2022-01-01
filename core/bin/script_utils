@@ -255,16 +255,16 @@ version_option() {
 #   None
 ###############################################################################
 show_version() {
-   local netkit_version
+   local nk_version
    local kernel kernel_version
    local fs_version_long fs_version
 
    # Netkit version information
    echo -n "Netkit version:            "
 
-   netkit_version=$(grep -- "Netkit version" "$NETKIT_HOME/netkit-version" 2> /dev/null)
-   netkit_version=${netkit_version##"Netkit version "}
-   printf "%s\n" "${netkit_version:-"<unknown>"}"
+   nk_version=$(grep -- "Netkit version" "$NETKIT_HOME/netkit-version" 2> /dev/null)
+   nk_version=${nk_version##"Netkit version "}
+   printf "%s\n" "${nk_version:-"<unknown>"}"
    
    # Netkit kernel version information
    echo -n "Netkit kernel version:     "
@@ -1144,7 +1144,7 @@ validate_netkit_conf_variables() {
 # Calculate the maximum length of a collision domain name before it ends up
 # generating a uml_switch socket filepath longer than UNIX_PATH_MAX.
 # Usage:
-#   validate_netkit_conf_variables
+#   get_max_collision_domain_name_len
 # Globals:
 #   r- HUB_SOCKET_DIR
 #   r- HUB_SOCKET_PREFIX

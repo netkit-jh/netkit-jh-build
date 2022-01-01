@@ -65,7 +65,7 @@ usage() {
 
    cat << END_OF_HELP
 $(usage_line)
-Install Netkit-JH $netkit_version.
+Install Netkit-JH $nk_version.
 
 By default, the pre-built core of Netkit and its filesystem and kernel is
 downloaded from the project's GitHub repository to the system's /tmp directory.
@@ -120,13 +120,13 @@ color_bold=$'\033[1m'
 
 
 # Variable is initialised by Makefile
-netkit_version="VERSION_NUMBER"
+nk_version="VERSION_NUMBER"
 
 install_dir="$HOME/netkit-jh"
 backup_dir="$install_dir-$(date '+%F_%H-%M-%S')"
 
 download_dir="/tmp"
-download_url="https://github.com/netkit-jh/netkit-jh-build/releases/download/$netkit_version/"
+download_url="https://github.com/netkit-jh/netkit-jh-build/releases/download/$nk_version/"
 
 
 # Get command line options
@@ -182,7 +182,7 @@ while true; do
          shift
          ;;
       --version)
-         echo "Netkit version: $netkit_version"
+         echo "Netkit version: $nk_version"
          exit 0
          ;;
       --)
@@ -221,16 +221,16 @@ if [ -n "$existing_kernel_files" ] && [ -n "$existing_fs_files" ] && [ -n "$exis
    cp --archive -- "$existing_fs_files/."     "$install_dir/"
    cp --archive -- "$existing_core_files/."   "$install_dir/"
 else
-   netkit_files=(
-      "release-$netkit_version.sha256"
-      "netkit-core-$netkit_version.tar.bz2"
-      "netkit-fs-$netkit_version.tar.bz2"
-      "netkit-kernel-$netkit_version.tar.bz2"
+   release_files=(
+      "release-$nk_version.sha256"
+      "netkit-core-$nk_version.tar.bz2"
+      "netkit-fs-$nk_version.tar.bz2"
+      "netkit-kernel-$nk_version.tar.bz2"
    )
 
    mkdir --parents -- "$download_dir"
 
-   for file in "${netkit_files[@]}"; do
+   for file in "${release_files[@]}"; do
       if [ -f "$download_dir/$file" ]; then
          echo "$download_dir/$file: file already exists; skipping"
          continue
@@ -247,7 +247,7 @@ else
    # variable.
    corrupt_files=$(
       cd -- "$download_dir" || exit 1
-      sha256sum --check --quiet "release-$netkit_version.sha256" 2> /dev/null |
+      sha256sum --check --quiet "release-$nk_version.sha256" 2> /dev/null |
          cut --delimeter ":" --fields 1
    )
 
@@ -256,7 +256,7 @@ else
       exit 1
    fi
 
-   for file in "${netkit_files[@]}"; do
+   for file in "${release_files[@]}"; do
       # Extract the downloaded archives. The '--strip-components' option
       # removes the root netkit-jh/ directory.
       tar \
