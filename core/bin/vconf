@@ -160,7 +160,7 @@ invoke_mconsole() {
    local interface_specification interface
    local hub_specification hub_name
    local socket
-   local action action_desc
+   local action action_desc interface_config
    local uml_mconsole_cmd
 
    local indent=""
@@ -191,9 +191,13 @@ invoke_mconsole() {
          fi
 
          action="config"
+         interface_config="$interface=daemon,,,$socket"
+         
          action_desc="add"
       else
          action="remove"
+         interface_config=$interface
+         
          action_desc="remove"
          success_msg="$indent$interface removed"
       fi
@@ -202,7 +206,7 @@ invoke_mconsole() {
          "$NETKIT_HOME/bin/uml_mconsole"
          "$mconsole"
          "$action"
-         "$interface"
+         "$interface_config"
       )
 
       if [ -n "$just_print" ]; then
