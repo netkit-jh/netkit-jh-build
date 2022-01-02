@@ -503,7 +503,7 @@ get_hub_socket() {
       "$HUB_SOCKET_EXTENSION"
    )
 
-   printf "%s" "${sock_path_components[*]}" $'\n'
+   printf "%s" "${sock_path_components[@]}" $'\n'
 }
 
 
