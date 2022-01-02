@@ -136,123 +136,16 @@ END_OF_HELP
 
 
 ###############################################################################
-# Append network interface specifications to the vconf_devices array
-# Usage:
-#   setup_interfaces [INTERFACE]...
-# Globals:
-#   -w hub_list
-#   r- HUB_SOCKET_DIR
-#   r- HUB_SOCKET_EXTENSION
-#   r- HUB_SOCKET_PREFIX
-#   -w vconf_devices
-#   r- SCRIPTNAME
-#   r- USER_ID
-# Arguments:
-#  ... - array of interface specifications (ethN=DOMAIN)
-# Returns:
-#   None. Will exit with usage 1 on invalid specification.
-# Example:
-#   None
-###############################################################################
-setup_interfaces() {
-   local interface_specifications=( "$@" )
-
-   local interface_specification interface hub_specification used_interfaces
-   local hub_name tap_addr guest_addr
-   local reg_socket tap_socket socket
-   local indent
-
-   unset hub_list
-   unset vconf_devices
-
-   for interface_specification in "${interface_specifications[@]}"; do
-      interface=${interface_specification%%=*}
-      hub_specification=${interface_specification#*=}
-
-      # Check if interface has already been configured
-      if array_contains "$interface" "${used_interfaces[@]}"; then
-         warn "$interface: Duplicate interface"
-         usage 1
-      fi
-
-      # Remember that this network interface has been configured
-      used_interfaces+=( "$interface" )
-
-      # Check if tap interface (regular hubs cannot be named with commas)
-      if [[ "$hub_specification" == *,* ]]; then
-         # Format: hub_name,tap_addr,guest_addr
-         IFS=, read -r hub_name tap_addr guest_addr <<< "$hub_specification"
-
-         if ! is_inet_addr "$tap_addr"; then
-            warn "$tap_addr: Invalid tap address"
-            usage 1
-         fi
-
-         if ! is_inet_addr "$guest_addr"; then
-            warn "$guest_addr: Invalid guest address"
-            usage 1
-         fi
-      else
-         # This is a normal interface
-         unset tap_addr guest_addr
-         hub_name=$hub_specification
-      fi
-
-      if [ -n "$hub_name" ]; then
-         # Check for invalid characters in hub_name
-         if ! validate_collision_domain_names "$hub_name"; then
-            warn "$hub_name: Invalid collision domain name"
-            usage 1
-         fi
-
-         reg_socket=$(get_hub_socket "" "$hub_name")
-         tap_socket=$(get_hub_socket "1" "$hub_name")
-
-         if [ -n "$tap_addr" ]; then
-            if [ -e "$reg_socket" ]; then
-               warn "$hub_name: Regular (not tap) hub socket under the same collision domain already exists"
-               usage 1
-            fi
-
-            socket=$tap_socket
-
-            hub_list+=( "$hub_name,$tap_addr" )
-         else
-            if [ -e "$tap_socket" ]; then
-               warn "$hub_name: Tap hub socket under the same collision domain already exists"
-               usage 1
-            fi
-
-            socket=$reg_socket
-
-            hub_list+=( "$hub_name" )
-         fi
-
-         vconf_devices+=( "$interface=daemon,,,$socket" )
-         echo "$indent$interface @ $hub_name ($socket)"
-      else
-         vconf_devices+=( "$interface" )
-         echo "$indent$interface removed"
-      fi
-
-      # Indent subsequent lines
-      indent="               "
-   done
-}
-
-
-###############################################################################
 # Attach/remove network interfaces from running machines with mconsole.
 # Usage:
-#   invoke_mconsole VERBOSE JUST_PRINT MCONSOLE [VCONF_DEVICES]...
+#   invoke_mconsole VERBOSE JUST_PRINT MCONSOLE [INTERFACE]...
 # Globals:
 #   r- NETKIT_HOME
 # Arguments:
 #   $1 - set to 1 for verbose, otherwise pass an empty string
 #   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
 #   $3 - uml_mconsole socket file
-#  ... - list of devices to configure. To remove an interface: 'ethN', to add
-#        an interface: 'ethN=daemon,,,path/to/socket'.
+#  ... - array of interface specifications (ethN=DOMAIN)
 # Returns:
 #   None
 # Example:
@@ -262,13 +155,20 @@ invoke_mconsole() {
    local verbose=$1
    local just_print=$2
    local mconsole=$3
-   local vconf_devices=( "${@:4}" )
+   local interface_specifications=( "${@:4}" )
 
-   local interface_specification interface hub_specification
+   local interface_specification interface
+   local hub_specification hub_name
+   local socket
    local action action_desc
    local uml_mconsole_cmd
 
-   for interface_specification in "${vconf_devices[@]}"; do
+   local indent=""
+
+   [ "${#interface_specifications[@]}" -eq 0 ] && return
+   echo -n "   Interfaces: "
+
+   for interface_specification in "${interface_specifications[@]}"; do
       # Format is either:
       #   To add an interface:
       #     ethN=daemon,,,path/to/socket
@@ -278,11 +178,24 @@ invoke_mconsole() {
       hub_specification=${interface_specification#*=}
 
       if [ -n "$hub_specification" ]; then
+         hub_name=${hub_specification%%,*}
+
+         # Check if tap interface (regular hubs cannot be named with commas)
+         if [[ "$hub_specification" == *,* ]]; then
+            socket=$(get_hub_socket "1" "$hub_name")
+            success_msg="$indent$interface @ $hub_name (tap; $socket)"
+         else
+            # This is a normal interface
+            socket=$(get_hub_socket "" "$hub_name")
+            success_msg="$indent$interface @ $hub_name ($socket)"
+         fi
+
          action="config"
          action_desc="add"
       else
          action="remove"
          action_desc="remove"
+         success_msg="$indent$interface removed"
       fi
 
       uml_mconsole_cmd=(
@@ -297,8 +210,13 @@ invoke_mconsole() {
       else
          [ -n "$verbose" ] && echo "Running ==> ${uml_mconsole_cmd[*]}"
 
-         "${uml_mconsole_cmd[@]}" > /dev/null 2>&1 ||
+         if "${uml_mconsole_cmd[@]}" > /dev/null 2>&1; then
+            echo "$success_msg"
+            # Indent subsequent lines
+            indent="               "
+         else
             echo 2>&1 "Failed to $action_desc interface '$interface'"
+         fi
       fi
    done
 }
@@ -338,7 +256,7 @@ while true; do
          hub_name=$2
          shift
 
-         # Collision domain names are validated later in setup_interfaces
+         # Collision domain names are validated later in create_hub_list
          network_interfaces+=( "$interface=$hub_name" )
          ;;
       --help)
@@ -396,17 +314,13 @@ if ! get_vhost_info_by_name "$target_user" "$vhost"; then
 fi
 
 
-# Setup network interfaces
+# Generate hub_list and start hubs
+create_hub_list "${network_interfaces[@]}"
+run_hubs "$verbose" "$just_print" "${hub_list[@]}"
+
+
+# Configure network interfaces
 echo "============= Configuring virtual machine '$vhost' (PID $(get_vhost_pid_by_name "$target_user" "$vhost")) ============="
 echo "   Virtual machine owner: $target_user"
 
-if [ ${#network_interfaces[@]} -gt 0 ]; then
-   echo -n "   Interfaces: "
-   setup_interfaces "${network_interfaces[@]}"
-fi
-
-# Start network hubs
-run_hubs "$verbose" "$just_print" "${hub_list[@]}"
-
-# Attach/remove network interfaces
-invoke_mconsole "$verbose" "$just_print" "${vhost_info[mconsole]}" "${vconf_devices[@]}"
+invoke_mconsole "$verbose" "$just_print" "${vhost_info[mconsole]}" "${network_interfaces[@]}"

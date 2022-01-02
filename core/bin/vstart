@@ -267,93 +267,43 @@ check_fs() {
 
 
 ###############################################################################
-# Append network interface specifications to the kernel invocation command.
+# Append network interface configurations to kernel_cmd and write details to 
+# standard output.
 # Usage:
-#   setup_interfaces [INTERFACE]...
+#   process_interface_configs VERBOSE JUST_PRINT MCONSOLE [INTERFACE]...
 # Globals:
-#   -w hub_list
-#   r- HUB_SOCKET_DIR
-#   r- HUB_SOCKET_EXTENSION
-#   r- HUB_SOCKET_PREFIX
-#   r- kernel_cmd
-#   r- SCRIPTNAME
-#   r- USER_ID
+#   -w kernel_cmd
+#   r- NETKIT_HOME
 # Arguments:
-#  ... - list of interfaces
+#  ... - array of interface specifications (ethN=DOMAIN)
 # Returns:
-#   None. Will exit with usage 1 on invalid specification.
+#   None
 # Example:
 #   None
 ###############################################################################
-setup_interfaces() {
+process_interface_configs() {
    local interface_specifications=( "$@" )
 
-   local interface_specification
+   local interface_specification interface
    local hub_specification hub_name tap_addr guest_addr
-   local reg_socket tap_socket socket
-   local interface used_interfaces
-   local enabled_default_route indent tap
+   local socket
 
-   unset hub_list
+   local enabled_default_route=false
+   local indent=""
 
    [ "${#interface_specifications[@]}" -eq 0 ] && return
-
-   echo -n "   Interfaces:  "
-
-   enabled_default_route=false
+   echo -n "   Interfaces: "
 
    for interface_specification in "${interface_specifications[@]}"; do
       interface=${interface_specification%%=*}
       hub_specification=${interface_specification#*=}
-
-      # Check if interface has already been configured
-      if array_contains "$interface" "${used_interfaces[@]}"; then
-         warn "$interface: Duplicate interface"
-         usage 1
-      fi
-
-      # Remember that this network interface has been configured
-      used_interfaces+=( "$interface" )
 
       # Check if tap interface (regular hubs cannot be named with commas)
       if [[ "$hub_specification" == *,* ]]; then
          # Format: tap,tap_addr,guest_addr
          IFS=, read -r hub_name tap_addr guest_addr <<< "$hub_specification"
 
-         if ! is_inet_addr "$tap_addr"; then
-            warn "$tap_addr: Invalid tap address"
-            usage 1
-         fi
-
-         if ! is_inet_addr "$guest_addr"; then
-            warn "$guest_addr: Invalid guest address"
-            usage 1
-         fi
-      else
-         # This is a normal interface
-         unset tap_addr guest_addr
-         hub_name=$hub_specification
-      fi
-
-      # Check for invalid characters in hub_name
-      if ! validate_collision_domain_names "$hub_name"; then
-         warn "$hub_name: Invalid collision domain name"
-         usage 1
-      fi
-
-      reg_socket=$(get_hub_socket "" "$hub_name")
-      tap_socket=$(get_hub_socket "1" "$hub_name")
-
-      if [ -n "$tap_addr" ]; then
-         if [ -e "$reg_socket" ]; then
-            warn "$hub_name: Regular (not tap) hub socket under the same collision domain already exists"
-            usage 1
-         fi
-
-         socket=$tap_socket
-
-         hub_list+=( "$hub_name,$tap_addr" )
-
+         socket=$(get_hub_socket "1" "$hub_name")
          kernel_cmd+=( "autoconf_$interface=$guest_addr" )
 
          # Ensure the default route is specified only once
@@ -362,26 +312,21 @@ setup_interfaces() {
             enabled_default_route=true
          fi
 
-         tap="tap; "
+         echo "$indent$interface @ $hub_name (tap; $socket)"
       else
-         if [ -e "$tap_socket" ]; then
-            warn "$hub_name: Tap hub socket under the same collision domain already exists"
-            usage 1
-         fi
+         # This is a normal interface
+         unset tap_addr guest_addr
+         hub_name=$hub_specification
 
-         socket=$reg_socket
-
-         hub_list+=( "$hub_name" )
-
-         tap=""
+         socket=$(get_hub_socket "" "$hub_name")
+         
+         echo "$indent$interface @ $hub_name ($socket)"
       fi
 
       kernel_cmd+=( "$interface=daemon,,,$socket" )
 
-      echo "$indent$interface @ $hub_name ($tap$socket)"
-
       # Indent subsequent lines
-      indent="                "
+      indent="               "
    done
 }
 
@@ -498,7 +443,7 @@ while true; do
          hub_name=$2
          shift
 
-         # Collision domain names are validated later in setup_interfaces
+         # Collision domain names are validated later in create_hub_list
          interface_specifications+=( "$interface=$hub_name" )
          ;;
       -F|--foreground)
@@ -675,7 +620,7 @@ trap "rm --force -- '$out_file'" EXIT
    echo "============= Starting virtual machine '$vhost' ============="
 
    ### KERNEL BINARY ##########################################################
-   echo "   Kernel:      $VM_KERNEL"
+   echo "   Kernel:     $VM_KERNEL"
    kernel_cmd+=( "$VM_KERNEL" )
 
 
@@ -686,7 +631,7 @@ trap "rm --force -- '$out_file'" EXIT
 
 
    ### MEMORY #################################################################
-   echo "   Memory:      $VM_MEMORY MB"
+   echo "   Memory:     $VM_MEMORY MB"
    ((VM_MEMORY += VM_MEMORY_SKEW))
    kernel_cmd+=( "mem=${VM_MEMORY}M" )
 
@@ -694,10 +639,10 @@ trap "rm --force -- '$out_file'" EXIT
    ### FILESYSTEM(S) ##########################################################
    # NOTE: for some reason escaping quotes around the ubd0 argument allows for
    # filepaths with whitespace in(?)
-   echo "   Model fs:    $VM_MODEL_FS"
+   echo "   Model fs:   $VM_MODEL_FS"
 
    if [ -n "$no_cow" ]; then
-      echo "   Filesystem:  using model fs (no COW)"
+      echo "   Filesystem: using model fs (no COW)"
       validate_ubd_argument "$VM_MODEL_FS"
       check_fs "$VM_MODEL_FS"
 
@@ -708,7 +653,7 @@ trap "rm --force -- '$out_file'" EXIT
    else
       : "${fs:="$PWD/$vhost.disk"}"
 
-      echo -n "   Filesystem:  $fs"
+      echo -n "   Filesystem: $fs"
       validate_ubd_argument "$VM_MODEL_FS" "$fs"
 
       # We check the directory because the .disk (if new) will not already be
@@ -735,7 +680,8 @@ trap "rm --force -- '$out_file'" EXIT
 
 
    ### NETWORK INTERFACES #####################################################
-   setup_interfaces "${interface_specifications[@]}"
+   create_hub_list "${interface_specifications[@]}"
+   process_interface_configs "${interface_specifications[@]}"
 
 
    ### BOOT SEQUENCE VERBOSITY ################################################
@@ -796,14 +742,14 @@ trap "rm --force -- '$out_file'" EXIT
    kernel_modules_dir="$(dirname -- "$VM_KERNEL")/modules"
 
    if [ -d "$kernel_modules_dir" ]; then
-      echo "   Modules:     $kernel_modules_dir"
+      echo "   Modules:    $kernel_modules_dir"
       kernel_cmd+=( "\"modules=$kernel_modules_dir\"" )
    fi
 
 
    ### HOSTHOME DIRECTORY ################################ (non-UML option) ###
    if [ -z "$no_hosthome" ]; then
-      echo "   Hosthome at: $HOME"
+      echo "   Hosthome:   $HOME"
       kernel_cmd+=( "\"hosthome=$HOME\"" )
    fi
 
@@ -819,7 +765,7 @@ trap "rm --force -- '$out_file'" EXIT
             usage 1
          fi
 
-         echo "   Mount:       $src_mnt @ $dst_mnt"
+         echo "   Mount:      $src_mnt @ $dst_mnt"
          kernel_cmd+=( "\"mount=$VM_MOUNT\"" )
       done
    fi
@@ -827,14 +773,14 @@ trap "rm --force -- '$out_file'" EXIT
 
    ### HOSTLAB DIRECTORY ################################# (non-UML option) ###
    if [ -n "$hostlab_dir" ]; then
-      echo "   Hostlab at:  $hostlab_dir"
+      echo "   Hostlab:    $hostlab_dir"
       kernel_cmd+=( "\"hostlab=$hostlab_dir\"" )
    fi
 
 
    ### BOOT COMMAND ###################################### (non-UML option) ###
    if [ -n "$exec_cmd" ]; then
-      echo "   Boot cmd:    '$exec_cmd'"
+      echo "   Boot cmd:   '$exec_cmd'"
       kernel_cmd+=( "\"exec=$exec_cmd\"" )
    fi
 
@@ -845,7 +791,7 @@ trap "rm --force -- '$out_file'" EXIT
 
    ### OTHER ARGUMENTS ########################################################
    if [ ${#kernel_cmd_append[@]} -gt 0 ]; then
-      echo "   Other args:  ${kernel_cmd_append[*]}"
+      echo "   Other args: ${kernel_cmd_append[*]}"
       kernel_cmd+=( "${kernel_cmd_append[@]}" )
    fi
 

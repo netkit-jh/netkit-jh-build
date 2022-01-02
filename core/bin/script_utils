@@ -331,6 +331,91 @@ file_in_use() {
 
 
 ###############################################################################
+# Validate interface specifications and generate hub_list
+# Usage:
+#   create_hub_list [INTERFACE]...
+# Globals:
+#   -w hub_list
+#   r- HUB_SOCKET_DIR
+#   r- HUB_SOCKET_EXTENSION
+#   r- HUB_SOCKET_PREFIX
+#   r- SCRIPTNAME
+#   r- USER_ID
+# Arguments:
+#  ... - array of interface specifications (ethN=DOMAIN)
+# Returns:
+#   None. Will exit with usage 1 on invalid specification.
+# Example:
+#   None
+###############################################################################
+create_hub_list() {
+   local interface_specifications=( "$@" )
+
+   local interface_specification
+   local hub_specification hub_name tap_addr guest_addr
+   local interface used_interfaces
+
+   unset hub_list
+
+   for interface_specification in "${interface_specifications[@]}"; do
+      interface=${interface_specification%%=*}
+      hub_specification=${interface_specification#*=}
+
+      # Check if interface has already been configured
+      if array_contains "$interface" "${used_interfaces[@]}"; then
+         warn "$interface: Duplicate interface"
+         usage 1
+      fi
+
+      # Remember that this network interface has been configured
+      used_interfaces+=( "$interface" )
+
+      # Check if tap interface (regular hubs cannot be named with commas)
+      if [[ "$hub_specification" == *,* ]]; then
+         # Format: hub_name,tap_addr,guest_addr
+         IFS=, read -r hub_name tap_addr guest_addr <<< "$hub_specification"
+
+         if ! is_inet_addr "$tap_addr"; then
+            warn "$tap_addr: Invalid tap address"
+            usage 1
+         fi
+
+         if ! is_inet_addr "$guest_addr"; then
+            warn "$guest_addr: Invalid guest address"
+            usage 1
+         fi
+      else
+         # This is a normal interface
+         unset tap_addr guest_addr
+         hub_name=$hub_specification
+      fi
+
+      # Check for invalid characters in hub_name
+      if ! validate_collision_domain_names "$hub_name"; then
+         warn "$hub_name: Invalid collision domain name"
+         usage 1
+      fi
+
+      if [ -n "$tap_addr" ]; then
+         if [ -e "$(get_hub_socket "" "$hub_name")" ]; then
+            warn "$hub_name: Regular (not tap) hub socket under the same collision domain already exists"
+            usage 1
+         fi
+
+         hub_list+=( "$hub_name,$tap_addr" )
+      else
+         if [ -e "$(get_hub_socket "1" "$hub_name")" ]; then
+            warn "$hub_name: Tap hub socket under the same collision domain already exists"
+            usage 1
+         fi
+
+         hub_list+=( "$hub_name" )
+      fi
+   done
+}
+
+
+###############################################################################
 # Write the tap interface name assigned to a user to standard output.
 # Usage:
 #   get_tap_interface USER DOMAIN
