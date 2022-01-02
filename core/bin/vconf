@@ -145,7 +145,8 @@ END_OF_HELP
 #   $1 - set to 1 for verbose, otherwise pass an empty string
 #   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
 #   $3 - uml_mconsole socket file
-#  ... - array of interface specifications (ethN=DOMAIN)
+#  ... - array of interface specifications (ethN=DOMAIN to add a device, and
+#        just ethN to remove one)
 # Returns:
 #   None
 # Example:
@@ -260,8 +261,12 @@ while true; do
          hub_name=$2
          shift
 
-         # Collision domain names are validated later in create_hub_list
-         network_interfaces+=( "$interface=$hub_name" )
+         if [ -n "$hub_name" ]; then
+            # Collision domain names are validated later in create_hub_list
+            added_interfaces+=( "$interface=$hub_name" )
+         else
+            removed_interfaces+=( "$interface=" )
+         fi
          ;;
       --help)
          usage 0
@@ -319,7 +324,7 @@ fi
 
 
 # Generate hub_list and start hubs
-create_hub_list "${network_interfaces[@]}"
+create_hub_list "${added_interfaces[@]}"
 run_hubs "$verbose" "$just_print" "${hub_list[@]}"
 
 
@@ -327,4 +332,4 @@ run_hubs "$verbose" "$just_print" "${hub_list[@]}"
 echo "============= Configuring virtual machine '$vhost' (PID $(get_vhost_pid_by_name "$target_user" "$vhost")) ============="
 echo "   Virtual machine owner: $target_user"
 
-invoke_mconsole "$verbose" "$just_print" "${vhost_info[mconsole]}" "${network_interfaces[@]}"
+invoke_mconsole "$verbose" "$just_print" "${vhost_info[mconsole]}" "${removed_interfaces[@]}" "${added_interfaces[@]}"
