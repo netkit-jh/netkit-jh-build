@@ -95,3 +95,6 @@
 # Bug Fixes
 - `uml_switch` logging now works
 - `ltest` automated lab testing now works (added /etc/netkit/netkit-test-phase)
+
+# Known Bugs
+- Removing an interface with `vconf` crashes the machine
