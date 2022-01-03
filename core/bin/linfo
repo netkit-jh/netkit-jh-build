@@ -102,6 +102,36 @@ END_OF_HELP
 
 
 ###############################################################################
+# Create a link-level topology map of the lab in PNG format
+# Usage:
+#   lab_map FILE [LAB_CONF]...
+# Globals:
+#   None
+# Arguments:
+#   $1 - output file
+#  ... - list of lab.conf files to analyse
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+lab_map() {
+   local map_file=$1
+   local lab_confs=( "${@:2}" )
+
+   local graph_generator="neato"
+
+   if ! command -v -- "$graph_generator" > /dev/null 2>&1; then
+      warn "$graph_generator: Graphviz graph generator not found"
+      exit 1
+   fi
+
+   generate_dot_graph "${lab_confs[@]}" |
+      "$graph_generator" -Tpng -o"$map_file"
+}
+
+
+###############################################################################
 # Generate a DOT language graph from a list of lab.conf files and virtual
 # machine names and write to standard output.
 # Usage:
@@ -113,7 +143,7 @@ END_OF_HELP
 # Returns:
 #   None
 # Example:
-#   generate_dot_graph lab.conf | dot
+#   generate_dot_graph lab.conf | neato -Tpng -o"out.png"
 ###############################################################################
 generate_dot_graph() {
    local lab_confs=( "$@" )
@@ -193,24 +223,6 @@ EOF
    done
 
    echo "}"
-}
-
-
-# This function creates a link-level topology map of the lab. Its argument is
-# the name of the PNG file to save the map in.
-lab_map() {
-   local map_file=$1
-   local lab_confs=( "${@:2}" )
-
-   local graph_generator="neato"
-
-   if ! command -v -- "$graph_generator" > /dev/null 2>&1; then
-      warn "$graph_generator: Graphviz graph generator not found"
-      exit 1
-   fi
-
-   generate_dot_graph "${lab_confs[@]}" |
-      "$graph_generator" -Tpng -o"$map_file"
 }
 
 
