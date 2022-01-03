@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#     Copyright 2020-2021 Max Barstow, Adam Bromiley, Joshua Hawking, Luke
+#     Copyright 2020-2022 Max Barstow, Adam Bromiley, Joshua Hawking, Luke
 #     Spademan - Warwick Manufacturing Group, University of Warwick.
 #
 #     This file is part of Netkit.

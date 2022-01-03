@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-#     Copyright 2020-2021 Max Barstow, Adam Bromiley, Edwin Foudil, Joshua
-#     Hawking, Peter Norris - Warwick Manufacturing Group, University of Warwick.
+#     Copyright 2020-2022 Max Barstow, Adam Bromiley, Edwin Foudil, Joshua
+#     Hawking, Peter Norris - Warwick Manufacturing Group, University of
+#     Warwick.
 #
 #     This file is part of Netkit.
 # 

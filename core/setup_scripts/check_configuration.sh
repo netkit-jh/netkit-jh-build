@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-#     Copyright 2021 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
+#     Copyright 2021-2022 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
 #     Group, University of Warwick.
-#     Copyright 2004-2007 Massimo Rimondini
-#     Computer Networks Research Group, Roma Tre University.
+#     Copyright 2004-2007 Massimo Rimondini - Computer Networks Research Group,
+#     Roma Tre University.
 #
 #     This file is part of Netkit.
 # 

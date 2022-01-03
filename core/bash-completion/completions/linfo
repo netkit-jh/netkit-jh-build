@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-#     Copyright 2021 Adam Bromiley - Warwick Manufacturing Group, University of
-#     Warwick.
+#     Copyright 2021-2022 Adam Bromiley - Warwick Manufacturing Group,
+#     University of Warwick.
 #
 #     This file is part of Netkit.
 # 
