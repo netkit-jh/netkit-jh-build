@@ -34,81 +34,6 @@ SCRIPT_UTILS_SRC=1
 
 
 ###############################################################################
-# Echo a message to standard error in the format "$SCRIPTNAME: $MESSAGE"
-# Usage:
-#   warn MESSAGE
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   $1 - message
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-warn() {
-   local message=$1
-   echo 1>&2 "$SCRIPTNAME: $message"
-}
-
-
-###############################################################################
-# Validate a list of hostnames against the hostname_regex pattern.
-# Usage:
-#   validate_hostnames [HOSTNAME]...
-# Globals:
-#   r- hostname_regex
-#   r- SCRIPTNAME
-# Arguments:
-#  ... - list of hostnames to validate
-# Returns:
-#   None. Exits with a non-zero code on an invalid hostname.
-# Example:
-#   None
-###############################################################################
-validate_hostnames() {
-   local hostnames=( "$@" )
-
-   local hostname
-
-   for hostname in "${hostnames[@]}"; do
-      if [[ ! "$hostname" =~ ^$hostname_regex$ ]] || array_contains "$hostname" "${invalid_hostnames[@]}"; then
-         warn "$hostname: Invalid hostname"
-         exit 1
-      fi
-   done
-}
-
-
-###############################################################################
-# Check if a string contains sub-strings.
-# Usage:
-#   str_contains STR [QUERY]...
-# Globals:
-#   None
-# Arguments:
-#   $1 - string to search
-#  ... - string(s) to search for
-# Returns:
-#   0 if string contains at least one query, non-zero if not
-# Example:
-#   None
-###############################################################################
-str_contains() {
-   local str=$1
-   local queries=( "${@:2}" )
-
-   local query
-
-   for query in "${queries[@]}"; do
-      [[ "$str" == *"$query"* ]] && return 0
-   done
-
-   return 1
-}
-
-
-###############################################################################
 # Check if an array contains a string.
 # Usage:
 #   array_contains QUERY ARRAY
@@ -134,26 +59,6 @@ array_contains() {
    done
 
    return 1
-}
-
-
-###############################################################################
-# Write commands to the Netkit-JH log file.
-# Usage:
-#   log_write ...
-# Globals:
-#   r- LOGFILENAME
-#   r- USER_ID
-# Arguments:
-#  ... Log message
-# Returns:
-#   echo returns 0 on success, non-zero on failure (if file is not writable or
-#   cannot be created).
-# Example:
-#   None
-###############################################################################
-log_write() {
-   [ -n "$LOGFILENAME" ] && echo "$(date --iso-8601=seconds) $USER_ID $*" >> "$LOGFILENAME"
 }
 
 
@@ -265,6 +170,26 @@ show_version() {
 
 
 ###############################################################################
+# Write commands to the Netkit-JH log file.
+# Usage:
+#   log_write ...
+# Globals:
+#   r- LOGFILENAME
+#   r- USER_ID
+# Arguments:
+#  ... Log message
+# Returns:
+#   echo returns 0 on success, non-zero on failure (if file is not writable or
+#   cannot be created).
+# Example:
+#   None
+###############################################################################
+log_write() {
+   [ -n "$LOGFILENAME" ] && echo "$(date --iso-8601=seconds) $USER_ID $*" >> "$LOGFILENAME"
+}
+
+
+###############################################################################
 # Test if a file is being used by a process.
 # Usage:
 #   file_in_use FILE
@@ -281,6 +206,77 @@ show_version() {
 file_in_use() {
    local file=$1
    lsof -f -- "$file" > /dev/null 2>&1
+}
+
+
+###############################################################################
+# Validate a list of hostnames against the hostname_regex pattern.
+# Usage:
+#   validate_hostnames [HOSTNAME]...
+# Globals:
+#   r- hostname_regex
+#   r- SCRIPTNAME
+# Arguments:
+#  ... - list of hostnames to validate
+# Returns:
+#   None. Exits with a non-zero code on an invalid hostname.
+# Example:
+#   None
+###############################################################################
+validate_hostnames() {
+   local hostnames=( "$@" )
+
+   local hostname
+
+   for hostname in "${hostnames[@]}"; do
+      if [[ ! "$hostname" =~ ^$hostname_regex$ ]] || array_contains "$hostname" "${invalid_hostnames[@]}"; then
+         warn "$hostname: Invalid hostname"
+         exit 1
+      fi
+   done
+}
+
+
+###############################################################################
+# Echo a message to standard error in the format "$SCRIPTNAME: $MESSAGE"
+# Usage:
+#   warn MESSAGE
+# Globals:
+#   r- SCRIPTNAME
+# Arguments:
+#   $1 - message
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+warn() {
+   local message=$1
+   echo 1>&2 "$SCRIPTNAME: $message"
+}
+
+
+###############################################################################
+# Check for invalid substrings in netkit.conf variable values.
+# Usage:
+#   validate_netkit_conf_variables
+# Globals:
+#   r- HUB_SOCKET_DIR
+#   r- HUB_SOCKET_PREFIX
+#   r- HUB_SOCKET_EXTENSION
+#   r- VM_MODEL_FS
+# Arguments:
+#   None
+# Returns:
+#   None. Function exits with non-zero code on failure.
+# Example:
+#   None
+###############################################################################
+validate_netkit_conf_variables() {
+   validate_variable "$HUB_SOCKET_DIR"       "HUB_SOCKET_DIR"       " " ","
+   validate_variable "$HUB_SOCKET_PREFIX"    "HUB_SOCKET_PREFIX"    " " "," "/"
+   validate_variable "$HUB_SOCKET_EXTENSION" "HUB_SOCKET_EXTENSION" " " "," "/"
+   validate_variable "$VM_MODEL_FS"          "VM_MODEL_FS"          " " "," ":"
 }
 
 
@@ -312,26 +308,30 @@ validate_variable() {
 
 
 ###############################################################################
-# Check for invalid substrings in netkit.conf variable values.
+# Check if a string contains sub-strings.
 # Usage:
-#   validate_netkit_conf_variables
+#   str_contains STR [QUERY]...
 # Globals:
-#   r- HUB_SOCKET_DIR
-#   r- HUB_SOCKET_PREFIX
-#   r- HUB_SOCKET_EXTENSION
-#   r- VM_MODEL_FS
-# Arguments:
 #   None
+# Arguments:
+#   $1 - string to search
+#  ... - string(s) to search for
 # Returns:
-#   None. Function exits with non-zero code on failure.
+#   0 if string contains at least one query, non-zero if not
 # Example:
 #   None
 ###############################################################################
-validate_netkit_conf_variables() {
-   validate_variable "$HUB_SOCKET_DIR"       "HUB_SOCKET_DIR"       " " ","
-   validate_variable "$HUB_SOCKET_PREFIX"    "HUB_SOCKET_PREFIX"    " " "," "/"
-   validate_variable "$HUB_SOCKET_EXTENSION" "HUB_SOCKET_EXTENSION" " " "," "/"
-   validate_variable "$VM_MODEL_FS"          "VM_MODEL_FS"          " " "," ":"
+str_contains() {
+   local str=$1
+   local queries=( "${@:2}" )
+
+   local query
+
+   for query in "${queries[@]}"; do
+      [[ "$str" == *"$query"* ]] && return 0
+   done
+
+   return 1
 }
 
 
