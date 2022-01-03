@@ -19,66 +19,41 @@
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
 
-SCRIPTNAME=$(basename -- "$0")
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
-   exit 1
-fi
+# shellcheck source=../bin/script_utils
+. -- "$NETKIT_HOME/bin/script_utils"
 
 
 # Read user-defined Netkit configurations in reverse order of file localisation
 # (per user, per install, per system).
-# The variable term_type_netkit_conf stores the path of the most local
-# netkit.conf file defining TERM_TYPE. This is only used in messages to the
-# user.
 # The variable netkit_conf stores the path of the most local netkit.conf file
 # irrespective of whether it already sets TERM_TYPE or not. This will be used
 # to declare the user's new chosen terminal emulator. By default, this is in
 # $NETKIT_HOME.
-# TODO: netkit_conf gets set to the most global netkit.conf. We want to set the
-# most local one.
-netkit_conf="$NETKIT_HOME/netkit.conf"
-
 if [ -f "$HOME/.netkit/netkit.conf" ]; then
-   # shellcheck disable=SC1091
-   . -- "$HOME/.netkit/netkit.conf"
    netkit_conf="$HOME/.netkit/netkit.conf"
-   [ -n "$TERM_TYPE" ] && term_type_netkit_conf=$netkit_conf
-fi
-
-if [ -z "$TERM_TYPE" ] && [ -f "$NETKIT_HOME/netkit.conf" ]; then
-   # shellcheck source=../netkit.conf
-   . -- "$NETKIT_HOME/netkit.conf"
+elif [ -f "$NETKIT_HOME/netkit.conf" ]; then
    netkit_conf="$NETKIT_HOME/netkit.conf"
-   [ -n "$TERM_TYPE" ] && term_type_netkit_conf=$netkit_conf
-fi
-
-if [ -z "$TERM_TYPE" ] && [ -f /etc/netkit.conf ]; then
-   # shellcheck disable=SC1091
-   . "/etc/netkit.conf"
+elif [ -f /etc/netkit.conf ]; then
    netkit_conf="/etc/netkit.conf"
-   [ -n "$TERM_TYPE" ] && term_type_netkit_conf=$netkit_conf
-fi
-
-# Read default Netkit configuration if user has not overrode TERM_TYPE
-if [ -z "$TERM_TYPE" ] && [ -f "$NETKIT_HOME/netkit.conf.default" ]; then
-   # shellcheck source=../netkit.conf.default
-   . -- "$NETKIT_HOME/netkit.conf.default"
-   [ -n "$TERM_TYPE" ] && term_type_netkit_conf=$netkit_conf
+else
+   netkit_conf="$NETKIT_HOME/netkit.conf"
+   touch -- "$netkit_conf"
 fi
 
 
 cat << END_OF_DIALOG
-Current terminal emulator (TERM_TYPE): '$TERM_TYPE' ($term_type_netkit_conf)
-Which terminal emulator would you like to use for Netkit machines?
+Current terminal emulator (TERM_TYPE): '$TERM_TYPE'
 
-(1) xterm - reliable, stable but ancient UI (default installation)
-(2) Alacritty - modern and GPU-accelerated terminal emulator
-(3) kitty -  another modern and GPU-accelerated emulator
-(4) GNOME Terminal - default terminal for Ubuntu
-(5) wsl - provides WSL compatiblity through the Windows Console (conhost.exe)
-(6) wt - WSL compatibility via Windows Terminal (recommended for WSL hosts)
+Which terminal emulator would you like to use for Netkit machines?
+   (1) xterm - reliable, stable but ancient UI (default installation)
+   (2) Alacritty - modern and GPU-accelerated terminal emulator
+   (3) kitty -  another modern and GPU-accelerated emulator
+   (4) GNOME Terminal - default terminal for Ubuntu
+   (5) wsl - WSL compatiblity through the Windows Console (conhost.exe)
+   (6) wt - WSL compatibility via Windows Terminal (recommended for WSL hosts)
+
+The TERM_TYPE variable will be set in:
+   $netkit_conf
 
 NOTE: required repositories/packages will be installed. For WSL compatibility,
 /etc/wsl.conf must be configured to append the host's PATH to the virtual
