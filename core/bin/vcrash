@@ -200,42 +200,6 @@ kill_by_signaling() {
 
 
 ###############################################################################
-# Use uml_mconsole to crash a machine.
-# Usage:
-#   mconsole_halt MCONSOLE
-# Globals:
-#   r- NETKIT_HOME
-# Arguments:
-#   $1 - uml_mconsole socket file
-# Returns:
-#   Returns zero on success, non-zero if there was an issue with killing the
-#   machine.
-# Example:
-#   None
-###############################################################################
-mconsole_halt() {
-   local mconsole=$1
-
-   local uml_mconsole_pid
-
-   # We hide stderr because uml_mconsole has safely ignorable warnings
-   "$NETKIT_HOME/bin/uml_mconsole" "$mconsole" halt > /dev/null 2>&1 &
-   uml_mconsole_pid=$!
-
-   # Check whether the mconsole process is hanging forever
-   for _ in {0..5}; do
-      [ ! -e "/proc/$uml_mconsole_pid" ] && return 0
-      sleep 1
-   done
-
-   echo -n "hangup detected... "
-   kill "$uml_mconsole_pid"
-
-   return 1
-}
-
-
-###############################################################################
 # Use mconsole_halt to crash a machine.
 # Usage:
 #   kill_by_mconsole QUICK_MODE MCONSOLE USER MACHINE
@@ -282,6 +246,42 @@ kill_by_mconsole() {
 
    echo "done."
    return 0
+}
+
+
+###############################################################################
+# Use uml_mconsole to crash a machine.
+# Usage:
+#   mconsole_halt MCONSOLE
+# Globals:
+#   r- NETKIT_HOME
+# Arguments:
+#   $1 - uml_mconsole socket file
+# Returns:
+#   Returns zero on success, non-zero if there was an issue with killing the
+#   machine.
+# Example:
+#   None
+###############################################################################
+mconsole_halt() {
+   local mconsole=$1
+
+   local uml_mconsole_pid
+
+   # We hide stderr because uml_mconsole has safely ignorable warnings
+   "$NETKIT_HOME/bin/uml_mconsole" "$mconsole" halt > /dev/null 2>&1 &
+   uml_mconsole_pid=$!
+
+   # Check whether the mconsole process is hanging forever
+   for _ in {0..5}; do
+      [ ! -e "/proc/$uml_mconsole_pid" ] && return 0
+      sleep 1
+   done
+
+   echo -n "hangup detected... "
+   kill "$uml_mconsole_pid"
+
+   return 1
 }
 
 
