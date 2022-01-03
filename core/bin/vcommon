@@ -731,7 +731,6 @@ start_inet_hub() {
    local tap_addr=$5
 
    local tap_name
-   local manage_tuntap_cmd
 
    if [ -S "$socket" ] && file_in_use "$socket"; then
       # The socket already exists and is in use
@@ -884,7 +883,7 @@ clean_hubs() {
          fi
       else
          # There are no switches connected to this socket - remove it
-         rm "$socket"
+         rm -- "$socket"
       fi
    done
 }
