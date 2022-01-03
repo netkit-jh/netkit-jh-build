@@ -567,61 +567,47 @@ get_tap_interface() {
 
 
 ###############################################################################
-# Create a special 'tap' hub that can connect a guest to an interface on the
-# host. NAT rules are created to allow access to the Internet through the host
-# interface.
+# Wait for uml_switch to start by polling the existence of its socket file
 # Usage:
-#   start_inet_hub VERBOSE JUST_PRINT HUB DOMAIN ADDR
+#   wait_for_socket SOCKET
 # Globals:
-#   r- HUB_LOG
-#   r- NETKIT_HOME
-#   r- USER_ID
+#   None
 # Arguments:
-#   $1 - set to 1 for verbose, otherwise pass an empty string
-#   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
-#   $3 - hub socket filepath
-#   $4 - collision domain name
-#   $5 - address of the tap interface on the host
+#   $1 - socket file
 # Returns:
-#   None. Exits with a non-zero code on a configuration error
+#   None
 # Example:
 #   None
 ###############################################################################
-start_inet_hub() {
+wait_for_socket() {
+   local socket=$1
+   while [ ! -S "$socket" ]; do
+      sleep 0.1
+   done
+}
+
+
+###############################################################################
+# Start uml_switch to manage a collision domain socket
+# Usage:
+#   invoke_manage_tuntap VERBOSE JUST_PRINT DOMAIN ADDR
+# Globals:
+#   None
+# Arguments:
+#   $1 - set to 1 for verbose, otherwise pass an empty string
+#   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $3 - collision domain name
+#   $4 - address of the tap interface on the host
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+invoke_manage_tuntap() {
    local verbose=$1
    local just_print=$2
-   local socket=$3
-   local domain=$4
-   local tap_addr=$5
-
-   local tap_name
-   local manage_tuntap_cmd
-   local interface_name uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
-   local hub_log_cmd
-
-   if [ -S "$socket" ] && file_in_use "$socket"; then
-      # The socket already exists and is in use
-
-      # Get name for the user's tap interface
-      tap_name=$(get_tap_interface "$USER_ID" "$domain")
-
-      # Check to see if interface already exists
-      if ip addr show "$tap_name" > /dev/null 2>&1; then
-         # If the interface already exists, it must have the same IP as
-         # requested.
-         if ! ip addr show "$tap_name" | grep --quiet "inet $tap_addr"; then
-            warn "$tap_name: Interface already exists and is in usage with a different IP. Remove the interface or change the IP address"
-            usage 1
-         else
-            # Interface-address pair exists; wait for uml_switch to start
-            while [ -z "$just_print" ] && [ ! -S "$socket" ]; do
-               sleep 1
-            done
-
-            return
-         fi
-      fi
-   fi
+   local domain=$3
+   local tap_addr=$4
 
    # Socket does not exist yet or it is going unused
    manage_tuntap_cmd=(
@@ -632,8 +618,6 @@ start_inet_hub() {
       "$tap_addr"
    )
 
-   echo "******** Starting Internet connected virtual hub ********"
-   echo "   (host) $tap_addr"
    echo "********     (root privileges are required)      ********"
 
    if [ -n "$just_print" ]; then
@@ -648,15 +632,43 @@ start_inet_hub() {
    fi
 
    echo "************** Abandoning root privileges ***************"
+}
 
-   interface_name=$(get_tap_interface "$USER_ID" "$domain")
 
-   uml_switch_cmd=(
-      "$NETKIT_HOME/bin/uml_switch"
-      "-tap" "$interface_name"
-      "-hub"
-      "-unix" "$socket"
-   )
+###############################################################################
+# Start uml_switch to manage a collision domain socket
+# Usage:
+#   invoke_uml_switch VERBOSE JUST_PRINT SOCKET [DOMAIN]
+# Globals:
+#   None
+# Arguments:
+#   $1 - set to 1 for verbose, otherwise pass an empty string
+#   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $3 - hub socket filepath
+#   $4 - set to the collision domain name if to be used as a 'tap' switch
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+invoke_uml_switch() {
+   local verbose=$1
+   local just_print=$2
+   local socket=$3
+   local domain=$4
+
+   local interface
+
+   local uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
+   local hub_log_cmd
+
+   uml_switch_cmd=( "$NETKIT_HOME/bin/uml_switch" "-hub" "-unix" "$socket" )
+
+   if [ -n "$domain" ]; then
+      interface=$(get_tap_interface "$USER_ID" "$domain")
+      uml_switch_cmd+=( "-tap" "$interface" )
+   fi
+   
    printed_uml_switch_cmd="${uml_switch_cmd[*]} < /dev/null &"
 
    # We need to disable buffering on standard output, otherwise the hub log
@@ -686,9 +698,70 @@ start_inet_hub() {
    fi
 
    # Wait for uml_switch to start
-   while [ -z "$just_print" ] && [ ! -S "$socket" ]; do
-      sleep 1
-   done
+   [ -z "$just_print" ] && wait_for_socket "$socket"
+}
+
+
+###############################################################################
+# Create a special 'tap' hub that can connect a guest to an interface on the
+# host. NAT rules are created to allow access to the Internet through the host
+# interface.
+# Usage:
+#   start_inet_hub VERBOSE JUST_PRINT HUB DOMAIN ADDR
+# Globals:
+#   r- HUB_LOG
+#   r- NETKIT_HOME
+#   r- USER_ID
+# Arguments:
+#   $1 - set to 1 for verbose, otherwise pass an empty string
+#   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
+#   $3 - hub socket filepath
+#   $4 - collision domain name
+#   $5 - address of the tap interface on the host
+# Returns:
+#   None. Exits with a non-zero code on a configuration error
+# Example:
+#   None
+###############################################################################
+start_inet_hub() {
+   local verbose=$1
+   local just_print=$2
+   local socket=$3
+   local domain=$4
+   local tap_addr=$5
+
+   local tap_name
+   local manage_tuntap_cmd
+
+   if [ -S "$socket" ] && file_in_use "$socket"; then
+      # The socket already exists and is in use
+
+      # Get name for the user's tap interface
+      tap_name=$(get_tap_interface "$USER_ID" "$domain")
+
+      # Check to see if interface already exists
+      if ip addr show "$tap_name" > /dev/null 2>&1; then
+         # If the interface already exists, it must have the same IP as
+         # requested.
+         if ! ip addr show "$tap_name" | grep --quiet "inet $tap_addr"; then
+            warn "$tap_name: Interface already exists and is in usage with a different IP. Remove the interface or change the IP address"
+            usage 1
+         elif [ -z "$just_print" ]; then
+            # Interface-address pair exists; wait for uml_switch to start
+            wait_for_socket "$socket"
+            return
+         fi
+      fi
+   fi
+
+   echo "******** Starting Internet connected virtual hub ********"
+   echo "   (host) $tap_addr"
+   
+   # Create 'tap' interface on host and configure firewall
+   invoke_manage_tuntap "$verbose" "$just_print" "$domain" "$tap_addr"
+
+   # Start UML switch
+   invoke_uml_switch "$verbose" "$just_print" "$socket" "$domain"
 }
 
 
@@ -714,49 +787,11 @@ start_hub() {
    local just_print=$2
    local socket=$3
 
-   local uml_switch_cmd printed_uml_switch_cmd line_buffered_uml_switch_cmd
-   local hub_log_cmd
-
    # Socket already exists but is not used
    if [ ! -S "$socket" ] || ! file_in_use "$socket"; then
-      uml_switch_cmd=(
-         "$NETKIT_HOME/bin/uml_switch"
-         "-hub"
-         "-unix" "$socket"
-      )
-      printed_uml_switch_cmd="${uml_switch_cmd[*]} < /dev/null &"
-
-      # We need to disable buffering on standard output, otherwise the hub log
-      # may miss vital log messages when uml_switch is killed.
-      line_buffered_uml_switch_cmd=(
-         "stdbuf" "--output=0" "--"
-         "${uml_switch_cmd[@]}"
-      )
-
-      # shellcheck disable=SC2016
-      hub_log_cmd=(
-         "stdbuf" "--output=0" "--"
-         "awk"
-            "--assign" "HUB=$socket"
-            "--assign" "USER=$USER_ID"
-            "--assign" "TIME=$(date --iso-8601=seconds)"
-            '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}'
-      )
-
-      if [ -n "$just_print" ]; then
-         echo "Not running ==> $printed_uml_switch_cmd"
-      else
-         [ -n "$verbose" ] && echo "Running ==> $printed_uml_switch_cmd"
-
-         "${line_buffered_uml_switch_cmd[@]}" < /dev/null 2>&1 |
-            "${hub_log_cmd[@]}" >> "$HUB_LOG" &
-      fi
+      # Start UML switch
+      invoke_uml_switch "$verbose" "$just_print" "$socket" ""
    fi
-
-   # Wait for uml_switch to start
-   while [ -z "$just_print" ] && [ ! -S "$socket" ]; do
-      sleep 1
-   done
 }
 
 
