@@ -65,14 +65,7 @@ case $1 in
       # Full command used to invoke the process
       mapfile -d "" -t kernel_cmd < "/proc/cmdline"
 
-      first_iteration=true
-      for argument in "${kernel_cmd[@]}"; do
-         # Skip program name
-         if $first_iteration; then
-            first_iteration=false
-            continue
-         fi
-
+      for argument in "${kernel_cmd[@]:1}"; do
          opt=${argument%%=*}
          value=${argument#*=}
 
