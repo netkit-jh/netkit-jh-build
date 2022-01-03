@@ -189,6 +189,36 @@ create_hub_list() {
 
 
 ###############################################################################
+# Get a rough list of all of the process IDs of a machine by its name and,
+# optionally, owner. The list might have false-positives in the unlikely
+# scenario that the umid has whitespace in.
+# Usage:
+#   pgrep_vhost USER MACHINE
+# Globals:
+#   None
+# Arguments:
+#   $1 - owner of the machine; pass an empty string for all users
+#   $2 - machine name
+# Returns:
+#   Prints a newline separated list of PIDs related to MACHINE to stdout
+# Example:
+#   for pid in $(pgrep_vhost "" "foobar"); do echo $pid; done
+###############################################################################
+pgrep_vhost() {
+   local target_user=$1
+   local vhost=$2
+
+   # Quick regex filter for pgrep. It is not 100% accurate, returning multiple
+   # instances if there is a machine called "foo" and "foo bar". Further
+   # processing is therefore required - this filter just removes processes
+   # which definitely are not matches to save processing the cmdline of every
+   # single UML instance.
+   local kernel_cmd_regex="^${VM_KERNEL}[[:blank:]].*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
+   pgrep ${target_user:+"--euid=$target_user"} --full "$kernel_cmd_regex"
+}
+
+
+###############################################################################
 # Get a list of all of the process IDs of a machine by its name and,
 # optionally, owner.
 # Usage:
@@ -209,37 +239,19 @@ get_vhost_all_pids_by_name() {
    local vhost=$2
 
    local pid kernel_cmd
-   local first_iteration argument umid pids
-
-
-   # Quick filter for pgrep. It is not 100% accurate, returning multiple
-   # instances if there is a machine called "foo" and "foo bar". We hence do
-   # further processing - this filter just removes processes which definitely
-   # are not matches.
-   local kernel_cmd_regex="^$VM_KERNEL.*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
+   local argument umid pids
 
    # See get_vhost_pid_by_name for a process hierarchy explanation.
 
    # Iterate over the PIDs of running Netkit instances with name matches.
-   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$kernel_cmd_regex"); do
+   for pid in $(pgrep_vhost "$target_user" "$vhost"); do
       # Full command used to invoke the process
       mapfile -d "" -t kernel_cmd < "/proc/$pid/cmdline"
 
-      first_iteration=true
-      for argument in "${kernel_cmd[@]}"; do
-         # Skip program name
-         if $first_iteration; then
-            first_iteration=false
-            continue
-         fi
-
+      for argument in "${kernel_cmd[@]:1}"; do
          if [[ "$argument" =~ ^umid=.*$ ]]; then
             umid=${argument#*=}
-
-            if [ "$umid" = "$vhost" ]; then
-               pids+=( "$pid" )
-            fi
-
+            [ "$umid" = "$vhost" ] && pids+=( "$pid" )
             break
          fi
       done
@@ -270,14 +282,7 @@ get_vhost_pid_by_name() {
    local vhost=$2
 
    local pid pgid kernel_cmd
-   local first_iteration argument umid
-
-
-   # Quick filter for pgrep. It is not 100% accurate, returning multiple
-   # instances if there is a machine called "foo" and "foo bar". We hence do
-   # further processing - this filter just removes processes which definitely
-   # are not matches.
-   local kernel_cmd_regex="^$VM_KERNEL.*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
+   local argument umid
 
    # The process hierarchy looks like this:
    #
@@ -301,7 +306,7 @@ get_vhost_pid_by_name() {
    # are not group leaders.
 
    # Iterate over the PIDs of running Netkit instances with name matches.
-   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "$kernel_cmd_regex"); do
+   for pid in $(pgrep_vhost "$target_user" "$vhost"); do
       # Get the process group ID (PGID)
       pgid=$(ps --no-headers --format pgid --pid "$pid")
 
@@ -311,14 +316,7 @@ get_vhost_pid_by_name() {
       # Full command used to invoke the process
       mapfile -d "" -t kernel_cmd < "/proc/$pid/cmdline"
 
-      first_iteration=true
-      for argument in "${kernel_cmd[@]}"; do
-         # Skip program name
-         if $first_iteration; then
-            first_iteration=false
-            continue
-         fi
-
+      for argument in "${kernel_cmd[@]:1}"; do
          if [[ "$argument" =~ ^umid=.*$ ]]; then
             umid=${argument#*=}
 
@@ -356,7 +354,7 @@ get_vhost_info_by_pid() {
    local pid=$1
 
    local kernel_cmd
-   local first_iteration argument opt value
+   local argument opt value
    local interface_id
    local vhost_info_other
 
@@ -387,14 +385,9 @@ get_vhost_info_by_pid() {
    mapfile -d "" -t kernel_cmd < "/proc/$pid/cmdline"
    vhost_info[kernel_cmd]=${kernel_cmd[*]@Q}
 
-   first_iteration=true
-   for argument in "${kernel_cmd[@]}"; do
-      if $first_iteration; then
-         vhost_info[kernel]=$argument
-         first_iteration=false
-         continue
-      fi
+   vhost_info[kernel]=${kernel_cmd[0]}
 
+   for argument in "${kernel_cmd[@]:1}"; do
       # UML options are key=value pairs. ${argument#*=} removes the key= prefix
       # from argument (the single # permits usage of further equals signs in
       # the argument).
