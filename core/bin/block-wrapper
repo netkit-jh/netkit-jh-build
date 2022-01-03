@@ -32,7 +32,6 @@
 # https://askubuntu.com/questions/627019/blocking-start-of-terminal
 
 
-# We shift the argument list for assignment of kernel_cmd
 term=$1
 vhost=$2
 kernel_cmd=( "${@:3}" )
