@@ -28,10 +28,6 @@
 VCOMMON_SRC=1
 
 
-# shellcheck source=./script_utils
-. -- "$NETKIT_HOME/bin/script_utils"
-
-
 ###############################################################################
 # Validate a list of collision domain names against the
 # collision_domain_name_regex pattern.
@@ -917,6 +913,16 @@ get_max_collision_domain_name_len() {
 
    echo "$max_collision_domain_name_len"
 }
+
+
+# Ensure NETKIT_HOME is set
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. -- "$NETKIT_HOME/bin/script_utils"
 
 
 # Regular expression for matching an IPv4 address with range validation

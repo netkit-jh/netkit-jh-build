@@ -360,15 +360,15 @@ netkit_dir_check() {
 export LC_ALL=C
 
 
-# Set the script's name
-SCRIPTNAME=$(basename -- "$0")
-
-
 # Ensure NETKIT_HOME is set
 if [ -z "$NETKIT_HOME" ]; then
-   warn "The NETKIT_HOME environment variable is not set"
+   echo 1>&2 "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
+
+
+# Set the script's name
+SCRIPTNAME=$(basename -- "$0")
 
 
 # Read default Netkit configuration

@@ -19,6 +19,12 @@
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
 
+# Ensure NETKIT_HOME is set
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
 # shellcheck source=../bin/script_utils
 . -- "$NETKIT_HOME/bin/script_utils"
 
