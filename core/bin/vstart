@@ -332,30 +332,6 @@ process_interface_configs() {
 
 
 ###############################################################################
-# Delete .disk file as soon as it is created by the UML instance.
-# Usage:
-#   remove_fs FILE
-# Globals:
-#   None
-# Arguments:
-#   $1 - filepath of filesystem (.disk file) to remove
-# Returns:
-#   None
-# Example:
-#   remove_fs "$file" &
-###############################################################################
-remove_fs() {
-   local file=$1
-
-   while [ ! -f "$file" ]; do
-      sleep 1
-   done
-
-   rm --force -- "$file"
-}
-
-
-###############################################################################
 # Run relevant kernel invocation setup functions and then invoke the UML kernel
 # instance. Upon return, clean up redundant network hubs.
 # Usage:
@@ -378,6 +354,30 @@ run_kernel() {
 
    "${kernel_cmd[@]}"
    clean_hubs "${hub_list[@]}"
+}
+
+
+###############################################################################
+# Delete .disk file as soon as it is created by the UML instance.
+# Usage:
+#   remove_fs FILE
+# Globals:
+#   None
+# Arguments:
+#   $1 - filepath of filesystem (.disk file) to remove
+# Returns:
+#   None
+# Example:
+#   remove_fs "$file" &
+###############################################################################
+remove_fs() {
+   local file=$1
+
+   while [ ! -f "$file" ]; do
+      sleep 1
+   done
+
+   rm --force -- "$file"
 }
 
 
