@@ -65,9 +65,9 @@ case $1 in
       # Full command used to invoke the process
       mapfile -d "" -t kernel_cmd < "/proc/cmdline"
 
-      for argument in "${kernel_cmd[@]:1}"; do
-         opt=${argument%%=*}
-         value=${argument#*=}
+      for arg in "${kernel_cmd[@]:1}"; do
+         opt=${arg%%=*}
+         value=${arg#*=}
 
          if [ "$opt" = "modules" ]; then
             modules=$value

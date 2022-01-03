@@ -212,7 +212,7 @@ END_OF_HELP
 # Check for invalid characters in filepaths for the ubd argument (set with the
 # --filesystem and --model-fs options and also by default).
 # Usage:
-#   validate_ubd_argument [FILE]...
+#   validate_ubd_arg [FILE]...
 # Globals:
 #   r- SCRIPTNAME
 # Arguments:
@@ -222,7 +222,7 @@ END_OF_HELP
 # Example:
 #   None
 ###############################################################################
-validate_ubd_argument() {
+validate_ubd_arg() {
    local files=( "$@" )
 
    local file
@@ -452,7 +452,7 @@ while true; do
          foreground=1
          ;;
       -f|--filesystem)
-         # Filepath is validated with validate_ubd_argument later
+         # Filepath is validated with validate_ubd_arg later
          fs=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
@@ -481,7 +481,7 @@ while true; do
          shift
          ;;
       -m|--model-fs)
-         # Filepath is validated with validate_ubd_argument later
+         # Filepath is validated with validate_ubd_arg later
          VM_MODEL_FS=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
@@ -645,7 +645,7 @@ trap "rm --force -- '$out_file'" EXIT
 
    if [ -n "$no_cow" ]; then
       echo "   Filesystem: using model fs (no COW)"
-      validate_ubd_argument "$VM_MODEL_FS"
+      validate_ubd_arg "$VM_MODEL_FS"
       check_fs "$VM_MODEL_FS"
 
       # Use model fs as virtual machine filesystem (do not use COW)
@@ -656,7 +656,7 @@ trap "rm --force -- '$out_file'" EXIT
       : "${fs:="$PWD/$vhost.disk"}"
 
       echo -n "   Filesystem: $fs"
-      validate_ubd_argument "$VM_MODEL_FS" "$fs"
+      validate_ubd_arg "$VM_MODEL_FS" "$fs"
 
       # We check the directory because the .disk (if new) will not already be
       # there

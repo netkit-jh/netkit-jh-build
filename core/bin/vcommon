@@ -239,7 +239,7 @@ get_vhost_all_pids_by_name() {
    local vhost=$2
 
    local pid kernel_cmd
-   local argument umid pids
+   local arg umid pids
 
    # See get_vhost_pid_by_name for a process hierarchy explanation.
 
@@ -248,9 +248,9 @@ get_vhost_all_pids_by_name() {
       # Full command used to invoke the process
       mapfile -d "" -t kernel_cmd < "/proc/$pid/cmdline"
 
-      for argument in "${kernel_cmd[@]:1}"; do
-         if [[ "$argument" =~ ^umid=.*$ ]]; then
-            umid=${argument#*=}
+      for arg in "${kernel_cmd[@]:1}"; do
+         if [[ "$arg" =~ ^umid=.*$ ]]; then
+            umid=${arg#*=}
             [ "$umid" = "$vhost" ] && pids+=( "$pid" )
             break
          fi
@@ -282,7 +282,7 @@ get_vhost_pid_by_name() {
    local vhost=$2
 
    local pid pgid kernel_cmd
-   local argument umid
+   local arg umid
 
    # The process hierarchy looks like this:
    #
@@ -316,9 +316,9 @@ get_vhost_pid_by_name() {
       # Full command used to invoke the process
       mapfile -d "" -t kernel_cmd < "/proc/$pid/cmdline"
 
-      for argument in "${kernel_cmd[@]:1}"; do
-         if [[ "$argument" =~ ^umid=.*$ ]]; then
-            umid=${argument#*=}
+      for arg in "${kernel_cmd[@]:1}"; do
+         if [[ "$arg" =~ ^umid=.*$ ]]; then
+            umid=${arg#*=}
 
             if [ "$umid" = "$vhost" ]; then
                echo "$pid"
@@ -354,7 +354,7 @@ get_vhost_info_by_pid() {
    local pid=$1
 
    local kernel_cmd
-   local argument opt value
+   local arg opt value
    local interface_id
    local vhost_info_other
 
@@ -387,12 +387,12 @@ get_vhost_info_by_pid() {
 
    vhost_info[kernel]=${kernel_cmd[0]}
 
-   for argument in "${kernel_cmd[@]:1}"; do
-      # UML options are key=value pairs. ${argument#*=} removes the key= prefix
-      # from argument (the single # permits usage of further equals signs in
-      # the argument).
-      opt=${argument%%=*}
-      value=${argument#*=}
+   for arg in "${kernel_cmd[@]:1}"; do
+      # UML options are key=value pairs. ${arg#*=} removes the key= prefix from
+      # arg (the single # permits usage of further equals signs in the
+      # argument).
+      opt=${arg%%=*}
+      value=${arg#*=}
 
       # Edge-cases that can only be matched with regular expressions (or with
       # extglob enabled, which cannot be done.)
@@ -453,7 +453,7 @@ get_vhost_info_by_pid() {
             vhost_info[fs]=${vhost_info[fs]%\"}
             ;;
          umid)       vhost_info[umid]=$value;;
-         *)          vhost_info_other+=( "$argument" )
+         *)          vhost_info_other+=( "$arg" )
       esac
    done
 

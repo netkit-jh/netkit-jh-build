@@ -137,9 +137,9 @@ case $1 in
             printf $0
          }' < /proc/cmdline)
 
-      for argument in "${kernel_cmd[@]}"; do
-         opt=${argument%%=*}
-         value=${argument#*=}
+      for arg in "${kernel_cmd[@]}"; do
+         opt=${arg%%=*}
+         value=${arg#*=}
 
          case $opt in
             hostname)      hostname=$value;;
@@ -267,9 +267,9 @@ EOF
             printf $0
          }' < /proc/cmdline)
 
-      for argument in "${kernel_cmd[@]}"; do
-         opt=${argument%%=*}
-         value=${argument#*=}
+      for arg in "${kernel_cmd[@]}"; do
+         opt=${arg%%=*}
+         value=${arg#*=}
 
          case $opt in
             hosthome)      hosthome=$value;;
