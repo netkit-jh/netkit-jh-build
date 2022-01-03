@@ -122,6 +122,58 @@ END_OF_HELP
 
 
 ###############################################################################
+# Kill unused hubs by process ID and remove their socket files.
+# Usage:
+#   kill_hubs FORCE TEST_MODE [PID]...
+# Globals:
+#   None
+# Arguments:
+#   $1 - set to 1 to kill and remove hubs even if being used, otherwise pass an
+#        empty string.
+#   $2 - set to 1 for test mode, empty string otherwise
+#  ... - the process IDs of the virtual hubs to clean up.
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+kill_hubs() {
+   local force=$1
+   local test_mode=$2
+   local hub_pids=( "${@:3}" )
+
+   local hub_pid hub_file
+   local uml_switch_cmd
+   local found_unused_hub
+
+   for hub_pid in "${hub_pids[@]}"; do
+      # Safely extract the socket filename from argv.
+      # NOTE: we assume the final command line argument is the socket filename.
+      mapfile -d "" -t uml_switch_cmd < "/proc/$hub_pid/cmdline"
+      hub_file=${uml_switch_cmd[-1]}
+
+      if [ -n "$force" ] || [ "$(lsof -a -U -p "$hub_pid" -Fn | grep --count "^n$hub_file")" -le 1 ]; then
+         # Force mode or no more virtual machines are using the hub connected
+         # to this socket
+         found_unused_hub=1
+
+         echo -n "$hub_file (PID $hub_pid)"
+
+         if [ -z "$test_mode" ]; then
+            echo -n ": Killing... "
+            kill "$hub_pid"  2> /dev/null && rm --force "$hub_file"
+            echo -n "done."
+         fi
+
+         echo ""
+      fi
+   done
+
+   [ -z "$found_unused_hub" ] && echo "No unused virtual hubs have been found."
+}
+
+
+###############################################################################
 # Kill all running VMs.
 # Usage:
 #   kill_all_vhosts VERBOSE TEST_MODE QUICK_MODE USER
@@ -198,58 +250,6 @@ kill_all_vhosts() {
 
    echo "done."
    return
-}
-
-
-###############################################################################
-# Kill unused hubs by process ID and remove their socket files.
-# Usage:
-#   kill_hubs FORCE TEST_MODE [PID]...
-# Globals:
-#   None
-# Arguments:
-#   $1 - set to 1 to kill and remove hubs even if being used, otherwise pass an
-#        empty string.
-#   $2 - set to 1 for test mode, empty string otherwise
-#  ... - the process IDs of the virtual hubs to clean up.
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-kill_hubs() {
-   local force=$1
-   local test_mode=$2
-   local hub_pids=( "${@:3}" )
-
-   local hub_pid hub_file
-   local uml_switch_cmd
-   local found_unused_hub
-
-   for hub_pid in "${hub_pids[@]}"; do
-      # Safely extract the socket filename from argv.
-      # NOTE: we assume the final command line argument is the socket filename.
-      mapfile -d "" -t uml_switch_cmd < "/proc/$hub_pid/cmdline"
-      hub_file=${uml_switch_cmd[-1]}
-
-      if [ -n "$force" ] || [ "$(lsof -a -U -p "$hub_pid" -Fn | grep --count "^n$hub_file")" -le 1 ]; then
-         # Force mode or no more virtual machines are using the hub connected
-         # to this socket
-         found_unused_hub=1
-
-         echo -n "$hub_file (PID $hub_pid)"
-
-         if [ -z "$test_mode" ]; then
-            echo -n ": Killing... "
-            kill "$hub_pid"  2> /dev/null && rm --force "$hub_file"
-            echo -n "done."
-         fi
-
-         echo ""
-      fi
-   done
-
-   [ -z "$found_unused_hub" ] && echo "No unused virtual hubs have been found."
 }
 
 
