@@ -115,6 +115,29 @@ END_OF_HELP
 
 
 ###############################################################################
+# For use with an exit trap, unmount the filesystem.
+# Usage:
+#   cleanup MOUNT_POINT
+# Globals:
+#   None
+# Arguments:
+#   $1 - directory used as the mount point
+# Returns:
+#   None
+# Example:
+#   trap "cleanup /mnt/fs" EXIT; ... ; exit
+###############################################################################
+cleanup() {
+   local mnt_point=$1
+
+   local mnt_point_resolvconf="$mnt_point/etc/resolv.conf"
+
+   sudo umount -- "$mnt_point_resolvconf"
+   sudo umount -- "$mnt_point"
+}
+
+
+###############################################################################
 # Exit with usage 1 if string is not a valid vpackage subcommand.
 # Usage:
 #   validate_vpackage_subcmd COMMAND
@@ -136,29 +159,6 @@ validate_vpackage_subcmd() {
       warn "Invalid subcommand '$subcmd'"
       usage 1
    fi
-}
-
-
-###############################################################################
-# For use with an exit trap, unmount the filesystem.
-# Usage:
-#   cleanup MOUNT_POINT
-# Globals:
-#   None
-# Arguments:
-#   $1 - directory used as the mount point
-# Returns:
-#   None
-# Example:
-#   trap "cleanup /mnt/fs" EXIT; ... ; exit
-###############################################################################
-cleanup() {
-   local mnt_point=$1
-
-   local mnt_point_resolvconf="$mnt_point/etc/resolv.conf"
-
-   sudo umount -- "$mnt_point_resolvconf"
-   sudo umount -- "$mnt_point"
 }
 
 
