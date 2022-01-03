@@ -241,8 +241,6 @@ get_vhost_all_pids_by_name() {
    local pid kernel_cmd
    local arg umid pids
 
-   # See get_vhost_pid_by_name for a process hierarchy explanation.
-
    # Iterate over the PIDs of running Netkit instances with name matches.
    for pid in $(pgrep_vhost "$target_user" "$vhost"); do
       # Full command used to invoke the process
@@ -323,9 +321,9 @@ get_vhost_pid_by_name() {
             if [ "$umid" = "$vhost" ]; then
                echo "$pid"
                return 0
-            else
-               break
             fi
+
+            break
          fi
       done
    done
@@ -402,8 +400,6 @@ get_vhost_info_by_pid() {
 
          # Array of UML socket filepaths indexed by the interface number.
          # NOTE: we assume transport mode is 'daemon'
-         # Disable SC2034 check (unused variable) - it is used elsewhere as a
-         # global.
          # shellcheck disable=SC2034
          vhost_sockets[$interface_id]=${value#daemon,,,}
          continue
@@ -414,24 +410,15 @@ get_vhost_info_by_pid() {
       # NOTE: some non-UML parameters will be enclosed in escaped double quotes
       # to allow for whitespace in them.
       case $opt in
-         con0)
+         con0|con1)
             # NOTE: tmux sessions are identified later in the command line with
             # a dummy option.
             case $value in
-               xterm)      vhost_info[con0]=$value;;
-               fd:0,fd:1)  vhost_info[con0]="this";;
-               pty)        vhost_info[con0]=$value;;
-               port:*)     vhost_info[con0]=$value;;
-               null)       vhost_info[con0]="none";;
-            esac
-            ;;
-         con1)
-            case $value in
-               xterm)      vhost_info[con1]=$value;;
-               fd:0,fd:1)  vhost_info[con1]="this";;
-               pty)        vhost_info[con1]=$value;;
-               port:*)     vhost_info[con1]=$value;;
-               null)       vhost_info[con1]="none";;
+               xterm)      vhost_info[$opt]=$value;;
+               fd:0,fd:1)  vhost_info[$opt]="this";;
+               pty)        vhost_info[$opt]=$value;;
+               port:*)     vhost_info[$opt]=$value;;
+               null)       vhost_info[$opt]="none";;
             esac
             ;;
          \"exec)       vhost_info[boot_cmd]=${value%\"};;
@@ -485,11 +472,7 @@ get_vhost_info_by_name() {
    local vhost=$2
 
    local pid
-
-   if ! pid=$(get_vhost_pid_by_name "$target_user" "$vhost"); then
-      return 1
-   fi
-
+   pid=$(get_vhost_pid_by_name "$target_user" "$vhost") || return 1
    get_vhost_info_by_pid "$pid"
    return 0
 }
@@ -638,8 +621,6 @@ start_inet_hub() {
             return
          fi
       fi
-
-      # Interface does not exist
    fi
 
    # Socket does not exist yet or it is going unused
