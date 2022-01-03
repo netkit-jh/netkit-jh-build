@@ -34,6 +34,7 @@
 ###############################################################################
 _vstart() {
    local previous_word current_word
+   local prefix suffix
 
    local con0_args=( "xterm" "this" "tmux" "pty" "port:" "none" )
    local con1_args=( "xterm" "this" "pty" "port:" "none" )
@@ -88,11 +89,32 @@ _vstart() {
          mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
       -m|--model-fs)
          mapfile -t COMPREPLY < <(compgen -A file -- "$current_word");;
+      --mount)
+         if [[ "$current_word" == *,* ]]; then
+            # Get the source directory
+            prefix="${current_word%%,*},"
+
+            # Get the destination directory as the current word
+            current_word=${current_word#*,}
+
+            # Reinstate the nospace rule and wipe the suffix (this is the final
+            # parameter).
+            compopt +o nospace
+            suffix=""
+         else
+            # If there is no comma, we are completing the source directory.
+            # Therefore, complete with a comma suffix and no space, ready to
+            # complete the destination directory after.
+            compopt -o nospace
+            suffix=","
+         fi
+
+         mapfile -t COMPREPLY < <(compgen -A directory -P "$prefix" -S "$suffix" -- "$current_word")
+         ;;
       --xterm)
          mapfile -t COMPREPLY < <(compgen -W "${xterm_args[*]}" -- "$current_word");;
-      --append|-M|--mem|--mount)
+      --append|-M|--mem)
          # These options take parameters that are not autocompletable
-         # TODO: might be able to autocomplete --mount
          COMPREPLY=( );;
       *)
          # These options do not take parameters, so the current word is either
