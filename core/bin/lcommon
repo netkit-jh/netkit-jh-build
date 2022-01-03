@@ -31,97 +31,92 @@ LCOMMON_SRC=1
 
 
 ###############################################################################
-# Print a string with bold formatting.
+# Print out information about the labs in the given directories. Unset values
+# will be outputted as "<unknown>".
 # Usage:
-#   bold_print MESSAGE
+#   lab_welcome [DIR]...
 # Globals:
+#   r- color_blue
 #   r- color_bold
 #   r- color_normal
+#   r- SCRIPTNAME
 # Arguments:
-#   $1 - string to print
+#  ... - list of lab directories
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
-bold_print() {
-   echo "$color_bold$1$color_normal"
+lab_welcome() {
+   local lab_dirs=( "$@" )
+
+   local indent lab_dirs_str
+   local dir lab
+
+   declare -A lab_versions lab_authors lab_emails lab_webs lab_descriptions
+
+   for dir in "${lab_dirs[@]}"; do
+         # Check that the lab directory exists
+      if [ ! -d "$dir" ]; then
+         warn "$dir: No such directory"
+         exit 1
+      fi
+
+      lab=$(basename -- "$dir")
+
+      lab_dirs_str+=$indent$dir$'\n'
+      indent="                    "
+
+      # We use associative arrays for printing the values with their respective
+      # directory basename. SC2034 (variable appears unused) must be ignored
+      # because the arrays are only referenced by name.
+      # shellcheck disable=SC2034
+      lab_versions[$lab]=$(get_lab_variable "LAB_VERSION" "$dir")
+      # shellcheck disable=SC2034
+      lab_authors[$lab]=$(get_lab_variable "LAB_AUTHOR" "$dir")
+      # shellcheck disable=SC2034
+      lab_emails[$lab]=$(get_lab_variable "LAB_EMAIL" "$dir")
+      # shellcheck disable=SC2034
+      lab_webs[$lab]=$(get_lab_variable "LAB_WEB" "$dir")
+      # shellcheck disable=SC2034
+      lab_descriptions[$lab]=$(get_lab_variable "LAB_DESCRIPTION" "$dir")
+   done
+
+   lab_dirs_str=${lab_dirs_str%$'\n'}
+
+   # Convert the multi-lab arrays to flat, comma-separated lists and print
+   bold_print "Lab directory(ies): $color_blue$lab_dirs_str"
+   bold_print "Version(s):         $color_blue$(generate_info_str lab_versions)"
+   bold_print "Author(s):          $color_blue$(generate_info_str lab_authors)"
+   bold_print "Email(s):           $color_blue$(generate_info_str lab_emails)"
+   bold_print "URL(s):             $color_blue$(generate_info_str lab_webs)"
+   bold_print "Description(s):"
+   bold_print "$color_blue$(generate_info_str lab_descriptions)"
 }
 
 
 ###############################################################################
-# Set lab_vhosts to a list of machines in the lab taken from the directory
-# listing. If lab_vhosts is already set (such as by the user on the command
-# line), machines not present in the lab are removed from the array.
+# Get the value of a parameter set in a lab's lab.conf file and write to
+# standard output.
 # Usage:
-#   get_lab_vhosts DIR
+#   get_lab_variable VARIABLE DIR
 # Globals:
-#   rw lab_vhosts
+#   None
 # Arguments:
-#   $1 - lab directory
+#   $1 - lab variable name
+#   $2 - lab directory
 # Returns:
 #   None
 # Example:
 #   None
 ###############################################################################
-get_lab_vhosts() {
-   local lab_dir=$1
+get_lab_variable() {
+   local variable=$1
+   local lab_conf="$2/lab.conf"
 
-   local vhost
-   local lab_vhosts_ref cmdline_vhosts
-
-   # Get lab.conf's LAB_MACHINES variable. This will override the directory
-   # listing for the machine list. If machine names are specified on the
-   # command line (existing lab_vhosts value), they will be checked against
-   # this list as opposed to the directory listing. Hide error if lab.conf is
-   # not present.
-   # Note: LAB_MACHINES is a comma-separated (whitespace is not ignored) list.
-   # This means if hostname_regex allows, machine names cannot have commas in
-   # them.
-   IFS="," read -ra lab_vhosts_ref <<< "$(
-      get_lab_variable "LAB_MACHINES" "$lab_dir" 2> /dev/null
-   )"
-
-   if [ "${#lab_vhosts_ref[@]}" -eq 0 ]; then
-      # Build list of virtual machines that are part of the lab from the
-      # directory listing if LAB_MACHINES is not set.
-      for dir in "$lab_dir/"*/; do
-         # If there are no subdirectories, "$lab_dir/"*/ will expand to a path
-         # to a directory named *; the for loop will still run over that one
-         # string. shopt -s nullglob will avoid this issue but has global
-         # implications. Avoid having to set nullglob by simply checking if the
-         # directory exists.
-         [ ! -d "$dir" ] && continue
-
-         vhost=$(basename -- "$dir")
-
-         # Avoid the shared and _test directories
-         array_contains "$vhost" "${invalid_hostnames[@]}" && continue
-
-         lab_vhosts_ref+=( "$vhost" )
-      done
-   fi
-
-   # If the user has explicitly provided a machine list via the command line
-   # (i.e. lab_vhosts already contains values when calling the function),
-   # verify that the given machines are in the lab (either LAB_MACHINES or
-   # directory listing).
-   if [ "${#lab_vhosts[@]}" -gt 0 ]; then
-      cmdline_vhosts=( "${lab_vhosts[@]}" )
-      unset lab_vhosts
-
-      for vhost in "${cmdline_vhosts[@]}"; do
-         if array_contains "$vhost" "${lab_vhosts_ref[@]}"; then
-            lab_vhosts+=( "$vhost" )
-         else
-            echo 1>&2 "Warning: '$vhost' is not part of the lab in '$lab_dir'"
-         fi
-      done
-   else
-      lab_vhosts=( "${lab_vhosts_ref[@]}" )
-   fi
-
-   validate_hostnames "${lab_vhosts[@]}"
+   # Set lab variables from lab.conf. The sed expression prints only the first
+   # matching line and deletes the variable name and equals sign.
+   sed --quiet -- "0,/^$variable=/s///p" "$lab_conf"
 }
 
 
@@ -194,96 +189,6 @@ generate_info_str() {
    fi
 
    printf "%s\n" "$lab_info_str"
-}
-
-
-###############################################################################
-# Get the value of a parameter set in a lab's lab.conf file and write to
-# standard output.
-# Usage:
-#   get_lab_variable VARIABLE DIR
-# Globals:
-#   None
-# Arguments:
-#   $1 - lab variable name
-#   $2 - lab directory
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-get_lab_variable() {
-   local variable=$1
-   local lab_conf="$2/lab.conf"
-
-   # Set lab variables from lab.conf. The sed expression prints only the first
-   # matching line and deletes the variable name and equals sign.
-   sed --quiet -- "0,/^$variable=/s///p" "$lab_conf"
-}
-
-
-###############################################################################
-# Print out information about the labs in the given directories. Unset values
-# will be outputted as "<unknown>".
-# Usage:
-#   lab_welcome [DIR]...
-# Globals:
-#   r- color_blue
-#   r- color_bold
-#   r- color_normal
-#   r- SCRIPTNAME
-# Arguments:
-#  ... - list of lab directories
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-lab_welcome() {
-   local lab_dirs=( "$@" )
-
-   local indent lab_dirs_str
-   local dir lab
-
-   declare -A lab_versions lab_authors lab_emails lab_webs lab_descriptions
-
-   for dir in "${lab_dirs[@]}"; do
-         # Check that the lab directory exists
-      if [ ! -d "$dir" ]; then
-         warn "$dir: No such directory"
-         exit 1
-      fi
-
-      lab=$(basename -- "$dir")
-
-      lab_dirs_str+=$indent$dir$'\n'
-      indent="                    "
-
-      # We use associative arrays for printing the values with their respective
-      # directory basename. SC2034 (variable appears unused) must be ignored
-      # because the arrays are only referenced by name.
-      # shellcheck disable=SC2034
-      lab_versions[$lab]=$(get_lab_variable "LAB_VERSION" "$dir")
-      # shellcheck disable=SC2034
-      lab_authors[$lab]=$(get_lab_variable "LAB_AUTHOR" "$dir")
-      # shellcheck disable=SC2034
-      lab_emails[$lab]=$(get_lab_variable "LAB_EMAIL" "$dir")
-      # shellcheck disable=SC2034
-      lab_webs[$lab]=$(get_lab_variable "LAB_WEB" "$dir")
-      # shellcheck disable=SC2034
-      lab_descriptions[$lab]=$(get_lab_variable "LAB_DESCRIPTION" "$dir")
-   done
-
-   lab_dirs_str=${lab_dirs_str%$'\n'}
-
-   # Convert the multi-lab arrays to flat, comma-separated lists and print
-   bold_print "Lab directory(ies): $color_blue$lab_dirs_str"
-   bold_print "Version(s):         $color_blue$(generate_info_str lab_versions)"
-   bold_print "Author(s):          $color_blue$(generate_info_str lab_authors)"
-   bold_print "Email(s):           $color_blue$(generate_info_str lab_emails)"
-   bold_print "URL(s):             $color_blue$(generate_info_str lab_webs)"
-   bold_print "Description(s):"
-   bold_print "$color_blue$(generate_info_str lab_descriptions)"
 }
 
 
@@ -368,6 +273,101 @@ lab_crash() {
 
    bold_print "Removing readyfor.test..."
    rm --force -- "$lab_dir/readyfor.test"
+}
+
+
+###############################################################################
+# Set lab_vhosts to a list of machines in the lab taken from the directory
+# listing. If lab_vhosts is already set (such as by the user on the command
+# line), machines not present in the lab are removed from the array.
+# Usage:
+#   get_lab_vhosts DIR
+# Globals:
+#   rw lab_vhosts
+# Arguments:
+#   $1 - lab directory
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+get_lab_vhosts() {
+   local lab_dir=$1
+
+   local vhost
+   local lab_vhosts_ref cmdline_vhosts
+
+   # Get lab.conf's LAB_MACHINES variable. This will override the directory
+   # listing for the machine list. If machine names are specified on the
+   # command line (existing lab_vhosts value), they will be checked against
+   # this list as opposed to the directory listing. Hide error if lab.conf is
+   # not present.
+   # Note: LAB_MACHINES is a comma-separated (whitespace is not ignored) list.
+   # This means if hostname_regex allows, machine names cannot have commas in
+   # them.
+   IFS="," read -ra lab_vhosts_ref <<< "$(
+      get_lab_variable "LAB_MACHINES" "$lab_dir" 2> /dev/null
+   )"
+
+   if [ "${#lab_vhosts_ref[@]}" -eq 0 ]; then
+      # Build list of virtual machines that are part of the lab from the
+      # directory listing if LAB_MACHINES is not set.
+      for dir in "$lab_dir/"*/; do
+         # If there are no subdirectories, "$lab_dir/"*/ will expand to a path
+         # to a directory named *; the for loop will still run over that one
+         # string. shopt -s nullglob will avoid this issue but has global
+         # implications. Avoid having to set nullglob by simply checking if the
+         # directory exists.
+         [ ! -d "$dir" ] && continue
+
+         vhost=$(basename -- "$dir")
+
+         # Avoid the shared and _test directories
+         array_contains "$vhost" "${invalid_hostnames[@]}" && continue
+
+         lab_vhosts_ref+=( "$vhost" )
+      done
+   fi
+
+   # If the user has explicitly provided a machine list via the command line
+   # (i.e. lab_vhosts already contains values when calling the function),
+   # verify that the given machines are in the lab (either LAB_MACHINES or
+   # directory listing).
+   if [ "${#lab_vhosts[@]}" -gt 0 ]; then
+      cmdline_vhosts=( "${lab_vhosts[@]}" )
+      unset lab_vhosts
+
+      for vhost in "${cmdline_vhosts[@]}"; do
+         if array_contains "$vhost" "${lab_vhosts_ref[@]}"; then
+            lab_vhosts+=( "$vhost" )
+         else
+            echo 1>&2 "Warning: '$vhost' is not part of the lab in '$lab_dir'"
+         fi
+      done
+   else
+      lab_vhosts=( "${lab_vhosts_ref[@]}" )
+   fi
+
+   validate_hostnames "${lab_vhosts[@]}"
+}
+
+
+###############################################################################
+# Print a string with bold formatting.
+# Usage:
+#   bold_print MESSAGE
+# Globals:
+#   r- color_bold
+#   r- color_normal
+# Arguments:
+#   $1 - string to print
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+bold_print() {
+   echo "$color_bold$1$color_normal"
 }
 
 
