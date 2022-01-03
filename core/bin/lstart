@@ -151,69 +151,6 @@ END_OF_HELP
 
 
 ###############################################################################
-# Check for update status via GitHub's API and write the new release's URL to
-# standard output if out-of-date.
-# Usage:
-#   update_available
-# Globals:
-#   r- CHECK_FOR_UPDATES
-#   r- NETKIT_HOME
-#   r- UPDATE_CHECK_PERIOD
-# Arguments:
-#   None
-# Returns:
-#   0 when an update is available, non-zero otherwise
-# Example:
-#   None
-###############################################################################
-update_available() {
-   local last_update_check next_update_check
-   local current_date
-   local current_version latest_version
-
-   if [ "$CHECK_FOR_UPDATES" = "yes" ]; then
-      # Check whether we have polled in the last UPDATE_CHECK_PERIOD days
-      touch -- "$NETKIT_HOME/.new-version"
-
-      if [ -f "$NETKIT_HOME/.last-update-check" ]; then
-         last_update_check=$(cat -- "$NETKIT_HOME/.last-update-check")
-      else
-         last_update_check=0
-      fi
-
-      # Next check = date of the last one + UPDATE_CHECK_PERIOD (in seconds)
-      next_update_check=$((last_update_check + UPDATE_CHECK_PERIOD * 86400))
-
-      current_date=$(date +%s)
-
-      if [ "$current_date" -gt "$next_update_check" ]; then
-         # We haven't checked in the past UPDATE_CHECK_PERIOD days, check now
-         echo "$current_date" > "$NETKIT_HOME/.last-update-check"
-
-         # Get the latest release number from the GitHub API.
-         # NOTE: we assume the GitHub API will always return JSON formatted as
-         # a key-value pair per line. The relevant line should be:
-         # "tag_name": "1.2.3",
-         curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" |
-            grep '"tag_name":' |
-            sed -E 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"
-      fi
-
-      current_version=$(sed -- "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
-      latest_version=$(cat -- "$NETKIT_HOME/.new-version")
-
-      if [ "$latest_version" != "$current_version" ]; then
-         echo "https://github.com/netkit-jh/netkit-jh-build/releases/$latest_version"
-         return 0
-      fi
-   fi
-
-   # Return 1 if not checking for updates or an update doesn't exist
-   return 1
-}
-
-
-###############################################################################
 # Start virtual machines of a Netkit lab sequentially.
 # Usage:
 #   lab_start FAST_MODE TEST_DELAY VERBOSE MAKEFILE DIR [PASSTHROUGH]...
@@ -257,6 +194,90 @@ lab_start() {
    # The readyfor.test file should not be created if lstart has been invoked
    # with the --makefile option (launch a single machine and exit).
    [ -n "$test_delay" ] && [ -z "$makefile" ] && : > "$lab_dir/readyfor.test"
+}
+
+
+###############################################################################
+# Start a single virtual machine within a lab.
+# Usage:
+#   single_lab_vhost_start FAST_MODE VERBOSE DIR MACHINE [PASSTHROUGH]...
+# Globals:
+#   r- GRACE_TIME
+# Arguments:
+#   $1 - set to 1 for fast mode, empty string otherwise
+#   $2 - set to 1 for verbose mode, empty string otherwise
+#   $3 - lab directory
+#   $4 - machine to start up
+#  ... - options to passthrough to vstart (appended on)
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+single_lab_vhost_start() {
+   local fast_mode=$1
+   local verbose=$2
+   local lab_dir=$3
+   local vhost=$4
+   local passthrough_args=( "${@:5}" )
+
+   local configuration opt value
+
+   # Specify host lab directory, and place filesystem inside it
+   local vstart_args=(
+      "--hostlab" "$lab_dir"
+      "--filesystem" "$lab_dir/$vhost.disk"
+      ${verbose:+"--verbose"}
+   )
+
+   # Generate vstart argument list
+   if [ -e "$lab_dir/lab.conf" ]; then
+      while IFS= read -r configuration; do
+         # The [][] is ][ inside a bracket expression to match an opening or
+         # closing square bracket.
+         # NOTE: we assume hostname_regex does not allow square brackets, so
+         # the option string is the first instance of them.
+         opt=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
+
+         # Everything after the first '='
+         value=${configuration#*=}
+
+         # If option is all-digit, it must be a network interface specification
+         [[ "$opt" =~ ^([0-9]|[1-9][0-9]+)$ ]] && opt="eth$opt"
+
+         if [ "${#opt}" -eq 1 ]; then
+            vstart_args+=( "-$opt" )
+         else
+            vstart_args+=( "--$opt" )
+         fi
+
+         # NOTE: if vstart is ever changed to have an option with an optional
+         # argument (denoted with '::' in the option string), an exception when
+         # appending the argument must be made (an '=' is required for long
+         # options, no delimiter for short ones).
+         [ -n "$value" ] && vstart_args+=( "$value" )
+      done < <(grep -- "^$vhost\[.*\]=" "$lab_dir/lab.conf")
+   fi
+
+   # Remove .ready file, if existing
+   rm --force -- "$lab_dir/$vhost.ready"
+
+   if ! "$NETKIT_HOME/bin/vstart" "${vstart_args[@]}" "${passthrough_args[@]}" -- "$vhost"; then
+      echo 2>&1 "Error while starting virtual machine '$vhost'"
+      exit 1
+   fi
+
+   # Wait for virtual host startup script to create .ready file
+   if [ -z "$fast_mode" ]; then
+      while [ ! -e "$lab_dir/$vhost.ready" ]; do
+         sleep 1
+      done
+
+      rm --force -- "$lab_dir/$vhost.ready"
+   fi
+
+   # Wait for a specified amount of time before returning
+   [ "$GRACE_TIME" -gt 0 ] && sleep -- "$GRACE_TIME"
 }
 
 
@@ -370,86 +391,65 @@ EOF
 
 
 ###############################################################################
-# Start a single virtual machine within a lab.
+# Check for update status via GitHub's API and write the new release's URL to
+# standard output if out-of-date.
 # Usage:
-#   single_lab_vhost_start FAST_MODE VERBOSE DIR MACHINE [PASSTHROUGH]...
+#   update_available
 # Globals:
-#   r- GRACE_TIME
+#   r- CHECK_FOR_UPDATES
+#   r- NETKIT_HOME
+#   r- UPDATE_CHECK_PERIOD
 # Arguments:
-#   $1 - set to 1 for fast mode, empty string otherwise
-#   $2 - set to 1 for verbose mode, empty string otherwise
-#   $3 - lab directory
-#   $4 - machine to start up
-#  ... - options to passthrough to vstart (appended on)
-# Returns:
 #   None
+# Returns:
+#   0 when an update is available, non-zero otherwise
 # Example:
 #   None
 ###############################################################################
-single_lab_vhost_start() {
-   local fast_mode=$1
-   local verbose=$2
-   local lab_dir=$3
-   local vhost=$4
-   local passthrough_args=( "${@:5}" )
+update_available() {
+   local last_update_check next_update_check
+   local current_date
+   local current_version latest_version
 
-   local configuration opt value
+   if [ "$CHECK_FOR_UPDATES" = "yes" ]; then
+      # Check whether we have polled in the last UPDATE_CHECK_PERIOD days
+      touch -- "$NETKIT_HOME/.new-version"
 
-   # Specify host lab directory, and place filesystem inside it
-   local vstart_args=(
-      "--hostlab" "$lab_dir"
-      "--filesystem" "$lab_dir/$vhost.disk"
-      ${verbose:+"--verbose"}
-   )
+      if [ -f "$NETKIT_HOME/.last-update-check" ]; then
+         last_update_check=$(cat -- "$NETKIT_HOME/.last-update-check")
+      else
+         last_update_check=0
+      fi
 
-   # Generate vstart argument list
-   if [ -e "$lab_dir/lab.conf" ]; then
-      while IFS= read -r configuration; do
-         # The [][] is ][ inside a bracket expression to match an opening or
-         # closing square bracket.
-         # NOTE: we assume hostname_regex does not allow square brackets, so
-         # the option string is the first instance of them.
-         opt=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
+      # Next check = date of the last one + UPDATE_CHECK_PERIOD (in seconds)
+      next_update_check=$((last_update_check + UPDATE_CHECK_PERIOD * 86400))
 
-         # Everything after the first '='
-         value=${configuration#*=}
+      current_date=$(date +%s)
 
-         # If option is all-digit, it must be a network interface specification
-         [[ "$opt" =~ ^([0-9]|[1-9][0-9]+)$ ]] && opt="eth$opt"
+      if [ "$current_date" -gt "$next_update_check" ]; then
+         # We haven't checked in the past UPDATE_CHECK_PERIOD days, check now
+         echo "$current_date" > "$NETKIT_HOME/.last-update-check"
 
-         if [ "${#opt}" -eq 1 ]; then
-            vstart_args+=( "-$opt" )
-         else
-            vstart_args+=( "--$opt" )
-         fi
+         # Get the latest release number from the GitHub API.
+         # NOTE: we assume the GitHub API will always return JSON formatted as
+         # a key-value pair per line. The relevant line should be:
+         # "tag_name": "1.2.3",
+         curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" |
+            grep '"tag_name":' |
+            sed -E 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"
+      fi
 
-         # NOTE: if vstart is ever changed to have an option with an optional
-         # argument (denoted with '::' in the option string), an exception when
-         # appending the argument must be made (an '=' is required for long
-         # options, no delimiter for short ones).
-         [ -n "$value" ] && vstart_args+=( "$value" )
-      done < <(grep -- "^$vhost\[.*\]=" "$lab_dir/lab.conf")
+      current_version=$(sed -- "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
+      latest_version=$(cat -- "$NETKIT_HOME/.new-version")
+
+      if [ "$latest_version" != "$current_version" ]; then
+         echo "https://github.com/netkit-jh/netkit-jh-build/releases/$latest_version"
+         return 0
+      fi
    fi
 
-   # Remove .ready file, if existing
-   rm --force -- "$lab_dir/$vhost.ready"
-
-   if ! "$NETKIT_HOME/bin/vstart" "${vstart_args[@]}" "${passthrough_args[@]}" -- "$vhost"; then
-      echo 2>&1 "Error while starting virtual machine '$vhost'"
-      exit 1
-   fi
-
-   # Wait for virtual host startup script to create .ready file
-   if [ -z "$fast_mode" ]; then
-      while [ ! -e "$lab_dir/$vhost.ready" ]; do
-         sleep 1
-      done
-
-      rm --force -- "$lab_dir/$vhost.ready"
-   fi
-
-   # Wait for a specified amount of time before returning
-   [ "$GRACE_TIME" -gt 0 ] && sleep -- "$GRACE_TIME"
+   # Return 1 if not checking for updates or an update doesn't exist
+   return 1
 }
 
 
