@@ -307,7 +307,6 @@ fi
 
 # Read user-defined Netkit configuration override in order of file localisation
 # (per system, per install, per user).
-# TODO: move into own source script
 # shellcheck disable=SC1091
 [ -f /etc/netkit.conf ] && . "/etc/netkit.conf"
 # shellcheck source=../netkit.conf
