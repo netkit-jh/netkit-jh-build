@@ -22,20 +22,11 @@
 
 
 ###############################################################################
-# Bash completion function for lstart to fill the COMPREPLY array
+# Bash completion function for lstart to fill the COMPREPLY array.
 # Usage:
 #   _lstart
 # Globals:
-#   r- COMP_CWORD
-#   -w COMPREPLY
-#   r- COMP_WORDS
-#   r- PWD
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
+#   COMPREPLY
 ###############################################################################
 _lstart() {
    local lab_vhosts

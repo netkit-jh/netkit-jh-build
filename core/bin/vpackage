@@ -26,14 +26,6 @@
 # Write vpackage's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME COMMAND [OPTION]... [PACKAGE]..."
@@ -44,16 +36,12 @@ usage_line() {
 # Write vpackage's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
@@ -118,14 +106,12 @@ END_OF_HELP
 # For use with an exit trap, unmount the filesystem.
 # Usage:
 #   cleanup MOUNT_POINT
-# Globals:
-#   None
 # Arguments:
 #   $1 - directory used as the mount point
-# Returns:
-#   None
 # Example:
-#   trap "cleanup /mnt/fs" EXIT; ... ; exit
+#   trap "cleanup /mnt/fs" EXIT
+#   ...
+#   exit
 ###############################################################################
 cleanup() {
    local mnt_point=$1
@@ -141,14 +127,10 @@ cleanup() {
 # Exit with usage 1 if string is not a valid vpackage subcommand.
 # Usage:
 #   validate_vpackage_subcmd COMMAND
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - subcommand name to validate
 # Returns:
 #   None. Exits with a non-zero usage on an invalid subcommand.
-# Example:
-#   None
 ###############################################################################
 validate_vpackage_subcmd() {
    local subcmd=$1
@@ -163,19 +145,13 @@ validate_vpackage_subcmd() {
 
 
 ###############################################################################
-# Mount a filesystem to a mount point and enable an exit trap for cleanup
+# Mount a filesystem to a mount point and enable an exit trap for cleanup.
 # Usage:
 #   mount_fs FILESYSTEM MOUNT_POINT
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - filesystem image to mount
 #   $2 - directory to be used as the mount point (will be created if does not
 #        exist)
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 mount_fs() {
    local fs=$1

@@ -22,19 +22,11 @@
 
 
 ###############################################################################
-# Bash completion function for linfo to fill the COMPREPLY array
+# Bash completion function for linfo to fill the COMPREPLY array.
 # Usage:
 #   _linfo
 # Globals:
-#   r- COMP_CWORD
-#   -w COMPREPLY
-#   r- COMP_WORDS
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
+#   COMPREPLY
 ###############################################################################
 _linfo() {
    local previous_word=${COMP_WORDS[COMP_CWORD - 1]}

@@ -35,17 +35,8 @@ LCOMMON_SRC=1
 # will be outputted as "<unknown>".
 # Usage:
 #   lab_welcome [DIR]...
-# Globals:
-#   r- color_blue
-#   r- color_bold
-#   r- color_normal
-#   r- SCRIPTNAME
 # Arguments:
 #  ... - list of lab directories
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 lab_welcome() {
    local lab_dirs=( "$@" )
@@ -100,15 +91,9 @@ lab_welcome() {
 # standard output.
 # Usage:
 #   get_lab_variable VARIABLE DIR
-# Globals:
-#   None
 # Arguments:
 #   $1 - lab variable name
 #   $2 - lab directory
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 get_lab_variable() {
    local variable=$1
@@ -127,14 +112,8 @@ get_lab_variable() {
 # ...) and write to standard output.
 # Usage:
 #   generate_lab_info_str LAB_INFO
-# Globals:
-#   None
 # Arguments:
 #   $1 - lab information associative array name reference
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 generate_info_str() {
    local -n lab_info=$1
@@ -197,15 +176,10 @@ generate_info_str() {
 # Usage:
 #   lab_clean VERBOSE DIR
 # Globals:
-#   r- MCONSOLE_DIR
-#   rw lab_vhosts
+#   lab_vhosts
 # Arguments:
 #   $1 - set to 1 for verbose mode, empty string for otherwise
 #   $2 - lab directory
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 lab_clean() {
    local verbose=$1
@@ -234,17 +208,13 @@ lab_clean() {
 # Usage:
 #   lab_crash VERBOSE QUICK_MODE DIR KEEP_FS JUST_KILL
 # Globals:
-#   rw lab_vhosts
+#   lab_vhosts
 # Arguments:
 #   $1 - set to 1 for verbose, empty string for otherwise
 #   $2 - set to 1 for quick mode on vcrash, empty string for otherwise
 #   $3 - lab directory
 #   $4 - set to 1 to keep the filesystem, empty string for otherwise
 #   $5 - set to 1 to just kill machine process, empty string for otherwise
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 lab_crash() {
    local verbose=$1
@@ -283,13 +253,9 @@ lab_crash() {
 # Usage:
 #   get_lab_vhosts DIR
 # Globals:
-#   rw lab_vhosts
+#   lab_vhosts
 # Arguments:
 #   $1 - lab directory
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 get_lab_vhosts() {
    local lab_dir=$1
@@ -356,15 +322,8 @@ get_lab_vhosts() {
 # Print a string with bold formatting.
 # Usage:
 #   bold_print MESSAGE
-# Globals:
-#   r- color_bold
-#   r- color_normal
 # Arguments:
 #   $1 - string to print
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 bold_print() {
    echo "$color_bold$1$color_normal"

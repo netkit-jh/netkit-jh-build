@@ -29,22 +29,15 @@ VCOMMON_SRC=1
 
 
 ###############################################################################
-# Validate interface specifications and generate hub_list
+# Validate interface specifications and generate hub_list.
 # Usage:
 #   create_hub_list [INTERFACE]...
 # Globals:
-#   -w hub_list
-#   r- HUB_SOCKET_DIR
-#   r- HUB_SOCKET_EXTENSION
-#   r- HUB_SOCKET_PREFIX
-#   r- SCRIPTNAME
-#   r- USER_ID
+#   hub_list
 # Arguments:
 #  ... - array of interface specifications (ethN=DOMAIN)
 # Returns:
 #   None. Will exit with usage 1 on invalid specification.
-# Example:
-#   None
 ###############################################################################
 create_hub_list() {
    local interface_specifications=( "$@" )
@@ -117,14 +110,10 @@ create_hub_list() {
 # Check if string is a valid IPv4 dotted-quad address.
 # Usage:
 #   is_inet_addr ADDR
-# Globals:
-#   r- inet_regex
 # Arguments:
 #   $1 - IPv4 address string
 # Returns:
 #   Returns 0 on success, non-zero if an invalid address.
-# Example:
-#   None
 ###############################################################################
 is_inet_addr() {
    local addr=$1
@@ -137,14 +126,10 @@ is_inet_addr() {
 # collision_domain_name_regex pattern.
 # Usage:
 #   validate_collision_domain_names [DOMAIN]...
-# Globals:
-#   r- collision_domain_name_regex
 # Arguments:
 #  ... - list of collision domain names to validate
 # Returns:
 #   0 if all valid, non-zero on an invalid hostname
-# Example:
-#   None
 ###############################################################################
 validate_collision_domain_names() {
    local collision_domain_names=( "$@" )
@@ -164,8 +149,6 @@ validate_collision_domain_names() {
 # optionally, owner.
 # Usage:
 #   get_vhost_all_pids_by_name USER MACHINE
-# Globals:
-#   r- NETKIT_HOME
 # Arguments:
 #   $1 - owner of the machine; pass an empty string for all users
 #   $2 - machine name
@@ -173,7 +156,9 @@ validate_collision_domain_names() {
 #   Prints an IFS separated list of PIDs related to MACHINE to stdout. Returns
 #   0 if the machine exists, non-zero otherwise.
 # Example:
-#   for pid in $(get_vhost_all_pids_by_name "" "foobar"); do echo $pid; done
+#   for pid in $(get_vhost_all_pids_by_name "" "foobar"); do
+#      echo $pid
+#   done
 ###############################################################################
 get_vhost_all_pids_by_name() {
    local target_user=$1
@@ -208,15 +193,13 @@ get_vhost_all_pids_by_name() {
 # Usage:
 #   get_vhost_info_by_name USER VM
 # Globals:
-#   rw vhost_info
-#   rw vhost_sockets
+#   vhost_info
+#   vhost_sockets
 # Arguments:
 #   $1 - owner of the machine; pass an empty string for all users
 #   $2 - machine name
 # Returns:
 #   0 on success, non-zero on failure
-# Example:
-#   None
 ###############################################################################
 get_vhost_info_by_name() {
    local target_user=$1
@@ -233,15 +216,11 @@ get_vhost_info_by_name() {
 # Check if machine, by name, is online.
 # Usage:
 #   get_machine_state USER MACHINE
-# Globals:
-#   r- NETKIT_HOME
 # Arguments:
 #   $1 - owner of the machine; pass an empty string for all users
 #   $2 - machine name
 # Returns:
 #   Returns 0 if online, non-zero if not.
-# Example:
-#   None
 ###############################################################################
 get_machine_state() {
    local target_user=$1
@@ -254,15 +233,11 @@ get_machine_state() {
 # Get the process ID of a machine by its name and, optionally, owner.
 # Usage:
 #   get_vhost_pid_by_name USER MACHINE
-# Globals:
-#   r- NETKIT_HOME
 # Arguments:
 #   $1 - owner of the machine; pass an empty string for all users
 #   $2 - machine name
 # Returns:
 #   Prints the PID to stdout. Returns 0 on success, non-zero on failure.
-# Example:
-#   None
 ###############################################################################
 get_vhost_pid_by_name() {
    local target_user=$1
@@ -327,15 +302,10 @@ get_vhost_pid_by_name() {
 # Usage:
 #   get_vhost_info_by_pid PID
 # Globals:
-#   r- MCONSOLE_DIR
-#   rw vhost_info
-#   rw vhost_sockets
+#   vhost_info
+#   vhost_sockets
 # Arguments:
 #   $1 - process ID of the machine
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 get_vhost_info_by_pid() {
    local pid=$1
@@ -446,15 +416,15 @@ get_vhost_info_by_pid() {
 # scenario that the umid has whitespace in.
 # Usage:
 #   pgrep_vhost USER MACHINE
-# Globals:
-#   None
 # Arguments:
 #   $1 - owner of the machine; pass an empty string for all users
 #   $2 - machine name
 # Returns:
 #   Prints a newline separated list of PIDs related to MACHINE to stdout
 # Example:
-#   for pid in $(pgrep_vhost "" "foobar"); do echo $pid; done
+#   for pid in $(pgrep_vhost "" "foobar"); do
+#      echo $pid
+#   done
 ###############################################################################
 pgrep_vhost() {
    local target_user=$1
@@ -474,13 +444,6 @@ pgrep_vhost() {
 # Start all hubs specified in an array.
 # Usage:
 #   run_hubs VERBOSE JUST_PRINT [HUB[,ADDR]]...
-# Globals:
-#   r- HUB_LOG
-#   r- HUB_SOCKET_DIR
-#   r- HUB_SOCKET_EXTENSION
-#   r- HUB_SOCKET_PREFIX
-#   r- NETKIT_HOME
-#   r- USER_ID
 # Arguments:
 #   $1 - set to 1 for verbose, otherwise pass an empty string
 #   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
@@ -518,10 +481,6 @@ run_hubs() {
 # interface.
 # Usage:
 #   start_inet_hub VERBOSE JUST_PRINT HUB DOMAIN ADDR
-# Globals:
-#   r- HUB_LOG
-#   r- NETKIT_HOME
-#   r- USER_ID
 # Arguments:
 #   $1 - set to 1 for verbose, otherwise pass an empty string
 #   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
@@ -530,8 +489,6 @@ run_hubs() {
 #   $5 - address of the tap interface on the host
 # Returns:
 #   None. Exits with a non-zero code on a configuration error
-# Example:
-#   None
 ###############################################################################
 start_inet_hub() {
    local verbose=$1
@@ -575,20 +532,14 @@ start_inet_hub() {
 
 
 ###############################################################################
-# Start uml_switch to manage a collision domain socket
+# Start uml_switch to manage a collision domain socket.
 # Usage:
 #   invoke_manage_tuntap VERBOSE JUST_PRINT DOMAIN ADDR
-# Globals:
-#   None
 # Arguments:
 #   $1 - set to 1 for verbose, otherwise pass an empty string
 #   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
 #   $3 - collision domain name
 #   $4 - address of the tap interface on the host
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 invoke_manage_tuntap() {
    local verbose=$1
@@ -626,18 +577,12 @@ invoke_manage_tuntap() {
 # Start a virtual network hub.
 # Usage:
 #   start_hub VERBOSE JUST_PRINT HUB
-# Globals:
-#   r- HUB_LOG
-#   r- NETKIT_HOME
-#   r- USER_ID
 # Arguments:
 #   $1 - set to 1 for verbose, otherwise pass an empty string
 #   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
 #   $3 - hub socket filepath
 # Returns:
 #   None. Exits with a non-zero code on a configuration error
-# Example:
-#   None
 ###############################################################################
 start_hub() {
    local verbose=$1
@@ -653,20 +598,14 @@ start_hub() {
 
 
 ###############################################################################
-# Start uml_switch to manage a collision domain socket
+# Start uml_switch to manage a collision domain socket.
 # Usage:
 #   invoke_uml_switch VERBOSE JUST_PRINT SOCKET [DOMAIN]
-# Globals:
-#   None
 # Arguments:
 #   $1 - set to 1 for verbose, otherwise pass an empty string
 #   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
 #   $3 - hub socket filepath
 #   $4 - set to the collision domain name if to be used as a 'tap' switch
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 invoke_uml_switch() {
    local verbose=$1
@@ -723,15 +662,9 @@ invoke_uml_switch() {
 # Write the tap interface name assigned to a user to standard output.
 # Usage:
 #   get_tap_interface USER DOMAIN
-# Globals:
-#   None
 # Arguments:
 #   $1 - owner of the network interface
 #   $2 - collision domain name
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 get_tap_interface() {
    local target_user=$1
@@ -768,17 +701,11 @@ get_tap_interface() {
 
 
 ###############################################################################
-# Wait for uml_switch to start by polling the existence of its socket file
+# Wait for uml_switch to start by polling the existence of its socket file.
 # Usage:
 #   wait_for_socket SOCKET
-# Globals:
-#   None
 # Arguments:
 #   $1 - socket file
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 wait_for_socket() {
    local socket=$1
@@ -792,21 +719,10 @@ wait_for_socket() {
 # Stop and remove all unused virtual hubs.
 # Usage:
 #   clean_hubs [HUB[,ADDR]]...
-# Globals:
-#   r- HUB_LOG
-#   r- HUB_SOCKET_DIR
-#   r- HUB_SOCKET_EXTENSION
-#   r- HUB_SOCKET_PREFIX
-#   r- NETKIT_HOME
-#   r- USER_ID
 # Arguments:
 #  ... - list of hub names optionally paired with an IP address (address goes
 #        unused but exists as an option if reusing a list used as input to
 #        run_hubs).
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 clean_hubs() {
    local hub_specifications=( "$@" )
@@ -847,15 +763,8 @@ clean_hubs() {
 # Usage:
 #   get_max_collision_domain_name_len
 # Globals:
-#   r- HUB_SOCKET_DIR
-#   r- HUB_SOCKET_PREFIX
-#   r- HUB_SOCKET_EXTENSION
-# Arguments:
-#   None
 # Returns:
 #   None. Function exits with non-zero code if the length is below 1.
-# Example:
-#   None
 ###############################################################################
 get_max_collision_domain_name_len() {
    # shellcheck disable=SC2155
@@ -877,18 +786,9 @@ get_max_collision_domain_name_len() {
 # invalid characters in the username.
 # Usage:
 #   get_hub_socket TAP DOMAIN
-# Globals:
-#   r- HUB_SOCKET_DIR
-#   r- HUB_SOCKET_EXTENSION
-#   r- HUB_SOCKET_PREFIX
-#   r- USER_ID
 # Arguments:
 #   $1 - set to 1 for a tap socket, otherwise pass an empty string
 #   $2 - name of collision domain
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 get_hub_socket() {
    local tap=$1

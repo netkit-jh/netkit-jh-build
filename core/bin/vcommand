@@ -23,14 +23,6 @@
 # Write vcommand's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... MACHINE [COMMAND]"
@@ -41,16 +33,12 @@ usage_line() {
 # Write vcommand's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
@@ -85,18 +73,12 @@ END_OF_HELP
 # output.
 # Usage:
 #   tmux_command VERBOSE SESSION TIMEOUT [COMMAND]
-# Globals:
-#   None
 # Arguments:
 #   $1 - set to 1 for verbose mode, empty string otherwise
 #   $2 - tmux session name (machine hostname)
 #   $3 - seconds to wait after sending the command to tmux before reading the
 #        output.
 #   $4 - command string to send to the tmux session
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 tmux_command() {
    local verbose=$1

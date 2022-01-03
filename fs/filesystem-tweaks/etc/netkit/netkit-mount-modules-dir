@@ -43,14 +43,6 @@
 # Write netkit-mount-modules-dir's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME {start|stop}"

@@ -40,14 +40,6 @@
 # Write netkit-phase2's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME {start|stop}"
@@ -59,15 +51,9 @@ usage_line() {
 # standard output.
 # Usage:
 #   get_lab_variable VARIABLE DIR
-# Globals:
-#   None
 # Arguments:
 #   $1 - lab variable name
 #   $2 - lab directory
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 get_lab_variable() {
    local variable=$1

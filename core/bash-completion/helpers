@@ -26,14 +26,8 @@
 # standard output.
 # Usage:
 #   _get_cmd_opts COMMAND
-# Globals:
-#   r- NETKIT_HOME
 # Arguments:
 #   $1 - command name (must be present in $NETKIT_HOME/bin/)
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 _get_cmd_opts() {
    local cmd=$1
@@ -56,12 +50,8 @@ _get_cmd_opts() {
 # have whitespace in.
 # Usage:
 #   _expand_ethn [OPTION]...
-# Globals:
-#   None
 # Arguments:
 #  ... - list of command options
-# Returns:
-#   None
 # Example:
 #   mapfile -t options < <(_get_cmd_opts vstart)
 #   mapfile -t options < <(_expand_ethn "${options[@]}")
@@ -97,13 +87,9 @@ _expand_ethn() {
 # appended to the completion.
 # Usage:
 #   _opt_array_to_str DELIMETER [OPTION]...
-# Globals:
-#   None
 # Arguments:
 #   $1 - option-parameter delimeter (e.g. '=' for getopt longopts)
 #  ... - list of options
-# Returns:
-#   None
 # Example:
 #   mapfile -t options < <(_get_cmd_opts vstart)
 #   compgen -W "$(_opt_array_to_str "=" "${options[@]}")" -- "$word"
@@ -126,19 +112,15 @@ _opt_array_to_str() {
 
 
 ###############################################################################
-# Generate option completions for a given command and set COMPREPLY
+# Generate option completions for a given command and set COMPREPLY.
 # Usage:
 #   _opts_compgen COMMAND EXPAND_ETHN [CURRENT_WORD]
 # Globals:
-#   -w COMPREPLY
+#   COMPREPLY
 # Arguments:
 #   $1 - command name ("$NETKIT_HOME/bin/$1" must exist)
 #   $2 - set to 1 to expand '--ethN=', empty string otherwise
 #   $3 - current word to be completed
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 _opts_compgen() {
    local cmd=$1
@@ -162,14 +144,8 @@ _opts_compgen() {
 # standard output.
 # Usage:
 #   _get_cmd_subcmds COMMAND
-# Globals:
-#   r- NETKIT_HOME
 # Arguments:
 #   $1 - command name (must be present in $NETKIT_HOME/bin/)
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 _get_cmd_subcmds() {
    local cmd=$1
@@ -185,14 +161,8 @@ _get_cmd_subcmds() {
 # a specific user.
 # Usage:
 #   _get_nk_user [ARGUMENT]...
-# Globals:
-#   r- COMP_WORDS
 # Arguments:
 #  ... - command-line arguments
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 _get_nk_user() {
    local word user_flag
@@ -222,15 +192,8 @@ _get_nk_user() {
 # name completions.
 # Usage:
 #   _get_lab_dir [ARGUMENT]...
-# Globals:
-#   r- COMP_WORDS
-#   r- PWD
 # Arguments:
 #  ... - command-line arguments
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 _get_lab_dir() {
    local word d_flag
@@ -255,16 +218,13 @@ _get_lab_dir() {
 # Check if an array contains a string.
 # Usage:
 #   _array_contains QUERY ARRAY
-# Globals:
-#   None
 # Arguments:
 #   $1 - string to search for
 #   $2 - word-expanded array to search
 # Returns:
 #   0 if array contains query, non-zero if not
 # Example:
-#   bar=( a b c )
-#   if _array_contains "a" "${bar[@]}"; then echo "Found!"; fi
+#   _array_contains "a" "${foobar[@]}" && echo "Found!"
 ###############################################################################
 _array_contains() {
    local query=$1
@@ -285,13 +245,9 @@ _array_contains() {
 # listing. See $NETKIT_HOME/bin/script_utils for further information.
 # Usage:
 #   _get_lab_vhosts LAB_VHOSTS_NAME_REF DIR
-# Globals:
-#   None
 # Arguments:
 #   $1 - name reference to array variable
 #   $2 - lab directory
-# Returns:
-#   None
 # Example:
 #   local lab_vhosts
 #   _get_lab_vhosts lab_vhosts "/path/to/lab/directory"
@@ -335,16 +291,12 @@ _get_lab_vhosts() {
 
 
 ###############################################################################
-# Set array variable to a list of active collision domains taken from vlist
+# Set array variable to a list of active collision domains taken from vlist.
 # Usage:
 #   _get_vhosts VHOSTS_NAME_REF [USER]
-# Globals:
-#   None
 # Arguments:
 #   $1 - name reference to array variable
 #   $2 - optional target user
-# Returns:
-#   None
 # Example:
 #   local vhosts
 #   _get_vhosts vhosts "," "$(id --name --user)"
@@ -363,17 +315,13 @@ _get_vhosts() {
 
 
 ###############################################################################
-# Set array variable to a list of active collision domains taken from vlist
+# Set array variable to a list of active collision domains taken from vlist.
 # Usage:
 #   _get_collision_domains COLLISION_DOMAINS_NAME_REF TAP_APPEND [USER]
-# Globals:
-#   None
 # Arguments:
 #   $1 - name reference to array variable
 #   $2 - append string to tap collision domains (useful for adding a comma)
 #   $3 - optional target user
-# Returns:
-#   None
 # Example:
 #   local collision_domains
 #   _get_collision_domains collision_domains "," "$(id --name --user)"
@@ -412,19 +360,15 @@ _get_collision_domains() {
 
 
 ###############################################################################
-# Generate collision domain completions for a given command and set COMPREPLY
+# Generate collision domain completions for a given command and set COMPREPLY.
 # Usage:
 #   _collision_domains_compgen USER [CURRENT_WORD]
 # Globals:
-#   -w COMPREPLY
+#   COMPREPLY
 # Arguments:
 #   $1 - owner of the collision domains; pass an empty string to determine from
 #        a -u|--user option or (if not exists) gather from all users.
 #   $2 - current word to be completed
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 _collision_domains_compgen() {
    local target_user=$1

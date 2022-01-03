@@ -33,14 +33,6 @@
 # Write vconf's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... MACHINE"
@@ -51,16 +43,12 @@ usage_line() {
 # Write vconf's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
@@ -139,18 +127,12 @@ END_OF_HELP
 # Attach/remove network interfaces from running machines with mconsole.
 # Usage:
 #   invoke_mconsole VERBOSE JUST_PRINT MCONSOLE [INTERFACE]...
-# Globals:
-#   r- NETKIT_HOME
 # Arguments:
 #   $1 - set to 1 for verbose, otherwise pass an empty string
 #   $2 - set to 1 if only doing a dry run, otherwise pass an empty string
 #   $3 - uml_mconsole socket file
 #  ... - array of interface specifications (ethN=DOMAIN to add a device, and
 #        just ethN to remove one)
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 invoke_mconsole() {
    local verbose=$1

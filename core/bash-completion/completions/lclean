@@ -22,20 +22,11 @@
 
 
 ###############################################################################
-# Bash completion function for lclean to fill the COMPREPLY array
+# Bash completion function for lclean to fill the COMPREPLY array.
 # Usage:
 #   _lclean
 # Globals:
-#   r- COMP_CWORD
-#   -w COMPREPLY
-#   r- COMP_WORDS
-#   r- PWD
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
+#   COMPREPLY
 ###############################################################################
 _lclean() {
    local lab_vhosts

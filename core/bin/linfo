@@ -28,14 +28,6 @@
 # Write linfo's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]..."
@@ -46,16 +38,12 @@ usage_line() {
 # Write linfo's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
@@ -102,18 +90,12 @@ END_OF_HELP
 
 
 ###############################################################################
-# Create a link-level topology map of the lab in PNG format
+# Create a link-level topology map of the lab in PNG format.
 # Usage:
 #   lab_map FILE [LAB_CONF]...
-# Globals:
-#   None
 # Arguments:
 #   $1 - output file
 #  ... - list of lab.conf files to analyse
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 lab_map() {
    local map_file=$1
@@ -136,12 +118,8 @@ lab_map() {
 # machine names and write to standard output.
 # Usage:
 #   generate_dot_graph [LAB_CONF]...
-# Globals:
-#   r- lab_vhosts
 # Arguments:
 #  ... - list of lab.conf files to analyse
-# Returns:
-#   None
 # Example:
 #   generate_dot_graph lab.conf | neato -Tpng -o"out.png"
 ###############################################################################

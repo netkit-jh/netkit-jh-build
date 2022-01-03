@@ -27,14 +27,6 @@
 # Write lstart/ltest's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
@@ -45,16 +37,12 @@ usage_line() {
 # Write lstart/ltest's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
@@ -155,7 +143,7 @@ END_OF_HELP
 # Usage:
 #   lab_start FAST_MODE TEST_DELAY VERBOSE MAKEFILE DIR [PASSTHROUGH]...
 # Globals:
-#   rw lab_vhosts
+#   lab_vhosts
 # Arguments:
 #   $1 - set to 1 for fast mode, empty string otherwise
 #   $2 - test delay as an argument to sleep, empty string otherwise
@@ -163,10 +151,6 @@ END_OF_HELP
 #   $4 - used internally when lstart is invoked with Make
 #   $5 - lab directory
 #  ... - array of options to pass through into vstart
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 lab_start() {
    local fast_mode=$1
@@ -201,18 +185,12 @@ lab_start() {
 # Start a single virtual machine within a lab.
 # Usage:
 #   single_lab_vhost_start FAST_MODE VERBOSE DIR MACHINE [PASSTHROUGH]...
-# Globals:
-#   r- GRACE_TIME
 # Arguments:
 #   $1 - set to 1 for fast mode, empty string otherwise
 #   $2 - set to 1 for verbose mode, empty string otherwise
 #   $3 - lab directory
 #   $4 - machine to start up
 #  ... - options to passthrough to vstart (appended on)
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 single_lab_vhost_start() {
    local fast_mode=$1
@@ -286,17 +264,12 @@ single_lab_vhost_start() {
 # Usage:
 #   lab_start_parallel TEST_DELAY VERBOSE DIR [PASSTHROUGH]...
 # Globals:
-#   r- MAX_SIMULTANEOUS_VMS
-#   rw lab_vhosts
+#   lab_vhosts
 # Arguments:
 #   $1 - set to non-zero length string for test mode, empty string otherwise
 #   $2 - test delay as an argument to sleep, empty string otherwise
 #   $3 - lab directory
 #  ... - array of options to pass through into vstart
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 lab_start_parallel() {
    local test_delay=$1
@@ -396,15 +369,8 @@ EOF
 # Usage:
 #   update_available
 # Globals:
-#   r- CHECK_FOR_UPDATES
-#   r- NETKIT_HOME
-#   r- UPDATE_CHECK_PERIOD
-# Arguments:
-#   None
 # Returns:
 #   0 when an update is available, non-zero otherwise
-# Example:
-#   None
 ###############################################################################
 update_available() {
    local last_update_check next_update_check

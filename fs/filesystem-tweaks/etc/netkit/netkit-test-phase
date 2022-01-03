@@ -28,14 +28,6 @@
 # Write netkit-test-phase's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME [NUMBER[SUFFIX]]"
@@ -43,17 +35,13 @@ usage_line() {
 
 
 ###############################################################################
-# Display a 3-character rolling dot in the background
+# Display a 3-character rolling dot in the background.
 # Usage:
 #   heartbeat
 # Globals:
-#   rw heartbeat_pid
-# Arguments:
-#   None
+#   heartbeat_pid
 # Returns:
 #   None. Echoes the heartbeat's PID to standard output.
-# Example:
-#   None
 ###############################################################################
 heartbeat() {
    local cursor_hide=$'\033[?25l'
@@ -76,17 +64,11 @@ heartbeat() {
 
 
 ###############################################################################
-# Kill an existing heartbeat process
+# Kill an existing heartbeat process.
 # Usage:
 #   kill_heartbeat
 # Globals:
 #   r- heartbeat_pid
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 kill_heartbeat() {
    local cursor_show=$'\033[?25h'

@@ -40,14 +40,6 @@
 # Write netkit-phase1's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME {start|stop}"
@@ -58,16 +50,10 @@ usage_line() {
 # Mount a directory on the host filesystem to a directory on the guest.
 # Usage:
 #   mount_host_dir SRC DIR [MESSAGE]
-# Globals:
-#   None
 # Arguments:
 #   $1 - directory on host filesystem to mount
 #   $2 - mount point on guest
 #   $3 - optional message to output
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 mount_host_dir() {
    local host_dir=$1
@@ -81,18 +67,12 @@ mount_host_dir() {
 
 
 ###############################################################################
-# Unmount a host directory that has been mounted into the guest
+# Unmount a host directory that has been mounted into the guest.
 # Usage:
 #   umount_host_dir DIR [MESSAGE]
-# Globals:
-#   None
 # Arguments:
 #   $1 - mount point on guest
 #   $2 - optional message to output
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 umount_host_dir() {
    local guest_dir=$1

@@ -22,19 +22,11 @@
 
 
 ###############################################################################
-# Bash completion function for vpackage to fill the COMPREPLY array
+# Bash completion function for vpackage to fill the COMPREPLY array.
 # Usage:
 #   _vpackage
 # Globals:
-#   r- COMP_CWORD
-#   -w COMPREPLY
-#   r- COMP_WORDS
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
+#   COMPREPLY
 ###############################################################################
 _vpackage() {
    local subcmds

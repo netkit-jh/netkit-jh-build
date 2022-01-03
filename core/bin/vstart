@@ -30,14 +30,6 @@
 # Write vstart's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... MACHINE"
@@ -48,16 +40,12 @@ usage_line() {
 # Write vstart's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
@@ -213,14 +201,10 @@ END_OF_HELP
 # --filesystem and --model-fs options and also by default).
 # Usage:
 #   validate_ubd_arg [FILE]...
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #  ... - filepath(s) of COW or model filesystems
 # Returns:
 #   None. Exits the script with with usage 1 if invalid.
-# Example:
-#   None
 ###############################################################################
 validate_ubd_arg() {
    local files=( "$@" )
@@ -240,14 +224,8 @@ validate_ubd_arg() {
 # Warn if file is located on a filesystem that does not support sparse files.
 # Usage:
 #   check_fs FILE
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - file on target filesystem
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 check_fs() {
    local file=$1
@@ -272,14 +250,9 @@ check_fs() {
 # Usage:
 #   process_interface_configs VERBOSE JUST_PRINT MCONSOLE [INTERFACE]...
 # Globals:
-#   -w kernel_cmd
-#   r- NETKIT_HOME
+#   kernel_cmd
 # Arguments:
 #  ... - array of interface specifications (ethN=DOMAIN)
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 process_interface_configs() {
    local interface_specifications=( "$@" )
@@ -336,15 +309,9 @@ process_interface_configs() {
 # instance. Upon return, clean up redundant network hubs.
 # Usage:
 #   run_kernel FILE KERNEL_CMD...
-# Globals:
-#   r- hub_list
 # Arguments:
 #   $1 - filesystem (.disk) file to remove. Empty string to not remove it
 #  ... - kernel invocation command line arguments
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 run_kernel() {
    local fs=$1
@@ -361,12 +328,8 @@ run_kernel() {
 # Delete .disk file as soon as it is created by the UML instance.
 # Usage:
 #   remove_fs FILE
-# Globals:
-#   None
 # Arguments:
 #   $1 - filepath of filesystem (.disk file) to remove
-# Returns:
-#   None
 # Example:
 #   remove_fs "$file" &
 ###############################################################################

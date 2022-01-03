@@ -22,19 +22,11 @@
 
 
 ###############################################################################
-# Bash completion function for vcommand to fill the COMPREPLY array
+# Bash completion function for vcommand to fill the COMPREPLY array.
 # Usage:
 #   _vcommand
 # Globals:
-#   r- COMP_CWORD
-#   -w COMPREPLY
-#   r- COMP_WORDS
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
+#   COMPREPLY
 ###############################################################################
 _vcommand() {
    local vhosts

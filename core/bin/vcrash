@@ -31,14 +31,6 @@
 # Write vcrash's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
@@ -49,16 +41,12 @@ usage_line() {
 # Write vcrash's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
@@ -121,8 +109,6 @@ END_OF_HELP
 # Kill a virtual machine by signaling the corresponding processes.
 # Usage:
 #   kill_by_signaling VERBOSE TEST_MODE QUICK_MODE USER MACHINE
-# Globals:
-#   None
 # Arguments:
 #   $1 - set to 1 for verbose, empty string otherwise
 #   $1 - set to 1 for test mode, empty string otherwise
@@ -132,8 +118,6 @@ END_OF_HELP
 # Returns:
 #   Returns zero on success, non-zero if there was an issue with killing the
 #   machine.
-# Example:
-#   None
 ###############################################################################
 kill_by_signaling() {
    local verbose=$1
@@ -203,8 +187,6 @@ kill_by_signaling() {
 # Use mconsole_halt to crash a machine.
 # Usage:
 #   kill_by_mconsole QUICK_MODE MCONSOLE USER MACHINE
-# Globals:
-#   None
 # Arguments:
 #   $1 - set to 1 for quick mode, empty string otherwise
 #   $2 - mconsole socket
@@ -213,8 +195,6 @@ kill_by_signaling() {
 # Returns:
 #   Returns zero on success, non-zero if there was an issue with killing the
 #   machine.
-# Example:
-#   None
 ###############################################################################
 kill_by_mconsole() {
    local quick_mode=$1
@@ -253,15 +233,11 @@ kill_by_mconsole() {
 # Use uml_mconsole to crash a machine.
 # Usage:
 #   mconsole_halt MCONSOLE
-# Globals:
-#   r- NETKIT_HOME
 # Arguments:
 #   $1 - uml_mconsole socket file
 # Returns:
 #   Returns zero on success, non-zero if there was an issue with killing the
 #   machine.
-# Example:
-#   None
 ###############################################################################
 mconsole_halt() {
    local mconsole=$1

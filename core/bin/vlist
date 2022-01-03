@@ -29,14 +29,6 @@
 # Write vlist's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
@@ -47,16 +39,12 @@ usage_line() {
 # Write vlist's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
@@ -98,18 +86,11 @@ END_OF_HELP
 # Usage:
 #   print_vhost_summary NO_HEADER USER
 # Globals:
-#   r- HUB_SOCKET_PREFIX
-#   r- HUB_SOCKET_EXTENSION
-#   r- NETKIT_HOME
-#   rw vhost_info
-#   rw vhost_sockets
+#   vhost_info
+#   vhost_sockets
 # Arguments:
 #   $1 - do not display column headers; pass an empty string to show them
 #   $2 - user; pass an empty string for all users
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 print_vhost_summary() {
    local no_header=$1
@@ -187,18 +168,14 @@ print_vhost_summary() {
 # Usage:
 #   print_vhost_info_by_name USER VM
 # Globals:
-#   r- NETKIT_HOME
-#   rw vhost_info
-#   rw vhost_sockets
-#   r- VM_MEMORY_SKEW
+#   vhost_info
+#   vhost_sockets
 # Arguments:
 #   $1 - owner of the machine; pass an empty string for all users
 #   $2 - machine name
 # Returns:
 #   Prints machine details to stdout. Returns 0 on success, non-zero on
 #   failure.
-# Example:
-#   None
 ###############################################################################
 print_vhost_info_by_name() {
    local target_user=$1
@@ -273,18 +250,11 @@ print_vhost_info_by_name() {
 
 
 ###############################################################################
-# Extract the collision domain name from a hub socket filepath
+# Extract the collision domain name from a hub socket filepath.
 # Usage:
 #   get_hub_socket_domain HUB
-# Globals:
-#   r- HUB_SOCKET_EXTENSION
-#   r- HUB_SOCKET_PREFIX
 # Arguments:
 #   $1 - hub socket filepath
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 get_hub_socket_domain() {
    # shellcheck disable=SC2155
@@ -307,17 +277,13 @@ get_hub_socket_domain() {
 
 
 ###############################################################################
-# Check if a given socket filepath is a UML 'tap' socket
+# Check if a given socket filepath is a UML 'tap' socket.
 # Usage:
 #   is_tap HUB
-# Globals:
-#   r- HUB_SOCKET_PREFIX
 # Arguments:
 #   $1 - hub socket filepath
 # Returns:
 #   0 if file is a tap socket, non-zero if not
-# Example:
-#   None
 ###############################################################################
 is_tap() {
    # shellcheck disable=SC2155

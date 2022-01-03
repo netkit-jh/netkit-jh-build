@@ -23,14 +23,6 @@
 # Write vconnect's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]... MACHINE"
@@ -41,16 +33,12 @@ usage_line() {
 # Write vconnect's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
@@ -87,15 +75,8 @@ END_OF_HELP
 # Open a new terminal window attached to a machine's tmux session.
 # Usage:
 #   open_terminal MACHINE
-# Globals:
-#   r- NETKIT_HOME
-#   r- TERM_TYPE
 # Arguments:
 #   $1 - virtual machine name
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 open_terminal() {
    local vhost=$1
@@ -122,14 +103,8 @@ open_terminal() {
 # Attach to a machine's tmux session in the current terminal.
 # Usage:
 #   tmux_connect MACHINE
-# Globals:
-#   None
 # Arguments:
 #   $1 - virtual machine name
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 tmux_connect() {
    local vhost=$1

@@ -37,16 +37,13 @@ SCRIPT_UTILS_SRC=1
 # Check if an array contains a string.
 # Usage:
 #   array_contains QUERY ARRAY
-# Globals:
-#   None
 # Arguments:
 #   $1 - string to search for
 #   $2 - word-expanded array to search
 # Returns:
 #   0 if array contains query, non-zero if not
 # Example:
-#   bar=( a b c )
-#   if array_contains "a" "${bar[@]}"; then echo "Found!"; fi
+#   array_contains "a" "${foobar[@]}" && echo "Found!"
 ###############################################################################
 array_contains() {
    local query=$1
@@ -66,14 +63,6 @@ array_contains() {
 # Write the "try --help" message to standard error.
 # Usage:
 #   try_help
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 try_help() {
    echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
@@ -84,14 +73,6 @@ try_help() {
 # Write the standard --help command-line option usage to standard output.
 # Usage:
 #   help_option
-# Globals:
-#   None
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 help_option() {
    echo "      --help          display this help and exit"
@@ -102,14 +83,6 @@ help_option() {
 # Write the standard --version command-line option usage to standard output.
 # Usage:
 #   version_option
-# Globals:
-#   None
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 version_option() {
    echo "      --version       output version information and exit"
@@ -122,15 +95,6 @@ version_option() {
 # Usage:
 #   show_version
 # Globals:
-#   r- NETKIT_HOME
-#   r- VM_KERNEL
-#   r- VM_MODEL_FS
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 show_version() {
    local nk_version
@@ -173,16 +137,11 @@ show_version() {
 # Write commands to the Netkit-JH log file.
 # Usage:
 #   log_write ...
-# Globals:
-#   r- LOGFILENAME
-#   r- USER_ID
 # Arguments:
 #  ... Log message
 # Returns:
 #   echo returns 0 on success, non-zero on failure (if file is not writable or
 #   cannot be created).
-# Example:
-#   None
 ###############################################################################
 log_write() {
    [ -n "$LOGFILENAME" ] && echo "$(date --iso-8601=seconds) $USER_ID $*" >> "$LOGFILENAME"
@@ -193,15 +152,11 @@ log_write() {
 # Test if a file is being used by a process.
 # Usage:
 #   file_in_use FILE
-# Globals:
-#   None
 # Arguments:
 #   $1 - file to test
 # Returns:
 #   Returns 0 if the file is in use by a process, non-zero if not or on failure
 #   (e.g., if file does not exist).
-# Example:
-#   None
 ###############################################################################
 file_in_use() {
    local file=$1
@@ -213,15 +168,10 @@ file_in_use() {
 # Validate a list of hostnames against the hostname_regex pattern.
 # Usage:
 #   validate_hostnames [HOSTNAME]...
-# Globals:
-#   r- hostname_regex
-#   r- SCRIPTNAME
 # Arguments:
 #  ... - list of hostnames to validate
 # Returns:
 #   None. Exits with a non-zero code on an invalid hostname.
-# Example:
-#   None
 ###############################################################################
 validate_hostnames() {
    local hostnames=( "$@" )
@@ -238,17 +188,11 @@ validate_hostnames() {
 
 
 ###############################################################################
-# Echo a message to standard error in the format "$SCRIPTNAME: $MESSAGE"
+# Echo a message to standard error in the format "$SCRIPTNAME: $MESSAGE".
 # Usage:
 #   warn MESSAGE
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - message
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 warn() {
    local message=$1
@@ -261,16 +205,8 @@ warn() {
 # Usage:
 #   validate_netkit_conf_variables
 # Globals:
-#   r- HUB_SOCKET_DIR
-#   r- HUB_SOCKET_PREFIX
-#   r- HUB_SOCKET_EXTENSION
-#   r- VM_MODEL_FS
-# Arguments:
-#   None
 # Returns:
 #   None. Function exits with non-zero code on failure.
-# Example:
-#   None
 ###############################################################################
 validate_netkit_conf_variables() {
    validate_variable "$HUB_SOCKET_DIR"       "HUB_SOCKET_DIR"       " " ","
@@ -284,16 +220,12 @@ validate_netkit_conf_variables() {
 # Check for invalid substrings in a variable and exit with an error.
 # Usage:
 #   validate_variable VALUE VARIABLE [QUERY]...
-# Globals:
-#   None
 # Arguments:
 #   $1 - value of variable
 #   $2 - name of variable
 #  ... - list of invalid substrings to search for
 # Returns:
 #   None. Function exits with non-zero code on failure.
-# Example:
-#   None
 ###############################################################################
 validate_variable() {
    local value=$1
@@ -311,15 +243,11 @@ validate_variable() {
 # Check if a string contains sub-strings.
 # Usage:
 #   str_contains STR [QUERY]...
-# Globals:
-#   None
 # Arguments:
 #   $1 - string to search
 #  ... - string(s) to search for
 # Returns:
 #   0 if string contains at least one query, non-zero if not
-# Example:
-#   None
 ###############################################################################
 str_contains() {
    local str=$1
@@ -340,14 +268,10 @@ str_contains() {
 # exists, an error is thrown.
 # Usage:
 #   netkit_dir_check DIR
-# Globals:
-#   None
 # Arguments:
 #   $1 - directory filepath
 # Returns:
 #   None. Function exits with non-zero code on failure.
-# Example:
-#   None
 ###############################################################################
 netkit_dir_check() {
    local dir=$1

@@ -29,14 +29,6 @@
 # Write vclean's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME [OPTION]..."
@@ -47,16 +39,12 @@ usage_line() {
 # Write vclean's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
@@ -125,17 +113,11 @@ END_OF_HELP
 # Kill unused hubs by process ID and remove their socket files.
 # Usage:
 #   kill_hubs FORCE TEST_MODE [PID]...
-# Globals:
-#   None
 # Arguments:
 #   $1 - set to 1 to kill and remove hubs even if being used, otherwise pass an
 #        empty string.
 #   $2 - set to 1 for test mode, empty string otherwise
 #  ... - the process IDs of the virtual hubs to clean up.
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 kill_hubs() {
    local force=$1
@@ -177,8 +159,6 @@ kill_hubs() {
 # Kill all running VMs.
 # Usage:
 #   kill_all_vhosts VERBOSE TEST_MODE QUICK_MODE USER
-# Globals:
-#   None
 # Arguments:
 #   $1 - set to 1 for verbose, empty string otherwise
 #   $2 - set to 1 for test mode, empty string otherwise
@@ -186,8 +166,6 @@ kill_hubs() {
 #   $4 - owner of the machines; pass an empty string for all users
 # Returns:
 #   None. Returns early on test mode (only outputs PIDs without killing them).
-# Example:
-#   None
 ###############################################################################
 kill_all_vhosts() {
    local verbose=$1
