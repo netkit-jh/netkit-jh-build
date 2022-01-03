@@ -84,24 +84,6 @@ END_OF_HELP
 
 
 ###############################################################################
-# Attach to a machine's tmux session in the current terminal.
-# Usage:
-#   tmux_connect MACHINE
-# Globals:
-#   None
-# Arguments:
-#   $1 - virtual machine name
-# Returns:
-#   None
-# Example:
-#   None
-###############################################################################
-tmux_connect() {
-   local vhost=$1
-   tmux -L netkit attach -t="$vhost"
-}
-
-###############################################################################
 # Open a new terminal window attached to a machine's tmux session.
 # Usage:
 #   open_terminal MACHINE
@@ -133,6 +115,25 @@ open_terminal() {
    esac
 
    nohup "${term_cmd[@]}" tmux -L netkit attach -t "$vhost" > /dev/null 2>&1 &
+}
+
+
+###############################################################################
+# Attach to a machine's tmux session in the current terminal.
+# Usage:
+#   tmux_connect MACHINE
+# Globals:
+#   None
+# Arguments:
+#   $1 - virtual machine name
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+tmux_connect() {
+   local vhost=$1
+   tmux -L netkit attach -t="$vhost"
 }
 
 
