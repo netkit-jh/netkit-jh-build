@@ -71,6 +71,7 @@
 - .gitignore now ignores compilation, test, and development artefacts
 - Copyright notices for the Netkit-JH development team (alongside the original Netkit and Netkit-NG notices)
 - Collision domain argument to `manage_tuntap`
+- vcommon source script to contain functions common to the vcommands (analogous to lcommon)
 
 ## Modifed
 - All scripts are interpreted by Bash now (minimum required version 4.4, see [Modified](#modified))
@@ -80,7 +81,7 @@
     3. Script description
     4. `usage_line` & `usage`
     5. Other function definitions in order of usage
-    6. `script_utils` and (optional) `lcommon` source
+    6. `script_utils` and (optional) `lcommon`/`vcommon` source
     7. `getopt` argument parsing
     8. Non-option argument parsing
     9. Remainder of script

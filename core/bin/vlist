@@ -94,6 +94,64 @@ END_OF_HELP
 
 
 ###############################################################################
+# Extract the collision domain name from a hub socket filepath
+# Usage:
+#   get_hub_socket_domain HUB
+# Globals:
+#   r- HUB_SOCKET_EXTENSION
+#   r- HUB_SOCKET_PREFIX
+# Arguments:
+#   $1 - hub socket filepath
+# Returns:
+#   None
+# Example:
+#   None
+###############################################################################
+get_hub_socket_domain() {
+   # shellcheck disable=SC2155
+   local socket_name=$(basename -- "$1")
+
+   local hub_name_ext hub_name
+
+   # Remove prefix, user SHA-256, tap specifier (if exists), and collision
+   # domain SHA-256.
+   hub_name_ext=${socket_name#"$HUB_SOCKET_PREFIX"_*_}
+   hub_name_ext=${hub_name_ext#"tap_"}
+   hub_name_ext=${hub_name_ext:8}
+   hub_name_ext=${hub_name_ext#"_"}
+
+   # Remove extension
+   hub_name=${hub_name_ext%"$HUB_SOCKET_EXTENSION"}
+
+   printf "%s\n" "$hub_name"
+}
+
+
+###############################################################################
+# Check if a given socket filepath is a UML 'tap' socket
+# Usage:
+#   is_tap HUB
+# Globals:
+#   r- HUB_SOCKET_PREFIX
+# Arguments:
+#   $1 - hub socket filepath
+# Returns:
+#   0 if file is a tap socket, non-zero if not
+# Example:
+#   None
+###############################################################################
+is_tap() {
+   # shellcheck disable=SC2155
+   local socket=$(basename -- "$1")
+
+   # Remove prefix and user SHA-256
+   local hub_name_ext=${socket#"$HUB_SOCKET_PREFIX"_*_}
+
+   [ "${hub_name_ext:0:4}" = "tap_" ] && return 0 || return 1
+}
+
+
+###############################################################################
 # Summarise all running machines for a specific user.
 # Usage:
 #   print_vhost_summary NO_HEADER USER
@@ -274,6 +332,8 @@ print_vhost_info_by_name() {
 
 # shellcheck source=./script_utils
 . -- "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./vcommon
+. -- "$NETKIT_HOME/bin/vcommon"
 
 # Write to the vcommands log
 log_write "$0 $*"

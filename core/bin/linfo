@@ -107,7 +107,6 @@ END_OF_HELP
 # Usage:
 #   generate_dot_graph [LAB_CONF]...
 # Globals:
-#   r- collision_domain_name_regex
 #   r- lab_vhosts
 # Arguments:
 #  ... - list of lab.conf files to analyse

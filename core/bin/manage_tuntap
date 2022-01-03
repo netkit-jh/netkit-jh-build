@@ -26,6 +26,8 @@
 
 # shellcheck source=./script_utils
 . -- "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./vcommon
+. -- "$NETKIT_HOME/bin/vcommon"
 
 
 # Either "start" or "stop"

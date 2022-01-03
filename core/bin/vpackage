@@ -209,6 +209,8 @@ mount_fs() {
 
 # shellcheck source=./script_utils
 . -- "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./vcommon
+. -- "$NETKIT_HOME/bin/vcommon"
 
 # Write to the vcommands log
 log_write "$0 $*"
