@@ -54,6 +54,7 @@ for script in "$NETKIT_HOME/setup_scripts/check_configuration.d/"*; do
    case $return_value in
       255)
          cat << END_OF_DIALOG
+
 ${color_red}[ ERROR ]$color_normal Your system is not configured properly. Correct the above errors and
 verify with $SCRIPTNAME before using Netkit.
 END_OF_DIALOG
@@ -70,10 +71,11 @@ done
 
 if [ "$warning_count" -gt 0 ]; then
    cat << END_OF_DIALOG
-${color_yellow}[WARNING]$color_normal It has been advised that $warning_count configuration setting(s)
-          should be changed. You may also ignore this message, but doing so may
-          limit available features, or result in Netkit not functioning
-          correctly on your system.
+
+${color_yellow}[WARNING]$color_normal It has been advised that $warning_count configuration setting(s) should be
+          changed. You may also ignore this message, but doing so may limit
+          available features, or result in Netkit not functioning correctly on
+          your system.
 END_OF_DIALOG
    exit "$warning_count"
 fi
