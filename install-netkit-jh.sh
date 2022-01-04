@@ -287,10 +287,10 @@ for rc_file in "${rc_files[@]}"; do
 
 
    # Append Netkit additions to the rc file
-   printf "%s\n" "$rc_section_header" >> "${rc_file}"
+   printf "%s\n" "$rc_section_header" >> "$rc_file"
 
    # Environment variable definitions
-   printf "%s\n" "$nk_env_var_defs" >> "${rc_file}"
+   printf "%s\n" "$nk_env_var_defs" >> "$rc_file"
 
    if [ "$(basename -- "$rc_file")" = ".bashrc" ]; then
       # Source the Bash completion scripts if operating on .bashrc
@@ -303,7 +303,7 @@ EOF
    fi
 
    # Terminate section with footer
-   echo "$rc_section_footer"
+   printf "%s\n" "$rc_section_footer" >> "$rc_file"
 done
 
 # Ubuntu (and similar) distributions prevent .bashrc from running in a
