@@ -79,6 +79,7 @@ while true; do
 
          term_type="xterm"
          term_name="xterm"
+         break
          ;;
       2)
          if ! command -v -- "alacritty" > /dev/null 2>&1; then
@@ -89,7 +90,8 @@ while true; do
 
          term_type="alacritty"
          term_name="Alacritty"
-        ;;
+         break
+         ;;
       3)
          if ! command -v -- "kitty" > /dev/null 2>&1; then
             sudo apt-get update
@@ -98,6 +100,7 @@ while true; do
 
          term_type="kitty"
          term_name="kitty"
+         break
          ;;
       4)
          if ! command -v -- "gnome-terminal" > /dev/null 2>&1; then
@@ -107,6 +110,7 @@ while true; do
 
          term_type="gnome"
          term_name="GNOME Terminal"
+         break
          ;;
       5)
          if ! command -v -- "wsl.exe" > /dev/null 2>&1; then
@@ -117,6 +121,7 @@ while true; do
 
          term_type="wsl"
          term_name="Windows Console"
+         break
          ;;
       6)
          if ! command -v -- "wt.exe" > /dev/null 2>&1; then
@@ -127,6 +132,7 @@ while true; do
 
          term_type="wt"
          term_name="Windows Terminal"
+         break
          ;;
    esac
 done
