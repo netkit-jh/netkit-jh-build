@@ -74,4 +74,4 @@ fi
 
 
 echo "passed."
-exit 1
+exit 0
