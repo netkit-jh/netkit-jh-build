@@ -45,6 +45,7 @@ echo -n ">  Checking GNU C Library version... "
 required_glibc_version=$(
    objdump --dynamic-syms "$VM_KERNEL" |
    grep --extended-regexp --only-matching "GLIBC_[0-9.]+" |
+   sed 's/GLIBC_//' |
    sort --version-sort |
    tail --lines 1
 )
