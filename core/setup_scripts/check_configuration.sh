@@ -58,7 +58,7 @@ for script in "$NETKIT_HOME/setup_scripts/check_configuration.d/"*; do
 ${color_red}[ ERROR ]$color_normal Your system is not configured properly. Correct the above errors and
 verify with $SCRIPTNAME before using Netkit.
 END_OF_DIALOG
-         exit "$return_value"
+         exit 255
          ;;
       *)
          # On success, 0 is returned. If there are warnings (no errors), the
