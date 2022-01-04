@@ -30,6 +30,12 @@ export LANG=C
 
 SCRIPTNAME=$(basename -- "$0")
 
+# Ensure NETKIT_HOME is set
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
 
 # ANSI color escape sequences
 color_normal=$'\033[0m'
@@ -39,7 +45,9 @@ color_yellow=$'\033[33;1m'
 
 warning_count=0
 
-for script in check_configuration.d/*; do
+for script in "$NETKIT_HOME/setup_scripts/check_configuration.d/"*; do
+   [ ! -e "$script" ] && continue
+
    "$script"
    return_value=$?
 
@@ -62,10 +70,10 @@ done
 
 if [ "$warning_count" -gt 0 ]; then
    cat << END_OF_DIALOG
-${color_yellow}[WARNING]$color_normal It has been advised that $warning_count configuration setting(s) should be
-          changed. You may also ignore this message, but doing so may limit
-          available features, or result in Netkit not functioning correctly on
-          your system.
+${color_yellow}[WARNING]$color_normal It has been advised that $warning_count configuration setting(s)
+          should be changed. You may also ignore this message, but doing so may
+          limit available features, or result in Netkit not functioning
+          correctly on your system.
 END_OF_DIALOG
    exit "$warning_count"
 fi
