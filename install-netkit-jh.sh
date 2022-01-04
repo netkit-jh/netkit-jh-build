@@ -224,7 +224,7 @@ else
          echo "$download_dir/$file: file already exists; skipping"
          continue
       elif [ -n "$no_download" ]; then
-         echo "$download_dir/$file: file does not exist and download has been disabled"
+         echo 1>&2 "$download_dir/$file: file does not exist and download has been disabled"
          exit 1
       fi
 
