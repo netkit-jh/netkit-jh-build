@@ -1,47 +1,75 @@
 #!/usr/bin/env bash
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-MAG='\033[0;35m'
-LMAG='\033[0;95m'
-WH='\033[0;97m'
-CY='\033[0;36m'
-LG='\033[0;92m'
-RST='\033[0m'
+#     Copyright 2020-2022 Billy Bromell, Adam Bromiley - Warwick Manufacturing
+#     Group, University of Warwick.
+#
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ -n $(mount -l -t proc) ]] && \
-    echo -e "\n/proc already mounted ${GREEN}[✓]"${RST} || \
-    mount -t proc proc /proc
+# Download and install Netkit-JH in the user's home directory.
 
-[[ -n $(mount -l -t proc) ]] || {
-    echo -e "\n${RED}Could not mount /proc. Exitting.${RST}" \
-    && exit 1
-}
 
-mount | grep '/netkit-build' &> /dev/null && \
-    echo -e "\n/netkit-build mounted ${GREEN}[✓]${RST}" || {
-    echo -e "\n${RED}Source Code Dir not mounted. ${RST}
-Remember to pass a volume in the docker argument with \`-v PATH_TO_NETKIT_JH_BUILD:/netkit-build\`
+# ANSI color escape sequences
+color_normal=$'\033[0m'
+color_red=$'\033[0;31m'
+color_green=$'\033[0;32m'
+color_magenta=$'\033[0;35m'
 
-${MAG}https://netkit-jh.github.io/docs/dev/guides/dockerbuild/${RST}
 
-Exitting.\n" \
-    && exit 1
-}
+# Link to tutorial
+tutorial_link="https://netkit-jh.github.io/docs/dev/guides/dockerbuild/"
+
+
+if [ -n "$(mount --show-labels --types proc)" ]; then
+   echo "/proc already mounted ${color_green}[✓]$color_normal"
+elif ! mount --types proc proc /proc; then
+   echo "${color_red}Could not mount /proc$color_normal"
+   exit 1
+fi
+
+if mount | grep '/netkit-build' &> /dev/null; then
+   echo "/netkit-build mounted ${color_green}[✓]$color_normal"
+else
+   cat << END_OF_DIALOG
+${color_red}Source Code Dir not mounted.$color_normal
+Remember to pass a volume in the docker argument with:
+   -v PATH_TO_NETKIT_JH_BUILD:/netkit-build
+
+$color_magenta$tutorial_link$color_normal
+END_OF_DIALOG
+   exit 1
+fi
 
 # Should already be in /netkit-build from WORKDIR in Dockerfile
 if [ -f "Makefile" ]; then
-    echo -e "\nAttempting to run make with args ${MAKE_ARGS}\n"
-    make ${MAKE_ARGS} && \
-        echo -e "\nMake exitted successfully.${GREEN}[✓]${RST}\n" ||
-        echo -e "\n${RED}Error running make.${RST}\n"
+   echo "Building Netkit${MAKE_ARGS:+" with '$MAKE_ARGS' as arguments to the Makefile"}"
+
+   # shellcheck disable=SC2086
+   if make $MAKE_ARGS; then
+      echo "Make exited successfully${color_green}[✓]$color_normal"
+   else
+      echo "${color_red}Error running Make$color_normal"
+      exit 1
+   fi
 else
-    echo -e "\n${RED}Makefile doesn't exist.${RST}
+   cat << END_OF_DIALOG
+${color_red}Makefile doesn't exist.$color_normal
+Have you cloned the netkit-jh-build source? Ensure you are passing the correct
+directory as a Docker volume. You may need to give a full path.
 
-Have you cloned the netkit-jh-build source? Please check you are passing the correct directory as a docker volume. You may need to give a full path.
-
-${MAG}https://netkit-jh.github.io/docs/dev/guides/dockerbuild/${RST}
-
-Exitting.\n"
-    exit 1
+$color_magenta$tutorial_link$color_normal
+END_OF_DIALOG
+   exit 1
 fi
