@@ -303,7 +303,7 @@ EOF
    fi
 
    # Terminate section with footer
-   printf "%s\n" "$rc_section_footer" >> "$rc_file"
+   printf "%s\n\n" "$rc_section_footer" >> "$rc_file"
 done
 
 # Ubuntu (and similar) distributions prevent .bashrc from running in a
@@ -344,9 +344,11 @@ fi
 echo "${color_bold}Netkit-JH is now installed$color_normal"
 
 
-# Verify system and Netkit install directory
+# Verify system and Netkit install directory. We only exit if the return code
+# is 255 (an error not a warning). Also note that set -e is used in this
+# script.
 echo "Checking configuration..."
-"$install_dir/setup_scripts/check_configuration.sh" || exit 1
+"$install_dir/setup_scripts/check_configuration.sh" || [ $? -eq 255 ] && exit 1
 
 # Encourage user to set environment variables for the current terminal
 cat << END_OF_DIALOG
@@ -358,10 +360,10 @@ ${color_bold}To use Netkit-JH now, open a new terminal window or run:$color_norm
 
 It is recommended to change the terminal emulator that Netkit uses, since the
 default is xterm (an old but portable emulator). This can be done with the
-folling command:
+following command:
    "$install_dir/setup_scripts/change_terminal.sh"
 
-or by manually setting the TERM_TYPE in one of the configuration files:
+or by manually setting TERM_TYPE in one of the configuration files:
    (user)      "$HOME/.netkit/netkit.conf"
    (install)   "$install_dir/netkit.conf"
    (system)    /etc/netkit.conf
