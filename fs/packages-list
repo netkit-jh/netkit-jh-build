@@ -9,7 +9,7 @@ bash-completion
 bind9
 bind9-host
 bird
-bridge-utils 
+bridge-utils
 bzip2
 console-common
 console-data
