@@ -32,7 +32,7 @@ echo -n ">  Checking for the Netkit executable directory in PATH... "
 # a regular expression, however this would be messy with the allowance of
 # trailing and back-to-back forward slashes, and more importantly symbolic
 # links. This means the test depends on the bin/ directory having vstart.
-if [ "$(command -v vstart)" -ef "$NETKIT_HOME/bin/vstart" ]; then
+if ! [ "$(command -v vstart)" -ef "$NETKIT_HOME/bin/vstart" ]; then
    new_path="${PATH:+"\$PATH:"}$NETKIT_HOME/bin/"
 
    cat << END_OF_DIALOG
