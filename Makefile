@@ -53,7 +53,7 @@ build/release-$(NETKIT_BUILD_RELEASE).sha256: | build
 build/install-netkit-jh-$(NETKIT_BUILD_RELEASE).sh: | build
 	cp install-netkit-jh.sh build/install-netkit-jh-$(NETKIT_BUILD_RELEASE).sh
 	chmod +x build/install-netkit-jh-$(NETKIT_BUILD_RELEASE).sh
-	sed -i "s/VERSION=\"VERSION_NUMBER\"/VERSION=\"$(NETKIT_BUILD_RELEASE)\"/g" build/install-netkit-jh-$(NETKIT_BUILD_RELEASE).sh
+	sed -i "s/nk_version=\"VERSION_NUMBER\"/nk_version=\"$(NETKIT_BUILD_RELEASE)\"/g" build/install-netkit-jh-$(NETKIT_BUILD_RELEASE).sh
 
 .PHONY: clean
 clean:
