@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 
+###############################################################################
+#                                                                             #
+#                  THIS FILE IS READ-ONLY - SEE NETKIT.CONF.                  #
+#                                                                             #
+###############################################################################
+
 # This script contains the default Netkit configuration parameters. It is not
 # intended for standalone usage and should not be edited by the user. For
-# modifying parameters, netkit.conf should be used.
+# overriding parameters, netkit.conf should be used; use this or netkit.conf(5)
+# for reference.
 
 
 # Configuration file version, independant of Netkit's versioning system. It
