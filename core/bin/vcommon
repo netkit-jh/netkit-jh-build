@@ -349,7 +349,10 @@ get_vhost_info_by_pid() {
       # arg (the single # permits usage of further equals signs in the
       # argument).
       opt=${arg%%=*}
+      opt=${opt#\"}
+
       value=${arg#*=}
+      value=${value%\"}
 
       # Edge-cases that can only be matched with regular expressions (or with
       # extglob enabled, which cannot be done.)
@@ -380,14 +383,14 @@ get_vhost_info_by_pid() {
                null)       vhost_info[$opt]="none";;
             esac
             ;;
-         \"exec)       vhost_info[boot_cmd]=${value%\"};;
-         \"hosthome)   vhost_info[hosthome]=${value%\"};;
-         \"hostlab)    vhost_info[hostlab]=${value%\"};;
+         exec)       vhost_info[boot_cmd]=$value;;
+         hosthome)   vhost_info[hosthome]=$value;;
+         hostlab)    vhost_info[hostlab]=$value;;
          # Memory is NOT adjusted by the skew here
          mem)        vhost_info[mem]=$value;;
-         \"modules)    vhost_info[modules]=${value%\"};;
+         modules)    vhost_info[modules]=$value;;
          tmux)       vhost_info[con0]="tmux";;
-         \"ubd0)
+         ubd0)
             # The ubd0 value is disk,fs or fs
             vhost_info[disk]=${value%%,*}
             vhost_info[fs]=${value#*,}
@@ -396,7 +399,7 @@ get_vhost_info_by_pid() {
             # shared filesystem is used.
             [ "${vhost_info[disk]}" = "${vhost_info[fs]}" ] && unset "vhost_info[disk]"
 
-            vhost_info[fs]=${vhost_info[fs]%\"}
+            vhost_info[fs]=${vhost_info[fs]}
             ;;
          umid)       vhost_info[umid]=$value;;
          *)          vhost_info_other+=( "$arg" )
@@ -435,7 +438,7 @@ pgrep_vhost() {
    # processing is therefore required - this filter just removes processes
    # which definitely are not matches to save processing the cmdline of every
    # single UML instance.
-   local kernel_cmd_regex="^${VM_KERNEL}[[:blank:]].*[[:blank:]]umid=$vhost(\$|[[:blank:]])"
+   local kernel_cmd_regex="^${VM_KERNEL}([[:blank:]].*[[:blank:]]|[[:blank:]])umid=$vhost([[:blank:]].*)?$"
    pgrep ${target_user:+"--euid=$target_user"} --full "$kernel_cmd_regex"
 }
 
