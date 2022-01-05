@@ -99,3 +99,5 @@
 
 # Known Bugs
 - Removing an interface with `vconf` crashes the machine
+- Whitespace in the `VM_MODEL_FS` (`-m`|`--model-fs`) and `VM_KERNEL` (`--kernel`) configuration variables, `HOME` environment variable, or the argument to `--mount`, `--hostlab`, and `--exec` may break when ran with Windows Terminal due to escaped quotes not being honoured by the extra layer of shell interpretation.
+- A terminating quotation mark in the `VM_MODEL_FS` (`-m`|`--model-fs`) configuration variable will be removed by the `get_vhost_info_by_pid` function if the instance is running in Windows Terminal. This is significant in `vcrash`'s and `vhalt`'s `--remove-fs` option - the disk file will not be removed (and a file with the same name sans quote mark will be, if exists).

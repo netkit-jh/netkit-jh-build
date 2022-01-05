@@ -348,6 +348,8 @@ get_vhost_info_by_pid() {
       # UML options are key=value pairs. ${arg#*=} removes the key= prefix from
       # arg (the single # permits usage of further equals signs in the
       # argument).
+      # TODO: honour terminating quotation marks in arguments when ran with
+      # Windows Terminal.
       opt=${arg%%=*}
       opt=${opt#\"}
 
