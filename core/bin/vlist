@@ -164,31 +164,17 @@ print_vhost_summary() {
 
 
 ###############################################################################
-# Print complete information about a machine.
+# Print complete information about a machine using pre-set vhost_info and
+# vhost_sockets arrays.
 # Usage:
-#   print_vhost_info_by_name USER VM
-# Globals:
-#   vhost_info
-#   vhost_sockets
-# Arguments:
-#   $1 - owner of the machine; pass an empty string for all users
-#   $2 - machine name
-# Returns:
-#   Prints machine details to stdout. Returns 0 on success, non-zero on
-#   failure.
+#   print_vhost_info_by_name
 ###############################################################################
 print_vhost_info_by_name() {
-   local target_user=$1
-   local vhost=$2
-
    local i indent
    local socket hub_name tap
 
-   # Fill vhost_info and vhost_sockets global arrays
-   get_vhost_info_by_name "$target_user" "$vhost"
-
    # Output the machine details in a structured format
-   echo "============= Information for virtual machine '$vhost' ============="
+   echo "============= Information for virtual machine '${vhost_info[umid]}' ============="
    echo " --- Accounting information ---"
    echo "   PID:             ${vhost_info[pid]}"
    echo "   Owner:           ${vhost_info[owner]}"
@@ -379,8 +365,9 @@ fi
 
 # Get verbose information for specific virtual machines
 for vhost in "${vhosts[@]}"; do
-   if get_machine_state "$target_user" "$vhost"; then
-      print_vhost_info_by_name "$target_user" "$vhost"
+   # Fill vhost_info and vhost_sockets global arrays
+   if get_vhost_info_by_name "$target_user" "$vhost"; then
+      print_vhost_info_by_name
    else
       warn "no virtual machine named '$vhost' exists for $target_user"
    fi
