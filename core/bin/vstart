@@ -737,7 +737,7 @@ trap "rm --force -- '$out_file'" EXIT
          fi
 
          echo "   Mount:      $src_mnt @ $dst_mnt"
-         kernel_cmd+=( "\"mount=$VM_MOUNT\"" )
+         kernel_cmd+=( "\"mount=$mnt_specification\"" )
       done
    fi
 
