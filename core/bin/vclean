@@ -334,10 +334,6 @@ if [ -n "$rm_hubs" ] && [ -n "$kill_machines" ]; then
    exit 1
 fi
 
-# --force is only effective with --remove-hubs
-[ -n "$force" ] && [ -z "$rm_hubs" ] &&
-   warn "--force is redundant when not used with --remove-hubs"
-
 
 if [ -n "$clean_all" ]; then
    clean_dirs=1
@@ -348,6 +344,10 @@ fi
 
 # Enable default action (remove unused virtual hubs) if none has been requested
 [ -z "$kill_machines" ] && [ -z "$rm_tunnels" ] && rm_hubs=1
+
+# --force is only effective with --remove-hubs
+[ -n "$force" ] && [ -z "$rm_hubs" ] &&
+   warn "--force is redundant when not used with --remove-hubs"
 
 
 [ -z "$target_user" ] && user_str="any user" || user_str=$target_user
