@@ -221,7 +221,11 @@ single_lab_vhost_start() {
          opt=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
 
          # Everything after the first '='
-         value=${configuration#*=}
+         if str_contains "$configuration" "="; then
+            value=${configuration#*=}
+         else
+            unset value
+         fi
 
          # If option is all-digit, it must be a network interface specification
          [[ "$opt" =~ ^([0-9]|[1-9][0-9]+)$ ]] && opt="eth$opt"
@@ -236,8 +240,8 @@ single_lab_vhost_start() {
          # argument (denoted with '::' in the option string), an exception when
          # appending the argument must be made (an '=' is required for long
          # options, no delimiter for short ones).
-         [ -n "$value" ] && vstart_args+=( "$value" )
-      done < <(grep -- "^$vhost\[.*\]=" "$lab_dir/lab.conf")
+         [ -n "${value+x}" ] && vstart_args+=( "$value" )
+      done < <(grep -- "^$vhost\[.*\]" "$lab_dir/lab.conf")
    fi
 
    # Remove .ready file, if existing
