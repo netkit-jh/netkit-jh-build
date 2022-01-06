@@ -88,8 +88,8 @@ By default, the script just removes unused virtual hubs.
                          administrative privileges. The script will take care
                          of asking for the root password if required.
       --test          Do not actually stop virtual machines and hubs: just show
-                        which processes would be killed. --remove-tunnels is
-                        not affected by this option.
+                        which processes would be killed. --remove-tunnels and
+                        --clean-directories are unaffected by this option.
   -u, --user=USERNAME  Perform operations on processes and tunnels owned by
                         USERNAME. By using the special user name '-' all the
                         processes are affected, regardless of their user (this
