@@ -153,7 +153,11 @@ EOF
       opt=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
 
       # Everything after the first '='
-      value=${configuration#*=}
+      if str_contains "$configuration" "="; then
+         value=${configuration#*=}
+      else
+         unset value
+      fi
 
       # Ignore if VM is not part of the lab
       array_contains "$vhost" "${lab_vhosts[@]}" || continue
@@ -162,6 +166,11 @@ EOF
       if [[ "$opt" =~ ^([0-9]|[1-9][0-9]+)$ ]]; then
          # Ignore if it has already been seen
          [[ "${interface_ids[$vhost]}" =~ \ $opt\  ]] && continue
+
+         # Isolate collision domain name and host IP address if 'tap' interface
+         str_contains "$value" "," && value=${value%,*}
+
+         [ -z "$value" ] && continue
 
          # Add an edge between the machine and its collision domain
          cat << EOF
@@ -177,9 +186,9 @@ EOF
          # safe.
          interface_ids[$vhost]+=" $opt "
       else
-         opts[$vhost]+="$opt = $value<BR/>"
+         opts[$vhost]+="$opt${value+" = $value"}<BR/>"
       fi
-   done < <(grep --extended-regexp --no-filename -- "^$hostname_regex\[.*\]=" "${lab_confs[@]}")
+   done < <(grep --extended-regexp --no-filename -- "^$hostname_regex\[.*\]" "${lab_confs[@]}")
 
    # Label each machine with its hostname and vstart options
    for vhost in "${lab_vhosts[@]}"; do
