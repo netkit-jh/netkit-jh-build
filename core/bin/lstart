@@ -96,7 +96,10 @@ END_OF_HELP
                         that can be launched simultaneously. VALUE must be a
                         positive integer. A VALUE of 0 corresponds to setting
                         no limit. This option is incompatible with -s. Default
-                        value is $MAX_SIMULTANEOUS_VMS
+                        value is $MAX_SIMULTANEOUS_VMS.
+                        Note that this is an optional argument; when
+                        specifying VALUE it must be attached to the short
+                        option (-pVALUE)
   -s, --sequential    disable parallel startup, even if a lab.dep file is found
                         to exist inside the lab directory. This option
                         conflicts with -p
