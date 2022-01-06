@@ -106,10 +106,11 @@ cp -- "$build_dir/netkit-filesystem-version" "$mnt_point/etc/netkit-filesystem-v
 
 ### MANAGE SERVICES ###########################################################
 # Enable Netkit services
-chroot -- "$mnt_point" systemctl enable \
-   netkit-startup-phase1.service \
-   netkit-startup-phase2.service \
-   netkit-shutdown.service
+chroot -- "$mnt_point" \
+   systemctl enable \
+      netkit-startup-phase1.service \
+      netkit-startup-phase2.service \
+      netkit-shutdown.service
 
 # Sort out ttys and auto-logon
 ln \
@@ -119,6 +120,15 @@ ln \
    "$mnt_point/etc/systemd/system/getty.target.wants/getty@tty0.service"
 
 chroot -- "$mnt_point" systemctl mask getty-static "getty@tty"{2..6}".service"
+
+# Map the ctrl-alt-del handler to poweroff. This is so mconsole's cad command
+# functions to safely shutdown machines.
+chroot -- "$mnt_point" \
+   ln \
+      --symbolic \
+      -- \
+      "/lib/systemd/system/poweroff.target" \
+      "/etc/systemd/system/ctrl-alt-del.target"
 
 # Disable autostart for some services
 mapfile -t disabled_services < <(grep --invert-match -- "^#" "$work_dir/disabled-services")
