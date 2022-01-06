@@ -76,8 +76,13 @@ parent directory.
                         GLOB can be specifed which will be used to pattern
                         match directories. Ensure this is not expanded on the
                         command line with suitable escaping of special
-                        characters. The option can be paired with the -d option
-                        to specify additional folders.
+                        characters.
+                        Note that this is optional; when
+                        specifying GLOB, it must be attached to the short
+                        option (-aGLOB) or delimited with an equals
+                        (--auto=GLOB).
+                        The option can be paired with the -d option
+                        to specify additional folders
 
 Miscellaneous:
 $(help_option)
@@ -220,8 +225,8 @@ log_write "$0 $*"
 
 
 # Get command line options
-long_opts="auto,help,version,map:"
-short_opts="ad:m:"
+long_opts="auto::,help,version,map:"
+short_opts="a::d:m:"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
