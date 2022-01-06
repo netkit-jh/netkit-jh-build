@@ -175,7 +175,12 @@ for vhost in "${vhosts[@]}"; do
 
    echo -n "Halting '$vhost' (PID ${vhost_info[pid]})"
    [ -n "$target_user" ] && echo -n " owned by $target_user"
-   [ -z "$quick_mode" ] && echo -en " [                    ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+
+   if [ -z "$quick_mode" ]; then
+      echo -en " [                    ]\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+   else
+      echo
+   fi
 
    # The recommended method to safely shut down a UML instance is with
    # Ctrl-Alt-Del, which can be triggered with mconsole.
