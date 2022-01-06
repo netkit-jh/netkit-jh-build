@@ -524,9 +524,6 @@ start_inet_hub() {
          fi
       fi
    fi
-
-   echo "******** Starting Internet connected virtual hub ********"
-   echo "   (host) $tap_addr"
    
    # Create 'tap' interface on host and configure firewall
    invoke_manage_tuntap "$verbose" "$just_print" "$domain" "$tap_addr"
@@ -561,20 +558,23 @@ invoke_manage_tuntap() {
       "$tap_addr"
    )
 
-   echo "********     (root privileges are required)      ********"
-
    if [ -n "$just_print" ]; then
       echo "Not running ==> ${manage_tuntap_cmd[*]}"
    else
-      [ -n "$verbose" ] && echo "Running ==> ${manage_tuntap_cmd[*]}"
+      if [ -n "$verbose" ]; then
+         echo "Running ==> ${manage_tuntap_cmd[*]}"
+         "${manage_tuntap_cmd[@]}"
+      else
+         echo "Starting host-connected 'tap' hub @ $tap_addr..."
+         "${manage_tuntap_cmd[@]}" > /dev/null
+      fi
 
-      if ! "${manage_tuntap_cmd[@]}"; then
+      # shellcheck disable=SC2181
+      if [ "$?" -ne 0 ]; then
          echo 1>&2 "Error while configuring the tunnel."
          exit 1
       fi
    fi
-
-   echo "************** Abandoning root privileges ***************"
 }
 
 

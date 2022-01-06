@@ -65,6 +65,11 @@ forward_rule=(
 
 case $action in
    start)
+      echo "******** Starting Internet connected virtual hub ********"
+      echo "   Host address: $tap_addr"
+      echo "   Owner: $target_user"
+      echo "********     (root privileges are required)      ********"
+
       if [ ! -c /dev/net/tun ]; then
          printf "Creating /dev/net/tun device...\t\t\t"
          if ! sudo --prompt $'\n'"[sudo] password for %p: " -- mknod --mode 666 /dev/net/tun c 10 200; then
@@ -137,6 +142,8 @@ case $action in
          fi
          echo "done."
       fi
+
+      echo "************** Abandoning root privileges ***************"
       ;;
    stop)
       if [ -z "$target_user" ]; then
