@@ -82,7 +82,7 @@ Available arguments:
 --target-dir            : Absolute path to a folder to install Netkit to.
 --backup-dir            : Absolute path to where the previous installation of Netkit should be moved to.
 --no-packages           : Do not download packages required to run Netkit from apt.
---no-download           : Do not download kernel/fs/core files if they are not found inside download-dir.
+--no-downloads          : Do not download kernel/fs/core files if they are not found inside download-dir.
 --download-url          : Specify the URL prefix to download the files from.
 --download-dir          : Path to where the files are downloaded to.
 --kernel-files          : Absolute path to where the kernel files have been extracted. This path should
