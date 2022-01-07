@@ -50,7 +50,7 @@ case $i in
     INSTALL_APT_PACKAGES=false
     shift # past argument=value
     ;;
-    --no-packages)
+    --no-downloads)
     DOWNLOAD_FILES=false
     shift # past argument=value
     ;;
