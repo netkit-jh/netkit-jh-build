@@ -371,58 +371,131 @@ EOF
 
 
 ###############################################################################
-# Check for update status via GitHub's API and write the new release's URL to
-# standard output if out-of-date.
+# Check if there is a new release or prerelease Netkit-JH version on the
+# GitHub repository and provide a dialog and link if so.
 # Usage:
-#   update_available
-# Globals:
-# Returns:
-#   0 when an update is available, non-zero otherwise
+#   new_version_check
 ###############################################################################
-update_available() {
+new_version_check() {
    local last_update_check next_update_check
    local current_date
-   local current_version latest_version
+   local latest_release_version latest_prerelease_version
+   local latest_release_version_file latest_prerelease_version_file
+   local current_version
 
-   if [ "$CHECK_FOR_UPDATES" = "yes" ]; then
-      # Check whether we have polled in the last UPDATE_CHECK_PERIOD days
-      touch -- "$NETKIT_HOME/.new-version"
+   latest_release_version_file="$NETKIT_HOME/.latest-release-version"
+   latest_prerelease_version_file="$NETKIT_HOME/.latest-prerelease-version"
 
-      if [ -f "$NETKIT_HOME/.last-update-check" ]; then
-         last_update_check=$(cat -- "$NETKIT_HOME/.last-update-check")
-      else
-         last_update_check=0
-      fi
-
-      # Next check = date of the last one + UPDATE_CHECK_PERIOD (in seconds)
-      next_update_check=$((last_update_check + UPDATE_CHECK_PERIOD * 86400))
-
-      current_date=$(date +%s)
-
-      if [ "$current_date" -gt "$next_update_check" ]; then
-         # We haven't checked in the past UPDATE_CHECK_PERIOD days, check now
-         echo "$current_date" > "$NETKIT_HOME/.last-update-check"
-
-         # Get the latest release number from the GitHub API.
-         # NOTE: we assume the GitHub API will always return JSON formatted as
-         # a key-value pair per line. The relevant line should be:
-         # "tag_name": "1.2.3",
-         curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" |
-            grep '"tag_name":' |
-            sed -E 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"
-      fi
-
-      current_version=$(sed -- "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
-      latest_version=$(cat -- "$NETKIT_HOME/.new-version")
-
-      if [ "$latest_version" != "$current_version" ]; then
-         echo "https://github.com/netkit-jh/netkit-jh-build/releases/$latest_version"
-         return 0
-      fi
+   # Check whether we have polled in the last UPDATE_CHECK_PERIOD days
+   if [ -f "$NETKIT_HOME/.last-update-check" ]; then
+      last_update_check=$(cat -- "$NETKIT_HOME/.last-update-check")
+   else
+      last_update_check=0
    fi
 
-   # Return 1 if not checking for updates or an update doesn't exist
-   return 1
+   # Next check = date of the last one + UPDATE_CHECK_PERIOD (in seconds)
+   next_update_check=$((last_update_check + UPDATE_CHECK_PERIOD * 86400))
+
+   current_date=$(date +%s)
+
+   if [ "$current_date" -gt "$next_update_check" ] ||
+      [ ! -f "$latest_release_version_file" ] ||
+      [ ! -f "$latest_prerelease_version_file" ]; then
+
+      # We haven't checked in the past UPDATE_CHECK_PERIOD days or we have
+      # never checked (no version files) - check now.
+      echo "$current_date" > "$NETKIT_HOME/.last-update-check"
+
+      latest_release_version=$(get_latest_release_version)
+      latest_prerelease_version=$(get_latest_prerelease_version)
+
+      echo "$latest_release_version" > "$latest_release_version_file"
+      echo "$latest_prerelease_version" > "$latest_prerelease_version_file"
+   else
+      # We have checked in the past UPDATE_CHECK_PERIOD days and the version
+      # files both exist - get the latest versions locally.
+      latest_release_version=$(cat -- "$latest_release_version_file")
+      latest_prerelease_version=$(cat -- "$latest_prerelease_version_file")
+   fi
+
+   current_version=$(sed -- "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
+
+   compare_versions "$current_version" "$latest_release_version"
+   if [ "$?" -eq 2 ]; then
+      # If the current version is older than the latest stable release
+      bold_print "A new version ($latest_release_version) of Netkit-JH is available at:"
+      bold_print "   https://github.com/netkit-jh/netkit-jh-build/releases/$latest_release_version"
+   fi
+
+   compare_versions "$current_version" "$latest_prerelease_version"
+   if [ "$?" -eq 2 ]; then
+      # If the current version is older than the latest pre-release version
+      bold_print "A new pre-release ($latest_prerelease_version) of Netkit-JH is available at:"
+      bold_print "   https://github.com/netkit-jh/netkit-jh-build/releases/$latest_prerelease_version"
+      bold_print "Warning: pre-release versions may be unstable."
+   fi
+}
+
+
+###############################################################################
+# Get the latest Netkit-JH stable release version number from GitHub
+# Usage:
+#   get_latest_release_version
+###############################################################################
+get_latest_release_version() {
+   curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases" |
+      jq --raw-output ".[] | select(.prerelease==false) | .tag_name" |
+      sed '/-/!{s/$/_/}' |
+      sort --version-sort |
+      sed 's/_$//' |
+      tail --lines 1
+}
+
+
+###############################################################################
+# Get the latest Netkit-JH prerelease version number from GitHub
+# Usage:
+#   get_latest_prerelease_version
+###############################################################################
+get_latest_prerelease_version() {
+   curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases" |
+      jq --raw-output ".[] | select(.prerelease==true) | .tag_name" |
+      sed '/-/!{s/$/_/}' |
+      sort --version-sort |
+      sed 's/_$//' |
+      tail --lines 1
+}
+
+
+###############################################################################
+# Compare semantic version numbers
+# Usage:
+#   compare_versions VERSION1 VERSION2
+# Arguments:
+#   $1 - version number
+#   $2 - version number
+# Returns:
+#   0 when the versions are equal
+#   1 if VERSION1 > VERSION2
+#   2 if VERSION1 < VERSION2
+###############################################################################
+compare_versions() {
+   local version1=$1
+   local version2=$2
+
+   # Return 0 if equal
+   [ "$version1" = "$version2" ] && return 0
+
+   # Get the latest semantic version
+   latest_version=$(
+      printf "%s\n%s\n" "$version1" "$version2" |
+      sed '/-/!{s/$/_/}' |
+      sort --version-sort |
+      sed 's/_$//' |
+      tail --lines 1
+   )
+
+   [ "$version1" = "$latest_version" ] && return 1 || return 2
 }
 
 
@@ -616,10 +689,7 @@ lab_welcome "$lab_dir"
 echo
 bold_print "Having issues starting the lab? Run 'lclean' before running 'lstart'."
 
-# Get ready to start the lab
-if update_url=$(update_available); then
-   bold_print "Update available for Netkit-JH - download at $update_url"
-fi
+[ "$CHECK_FOR_UPDATES" = "yes" ] && new_version_check
 
 bold_print "================================================================="
 
