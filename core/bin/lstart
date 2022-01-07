@@ -430,9 +430,13 @@ new_version_check() {
    compare_versions "$current_version" "$latest_prerelease_version"
    if [ "$?" -eq 2 ]; then
       # If the current version is older than the latest pre-release version
-      bold_print "A new pre-release ($latest_prerelease_version) of Netkit-JH is available at:"
-      bold_print "   https://github.com/netkit-jh/netkit-jh-build/releases/$latest_prerelease_version"
-      bold_print "Warning: pre-release versions may be unstable."
+      compare_versions "$latest_release_version" "$latest_prerelease_version"
+      if [ "$?" -eq 2 ]; then
+         # Latest pre-release version is newer than the latest stable release
+         bold_print "A new pre-release ($latest_prerelease_version) of Netkit-JH is available at:"
+         bold_print "   https://github.com/netkit-jh/netkit-jh-build/releases/$latest_prerelease_version"
+         bold_print "Warning: pre-release versions may be unstable."
+      fi
    fi
 }
 
