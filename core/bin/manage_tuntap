@@ -65,14 +65,14 @@ forward_rule=(
 
 case $action in
    start)
-      echo "******** Starting Internet connected virtual hub ********"
+      echo "********** Starting Internet connected virtual hub **********"
       echo "   Host address: $tap_addr"
       echo "   Owner: $target_user"
-      echo "********     (root privileges are required)      ********"
+      echo "**********     (root privileges are required)      **********"
 
       if [ ! -c /dev/net/tun ]; then
-         printf "Creating /dev/net/tun device...\t\t\t"
-         if ! sudo --prompt $'\n'"[sudo] password for %p: " -- mknod --mode 666 /dev/net/tun c 10 200; then
+         printf "Creating /dev/net/tun device...\t\t\t\t"
+         if ! sudo --prompt $'\n[sudo] password for %p: ' -- mknod --mode 666 /dev/net/tun c 10 200; then
             echo "failed."
             exit 1
          fi
@@ -82,11 +82,11 @@ case $action in
       # Get name for the user's tap interface
       tap_name=$(get_tap_interface "$target_user" "$domain")
 
-      printf "Bringing down %s (if any)...\t" "$tap_name"
-      sudo --prompt $'\n'"[sudo] password for %p: " -- ifconfig "$tap_name" down > /dev/null 2>&1
+      printf "Bringing down %s (if any)...\t\t" "$tap_name"
+      sudo --prompt $'\n[sudo] password for %p: ' -- ip link set dev "$tap_name" down > /dev/null 2>&1
       echo "done."
 
-      printf "Bringing down tunnel (if any)...\t\t"
+      printf "Bringing down tunnel (if any)...\t\t\t"
       sudo "$NETKIT_HOME/bin/tunctl" -d "$tap_name" > /dev/null 2>&1
       echo "done."
 
@@ -95,28 +95,35 @@ case $action in
          exit 1
       fi
 
-      printf "Setting up tunnel...\t\t\t\t"
+      printf "Setting up tunnel...\t\t\t\t\t"
       if ! sudo "$NETKIT_HOME/bin/tunctl" -u "$target_user" -t "$tap_name" > /dev/null; then
          echo "failed."
          exit 1
       fi
       echo "done."
 
-      printf "Bringing up %s...\t\t\t" "$tap_name"
-      if ! sudo ifconfig "$tap_name" "$tap_addr" up; then
+      printf "Assigning address %s/8 to %s...\t" "$tap_addr" "$tap_name"
+      if ! sudo ip address add "$tap_addr/8" dev "$tap_name"; then
          echo "failed."
          exit 1
       fi
       echo "done."
 
-      printf "Setting permissions for /dev/net/tun...\t\t"
+      printf "Bringing up %s...\t\t\t\t" "$tap_name"
+      if ! sudo ip link set dev "$tap_name" up; then
+         echo "failed."
+         exit 1
+      fi
+      echo "done."
+
+      printf "Setting permissions for /dev/net/tun...\t\t\t"
       if ! sudo chmod 666 /dev/net/tun; then
          echo "failed."
          exit 1
       fi
       echo "done."
 
-      printf "Enabling IP forwarding...\t\t\t"
+      printf "Enabling IP forwarding...\t\t\t\t"
       if ! echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward > /dev/null; then
          echo "failed."
          exit 1
@@ -125,7 +132,7 @@ case $action in
 
       # Create a new masquerade rule if it doesn't already exist.
       if ! sudo iptables --table nat --check "${postrouting_rule[@]}" 2> /dev/null; then
-         printf "Enabling masquerading...\t\t\t"
+         printf "Enabling masquerading...\t\t\t\t"
          if ! sudo iptables --table nat --append "${postrouting_rule[@]}"; then
             echo "failed."
             exit 1
@@ -135,7 +142,7 @@ case $action in
 
       # Create a new forwarding rule if it doesn't already exist.
       if ! sudo iptables --check "${forward_rule[@]}" 2> /dev/null; then
-         printf "Opening firewall for tunnel...\t\t\t"
+         printf "Opening firewall for tunnel...\t\t\t\t"
          if ! sudo iptables --insert "${forward_rule[@]}"; then
             echo "failed."
             exit 1
@@ -143,12 +150,12 @@ case $action in
          echo "done."
       fi
 
-      echo "************** Abandoning root privileges ***************"
+      echo "**************** Abandoning root privileges *****************"
       ;;
    stop)
       if [ -z "$target_user" ]; then
          if sudo iptables --check "${forward_rule[@]}" 2> /dev/null; then
-            printf "Closing firewall...\t\t\t\t"
+            printf "Closing firewall...\t\t\t\t\t"
             if ! sudo iptables --delete "${forward_rule[@]}"; then
                echo "failed."
                exit 1
@@ -157,7 +164,7 @@ case $action in
          fi
 
          if sudo iptables --table nat --check "${postrouting_rule[@]}" 2> /dev/null; then
-            printf "Disabling masquerading...\t\t\t"
+            printf "Disabling masquerading...\t\t\t\t"
             if ! sudo iptables --table nat --delete "${postrouting_rule[@]}"; then
                echo "failed."
                exit 1
@@ -165,7 +172,7 @@ case $action in
             echo "done."
          fi
 
-         printf "Disabling IP forwarding...\t\t\t"
+         printf "Disabling IP forwarding...\t\t\t\t"
          if ! echo 0 | sudo tee /proc/sys/net/ipv4/ip_forward > /dev/null; then
             echo "failed."
             exit 1
@@ -186,14 +193,14 @@ case $action in
 
             tap_name=$(basename -- "$sys_class_net_entry")
 
-            printf "\t%s...\t\t\t" "$tap_name"
-            if ! sudo ifconfig "$tap_name" down > /dev/null 2>&1; then
+            printf "\t%s...\t\t\t\t" "$tap_name"
+            if ! sudo ip link set dev "$tap_name" down > /dev/null 2>&1; then
                echo "failed."
                continue
             fi
             echo "done."
 
-            printf "\t%s tunnel...\t\t" "$tap_name"
+            printf "\t%s tunnel...\t\t\t" "$tap_name"
             if ! sudo "$NETKIT_HOME/bin/tunctl" -d "$tap_name" > /dev/null 2>&1; then
                echo "failed."
                continue
@@ -203,7 +210,7 @@ case $action in
       fi
 
       if [ -z "$target_user" ]; then
-         printf "Resetting permissions for /dev/net/tun...\t"
+         printf "Resetting permissions for /dev/net/tun...\t\t"
          if ! sudo chmod 660 /dev/net/tun; then
             echo "failed."
             exit 1

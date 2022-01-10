@@ -54,6 +54,7 @@
 - `-q`|`--quiet` option from `vconf` and `vstart`
 - `konsole-tab` argument to the `--xterm` option (and the ktabstart script)
 - bspwm compatibility patch files. They fail with the radically changed target files and fix a general issue other users have identified but only for bspwm - it applies to tmux, Windows Terminal, and other terminal emulators and window managers
+- Dependency on the `net-tools` (`ifconfig`) package for `manage_tuntap` in favour of `iproute2`
 
 ### Other Removed
 - Port helper compatibility

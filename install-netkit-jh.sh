@@ -323,7 +323,6 @@ if [ -z "$no_packages" ]; then
       "iptables"     # To manage TUN/TAP traffic
       "lsof"         # To find unused virtual network hubs
       "make"         # Parallel lab start
-      "net-tools"    # Interface management in manage_tuntap (TODO: iproute2)
       "util-linux"   # kill, getopt, mount, etc (should already be installed)
       "xterm"        # Default terminal emulator for Netkit
    )
