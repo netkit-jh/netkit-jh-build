@@ -703,7 +703,7 @@ trap "rm --force -- '$out_file'" EXIT
    #       in the value.
 
    ### HOSTNAME ########################################## (non-UML option) ###
-   # This specifies the hostname, set in /etc/netkit/enetkit-phase1. The value
+   # This specifies the hostname, set in /etc/netkit/netkit-phase1. The value
    # of the umid parameter is used, but cannot be read because it is not
    # present in /proc/cmdline of the UML instance.
    kernel_cmd+=( "hostname=$vhost" )
