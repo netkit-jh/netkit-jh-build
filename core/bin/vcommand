@@ -140,8 +140,8 @@ timeout=1
 
 
 # Get command line options
-long_opts="command,help,timeout,verbose,version"
-short_opts="c:n:v"
+long_opts="help,timeout:,verbose,version"
+short_opts="n:v"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
