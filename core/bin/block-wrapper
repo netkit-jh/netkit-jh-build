@@ -78,7 +78,7 @@ case $term in
                   tmux -L netkit kill-session -t "$vhost"
                   break
                   ;;
-               [Nn]|[Nn][Oo])
+               ""|[Nn]|[Nn][Oo])
                   echo "tmux session in use - not starting $vhost."
                   exit
                   ;;

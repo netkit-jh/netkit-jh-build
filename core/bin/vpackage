@@ -278,7 +278,7 @@ if [ "$subcmd" = "dist-upgrade" ]; then
          [Yy]|[Yy][Ee][Ss])
             break
             ;;
-         [Nn]|[Nn][Oo])
+         ""|[Nn]|[Nn][Oo])
             exit 0
             ;;
          *)
