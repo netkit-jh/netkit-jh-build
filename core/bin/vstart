@@ -588,7 +588,7 @@ trap "rm --force -- '$out_file'" EXIT
 # Scoping the following block allows machine details to be outputted
 # sequentially, even when parallel startup is enabled.
 {
-   echo "============= Starting virtual machine '$vhost' ============="
+   print_divider "Starting virtual machine '$vhost'"
 
    ### KERNEL BINARY ##########################################################
    echo "   Kernel:     $VM_KERNEL"

@@ -371,6 +371,8 @@ fi
 
 # Kill running virtual machines and hubs
 if [ -n "$kill_machines" ]; then
+   print_divider "Killing machines"
+
    # Kill all running virtual machine kernels and all virtual hubs
    echo "Killing virtual machines owned by $user_str:"
    kill_all_vhosts "$verbose" "$test_mode" "$quick_mode" "$target_user"
@@ -389,7 +391,7 @@ fi
 
 # Remove Netkit directories
 if [ -n "$clean_dirs" ]; then
-   echo "Removing Netkit directories"
+   print_divider "Removing Netkit directories"
 
    rm ${verbose:+"--verbose"} --force --recursive -- \
       "${HUB_SOCKET_DIR:?}/"* \
@@ -404,9 +406,7 @@ fi
 
 # Remove tunnel configurations (if asked to)
 if [ -n "$rm_tunnels" ]; then
-   # Remove any previously configured tunnel
-   echo "================== Removing tap configurations =================="
-   echo "This will affect tap configurations for $user_str."
+   print_divider "Deconfiguring 'tap' setups"
 
    manage_tuntap_cmd=( "$NETKIT_HOME/bin/manage_tuntap" "stop" "$target_user" )
 

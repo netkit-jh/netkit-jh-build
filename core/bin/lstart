@@ -684,9 +684,9 @@ fi
 
 # Print lab information
 if [ -n "$test_delay" ]; then
-   bold_print "========================== Testing lab =========================="
+   print_divider "Testing lab"
 else
-   bold_print "========================== Starting lab ========================="
+   print_divider "Starting lab"
 fi
 
 lab_welcome "$lab_dir"
@@ -695,7 +695,7 @@ bold_print "Having issues starting the lab? Run 'lclean' before running 'lstart'
 
 [ "$CHECK_FOR_UPDATES" = "yes" ] && new_version_check
 
-bold_print "================================================================="
+print_divider
 
 
 # Clean up the lab directory before starting
@@ -721,7 +721,7 @@ fi
 
 echo
 bold_print "The lab has been started."
-bold_print "================================================================="
+print_divider
 
 
 if [ -n "$test_delay" ]; then

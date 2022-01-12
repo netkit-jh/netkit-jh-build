@@ -174,7 +174,7 @@ print_vhost_info_by_name() {
    local socket hub_name tap
 
    # Output the machine details in a structured format
-   echo "============= Information for virtual machine '${vhost_info[umid]}' ============="
+   print_divider "Information for virtual machine '${vhost_info[umid]}'"
    echo " --- Accounting information ---"
    echo "   PID:             ${vhost_info[pid]}"
    echo "   Owner:           ${vhost_info[owner]}"

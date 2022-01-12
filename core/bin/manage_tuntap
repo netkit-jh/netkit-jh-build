@@ -65,10 +65,8 @@ forward_rule=(
 
 case $action in
    start)
-      echo "********** Starting Internet connected virtual hub **********"
-      echo "   Host address: $tap_addr"
-      echo "   Owner: $target_user"
-      echo "**********     (root privileges are required)      **********"
+      print_divider "Creating 'tap' interface ($tap_addr; $target_user)" "*" 61
+      print_divider "      (raised privileges necessary)      " "*" 61
 
       if [ ! -c /dev/net/tun ]; then
          printf "Creating /dev/net/tun device...\t\t\t\t"
@@ -150,9 +148,12 @@ case $action in
          echo "done."
       fi
 
-      echo "**************** Abandoning root privileges *****************"
+      print_divider "" "*" 61
       ;;
    stop)
+      print_divider "Removing 'tap' configurations${target_user:+" for $target_user"}" "*" 61
+      print_divider "      (raised privileges necessary)      " "*" 61
+
       if [ -z "$target_user" ]; then
          if sudo iptables --check "${forward_rule[@]}" 2> /dev/null; then
             printf "Closing firewall...\t\t\t\t\t"
@@ -182,7 +183,7 @@ case $action in
 
       sys_class_net_entries=( /sys/class/net/nk_* )
       if [ -e "${sys_class_net_entries[0]}" ]; then
-         echo "Bringing down tap devices and tunnels${target_user:+" owned by $target_user"}:"
+         echo "Bringing down 'tap' devices and tunnels:"
 
          for sys_class_net_entry in "${sys_class_net_entries[@]}"; do
             if [ -n "$target_user" ]; then
@@ -217,5 +218,7 @@ case $action in
          fi
          echo "done."
       fi
+
+      print_divider "" "*" 61
       ;;
 esac

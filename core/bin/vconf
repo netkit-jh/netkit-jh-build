@@ -319,7 +319,7 @@ run_hubs "$verbose" "$just_print" "${hub_list[@]}"
 
 
 # Configure network interfaces
-echo "============= Configuring virtual machine '$vhost' (PID $(get_vhost_pid_by_name "$target_user" "$vhost")) ============="
+print_divider "Configuring virtual machine '$vhost' (PID $(get_vhost_pid_by_name "$target_user" "$vhost"))"
 echo "   Virtual machine owner: $target_user"
 
 invoke_mconsole "$verbose" "$just_print" "${vhost_info[mconsole]}" "${removed_interfaces[@]}" "${added_interfaces[@]}"

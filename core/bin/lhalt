@@ -174,9 +174,9 @@ fi
 
 
 # Print lab information
-bold_print "======================== Halting lab ============================"
+print_divider "Halting lab"
 lab_welcome "$lab_dir"
-bold_print "================================================================="
+print_divider
 
 # Halt virtual machines
 get_lab_vhosts "$lab_dir"
@@ -190,7 +190,7 @@ done
 bold_print "Removing readyfor.test..."
 rm --force -- "$lab_dir/readyfor.test"
 bold_print "Lab has been halted."
-bold_print "================================================================="
+print_divider
 
 # Show a list of running virtual machines, if asked to
 [ -n "$list_vhosts" ] && "$NETKIT_HOME/bin/vlist"

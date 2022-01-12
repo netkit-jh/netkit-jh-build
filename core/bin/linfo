@@ -329,7 +329,7 @@ cum_lab_vhosts_str=${cum_lab_vhosts_str%", "}
 
 
 # Print lab information
-bold_print "======================== Lab information ========================"
+print_divider "Lab information"
 lab_welcome "${lab_dirs[@]}"
 bold_print "The lab is made up of ${#cum_lab_vhosts[@]} virtual machines ($cum_lab_vhosts_str)."
 
@@ -359,4 +359,4 @@ if [ -n "$map_file" ]; then
    fi
 fi
 
-bold_print "================================================================="
+print_divider

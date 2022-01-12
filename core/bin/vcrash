@@ -354,7 +354,7 @@ for vhost in "${vhosts[@]}"; do
    if get_machine_state "$target_user" "$vhost"; then
       get_vhost_info_by_name "$target_user" "$vhost"
 
-      echo "============= Crashing virtual machine '$vhost' (PID ${vhost_info[pid]}) ========="
+      print_divider "Crashing virtual machine '$vhost' (PID ${vhost_info[pid]}) ========="
       echo "Virtual machine owner: $target_user"
       echo "Virtual machine mconsole socket: ${vhost_info[mconsole]}"
 

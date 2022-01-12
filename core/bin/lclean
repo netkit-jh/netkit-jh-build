@@ -159,11 +159,11 @@ fi
 
 
 # Print lab information
-bold_print "====================== Cleaning up lab =========================="
+print_divider "Cleaning up lab"
 lab_welcome "$lab_dir"
-bold_print "================================================================="
+print_divider
 
 # Clean up the lab directory
 lab_clean "$verbose" "$lab_dir"
 bold_print "Cleaning completed."
-bold_print "================================================================="
+print_divider

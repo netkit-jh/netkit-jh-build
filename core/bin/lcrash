@@ -186,14 +186,14 @@ fi
 
 
 # Print lab information
-bold_print "========================== Crashing lab ========================="
+print_divider "Crashing lab"
 lab_welcome "$lab_dir"
-bold_print "================================================================="
+print_divider
 
 # Crash virtual machines
 lab_crash "$verbose" "$quick_mode" "$lab_dir" "$keep_fs" "$just_kill"
 bold_print "Lab has been crashed."
-bold_print "================================================================="
+print_divider
 
 # Show a list of running virtual machines, if asked to
 [ -n "$list_vhosts" ] && "$NETKIT_HOME/bin/vlist"

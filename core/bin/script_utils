@@ -34,6 +34,50 @@ SCRIPT_UTILS_SRC=1
 
 
 ###############################################################################
+# Output a centred string.
+# Usage:
+#   print_divider [MESSAGE [CHAR [WIDTH]]]
+# Arguments:
+#   $1 - message to centre. An empty string will output a line of just the
+#        padding character.
+#   $2 - character to use as the padding. By default, this is a '='
+#   $3 - maximum width to pad out to - any message longer will be printed
+#        without padding. By default, this is 79 columns.
+###############################################################################
+print_divider() {
+   local msg=$1
+   local pad_chr=${2:-"="}
+   local max_cols=${3:-"79"}
+
+   local cols
+   local l_pad_len r_pad_len pad_str
+
+   # Get terminal width, capping at max_cols
+   cols=$(tput cols)
+   [ "$cols" -gt "$max_cols" ] && cols=$max_cols
+
+   # Output message if padding is not necessary
+   if [ "${#msg}" -ge "$(( cols - 2 ))" ]; then
+      echo "$msg"
+      return
+   fi
+
+   # Pad with a space (empty strings are not padded, so a constant divider can
+   # be made).
+   [ -n "$msg" ] && msg=" $msg "
+
+   # Get lengths of left and right padding, respectively
+   l_pad_len=$(( (cols + 1 - ${#msg}) / 2 ))
+   r_pad_len=$(( (cols - ${#msg}) / 2 ))
+
+   # This will be trimmed by the L/R padding lengths
+   pad_str=$(printf "%0.s$pad_chr" $(seq 1 "$l_pad_len"))
+
+   printf "%0.*s%s%0.*s\n" "$l_pad_len" "$pad_str" "$msg" "$r_pad_len" "$pad_str"
+}
+
+
+###############################################################################
 # Check if an array contains a string.
 # Usage:
 #   array_contains QUERY ARRAY
