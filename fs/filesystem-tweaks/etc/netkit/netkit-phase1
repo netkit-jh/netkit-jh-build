@@ -218,14 +218,15 @@ EOF
          interface=${autoconf_interfaces[$i]}
          addr=${autoconf_interfaces[$(( i + 1 ))]}
 
-         echo "Bringing up interface $interface ($addr)"
-         ifconfig "$interface" "$addr" up
+         echo "Bringing up interface $interface ($addr/24)"
+         ip address add "$addr/24" dev "$interface"
+         ip link set dev "$interface" up
       done
 
       # Insert a default entry in the routing table, if asked to
       if [ -n "$default_route" ]; then
          echo "Configuring default gateway as $default_route"
-         route add default gateway "$default_route"
+         ip route add default via "$default_route"
       fi
 
 
