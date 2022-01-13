@@ -138,7 +138,6 @@ version_option() {
 # release version to standard output.
 # Usage:
 #   show_version
-# Globals:
 ###############################################################################
 show_version() {
    local nk_version
@@ -248,7 +247,6 @@ warn() {
 # Check for invalid substrings in netkit.conf variable values.
 # Usage:
 #   validate_netkit_conf_variables
-# Globals:
 # Returns:
 #   None. Function exits with non-zero code on failure.
 ###############################################################################

@@ -767,7 +767,6 @@ clean_hubs() {
 # generating a uml_switch socket filepath longer than UNIX_PATH_MAX.
 # Usage:
 #   get_max_collision_domain_name_len
-# Globals:
 # Returns:
 #   None. Function exits with non-zero code if the length is below 1.
 ###############################################################################
