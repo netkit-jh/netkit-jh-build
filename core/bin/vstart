@@ -76,15 +76,16 @@ You can use the following options to adjust the virtual machine parameters:
                         TAP_ADDR is the IP address of the 'host side' of the
                         interface and GUEST_ADDR is the IP address of the
                         interface inside the virtual machine. TAP_ADDR and
-                        GUEST_ADDR must be on the same /8 network. Machines can
-                        share a 'tap' interface if one uses the same DOMAIN and
-                        TAP_ADDR for them. If an interface on the same DOMAIN
-                        with a different TAP_ADDR already exists, an error will
-                        be thrown. Another interface with a TAP_ADDR within the
-                        /8 subnet of another cannot be created; likewise, like
-                        a regular collision domain, two machines using the same
-                        'tap' interface cannot share an IP address (there will
-                        be no explicit error for either of these scenarios.)
+                        GUEST_ADDR must be on the same /24 network. Machines
+                        can share a 'tap' interface if one uses the same DOMAIN
+                        and TAP_ADDR for them. If an interface on the same
+                        DOMAIN with a different TAP_ADDR already exists, an
+                        error will be thrown. Another interface with a TAP_ADDR
+                        within the /24 subnet of another cannot be created;
+                        likewise, like a regular collision domain, two machines
+                        using the same 'tap' interface cannot share an IP
+                        address (there will be no explicit error for either of
+                        these scenarios.)
                         Notices:
                         - Using 'tap' interfaces requires administrative
                           privileges. This script will take care of asking you

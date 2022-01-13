@@ -74,10 +74,10 @@ must be declared with the following syntax:
 where \fIDOMAIN\fR is a valid collision domain name, \fITAP_ADDR\fR is the IP address of
 the 'host side' of the interface and \fIGUEST_ADDR\fR is the IP address of the
 interface inside the virtual machine. \fITAP_ADDR\fR and \fIGUEST_ADDR\fR must be on
-the same /8 network. Machines can share a 'tap' interface if one uses the same
+the same /24 network. Machines can share a 'tap' interface if one uses the same
 \fIDOMAIN\fR and \fITAP_ADDR\fR for them. If an interface on the same \fIDOMAIN\fR with a
 different \fITAP_ADDR\fR already exists, an error will be thrown. Another
-interface with a \fITAP_ADDR\fR within the /8 subnet of another cannot be created;
+interface with a \fITAP_ADDR\fR within the /24 subnet of another cannot be created;
 likewise, like a regular collision domain, two machines using the same 'tap'
 interface cannot share an IP address (there will be no explicit error for
 either of these scenarios.)

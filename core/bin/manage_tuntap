@@ -108,8 +108,8 @@ case $action in
       fi
       echo "done."
 
-      printf "Assigning address %s/8 to %s...\t" "$tap_addr" "$tap_name"
-      if ! "${sudo_cmd[@]}" ip address add "$tap_addr/8" dev "$tap_name"; then
+      printf "Assigning address %s/24 to %s...\t" "$tap_addr" "$tap_name"
+      if ! "${sudo_cmd[@]}" ip address add "$tap_addr/24" dev "$tap_name"; then
          echo "failed."
          exit 1
       fi
@@ -163,12 +163,16 @@ case $action in
       print_divider "      (raised privileges necessary)      " "*" 61
 
       if [ -z "$target_user" ]; then
+         printf "Checking firewall...\t\t\t\t\t"
          if "${sudo_cmd[@]}" iptables --check "${forward_rule[@]}" 2> /dev/null; then
+            echo "done."
             printf "Closing firewall...\t\t\t\t\t"
             if ! "${sudo_cmd[@]}" iptables --delete "${forward_rule[@]}"; then
                echo "failed."
                exit 1
             fi
+            echo "done."
+         else
             echo "done."
          fi
 

@@ -27,6 +27,7 @@
 - `LAB_MACHINES` variable is comma-delimited (orig. whitespace-delimited)
 - `ltest` user defined scripts should be stored in _test/scripts/
 - `ltest` script results are placed in _test/results/
+- 'tap' interfaces are created under a /24 subnet now (not /8). This allows more 'tap' interfaces on the host to occupy private address spaces
 
 ### Other Modified
 - `vconf` manual entry is called `vconf` now (used to be `vconfig`)
