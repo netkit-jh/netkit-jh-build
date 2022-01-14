@@ -337,7 +337,7 @@ _get_collision_domains() {
    local -A collision_domains_dict
 
    # Get array of 'eth0@CD0', 'eth1@CD1', 'eth0@CD1', 'eth1@TAP(tap)', ...
-   IFS="," read -r -a interfaces < <(
+   IFS="," read -ra interfaces < <(
       "$NETKIT_HOME/bin/vlist" --no-header ${target_user:+"--user=$target_user"} |
       head --lines -3 |
       awk '{ for (i=5; i<=NF; ++i) printf $i; printf "," }'
