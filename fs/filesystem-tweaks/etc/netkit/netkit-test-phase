@@ -149,7 +149,7 @@ echo -en "${color_bold_blue}Running predefined lab test, please wait...$color_no
 heartbeat
 
 # Redirect standard output of all further commands to default test output file
-exec 10>&1 > "$test_results_dir/$HOSTNAME.default"
+exec {unused_fd}>&1 > "$test_results_dir/$HOSTNAME.default"
 
 echo "[NETWORK INTERFACES]"
 ip addr show | grep --invert-match link
@@ -169,7 +169,7 @@ ps -e -o uid,command
 echo
 
 # Restore standard output and close file descriptor 10
-exec 1>&10 10>&-
+exec 1>&{unused_fd} {unused_fd}>&-
 kill_heartbeat
 
 echo "Done."
