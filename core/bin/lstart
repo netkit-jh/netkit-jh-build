@@ -248,7 +248,7 @@ single_lab_vhost_start() {
    rm --force -- "$lab_dir/$vhost.ready"
 
    if ! "$NETKIT_HOME/bin/vstart" "${vstart_args[@]}" "${passthrough_args[@]}" -- "$vhost"; then
-      echo 2>&1 "Error while starting virtual machine '$vhost'"
+      warn "Error while starting virtual machine '$vhost'"
       exit 1
    fi
 
@@ -291,7 +291,7 @@ lab_start_parallel() {
    get_lab_vhosts "$lab_dir"
 
    if [ "${#lab_vhosts[@]}" -eq 0 ]; then
-      echo 1>&2 "Warning: there are no virtual machines to be started."
+      warn "There are no virtual machines to be started."
       return
    fi
 
@@ -341,12 +341,19 @@ lab_start_parallel() {
    #
    # The Makefile must use Bash as the shell for correct handling of ANSI-C
    # expansions present after the previous Q-operator array expansion.
-   tab=$(printf '\t')
-   IFS='' read -rd '' makefile_contents << EOF
+   tab=$(printf "\t")
+
+   # We redirect stderr inside the Makefile to an unused file descriptor so
+   # Make error messages themselves can be hidden. The --ignore-errors option
+   # is not suitable since we still need to record Make's return value on
+   # lstart error.
+   exec {unused_fd}>&2
+
+   IFS="" read -rd "" makefile_contents << EOF
 SHELL := /bin/bash
 
 %: dummy-prerequisite-to-force-remaking
-${tab}[ '\$*' != "lab.dep" ] && $escaped_lstart_cmd '\$*'
+${tab}[ '\$*' != "lab.dep" ] && $escaped_lstart_cmd '\$*' 2>&$unused_fd
 
 dummy-prerequisite-to-force-remaking:
 ${tab}# Dummy line. Unuseful, yet necessary
@@ -356,14 +363,23 @@ EOF
 
    # Read the Makefile from stdin without implicit rules, and hide the output. It
    # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
-   make --ignore-errors --no-builtin-rules --silent \
+   make \
+      --no-builtin-rules \
+      --silent \
       --directory "$lab_dir" \
       --file - \
       --jobs ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} \
       -- \
       "${lab_vhosts[@]}" \
-      <<< "$makefile_contents"
+      <<< "$makefile_contents" 2> /dev/null
+   
+   ret=$?
+   exec {unused_fd}>&-
 
+   if [ "$ret" -eq 2 ]; then
+      warn "Error parallel-starting lab"
+      exit 1
+   fi
 
    # Signal that every machine is ready for testing once booted.
    [ -n "$test_delay" ] && : > "$lab_dir/readyfor.test"
@@ -746,3 +762,5 @@ fi
 
 # Show a list of running virtual machines, if asked to
 [ -n "$list_vhosts" ] && "$NETKIT_HOME/bin/vlist"
+
+exit 0
