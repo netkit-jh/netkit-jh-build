@@ -28,6 +28,7 @@ case "$TERM_TYPE" in
 	gnome)		 	gnome-terminal --window-with-profile=netkit -- /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
 	alacritty)	 	alacritty -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
 	kitty)        	kitty /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
+    kitty-tab)      $NETKIT_HOME/bin/kitty-tab.sh "echo \$$>$pidfile; $KERNELCMD";;
     xterm)         	xterm -e /bin/bash -c "echo \$$>$pidfile; $KERNELCMD";;
     wsl)            powershell.exe -Command "start wsl -ArgumentList @('--','echo', '\$$>$pidfile;', '$KERNELCMD')";;
     wt)             powershell.exe -Command "wt.exe -p netkit wsl.exe /bin/bash -c 'echo \$$ > $pidfile && $KERNELCMD'";;

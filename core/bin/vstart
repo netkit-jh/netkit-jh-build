@@ -140,6 +140,9 @@ END_OF_HELP
                                        tabs of the same window
                           alacritty    use the lightweight Alacritty terminal
                           kitty        use the lightweight Kitty terminal
+                          kitty-tab    same as above, but different virtual
+                                       machines are opened in different kitty
+                                       tabs of the same window
                           xterm        use the standard xterm
                           wsl          use Windows Conhost (only available on wsl hosts)
                           wt           use Windows Terminal (only available on wsl hosts with Windows Terminal installed)
@@ -387,7 +390,7 @@ parseCmdLine() {
             shift; CURRENT_ARGUMENT="$1"
             checkSpaces "$CURRENT_ARGUMENT"
             case "$CURRENT_ARGUMENT" in
-               konsole|konsole-tab|gnome|xterm|alacritty|kitty|wsl|wt)
+               konsole|konsole-tab|gnome|xterm|alacritty|kitty|kitty-tab|wsl|wt)
                   ASSIGNED_TERM_TYPE=1
                   TERM_TYPE=$CURRENT_ARGUMENT;;
                *)
@@ -470,6 +473,7 @@ if [ "$VM_CON0" = "xterm" -o "$VM_CON1" = "xterm" ] || [ "$VM_CON0" = "tmux" -a 
    [ $TERMINAL_APPLICATION = "gnome" ] && TERMINAL_APPLICATION=gnome-terminal
    [ $TERMINAL_APPLICATION = "alacritty" ] && TERMINAL_APPLICATION=alacritty
    [ $TERMINAL_APPLICATION = "kitty" ] && TERMINAL_APPLICATION=kitty
+   [ $TERMINAL_APPLICATION = "kitty-tab" ] && TERMINAL_APPLICATION=kitty
    [ $TERMINAL_APPLICATION = "wsl" ] && TERMINAL_APPLICATION="wsl.exe"
    [ $TERMINAL_APPLICATION = "wt" ] && TERMINAL_APPLICATION="wt.exe"
    # Checks that we're on wsl by looking for the wsl executable which is
