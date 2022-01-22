@@ -28,7 +28,7 @@ echo -n ">  Checking host filesystem... "
 
 
 # Non-exhaustive list of filesystems that support sparse files
-supportive_fs="ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|xfs|zfs"
+supportive_fs="btrfs|ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|xfs|zfs"
 
 # Get the host filesystem type
 fs_type=$(stat --file-system --format "%T" -- "$NETKIT_HOME")

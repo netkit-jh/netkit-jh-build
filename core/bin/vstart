@@ -234,7 +234,7 @@ check_fs() {
    local fs_type
 
    # Non-exhaustive list of filesystems that support sparse files
-   local supportive_fs="ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|xfs|zfs"
+   local supportive_fs="btrfs|ext2?|ext2/ext3|fuse(blk|ctl)|jfs|ntfs|reiserfs|xfs|zfs"
 
    # Get the host filesystem type
    fs_type=$(stat --file-system --format "%T" -- "$file")
