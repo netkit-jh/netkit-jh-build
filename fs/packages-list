@@ -54,6 +54,7 @@ openssh-client
 openssh-server
 openssl
 strongswan
+libstrongswan-extra-plugins
 openvpn
 # cpdns-recursor
 ppp
