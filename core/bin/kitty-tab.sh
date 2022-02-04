@@ -12,7 +12,7 @@ then
             --override allow_remote_control=yes \
             --detach \
             --listen-on unix:/tmp/nk_kitty \
-            /bin/bash -c "$1"
+            -- "$@"
         
         while [ ! -S /tmp/nk_kitty ]
         do
@@ -33,5 +33,5 @@ kitty \
     --to unix:/tmp/nk_kitty \
     launch \
     --type tab \
-    /bin/bash -c "$1" \
+    -- "$@" \
     > /dev/null

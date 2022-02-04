@@ -79,7 +79,7 @@ VM_CON1=none
 TMUX_OPEN_TERMS=no
 
 # Terminal emulator for consoles. Allowed values are: alacritty, gnome, kitty,
-# konsole, wsl, wt, and xterm.
+# kitty-tab, konsole, wsl, wt, and xterm.
 TERM_TYPE=xterm
 
 

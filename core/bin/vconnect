@@ -86,6 +86,7 @@ open_terminal() {
    case $TERM_TYPE in
       alacritty)     term_cmd=( "alacritty" "--command" );;
       kitty)         term_cmd=( "kitty" );;
+      kitty-tab)     term_cmd=( "$NETKIT_HOME/bin/kitty-tab.sh" );;
       konsole)       term_cmd=( "konsole" "--nofork" "-e" );;
       wsl)           term_cmd=( "cmd.exe" "/c" "start" "wsl.exe" );;
       wt)            term_cmd=( "cmd.exe" "/c" "wt.exe" "--profile" "netkit" "wsl.exe" );;
