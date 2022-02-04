@@ -1,5 +1,6 @@
 NAME=Wireguard Lab
 DESCRIPTION=Lab verifying Wireguard connectivity.
 LAB_FOLDER=wireguard
+LAB_TIMEOUT=90
 FILES=ping_successful_a
 TIMEOUT=150

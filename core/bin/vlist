@@ -1,7 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
+#     Copyright 2020-2022 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
+#     Group, University of Warwick.
 #     Copyright 2002-2009 Maurizio Patrignani, Maurizio Pizzonia, Fabio Ricci,
-#     Massimo Rimondini - Computer Networks Research Group, Roma Tre University.
+#     Massimo Rimondini - Computer Networks Research Group, Roma Tre
+#     University.
 #
 #     This file is part of Netkit.
 # 
@@ -18,218 +21,354 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This is the Netkit vlist script, which is used to list running virtual machines
-# and/or ask for details about a given machine.
+# This is the Netkit vlist script, which is used to list running virtual
+# machines and/or ask for details about a given machine.
 
-SCRIPTNAME=$(basename $0)
 
-# The following line has been introduced to ensure backward compatibility
-: ${NETKIT_HOME:=$VLAB_HOME}
+###############################################################################
+# Write vlist's usage line to standard output.
+# Usage:
+#   usage_line
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
+}
 
+
+###############################################################################
+# Write vlist's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+###############################################################################
+usage() {
+   local status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
+   cat << END_OF_HELP
+$(usage_line)
+List running Netkit virtual machines and get detailed information about
+MACHINE(s).
+
+  -n, --no-header     suppress header line and summary information in the
+                        output
+  -u, --user=USERNAME  show virtual machines owned by USERNAME. Using the
+                        special user name '-' results in considering all users.
+                        By default, only virtual machines for the current user
+                        are shown
+
+Miscellaneous:
+$(help_option)
+$(version_option)
+
+By specifying one or more MACHINEs it is possible to get detailed information.
+If --user=- is also being used, information about the first MACHINE with a
+matching name in the output of 'vlist --user=-' is reported.
+
+END_OF_HELP
+
+   exit "$status"
+}
+
+
+###############################################################################
+# Summarise all running machines for a specific user.
+# Usage:
+#   print_vhost_summary NO_HEADER USER
+# Globals:
+#   vhost_info
+#   vhost_sockets
+# Arguments:
+#   $1 - do not display column headers; pass an empty string to show them
+#   $2 - user; pass an empty string for all users
+###############################################################################
+print_vhost_summary() {
+   local no_header=$1
+   local target_user=$2
+
+   local machine_count
+   local pid pgid
+   local total_memory_usage
+   local i fs
+   local socket hub_name tap
+
+   # Column spacing:
+   #   USER    20
+   #   VHOST   20
+   #   PID      5
+   #   SIZE     9
+   # A single space is added between each column, too (3 between SIZE and
+   # INTERFACES).
+   [ -z "$no_header" ] && echo "USER                 VHOST                  PID      SIZE   INTERFACES"
+
+   # Iterate over the PIDs of running Netkit instances.
+   # The process hierarchy (relevance of the PGID) is documented in
+   # scripts_utils.
+   machine_count=0
+   for pid in $(pgrep ${target_user:+"--euid=$target_user"} --full "^$VM_KERNEL"); do
+      # Get the process group ID (PGID)
+      pgid=$(ps --no-headers --format pgid --pid "$pid")
+
+      # Ignore if no return or not a process leader
+      [ -z "$pgid" ] || [ "$pgid" -ne "$pid" ] && continue
+
+      ((++machine_count))
+
+      get_vhost_info_by_pid "$pid"
+
+      # Total virtual memory usage of the process.
+      # Logically this should be the sum of every process in the group (PGID),
+      # however in practice just taking the value of the parent process is
+      # enough. The value should equate to roughly the size of the machine's
+      # memory.
+      ((total_memory_usage += vhost_info[memory_usage]))
+
+      # No column will be truncated on a value that is too long
+      printf "%-20s %-20s %5d %9d   " \
+         "${vhost_info[owner]}" \
+         "${vhost_info[umid]}" \
+         "${vhost_info[pid]}" \
+         "${vhost_info[memory_usage]}"
+
+      fs=""
+
+      for i in "${!vhost_sockets[@]}"; do
+         socket=${vhost_sockets[$i]}
+         hub_name=$(get_hub_socket_domain "$socket")
+
+         is_tap "$socket" && tap=" (tap)" || tap=""
+
+         echo -n "${fs}eth$i @ $hub_name$tap"
+
+         # Comma-separate subsequent interfaces
+         fs=", "
+      done
+
+      echo
+   done
+
+   echo
+   printf "Total virtual machines: %9d\n" "$machine_count"
+   printf "Total consumed memory:  %9d KB\n" "$total_memory_usage"
+}
+
+
+###############################################################################
+# Print complete information about a machine using pre-set vhost_info and
+# vhost_sockets arrays.
+# Usage:
+#   print_vhost_info_by_name
+###############################################################################
+print_vhost_info_by_name() {
+   local i indent
+   local socket hub_name tap
+
+   # Output the machine details in a structured format
+   print_divider "Information for virtual machine '${vhost_info[umid]}'"
+   echo " --- Accounting information ---"
+   echo "   PID:             ${vhost_info[pid]}"
+   echo "   Owner:           ${vhost_info[owner]}"
+   echo "   Used mem:        ${vhost_info[memory_usage]} KB"
+   echo " --- Emulation parameters ---"
+   echo "   Kernel:          ${vhost_info[kernel]}"
+   echo "   Modules:         ${vhost_info[modules]:-"-"}"
+
+   # Remove the M suffix from the memory value
+   vhost_mem_mb=${vhost_info[mem]%M}
+   echo "   Memory:          $((vhost_mem_mb - VM_MEMORY_SKEW)) MB (+$VM_MEMORY_SKEW MB skew)"
+   echo "   Model fs:        ${vhost_info[fs]}"
+   echo "   Filesystem:      ${vhost_info[disk]:-"-"}"
+
+   echo -n "   Interfaces:      "
+
+   if [ "${#vhost_sockets[@]}" -gt 0 ]; then
+      for i in "${!vhost_sockets[@]}"; do
+         socket=${vhost_sockets[$i]}
+         hub_name=$(get_hub_socket_domain "$socket")
+
+         is_tap "$socket" && tap="tap; " || tap=""
+
+         echo "${indent}eth$i @ $hub_name ($tap$socket)"
+
+         # Indent subsequent lines
+         indent="                    "
+      done
+   else
+      echo "-"
+   fi
+
+   echo "   Hostlab:         ${vhost_info[hostlab]:-"-"}"
+   echo "   Hosthome:        ${vhost_info[hosthome]:-"-"}"
+   echo "   Boot command:    ${vhost_info[boot_cmd]:-"-"}"
+
+   echo -n "   Console 1:       "
+   case ${vhost_info[con0]} in
+      none)    echo "disabled";;
+      xterm)   echo "terminal emulator";;
+      this)    echo "stdin/stdout";;
+      pty)     echo "pty";;
+      port:*)  echo "port ${vhost_info[con0]#"port:"}";;
+      tmux)    echo "tmux";;
+   esac
+
+   echo -n "   Console 2:       "
+   case ${vhost_info[con1]} in
+      none)    echo "disabled";;
+      xterm)   echo "terminal emulator";;
+      this)    echo "stdin/stdout";;
+      pty)     echo "pty";;
+      port:*)  echo "port ${vhost_info[con1]#"port:"}";;
+   esac
+
+   echo "   Other arguments: ${vhost_info[other]:-"-"}"
+   echo "   Console socket:  ${vhost_info[mconsole]}"
+}
+
+
+###############################################################################
+# Extract the collision domain name from a hub socket filepath.
+# Usage:
+#   get_hub_socket_domain HUB
+# Arguments:
+#   $1 - hub socket filepath
+###############################################################################
+get_hub_socket_domain() {
+   # shellcheck disable=SC2155
+   local socket_name=$(basename -- "$1")
+
+   local hub_name_ext hub_name
+
+   # Remove prefix, user SHA-256, tap specifier (if exists), and collision
+   # domain SHA-256.
+   hub_name_ext=${socket_name#"$HUB_SOCKET_PREFIX"_*_}
+   hub_name_ext=${hub_name_ext#"tap_"}
+   hub_name_ext=${hub_name_ext:8}
+   hub_name_ext=${hub_name_ext#"_"}
+
+   # Remove extension
+   hub_name=${hub_name_ext%"$HUB_SOCKET_EXTENSION"}
+
+   printf "%s\n" "$hub_name"
+}
+
+
+###############################################################################
+# Check if a given socket filepath is a UML 'tap' socket.
+# Usage:
+#   is_tap HUB
+# Arguments:
+#   $1 - hub socket filepath
+# Returns:
+#   0 if file is a tap socket, non-zero if not
+###############################################################################
+is_tap() {
+   # shellcheck disable=SC2155
+   local socket=$(basename -- "$1")
+
+   # Remove prefix and user SHA-256
+   local hub_name_ext=${socket#"$HUB_SOCKET_PREFIX"_*_}
+
+   [ "${hub_name_ext:0:4}" = "tap_" ] && return 0 || return 1
+}
+
+
+# Ensure NETKIT_HOME is set
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
-   echo 1>&2 "please set it as described in the Netkit documentation and try"
-   echo 1>&2 "again."
+   echo 1>&2 "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
-CMDLINE="$0 $*"
-
-. "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./script_utils
+. -- "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./vcommon
+. -- "$NETKIT_HOME/bin/vcommon"
 
 # Write to the vcommands log
-logWrite $0 $*
+log_write "$0 $*"
 
 
-# This function is used to print the vlist usage
-help() {
-   echo
-   echo "Usage: $SCRIPTNAME [options] [MACHINE-ID...]"
-   cat << END_OF_HELP
-
-This script can be used to produce a list of running virtual machines. You can
-use the following options to select the output contents:
-
-  -h, --help          Show this help.
-  -n, --no-header     Suppress header line and summary information in the
-                      output.
-  -u, --user=USERNAME Show virtual machines owned by USERNAME.
-                      Using the special user name '-' results in considering
-                      all users. By default, only virtual machines for the
-                      current user are shown.
-      --version       Print version information and exit.
-
-By passing one or more MACHINE-IDs it is possible to get detailed information
-about specific running virtual machines. MACHINE-ID is either a virtual machine 
-name or its PID. If a virtual machine name is passed as argument, and the option
---user=- is being used, then information about the first machine with a matching
-name in the output of 'vlist --user=-' are reported.
-
-END_OF_HELP
-}
+target_user=$USER_ID
 
 
 # Get command line options
-INVALID_OPTION=0
-OPT_LIST="help,no-header,user:,version"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hnu:" "$@")
-if [ $? -gt 0 ]; then
-   INVALID_OPTION=1
+long_opts="help,no-header,user:,version"
+short_opts="nu:"
+
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
 fi
 
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$getopt_opts"
 
-USER=$USERID
+while true; do
+   case $1 in
+      --help)
+         usage 0
+         ;;
+      -n|--no-header)
+         no_header=true
+         ;;
+      -u|--user)
+         target_user=$2
+         shift
+         if [ "$target_user" = "-" ]; then
+            unset target_user
+         elif ! id -- "$target_user" > /dev/null 2>&1; then
+            warn "$target_user: User does not exist"
+            usage 1
+         fi
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         warn "Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
 
-# Parse command line options
-parseCmdLine() {
-   while [ $# -gt 0 ]; do
-		CURRENT_ARGUMENT="$1"
-      case "$CURRENT_ARGUMENT" in
-      
-         --help|-h)
-            help
-            exit;;
-            
-         --no-header|-n)
-            NO_HEADER=1;;
-         
-         --user|-u)
-            shift; CURRENT_ARGUMENT="$1"
-            if [ "x$CURRENT_ARGUMENT" = "x" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                       "Expecting username."
-               exit 1
-            fi
-            checkSpaces "$CURRENT_ARGUMENT"
-            if [ "$CURRENT_ARGUMENT" = "-" ]; then
-               USER=""
-            else
-               USER=$CURRENT_ARGUMENT
-            fi;;
-         
-         --version)
-            showVersion
-            exit 0;;
-            
-         --)
-            shift
-            break;;
-            
-      esac
-      shift
-   done
-   
-   # Parse virtual machine name   
-   while [ $# != 0 ]; do
-      checkSpaces "$1"
-      VM_IDS="$VM_IDS $1"
-      shift
-   done
+   shift
+done
 
-}
-eval parseCmdLine $CMDLINE_OPTIONS
+# Non-option arguments are machine names
+vhosts=( "$@" )
+validate_hostnames "${vhosts[@]}"
 
-
-# Check whether user gave some strange options
-if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
-   exit 1
-fi
 
 # Check whether -u - is being used together with a virtual machine ID
-if [ -z "$USER" -a ! -z "$VM_IDS" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Please provide a specific user name."
-   exit 1
+if [ -z "$target_user" ] && [ "${#vhosts[@]}" -ne 0 ]; then
+   warn "When giving VM names, a specific user ID must be provided"
+   usage 1
 fi
 
 
-
-# Actually display list of virtual machines
-if [ -z "$VM_IDS" ]; then
-   showVMList "$NO_HEADER" "$USER"
-fi
+# Display summary of virtual machines
+[ "${#vhosts[@]}" -eq 0 ] && print_vhost_summary "$no_header" "$target_user"
 
 
-
-
-# This function prints complete information about a virtual machine
-printVMinfo() {
-   echo
-   echo "============= Information for virtual machine \"$VMINFO_NAME\" ============="
-   echo " --- Accounting information ---"
-   echo "   PID:        $VMINFO_PID"
-   echo "   Owner:      $VMINFO_USER"
-   echo "   Used mem:   $VMINFO_SIZE KB"
-   echo " --- Emulation parameters ---"
-   echo "   Kernel:     $VMINFO_KERNEL"
-   [ ! -z "$VMINFO_KERNEL_MODULES" ] && echo "   Modules:    $VMINFO_KERNEL_MODULES"
-   echo "   Memory:     ${VMINFO_MEM} MB"
-   echo "   Model fs:   $VMINFO_SHAREDFS"
-   echo -n "   Filesystem: "
-   if [ "$VMINFO_FS" = "$VMINFO_SHAREDFS" ]; then
-      echo "using model fs (no COW)"
+# Get verbose information for specific virtual machines
+for vhost in "${vhosts[@]}"; do
+   # Fill vhost_info and vhost_sockets global arrays
+   if get_vhost_info_by_name "$target_user" "$vhost"; then
+      print_vhost_info_by_name
    else
-      echo "$VMINFO_FS"
-   fi
-   
-   if [ ! -z "$VMINFO_ETH_INTERFACES" ]; then
-      echo -n "   Interfaces: "
-      echo "$VMINFO_ETH_INTERFACES" | awk -v RS=" +" -v FS="=" \
-         '{
-            if ($0 == "") {
-               getline
-               NR--
-            }
-            if (NR>1) printf "               "
-            device = $1
-            match ($2, "^[^_]+_[^_]+_[^_\\.]+\\..*")
-            gsub("\n","",$2)
-            hub_param_count = split(substr($2,RSTART,RLENGTH), hub_parameters, "[_.]")
-            collision_domain = hub_parameters[hub_param_count-1]
-            print device " @ " collision_domain "  (" $2 ")"
-         }'
-   fi
-   [ ! -z "$VMINFO_HOSTHOME" ] && echo "   Hostfs at:  $VMINFO_HOSTHOME"
-   [ ! -z "$VMINFO_EXEC" ] && echo "   Boot cmd:   $VMINFO_EXEC"
-   [ ! -z "$VMINFO_HOSTLAB" ] && echo "   Hostlab at: $VMINFO_HOSTLAB"
-   [ ! -z "$VMINFO_HOSTWD" ] && echo "   Host WD at: $VMINFO_HOSTWD"
-   echo -n "   Console 1:  "
-   case "$VMINFO_CON0" in
-      NONE)    echo "disabled";;
-      XTERM)   echo "terminal emulator";;
-      THIS)    echo "stdin/stdout";;
-      PTY)     echo "pty";;
-      PORT:*)  echo "port ${VMINFO_CON0#PORT:}"
-   esac
-   echo -n "   Console 2:  "
-   case "$VMINFO_CON1" in
-      NONE)    echo "disabled";;
-      XTERM)   echo "terminal emulator";;
-      THIS)    echo "stdin/stdout";;
-      PTY)     echo "pty";;
-      PORT:*)  echo "port ${VMINFO_CON1#PORT:}"
-   esac
-   [ ! -z "$VMINFO_APPENDED" ] && echo "   Other args: $VMINFO_APPENDED"
-   echo "   Mconsole:   $VMINFO_MCONSOLE"
-   echo
-}
-
-
-# Get information for specific virtual machines
-for VM in $VM_IDS; do
-   if echo $VM | grep -qE "^[0-9]+$"; then
-      # This is a virtual machine PID
-      if ! getVMinfoByPID "$VM"; then
-         echo 1>&2 "$SCRIPTNAME: no virtual machine having PID $VM exists."
-      else
-         printVMinfo
-      fi
-   else
-      # This is a virtual machine name
-      if ! getVMinfoByName "$USER" "$VM"; then
-         echo 1>&2 "$SCRIPTNAME: no virtual machine named \"$VM\" exists for user $USER."
-      else
-         printVMinfo
-      fi
+      warn "no virtual machine named '$vhost' exists for $target_user"
    fi
 done

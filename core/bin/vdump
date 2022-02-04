@@ -1,5 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
+#     Copyright 2020-2022 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
+#     Group, University of Warwick.
 #     Copyright 2009 Julien Iguchi-Cartigny, XLIM Laboratory, France
 #
 #     This file is part of Netkit.
@@ -17,123 +19,136 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-# This is the Netkit vdump script, which is used to start uml_dump
+# This is the Netkit vdump script, which is used to start uml_dump.
 
-SCRIPTNAME=$(basename $0)
-VERSION="2.6"
 
+###############################################################################
+# Write vdump's usage line to standard output.
+# Usage:
+#   usage_line
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME DOMAIN"
+}
+
+
+###############################################################################
+# Write vdump's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+###############################################################################
+usage() {
+   local status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
+   cat << END_OF_HELP
+$(usage_line)
+  or:  $SCRIPTNAME OPTION
+Dump packets from a Netkit DOMAIN (collision domain) to standard output.
+
+$(help_option)
+  -v, --verbose       show the commands being ran
+$(version_option)
+
+END_OF_HELP
+
+   exit "$status"
+}
+
+
+# Ensure NETKIT_HOME is set
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
-   echo 1>&2 "please set it as described in the Netkit documentation and try again."
+   echo 1>&2 "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
-CMDLINE="$0 $*"
-
-. "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./script_utils
+. -- "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./vcommon
+. -- "$NETKIT_HOME/bin/vcommon"
 
 # Write to the vcommands log
-logWrite $0 $*
+log_write "$0 $*"
 
-
-# This function is used to print the vlist usage
-help() {
-   echo "Usage: $SCRIPTNAME [options] domain"
-   cat << END_OF_HELP
-
-This command can be used to connect to an uml_switch and print packets in pcap format to standard output.
-
-This command also supports the following standard options:
-
-  -h, --help          Show this help.
-      --version       Print version information and exit.
-END_OF_HELP
-}
 
 # Get command line options
-INVALID_OPTION=0
-OPT_LIST="help,version"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hnu:" "$@")
-if [ $? -gt 0 ]; then
-   INVALID_OPTION=1
+long_opts="help,verbose,version"
+short_opts="v"
+
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
 fi
 
-parseCmdLine() {
-   while [ $# -gt 0 ]; do
-      CURRENT_ARGUMENT="$1"
-      case "$CURRENT_ARGUMENT" in
-      
-         --help|-h)
-            help
-            exit;;
-         
-         --version)
-            showVersion
-            exit 0;;
-            
-         --)
-            shift
-            break;;
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$getopt_opts"
 
-      esac
-      shift
-   done
+while true; do
+   case $1 in
+      --help)
+         usage 0
+         ;;
+      -v|--verbose)
+         verbose=1
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         warn "Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
 
-   if [ $# -ge 2 ]; then
-      echo 1>&2 "$SCRIPTNAME: only one domain."
-      exit 1
-   fi
+   shift
+done
 
-   if [ $# -eq 0 ]; then
-      echo 1>&2 "$SCRIPTNAME: missing domain."
-      exit 1
-   fi
-
-   checkSpaces "$1"
-
-   HUB_NAME=$1   
-}
-eval parseCmdLine $CMDLINE_OPTIONS
-
-
-# Check whether user gave some strange options
-if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
-   exit 1
+if [ $# -eq 0 ]; then
+   warn "Missing collision domain name"
+   usage 1
+elif [ $# -gt 1 ]; then
+   warn "Can only specify one collision domain"
+   usage 1
 fi
 
-# check if file exist and if a pipe file
-HUB_SOCKET="${HUB_SOCKET_DIR}/${HUB_SOCKET_PREFIX}_${USERID}_${HUB_NAME}${HUB_SOCKET_EXTENSION}"
+hub_name=$1
 
-if [ ! -e ${HUB_SOCKET} ]; then
-   echo 1>&2 "$HUB_SOCKET not found"
-   echo 1>&2 "Domain $HUB_NAME exist ?"
-   exit 1
+
+reg_socket=$(get_hub_socket "" "$hub_name")
+tap_socket=$(get_hub_socket "1" "$hub_name")
+
+if [ -e "$reg_socket" ]; then
+   socket=$reg_socket
+elif [ -e "$tap_socket" ]; then
+   socket=$tap_socket
+else
+   warn "$hub_name: Cannot find hub socket for the collision domain"
+   usage 1
 fi
 
-if [ ! -S ${HUB_SOCKET} ]; then
-   echo 1>&2 "$HUB_SOCKET is not a socket"
-   exit 1
+if [ ! -S "$socket" ]; then
+   warn "$socket: File is not a socket"
+   usage 1
 fi
 
-run_command() {
-   if [ -z "$2" ]; then
-      SHOW_COMMAND="$3"
-   else
-      SHOW_COMMAND="$2"
-   fi
-   if [ "x$1" = "x1" ]; then
-      [ -z "$BE_QUIET" ] && echo 1>&2 "Not running ==> $SHOW_COMMAND"
-      # Report that everything went ok
-      return 0
-   else
-      [ -z "$BE_QUIET" ] && echo 1>&2 "Running ==> $SHOW_COMMAND"
-      eval $3
-      return
-   fi
-}
-JUST_PRINT=0;
-DUMP_COMMAND="uml_dump $HUB_NAME"
-COMPLETE_COMMAND="uml_dump $HUB_SOCKET"
 
-run_command "$JUST_PRINT" "$DUMP_COMMAND" "$COMPLETE_COMMAND"
+uml_dump_cmd=( "uml_dump" "$socket" )
+
+[ -n "$verbose" ] && echo "Running ==> ${uml_dump_cmd[*]}"
+"${uml_dump_cmd[@]}"

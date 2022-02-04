@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
 
+#     Copyright 2021-2022 Adam Bromiley - Warwick Manufacturing Group,
+#     University of Warwick.
+#
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
 # This script can be used to install new packages to the Netkit model
 # filesystem.
 
@@ -8,14 +26,6 @@
 # Write vpackage's usage line to standard output.
 # Usage:
 #   usage_line
-# Globals:
-#   r- SCRIPTNAME
-# Arguments:
-#   None
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 usage_line() {
    echo "Usage: $SCRIPTNAME COMMAND [OPTION]... [PACKAGE]..."
@@ -26,23 +36,19 @@ usage_line() {
 # Write vpackage's usage as a full dialog or a "try --help".
 # Usage:
 #   usage STATUS
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - status code to exit with. When zero, usage will write to standard
 #        output and describe all options (for --help). Else, it will write to
 #        standard error and be a brief usage and try-help message.
 # Returns:
 #   None - exits with a status code of STATUS
-# Example:
-#   None
 ###############################################################################
 usage() {
    local status=$1
 
    if [ "$status" -ne 0 ]; then
       usage_line 1>&2
-      echo 1>&2 "Try '$SCRIPTNAME --help' for more information."
+      try_help
       exit "$status"
    fi
 
@@ -68,13 +74,13 @@ The following COMMANDs use other underlying package management programs:
 
 You can use the following options to configure vpackage or the underlying
 package management command:
-  -d DIRECTORY        mount the filesystem at the directory DIRECTORY. If the
-                        mount point does not exist, Netkit will try to create
-                        it. The default is $VPACKAGE_MOUNT_POINT
-  -f, --filesystem=FILENAME  use FILENAME as the filesystem to be mounted. By
-                              default, this is $VM_MODEL_FS
-  -o, --pass=OPTION   pass OPTION unaltered to the underlying package
-                        management command
+  -d DIR              mount the filesystem at DIR. If the mount point does not
+                        exist, Netkit will try to create it. The default is
+                        $VPACKAGE_MOUNT_POINT
+  -f, --filesystem=FILE  use FILE as the filesystem to be mounted. By default,
+                          this is $VM_MODEL_FS
+  -o, --pass=ARG      pass ARG unaltered to the underlying package management
+                        command
       --only-upgrade  only install upgrades for the selected packages. This
                         uses the --only-upgrade option to apt-get and must be
                         used with the install subcommand
@@ -84,11 +90,12 @@ package management command:
                             apt-get (dpkg has no such option).
 
 Miscellaneous:
-      --help          display this help and exit
-  -p, --print         use the --simulate option on the underlying package
-                        management command to show which commands would be
-                        executed
-      --version       output version information and exit
+$(help_option)
+  -n, --just-print, --dry-run, --recon  use the --simulate option on the
+                                         underlying package management command
+                                         to show which commands would be
+                                         executed
+$(version_option)
 END_OF_HELP
 
    exit "$status"
@@ -96,113 +103,109 @@ END_OF_HELP
 
 
 ###############################################################################
+# For use with an exit trap, unmount the filesystem.
+# Usage:
+#   cleanup MOUNT_POINT
+# Arguments:
+#   $1 - directory used as the mount point
+# Example:
+#   trap "cleanup /mnt/fs" EXIT
+#   ...
+#   exit
+###############################################################################
+cleanup() {
+   local mnt_point=$1
+
+   local mnt_point_resolvconf="$mnt_point/etc/resolv.conf"
+
+   sudo umount -- "$mnt_point_resolvconf"
+   sudo umount -- "$mnt_point"
+}
+
+
+###############################################################################
 # Exit with usage 1 if string is not a valid vpackage subcommand.
 # Usage:
-#   validate_vpackage_subcommand COMMAND
-# Globals:
-#   r- SCRIPTNAME
+#   validate_vpackage_subcmd COMMAND
 # Arguments:
 #   $1 - subcommand name to validate
 # Returns:
 #   None. Exits with a non-zero usage on an invalid subcommand.
-# Example:
-#   None
 ###############################################################################
-validate_vpackage_subcommand() {
-   local subcommand=$1
+validate_vpackage_subcmd() {
+   local subcmd=$1
 
-   if [[ ! "$subcommand" =~ ^(list|update|upgrade|dist-upgrade|clean|autoremove|auto-remove|install|remove|purge)$ ]]; then
-      echo 1>&2 "$SCRIPTNAME: Invalid subcommand '$subcommand'"
+   local subcmds="list|update|upgrade|dist-upgrade|clean|autoremove|auto-remove|install|remove|purge"
+
+   if [[ ! "$subcmd" =~ ^($subcmds)$ ]]; then
+      warn "Invalid subcommand '$subcmd'"
       usage 1
    fi
 }
 
 
 ###############################################################################
-# For use with an exit trap, unmount the filesystem.
-# Usage:
-#   cleanup MOUNT_POINT
-# Globals:
-#   None
-# Arguments:
-#   $1 - directory used as the mount mount_point
-# Returns:
-#   None
-# Example:
-#   trap "cleanup /mnt/fs" EXIT; ... ; exit
-###############################################################################
-cleanup() {
-   local mount_point=$1
-
-   local mount_point_resolvconf="$mount_point/etc/resolv.conf"
-
-   sudo umount "$mount_point_resolvconf"
-   sudo umount "$mount_point"
-}
-
-
-###############################################################################
-# Mount a filesystem to a mount point and enable an exit trap for cleanup
+# Mount a filesystem to a mount point and enable an exit trap for cleanup.
 # Usage:
 #   mount_fs FILESYSTEM MOUNT_POINT
-# Globals:
-#   r- SCRIPTNAME
 # Arguments:
 #   $1 - filesystem image to mount
 #   $2 - directory to be used as the mount point (will be created if does not
 #        exist)
-# Returns:
-#   None
-# Example:
-#   None
 ###############################################################################
 mount_fs() {
-   local filesystem=$1
-   local mount_point=$2
+   local fs=$1
+   local mnt_point=$2
 
    local host_resolvconf="/etc/resolv.conf"
-   local mount_point_resolvconf="$mount_point/etc/resolv.conf"
+   local mnt_point_resolvconf="$mnt_point/etc/resolv.conf"
 
-   sudo mkdir -p "$mount_point"
-   
-   if ! sudo mount --options loop --source "$filesystem" --target "$mount_point"; then
-      echo 1>&2 "$SCRIPTNAME: Could not mount filesystem"
+   echo "Mounting '$fs' to '$mnt_point'"
+
+   sudo mkdir --parents -- "$mnt_point"
+
+   if ! sudo mount --options loop --source "$fs" --target "$mnt_point"; then
+      warn "Could not mount filesystem"
       exit 1
    fi
 
-   if ! sudo mount --bind "$host_resolvconf" "$mount_point_resolvconf"; then
-      echo 1>&2 "$SCRIPTNAME: Could not bind mount name resolution file"
-      sudo umount "$mount_point"
+   echo "Binding '$host_resolvconf' to '$mnt_point_resolvconf'"
+
+   if ! sudo mount --options bind --source "$host_resolvconf" --target "$mnt_point_resolvconf"; then
+      warn "Could not bind mount name resolution file"
+      sudo umount -- "$mnt_point"
       exit 1
    fi
 
    # Enable a trap to unmount the filesystem on exit
    # shellcheck disable=2064
-   trap "cleanup \"$mount_point\"" EXIT
+   trap "cleanup \"$mnt_point\"" EXIT
 }
 
 
-SCRIPTNAME=$(basename "$0")
-
+# Ensure NETKIT_HOME is set
 if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not set"
+   echo 1>&2 "The NETKIT_HOME environment variable is not set"
    exit 1
 fi
 
 # shellcheck source=./script_utils
-. "$NETKIT_HOME/bin/script_utils"
+. -- "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./vcommon
+. -- "$NETKIT_HOME/bin/vcommon"
 
 # Write to the vcommands log
-logWrite "$0 $*"
+log_write "$0 $*"
 
 
-filesystem=$VM_MODEL_FS
-mount_point=$VPACKAGE_MOUNT_POINT
+fs=$VM_MODEL_FS
+mnt_point=$VPACKAGE_MOUNT_POINT
 
 
 # Get command line options
-long_opts="assume-yes,filesystem:,help,only-upgrade,pass:,print,version,yes"
-short_opts="d:o:py"
+long_opts="assume-yes,dry-run,filesystem:,help,just-print,only-upgrade,pass:,\
+recon,version,yes"
+short_opts="d:no:y"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
@@ -215,15 +218,18 @@ eval set -- "$getopt_opts"
 while true; do
    case $1 in
       -d)
-         mount_point=$(readlink --canonicalize-missing "$2")
+         mnt_point=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       -f|--filesystem)
-         filesystem=$(readlink --canonicalize-missing "$2")
+         fs=$(readlink --canonicalize-missing -- "$2")
          shift
          ;;
       --help)
          usage 0
+         ;;
+      -n|--dry-run|--just-print|--recon)
+         passthrough_opts=( "--simulate" "${passthrough_opts[@]}" )
          ;;
       -o|--pass)
          passthrough_opts+=( "$2" )
@@ -231,9 +237,6 @@ while true; do
          ;;
       --only-upgrade)
          passthrough_opts=( "--only-upgrade" "${passthrough_opts[@]}" )
-         ;;
-      -p|--print)
-         passthrough_opts=( "--simulate" "${passthrough_opts[@]}" )
          ;;
       --version)
          showVersion
@@ -247,35 +250,35 @@ while true; do
          break
          ;;
       *)
-         echo 1>&2 "$SCRIPTNAME: Unknown error parsing command line arguments"
+         warn "Unknown error parsing command line arguments"
          usage 1
          ;;
    esac
 
    shift
 done
-   
+
 # The first non-option argument is the subcommand, the rest are package names
 if [ "$#" -lt 1 ]; then
-   echo 1>&2 "$SCRIPTNAME: Missing subcommand"
+   warn "Missing subcommand"
    usage 1
 fi
 
-subcommand=$1
-validate_vpackage_subcommand "$subcommand"
+subcmd=$1
+validate_vpackage_subcmd "$subcmd"
 
 packages=( "${@:2}" )
 
 
 # Warn for dangerous options
-if [ "$subcommand" = "dist-upgrade" ]; then
+if [ "$subcmd" = "dist-upgrade" ]; then
    while true; do
       read -rp "Warning: dist-upgrade has the potential to delete packages that may be critical to the operation of Netkit. Continue [y/N]? " response
       case $response in
          [Yy]|[Yy][Ee][Ss])
             break
             ;;
-         [Nn]|[Nn][Oo])
+         ""|[Nn]|[Nn][Oo])
             exit 0
             ;;
          *)
@@ -287,32 +290,37 @@ fi
 
 # Mount the Netkit filesystem. An EXIT trap will be set so we do not need to
 # manually unmount the filesystem at each script exit point.
-mount_fs "$filesystem" "$mount_point"
+mount_fs "$fs" "$mnt_point"
 
 
-chroot_cmd=( "sudo" "chroot" "$mount_point" )
+chroot_cmd=( "sudo" "chroot" -- "$mnt_point" )
 
 # vpackage subcommands that use apt-get can simply be passed through as a valid
 # apt-get subcommand. This is not the case with dpkg.
 # NOTE: for an unknown reason, apt-get --option RootDir does not work for
 # installing packages, rather the packages get installed to the host system.
 # chroot is not required for dpkg commands.
-apt_get_cmd=( "${chroot_cmd[@]}" "apt-get" "${passthrough_opts[@]}" "$subcommand" )
+apt_get_cmd=(
+   "${chroot_cmd[@]}"
+   "apt-get"
+   "${passthrough_opts[@]}"
+   "$subcmd"
+)
 
 # The following apt-get commands are not supported for reasons relating to
 # complexity or lack of necessity for most users: dselect-upgrade, source,
 # build-dep, check, autoclean|auto-clean, changelog, and indextargets.
-case $subcommand in
+case $subcmd in
    list)
       # We don't use --admindir in the event that the host system does not have
       # the dpkg. Instead, the dpkg binary on the Netkit filesystem will be
       # used.
-      "${chroot_cmd[@]}" dpkg --list "${passthrough_opts[@]}" "${packages[@]}"
+      "${chroot_cmd[@]}" dpkg --list "${passthrough_opts[@]}" -- "${packages[@]}"
       ;;
    update|upgrade|dist-upgrade|clean|autoremove|auto-remove)
       "${apt_get_cmd[@]}"
       ;;
    install|remove|purge)
-      "${apt_get_cmd[@]}" "${packages[@]}"
+      "${apt_get_cmd[@]}" -- "${packages[@]}"
       ;;
 esac

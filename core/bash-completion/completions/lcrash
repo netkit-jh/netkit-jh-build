@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+
+#     Copyright 2021-2022 Adam Bromiley - Warwick Manufacturing Group,
+#     University of Warwick.
+#
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+# Bash completion function for lcrash.
+
+
+###############################################################################
+# Bash completion function for lcrash to fill the COMPREPLY array.
+# Usage:
+#   _lcrash
+# Globals:
+#   COMPREPLY
+###############################################################################
+_lcrash() {
+   local lab_vhosts
+
+   local previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+   local current_word=${COMP_WORDS[COMP_CWORD]}
+
+   # If the current word is the first argument, it cannot be an option
+   # parameter.
+   if [ "$COMP_CWORD" -eq 1 ]; then
+      case $current_word in
+         -*)
+            # Current word is an option
+            _opts_compgen "lcrash" "" "$current_word"
+            ;;
+         *)
+            # Current word could be an option or machine name (non-option
+            # argument), so we complete as a machine name.
+            _get_lab_vhosts lab_vhosts "$PWD"
+            mapfile -t COMPREPLY < <(compgen -W "${lab_vhosts[*]}" -- "$current_word")
+            ;;
+      esac
+      return
+   fi
+
+   if [ "$current_word" = "=" ] && [[ "$previous_word" == --* ]]; then
+      # '--opt=' results in current_word="=", previous_word="--opt". We can
+      # model this as '--opt ' by just setting current_word to an empty string.
+      current_word=""
+   elif [ "$previous_word" = "=" ] && [ -n "$current_word" ]; then
+      # '--opt=param' results in current_word="param", previous_word="=". We
+      # therefore must get the option before the equals sign by tracking back
+      # another index of COMP_WORDS.
+      previous_word=${COMP_WORDS[COMP_CWORD - 2]}
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      -d)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
+      *)
+         # The previous word is either a non-option or one that does not take a
+         # parameter. The current word is therefore a new option or non-option
+         # argument.
+         #
+         # Covered options:
+         # -F, --help, --just-kill, -k, --keep-fs, -l, --list, -q, --quick, -v,
+         # --verbose, --version
+         case $current_word in
+            -*)
+               # Current word is a new option
+               _opts_compgen "lcrash" "" "$current_word"
+               ;;
+            *)
+               # Current word could be an option or machine name (non-option
+               # argument), so we complete as a machine name.
+               _get_lab_vhosts lab_vhosts "$(_get_lab_dir "${COMP_WORDS[@]}")"
+               mapfile -t COMPREPLY < <(compgen -W "${lab_vhosts[*]}" -- "$current_word")
+               ;;
+         esac
+         ;;
+   esac
+}
+
+
+# shellcheck source=../helpers
+. -- "$NETKIT_HOME/bash-completion/helpers"
+
+
+complete -F _lcrash lcrash

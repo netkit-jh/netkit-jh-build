@@ -1,0 +1,392 @@
+#!/usr/bin/env bash
+
+#     Copyright 2022 Adam Bromiley - Warwick Manufacturing Group, University of
+#     Warwick.
+#
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+# Utility functions for the Netkit Bash completion scripts
+
+
+###############################################################################
+# Write a newline-separated list of long options for the given command to
+# standard output.
+# Usage:
+#   _get_cmd_opts COMMAND
+# Arguments:
+#   $1 - command name (must be present in $NETKIT_HOME/bin/)
+###############################################################################
+_get_cmd_opts() {
+   local cmd=$1
+   # Get long options
+   "$NETKIT_HOME/bin/$cmd" --help |
+      grep --extended-regexp --only-matching "^(  -[[:alnum:]], | {6})--[[:alnum:]-]+=?" |
+      awk --field-separator "," '{ gsub(/[[:blank:]]/, "", $NF); print $NF }'
+
+   # Get short options
+   # NOTE: we don't gather the short options because conventionally linux
+   # utilities only autocomplete long ones.
+   #"$NETKIT_HOME/bin/$cmd" --help | grep --extended-regexp --only-matching '^  -[[:alnum:]]' | tr -d "[:blank:]"
+}
+
+
+###############################################################################
+# Expand '--ethN=' in a command's option array to '--eth1= --eth2= ...
+# --eth${MAX_INTERFACES}='. The option list wrote to standard output will be
+# space-separated, which should be fine given that command-line options do not
+# have whitespace in.
+# Usage:
+#   _expand_ethn [OPTION]...
+# Arguments:
+#  ... - list of command options
+# Example:
+#   mapfile -t options < <(_get_cmd_opts vstart)
+#   mapfile -t options < <(_expand_ethn "${options[@]}")
+###############################################################################
+_expand_ethn() {
+   local max_interfaces opt i
+
+   # We only want the value of MAX_INTERFACES from script_utils. Sourcing
+   # script_utils in this shell would flood the user's environment with other
+   # Netkit environment variables when they source this script inside .bashrc
+   # (or similar) to get the completions. Therefore, we source in a subshell
+   # and extract just the value of MAX_INTERFACES.
+   # shellcheck source=../bin/script_utils
+   max_interfaces=$(
+      . -- "$NETKIT_HOME/bin/script_utils";
+      printf "%s\n" "$MAX_INTERFACES"
+   )
+
+   for opt in "$@"; do
+      [ "$opt" = "--ethN=" ] && continue
+      printf "%s\n" "$opt"
+   done
+
+   for ((i = 0; i < max_interfaces; ++i)) do
+      printf -- "--eth%d=\n" "$i"
+   done
+}
+
+
+###############################################################################
+# Expand array of options into quoted array suitable for compgen -W with
+# nospace enabled. Specify a parameter delimiter where a space should not be
+# appended to the completion.
+# Usage:
+#   _opt_array_to_str DELIMETER [OPTION]...
+# Arguments:
+#   $1 - option-parameter delimeter (e.g. '=' for getopt longopts)
+#  ... - list of options
+# Example:
+#   mapfile -t options < <(_get_cmd_opts vstart)
+#   compgen -W "$(_opt_array_to_str "=" "${options[@]}")" -- "$word"
+###############################################################################
+_opt_array_to_str() {
+   local delimeter=$1
+   local opts=( "${@:2}" )
+
+   local opt space opts_new
+
+   # Append a space to all options without parameters
+   for opt in "${opts[@]}"; do
+      [[ "$opt" == *"$delimeter" ]] && space="" || space=" "
+      opts_new+=( "$opt$space" )
+   done
+
+   # Return quoted array
+   echo "${opts_new[*]@Q}"
+}
+
+
+###############################################################################
+# Generate option completions for a given command and set COMPREPLY.
+# Usage:
+#   _opts_compgen COMMAND EXPAND_ETHN [CURRENT_WORD]
+# Globals:
+#   COMPREPLY
+# Arguments:
+#   $1 - command name ("$NETKIT_HOME/bin/$1" must exist)
+#   $2 - set to 1 to expand '--ethN=', empty string otherwise
+#   $3 - current word to be completed
+###############################################################################
+_opts_compgen() {
+   local cmd=$1
+   local expand_ethn=$2
+   local current_word=$3
+
+   local opts opts_str
+
+   mapfile -t opts < <(_get_cmd_opts "$cmd")
+   [ -n "$expand_ethn" ] && mapfile -t opts < <(_expand_ethn "${opts[@]}")
+
+   opts_str=$(_opt_array_to_str "=" "${opts[@]}")
+
+   compopt -o nospace
+   mapfile -t COMPREPLY < <(compgen -W "$opts_str" -- "$current_word")
+}
+
+
+###############################################################################
+# Write a newline-separated list of subcommands for the given command to
+# standard output.
+# Usage:
+#   _get_cmd_subcmds COMMAND
+# Arguments:
+#   $1 - command name (must be present in $NETKIT_HOME/bin/)
+###############################################################################
+_get_cmd_subcmds() {
+   local cmd=$1
+   "$NETKIT_HOME/bin/$cmd" --help |
+      grep --extended-regexp --only-matching "^  [[:alnum:]][[:alnum:]-]+" |
+      tr -d "[:blank:]"
+}
+
+
+###############################################################################
+# Get user parameter (option '-u|--user') from the command-line array. If not
+# found, output '-'. Can be used to generate machine name completions owned by
+# a specific user.
+# Usage:
+#   _get_nk_user [ARGUMENT]...
+# Arguments:
+#  ... - command-line arguments
+###############################################################################
+_get_nk_user() {
+   local word user_flag
+
+   # Iterate over the command-line arguments
+   for word in "$@"; do
+      if [ -n "$user_flag" ]; then
+         # Handle if argument is '--user=username'
+         [ "$word" = "=" ] && continue
+
+         printf "%s\n" "$word"
+         return
+      fi
+
+      # Check command-line arguments for -u|--user. If found, the next argument
+      # will be the username.
+      [ "$word" = "-u" ] || [ "$word" = "--user" ] && user_flag=1
+   done
+
+   echo "-"
+}
+
+
+###############################################################################
+# Get lab directory parameter (option '-d') from the command-line array. If not
+# found, output the current working directory. Can be used to generate machine
+# name completions.
+# Usage:
+#   _get_lab_dir [ARGUMENT]...
+# Arguments:
+#  ... - command-line arguments
+###############################################################################
+_get_lab_dir() {
+   local word d_flag
+
+   # Iterate over the command-line arguments
+   for word in "$@"; do
+      if [ -n "$d_flag" ]; then
+         printf "%s\n" "$word"
+         return
+      fi
+
+      # Check command-line arguments for -d. If found, the next argument will
+      # be the lab directory path.
+      [ "$word" = "-d" ] && d_flag=1
+   done
+
+   printf "%s\n" "$PWD"
+}
+
+
+###############################################################################
+# Check if an array contains a string.
+# Usage:
+#   _array_contains QUERY ARRAY
+# Arguments:
+#   $1 - string to search for
+#   $2 - word-expanded array to search
+# Returns:
+#   0 if array contains query, non-zero if not
+# Example:
+#   _array_contains "a" "${foobar[@]}" && echo "Found!"
+###############################################################################
+_array_contains() {
+   local query=$1
+   local array=( "${@:2}" )
+
+   local item
+
+   for item in "${array[@]}"; do
+      [ "$query" = "$item" ] && return 0
+   done
+
+   return 1
+}
+
+
+###############################################################################
+# Set array variable to a list of machines in the lab taken from the directory
+# listing. See $NETKIT_HOME/bin/script_utils for further information.
+# Usage:
+#   _get_lab_vhosts LAB_VHOSTS_NAME_REF DIR
+# Arguments:
+#   $1 - name reference to array variable
+#   $2 - lab directory
+# Example:
+#   local lab_vhosts
+#   _get_lab_vhosts lab_vhosts "/path/to/lab/directory"
+#   echo "${lab_vhosts[*]}"
+###############################################################################
+_get_lab_vhosts() {
+   local -n _get_lab_vhosts_lab_vhosts=$1
+   local lab_dir=$2
+
+   local lab_machines
+   local vhost
+
+   # Invalid hostnames (see $NETKIT_HOME/bin/script_utils)
+   local invalid_hostnames=( "shared" "_test" )
+
+   # Get lab.conf's LAB_MACHINES variable. This will override the directory
+   # listing for the machine list.
+   lab_machines=$(sed --quiet -- "0,/^LAB_MACHINES=/s///p" "$lab_dir/lab.conf" 2> /dev/null)
+   IFS="," read -ra _get_lab_vhosts_lab_vhosts <<< "$lab_machines"
+
+   if [ "${#_get_lab_vhosts_lab_vhosts[@]}" -eq 0 ]; then
+      # Build list of virtual machines that are part of the lab from the
+      # directory listing if LAB_MACHINES is not set.
+      for dir in "$lab_dir/"*/; do
+         # If there are no subdirectories, "$lab_dir/"*/ will expand to a path
+         # to a directory named *; the for loop will still run over that one
+         # string. shopt -s nullglob will avoid this issue but has global
+         # implications. Avoid having to set nullglob by simply checking if the
+         # directory exists.
+         [ ! -d "$dir" ] && continue
+
+         vhost=$(basename -- "$dir")
+
+         # Avoid the shared and _test directories
+         _array_contains "$vhost" "${invalid_hostnames[@]}" && continue
+
+         _get_lab_vhosts_lab_vhosts+=( "$vhost" )
+      done
+   fi
+}
+
+
+###############################################################################
+# Set array variable to a list of active collision domains taken from vlist.
+# Usage:
+#   _get_vhosts VHOSTS_NAME_REF [USER]
+# Arguments:
+#   $1 - name reference to array variable
+#   $2 - optional target user
+# Example:
+#   local vhosts
+#   _get_vhosts vhosts "," "$(id --name --user)"
+#   echo "${vhosts[*]}"
+###############################################################################
+_get_vhosts() {
+   local -n _get_vhosts_vhosts=$1
+   local target_user=$2
+
+   mapfile -t _get_vhosts_vhosts < <(
+      "$NETKIT_HOME/bin/vlist" --no-header ${target_user:+"--user=$target_user"} |
+      head --lines -3 |
+      awk '{ print $2 }'
+   )
+}
+
+
+###############################################################################
+# Set array variable to a list of active collision domains taken from vlist.
+# Usage:
+#   _get_collision_domains COLLISION_DOMAINS_NAME_REF TAP_APPEND [USER]
+# Arguments:
+#   $1 - name reference to array variable
+#   $2 - append string to tap collision domains (useful for adding a comma)
+#   $3 - optional target user
+# Example:
+#   local collision_domains
+#   _get_collision_domains collision_domains "," "$(id --name --user)"
+#   echo "${collision_domains[*]}"
+###############################################################################
+_get_collision_domains() {
+   local -n _get_collision_domains_collision_domains=$1
+   local tap_append=$2
+   local target_user=$3
+
+   local interfaces interface collision_domain
+
+   local -A collision_domains_dict
+
+   # Get array of 'eth0@CD0', 'eth1@CD1', 'eth0@CD1', 'eth1@TAP(tap)', ...
+   IFS="," read -ra interfaces < <(
+      "$NETKIT_HOME/bin/vlist" --no-header ${target_user:+"--user=$target_user"} |
+      head --lines -3 |
+      awk '{ for (i=5; i<=NF; ++i) printf $i; printf "," }'
+   )
+
+   for interface in "${interfaces[@]}"; do
+      # Extract just the right-hand side of the specification
+      collision_domain=${interface#*@}
+
+      # Remove possible '(tap)' indicator
+      [[ "$collision_domain" == *"(tap)" ]] && collision_domain="${collision_domain%"(tap)"}$tap_append"
+
+      # We use an associative array because key values must be unique
+      collision_domains_dict[$collision_domain]=
+   done
+
+   # Convert the associative array back to a regular one
+   _get_collision_domains_collision_domains=( "${!collision_domains_dict[@]}" )
+}
+
+
+###############################################################################
+# Generate collision domain completions for a given command and set COMPREPLY.
+# Usage:
+#   _collision_domains_compgen USER [CURRENT_WORD]
+# Globals:
+#   COMPREPLY
+# Arguments:
+#   $1 - owner of the collision domains; pass an empty string to determine from
+#        a -u|--user option or (if not exists) gather from all users.
+#   $2 - current word to be completed
+###############################################################################
+_collision_domains_compgen() {
+   local target_user=$1
+   local current_word=$2
+
+   local collision_domains collision_domains_str
+
+   : "${target_user:="$(_get_nk_user "${COMP_WORDS[@]}")"}"
+
+   _get_collision_domains collision_domains "," "$target_user" 2> /dev/null
+   collision_domains_str=$(_opt_array_to_str "," "${collision_domains[@]}")
+
+   compopt -o nospace
+   mapfile -t COMPREPLY < <(compgen -W "$collision_domains_str" -- "$current_word")
+}
+
+
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "$(basename -- "$0"): The NETKIT_HOME environment variable is not set"
+   exit 1
+fi

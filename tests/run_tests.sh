@@ -1,125 +1,161 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Returns 1 if the files existed, or 0 if they didn't after waiting for wait_seconds (first parameter)
+#     Copyright 2021-2022 Adam Bromiley. Joshua Hawking - Warwick Manufacturing
+#     Group, University of Warwick.
+#
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+
+###############################################################################
+# Wait for all files to exist before returning.
+# Usage:
+#   print_vhost_summary TIMEOUT [FILE]...
+# Arguments:
+#   $1 - timeout in seconds to wait before returning an error if not all files
+#        exist.
+#  ... - list of files to check for
+# Returns:
+#   0 if all files exist before the timeout, non-zero otherwise
+###############################################################################
 wait_for_files() {
-	local wait_seconds="$1"; shift
-	local files=("$@")
+   local timeout=$1
+   local files=( "${@:2}" )
 
-	while test $((wait_seconds--)) -gt 0; do
-		echo -ne "Waiting for files (${wait_seconds}s) \033[0K\r"
-		
-		failed=0
-		for file in "${files[@]}"; do
-			if [ ! -f ${file} ]; then
-				failed=1
-				# echo "${file} does not exist"
-			fi
-		done
-		
-		# If all files have existed, return 1 (success)
-		if [ ${failed} -eq 0 ]; then
-			return 1
-		fi 
-		
-		sleep 1
-	done
-	
-	# Otherwise, return 0 (failed)
-	return 0
+   for ((i = timeout - 1; i >= 0; --i)); do
+      echo -en "\033[0K\rWaiting for files (${timeout}s)"
+
+      for file in "${files[@]}"; do
+         if [ ! -f "$file" ]; then
+            sleep 1
+            continue
+         fi
+      done
+
+      # Return success if all files exist
+      echo
+      return 0
+   done
+
+   echo
+   return 1
 }
 
-# Firstly, start off with a vclean to remove any hanging machines
-vclean --clean-all
 
-# CD into script directory
-cd "${0%/*}"
-tests_directory="$(pwd)"
-configs_directory="${tests_directory}/configs"
-labs_directory="${tests_directory}/labs"
+# Script exits with 1 if any lab test fails
+test_return=0
 
-output_file="${tests_directory}/test_results.txt"
 
-echo -e "Test started at $(date)\n\nBuild information:" > ${output_file}
-echo -e "$(vstart --version)\n" >> ${output_file}
+# Define relevant directories
+tests_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)
+configs_dir="$tests_dir/configs/"
+labs_dir="$tests_dir/labs/"
 
-# Process configs
-cd ${configs_directory}
+test_results_file="$tests_dir/test_results.txt"
 
-for config_file in *; do
-	# Define a config dictionary
-	declare -A config
-	
-	while read line; do
-		if echo $line | grep -F = &>/dev/null
-		then
-		    varname=$(echo "$line" | cut -d '=' -f 1)
-		    config[$varname]=$(echo "$line" | cut -d '=' -f 2-)
-		fi
-	done < ${config_file}
-	
-	echo "Starting test: ${config[NAME]}"
-	
-	# Validate lab directory
-	if [ ! -d "${labs_directory}/${config[LAB_FOLDER]}" ]; then
-		echo "Lab folder '${config[LAB_FOLDER]}' does not exist for ${config[NAME]} (${config_file}), skipping test."
-		echo -e "${config[NAME]}: Failed (lab folder does not exist)" >> ${output_file}
-		continue
-	fi
 
-	# Create a list of expected expected_file_names
-	IFS=',' read -r -a expected_file_names <<< "${config[FILES]}"
-	
-	# Add lab directory to start of each file name
-	expected_files=("${expected_file_names[@]/#/${labs_directory}/${config[LAB_FOLDER]}/}")
-	
-	# CD into lab directory
-	cd ${labs_directory}/${config[LAB_FOLDER]}
-	
-	# Remove any leftover expected files
-	rm -f "${expected_files[@]}"
+cat << END_OF_DIALOG | tee -- "$test_results_file"
+Test started at $(date)
 
-	time_started=$(date +%s)
-	
-	lab_arguments=""
-	
-	# Check if a terminal is specified, if so, configure lab arguments
-	if [ -v config[TERMINAL] ]; then
-		lab_arguments="${lab_arguments} --pass=--xterm=${config[TERMINAL]}"
-	fi
-	
-	# Run the lab
-	lclean
-	timeout ${config[LAB_TIMEOUT]} lstart ${lab_arguments}
-	
-	# If timeout returns 124, then the command has timed out
-	if [ $? -eq 124 ]; then
-		echo "lstart failed to complete, test failed."
-		echo -e "${config[NAME]}: Failed (lab failed to start after ${config[LAB_TIMEOUT]} seconds)" >> ${output_file}
-	else
-		
-		wait_for_files ${config[FILES_TIMEOUT]} "${expected_files[@]}"
-		files_exist=$?
-		
-		# Wait for files
-		if [ ${files_exist} -eq 1 ]; then
-			echo "All files found, test successful."
-			echo -e "${config[NAME]}: Successful (completed in $(expr $(date +%s) - ${time_started}) seconds)" >> ${output_file}
-		else
-			echo "Files were not found after timeout, test failed."
-			echo -e "${config[NAME]}: Failed (test files were not found after ${config[FILES_TIMEOUT]} seconds)" >> ${output_file}
-		fi
-		
-	fi
-	
-	# Crash and clean the lab
-	lcrash
-	lclean
+Build information:
+$(vstart --version)
 
-	# Now remove any expected files in order to create a clean slate
-	rm -f "${expected_files[@]}"
-	
-	# And return to the configs directory to process the next test
-	cd ${configs_directory}
+END_OF_DIALOG
+
+
+# Firstly, start off with vclean to remove any running processes or files that
+# might affect the tests.
+echo "Initialising test: cleaning install (raised privileges necessary)"
+vclean --clean-all > /dev/null
+
+
+for config_file in "$configs_dir"/*; do
+   unset config
+   declare -A config
+
+   # Get test configuration
+   while IFS= read -r configuration; do
+      opt=${configuration%%=*}
+      config[$opt]=${configuration#*=}
+   done < <(grep -- "=" "$config_file")
+
+   echo "--- Starting test '${config[NAME]}' ---"
+
+   lab_dir="$labs_dir/${config[LAB_FOLDER]}/"
+
+   # Validate lab directory
+   if [ ! -d "$lab_dir" ]; then
+      echo "${config[NAME]}: Failed (lab folder does not exist)" |
+         tee --append -- "$test_results_file" 2>&1
+      test_return=1
+      continue
+   fi
+
+   IFS="," read -ra success_filenames <<< "${config[FILES]}"
+
+   # Prepend lab directory to each filename
+   success_files=( "${success_filenames[@]/#/$lab_dir}" )
+
+   # Remove any leftover expected files
+   rm --force -- "${success_files[@]}"
+
+   lstart_cmd=( "lstart" "-d" "$lab_dir" )
+   [ -n "${config[TERMINAL]}" ] && lstart_cmd+=( "--pass=--xterm=${config[TERMINAL]}" )
+
+   # Clean then run the lab with a timeout
+   lclean -d "$lab_dir" > /dev/null
+
+   time_started=$(date +%s)
+   timeout -- "${config[LAB_TIMEOUT]}" "${lstart_cmd[@]}" > /dev/null
+   ret=$?
+
+   if [ "$ret" -eq 124 ]; then
+      # If timeout returns 124, then the command has timed out
+      echo "${config[NAME]}: Failed (lab failed to start after ${config[LAB_TIMEOUT]} seconds)" |
+         tee --append -- "$test_results_file" 1>&2
+      test_return=1
+   elif [ "$ret" -ne 0 ]; then
+      echo "${config[NAME]}: Failed (lab failed to start for an unknown reason)" |
+         tee --append -- "$test_results_file" 1>&2
+      test_return=1
+   else
+      if wait_for_files "${config[TIMEOUT]}" "${success_files[@]}"; then
+         duration=$(( $(date +%s) - time_started ))
+         echo "${config[NAME]}: Success (completed in $duration seconds)" |
+            tee --append -- "$test_results_file"
+      else
+         echo "${config[NAME]}: Failed (success files not found after ${config[TIMEOUT]} seconds)" |
+            tee --append -- "$test_results_file" 1>&2
+         test_return=1
+      fi
+   fi
+
+   # Crash and clean the lab
+   lcrash -d "$lab_dir" > /dev/null
+   lclean -d "$lab_dir" > /dev/null
+
+   # Now remove any expected files in order to create a clean slate
+   rm --force -- "${success_files[@]}"
 done
 
-echo -e "\nTest finished at $(date)" >> ${output_file}
+
+echo "Completing test: cleaning install (raised privileges necessary)"
+vclean --clean-all > /dev/null
+
+
+echo -e "\nTest finished at $(date)" | tee --append -- "$test_results_file"
+
+
+exit "$test_return"

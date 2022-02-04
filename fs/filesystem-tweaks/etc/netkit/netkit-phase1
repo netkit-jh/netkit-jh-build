@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-#     Copyright 2002-2007 Maurizio Patrignani, Stefano Pettini, Maurizio Pizzonia,
-#     Fabio Ricci, Massimo Rimondini - Computer Networks Research Group, Roma Tre
-#     University.
+#     Copyright 2020-2022 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
+#     Group, University of Warwick.
+#     Copyright 2002-2007 Maurizio Patrignani, Stefano Pettini, Maurizio
+#     Pizzonia, Fabio Ricci, Massimo Rimondini - Computer Networks Research
+#     Group, Roma Tre University.
 #
 #     This file is part of Netkit.
 #
@@ -33,160 +35,249 @@
 #                    usage inside virtual machines.
 ### END INIT INFO
 
-# Function that mounts a certain directory on the host
-mountdir() {
-   HOST_DIR="$1"
-   GUEST_DIR="$2"
-   MESSAGE="$3"
 
-   echo  "$MESSAGE"
-   mkdir -p "$GUEST_DIR"
-   mount none "$GUEST_DIR" -t hostfs -o rw,"$HOST_DIR"
+###############################################################################
+# Write netkit-phase1's usage line to standard output.
+# Usage:
+#   usage_line
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME {start|stop}"
 }
 
-# ANSI style escape sequences
-DELIMITER_TEXT=$'\e[34;1m'
-NORMAL_TEXT=$'\e[0m\e[36m'
-INFO_FIELD=$'\e[34;4;1m'
-PLAIN_TEXT=$'\e[0m'
 
-case "$1" in
-   start) 
+###############################################################################
+# Mount a directory on the host filesystem to a directory on the guest.
+# Usage:
+#   mount_host_dir SRC DIR [MESSAGE]
+# Arguments:
+#   $1 - directory on host filesystem to mount
+#   $2 - mount point on guest
+#   $3 - optional message to output
+###############################################################################
+mount_host_dir() {
+   local host_dir=$1
+   local guest_dir=$2
+   local message=$3
+
+   [ -n "$message" ] && printf "%s\n" "$message"
+   mkdir --parents -- "$guest_dir"
+   mount --types hostfs --options "rw,$host_dir" --source none --target "$guest_dir"
+}
+
+
+###############################################################################
+# Unmount a host directory that has been mounted into the guest.
+# Usage:
+#   umount_host_dir DIR [MESSAGE]
+# Arguments:
+#   $1 - mount point on guest
+#   $2 - optional message to output
+###############################################################################
+umount_host_dir() {
+   local guest_dir=$1
+   local message=$2
+
+   [ -n "$message" ] && printf "%s\n" "$message"
+   umount -- "$guest_dir"
+   rmdir -- "$guest_dir"
+}
+
+
+SCRIPTNAME=$(basename -- "$0")
+
+
+# ANSI color escape sequences
+color_normal=$'\033[0m'
+color_bold_blue=$'\033[34;1m'
+color_cyan=$'\033[36m'
+
+
+case $1 in
+   start)
       echo
-      echo "${DELIMITER_TEXT}--- Starting Netkit phase 1 init script ---${NORMAL_TEXT}"
+      # The information block between the two line delimeters is coloured cyan
+      echo "$color_bold_blue--- Starting Netkit phase 1 init script ---$color_normal$color_cyan"
 
-      ASSIGN_VARIABLES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' \
-         '
-            ($1=="name") {print "HOSTNAME=" $2}
-            ($1=="hosthome") {print "HOSTHOME=" $2}
-            ($1=="hostlab") {print "HOSTLAB=" $2}
-            ($1=="mount") {print "MOUNTS=\"$MOUNTS " $2 "\""}
-            ($1=="title") {print "TITLE=" $2}
-            ($1=="def_route") {print "DEFAULT_ROUTE=" $2}
-            ($1=="ubd0") {print "FILESYSTEM=" $2}
-         ')
 
-      eval "$ASSIGN_VARIABLES"
-      COW=$(echo $FILESYSTEM|awk -v FS=, '{print $2}')
+      # This short GNU AWK script processes /proc/cmdline (the command line
+      # used to invoke the kernel). The script transforms it into a null-
+      # delimited list of parameters by replacing all unquoted spaces with
+      # a null byte, making the output similar to /proc/$pid/cmdline. The
+      # kernel_cmd variable is a Bash array where each element is a
+      # parameter=value specification.
+      mapfile -d "" -t kernel_cmd < <(gawk '
+         BEGIN {
+            FPAT = "([^ ]+)|(\"[^\"]+\")"
+            OFS = "\0"
+         }
+         {
+            $1=$1
+            gsub("\"", "")
+            printf $0
+         }' < /proc/cmdline)
 
-      AUTOCONF_INTERFACES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' \
-         '(match($1,"autoconf_eth[0-9]+")) {
-               gsub("autoconf_","",$1)
-               gsub("\n","",$2)
-               print "echo \"Bringing up interface " $1 " (" $2 ")...\""
-               print "ifconfig " $1 " " $2 " up"
-            }
-         ')
+      for arg in "${kernel_cmd[@]}"; do
+         opt=${arg%%=*}
+         value=${arg#*=}
 
-      export HOSTNAME
+         case $opt in
+            hostname)      hostname=$value;;
+            hosthome)      hosthome=$value;;
+            mount)         mnt_specifications+=( "$value" );;
+            hostlab)       hostlab=$value;;
+            def_route)     default_route=$value;;
+            ubd0)          fs=${value#*,};;
+            autoconf_*)
+               # Get interface name
+               interface=${opt#"autoconf_"}
+               # Array of alternating interface names and IP addresses
+               autoconf_interfaces+=( "$interface" "$value" )
+            ;;
+         esac
+      done
 
-      # Set title for the terminal window
-      if [ -n "$TITLE" ]; then
-         echo -ne "\e]2;${TITLE}\a"
-         # For Konsole (no longer used because title is set using the --title option)
-#         echo -ne "\e]30;${TITLE}\a"
-      fi
+
+      # Set title for the terminal window with special xterm escape sequence
+      [ -n "$hostname" ] && printf "%b%s%b" "\033]2;" "$hostname" "\a"
 
       # Mount host directories inside the guest
-      if [ -n "$MOUNTS" ]; then
-         for MOUNT in $MOUNTS; do
-            SRC_MOUNT=${MOUNT%%,*}
-            DEST_MOUNT=${MOUNT#*,}
+      if [ "${#mnt_specifications[@]}" -gt 0 ]; then
+         for mnt_specification in "${mnt_specifications[@]}"; do
+            src_mnt=${mnt_specification%%,*}
+            dst_mnt=${mnt_specification#*,}
 
-            mountdir "$SRC_MOUNT" "$DEST_MOUNT" "Mounting $SRC_MOUNT on $DEST_MOUNT..."
+            mount_host_dir "$src_mnt" "$dst_mnt" "Mounting '$src_mnt' on '$dst_mnt'"
          done
       fi
 
-      [ -n "$HOSTHOME" ] && mountdir "$HOSTHOME" /hosthome "Mounting $HOSTHOME on /hosthome..."
-      [ -n "$HOSTLAB" ] && mountdir "$HOSTLAB" /hostlab "Mounting $HOSTLAB on /hostlab ..."
+      [ -n "$hosthome" ] &&
+         mount_host_dir "$hosthome" /hosthome "Mounting '$hosthome' on '/hosthome/'"
+      [ -n "$hostlab" ] &&
+         mount_host_dir "$hostlab"  /hostlab  "Mounting '$hostlab' on '/hostlab/'"
 
-      # Configure virtual host for the first boot
-      if [ ! -e /etc/vhostconfigured ]; then
 
-         if [ -n "$HOSTNAME" ]; then
-            echo "Configuring host name..."
-            echo $HOSTNAME > /etc/hostname
+      # Configure virtual host on the first boot
+      if [ ! -e /etc/netkit/.vhostconfigured ]; then
+         if [ -n "$hostname" ]; then
+            echo "Configuring host name"
+            printf "%s\n" "$hostname" > /etc/hostname
             hostname --file /etc/hostname
 
-            mv /etc/hosts /etc/hosts.tmp
-            echo 127.0.0.1 $HOSTNAME > /etc/hosts
-            cat /etc/hosts.tmp >> /etc/hosts
-            rm /etc/hosts.tmp
+            # Prepend IPv4 localhost entry to hosts file
+            sed --in-place "1s;^;127.0.0.1 $hostname\n;" /etc/hosts
          fi
 
-         echo "Running 'resolvconf -u' to generate /etc/resolv.conf"
+         echo "Running 'resolvconf -u' to generate '/etc/resolv.conf'"
          resolvconf -u
 
-         if [ "$(echo /hostlab/shared/*)" != "/hostlab/shared/*" ]; then
-            echo "Copying shared files from /hostlab/shared/..."
-            # Copy shared files, ignoring the ownership but keeping the permissions on the files
-			cp -r --no-preserve=ownership -d /hostlab/shared/* /
+         # File check avoids need to set the nullglob shell option
+         shared_files=( "/hostlab/shared/"* )
+         if [ -e "${shared_files[0]}" ]; then
+            echo "Copying shared files from '/hostlab/shared/'"
+            # Copy shared files without following symbolic links. Ignore file
+            # ownership.
+			   cp \
+               --recursive \
+               --no-preserve ownership \
+               --no-dereference \
+               --preserve=links \
+               --target-directory / \
+               -- "${shared_files[@]}"
          fi
 
-         if [ "$(echo /hostlab/$HOSTNAME/*)" != "/hostlab/$HOSTNAME/*" ]; then
-            echo "Copying $HOSTNAME specific files from /hostlab/$HOSTNAME/..."
-            # Copy hostname specific files, ignoring the ownership but keeping the permissions on the files
-            cp -r --no-preserve=ownership -d /hostlab/$HOSTNAME/* /
+         # File check avoids need to set the nullglob shell option
+         host_files=( "/hostlab/$hostname/"* )
+         if [ -e "${host_files[0]}" ]; then
+            echo "Copying $hostname-specific files from '/hostlab/$hostname/'"
+            # Copy host-specific files without following symbolic links. Ignore
+            # file ownership.
+            cp \
+               --recursive \
+               --no-preserve ownership \
+               --no-dereference \
+               --preserve=links \
+               --target-directory / \
+               -- "${host_files[@]}"
          fi
-         
-         [ ! -z "$COW" ] && touch /etc/vhostconfigured
+
+         # Only perform these actions on the machine's first boot (if a shared
+         # filesystem is not being used).
+         if [ -n "$fs" ]; then
+            cat << EOF > /etc/netkit/.vhostconfigured
+# This file is created on the first boot to tell Netkit on successive reboots
+# not to regenerate the hosts file or resolv.conf, or to recopy hostlab files
+# into the filesystem. This is only used when a shared filesystem is not in use
+# by machines.
+EOF
+         fi
       fi
 
-      # Autoconfigure interfaces, if asked to
-      if [ -n "$AUTOCONF_INTERFACES" ]; then
-         eval "$AUTOCONF_INTERFACES"
-      fi
+      # Autoconfigure interfaces
+      for (( i = 0; i < ${#autoconf_interfaces[@]}; i += 2 )); do
+         interface=${autoconf_interfaces[$i]}
+         addr=${autoconf_interfaces[$(( i + 1 ))]}
+
+         echo "Bringing up interface $interface ($addr/24)"
+         ip address add "$addr/24" dev "$interface"
+         ip link set dev "$interface" up
+      done
 
       # Insert a default entry in the routing table, if asked to
-      # (this must be done after autoconfiguring interfaces)
-      if [ -n "$DEFAULT_ROUTE" ]; then
-         echo "Configuring default gateway: $DEFAULT_ROUTE..."
-         route add default gateway $DEFAULT_ROUTE
+      if [ -n "$default_route" ]; then
+         echo "Configuring default gateway as $default_route"
+         ip route add default via "$default_route"
       fi
 
-      echo "${DELIMITER_TEXT}--- Netkit phase 1 initialization terminated ---${PLAIN_TEXT}"
+
+      echo "$color_bold_blue--- Netkit phase 1 initialization terminated ---$color_normal"
       echo
       ;;
-
    stop)
       echo
-      echo "${DELIMITER_TEXT}--- Starting Netkit phase 1 shutdown script ---${NORMAL_TEXT}"
+      echo "$color_bold_blue--- Starting Netkit phase 1 shutdown script ---$color_normal$color_cyan"
 
-      ASSIGN_VARIABLES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' \
-         '
-            ($1=="mount") {print "MOUNTS=\"$MOUNTS " $2 "\""}
-         ')
+      mapfile -d "" -t kernel_cmd < <(gawk '
+         BEGIN {
+            FPAT = "([^ ]+)|(\"[^\"]+\")"
+            OFS = "\0"
+         }
+         {
+            $1=$1
+            gsub("\"", "")
+            printf $0
+         }' < /proc/cmdline)
 
-      eval "$ASSIGN_VARIABLES"
+      for arg in "${kernel_cmd[@]}"; do
+         opt=${arg%%=*}
+         value=${arg#*=}
 
-      if [ -n "$MOUNTS" ]; then
-         for MOUNT in $MOUNTS; do
-            DEST_MOUNT=${MOUNT#*,}
+         case $opt in
+            hosthome)      hosthome=$value;;
+            mount)         mnt_specifications+=( "$value" );;
+            hostlab)       hostlab=$value;;
+         esac
+      done
 
-            echo "Unmounting and removing $DEST_MOUNT..."
-            umount "$DEST_MOUNT"
-            rmdir "$DEST_MOUNT"
+
+      # Unmount host directories inside the guest
+      [ -n "$hostlab" ] &&
+         umount_host_dir "/hostlab"  "Unmounting and removing '/hostlab'"
+      [ -n "$hosthome" ] &&
+         umount_host_dir "/hosthome" "Unmounting and removing '/hosthome'"
+
+      if [ "${#mnt_specifications[@]}" -gt 0 ]; then
+         for mnt_specification in "${mnt_specifications[@]}"; do
+            dst_mnt=${mnt_specification#*,}
+            umount_host_dir "$dst_mnt" "Unmounting and removing '$dst_mnt'"
          done
       fi
 
-      if [ -d /hostlab ]; then
-         echo  "Unmounting and removing /hostlab..."
-         umount /hostlab
-         rmdir /hostlab
-      fi
-
-      echo  "Unmounting and removing /hosthome..."
-      umount /hosthome
-      rmdir /hosthome
-
-      echo "${DELIMITER_TEXT}--- Netkit phase 1 shutdown terminated ---${PLAIN_TEXT}"
+      echo "$color_bold_blue--- Netkit phase 1 shutdown terminated ---$color_normal"
       echo
       ;;
-
    *)
-      echo "Usage: $0 {start|stop}"
+      usage_line
       exit 1
       ;;
-
 esac
-

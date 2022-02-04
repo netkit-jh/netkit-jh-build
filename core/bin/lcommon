@@ -1,5 +1,8 @@
 #!/bin/false
+# shellcheck shell=bash
 
+#     Copyright 2020-2022 Adam Bromiley, Joseph Bunce, Joshua Hawking, Kunal
+#     Shah - Warwick Manufacturing Group, University of Warwick.
 #     Copyright 2002-2009 Stefano Pettini, Fabio Ricci, Massimo Rimondini
 #     Computer Networks Research Group, Roma Tre University.
 #
@@ -21,460 +24,323 @@
 # This is a support script for the Netkit lcommands. It is not intended for
 # standalone usage.
 
-# by Stefano Pettini <spettini@users.sourceforge.net>, Fabio Ricci, and Massimo
-# Rimondini
 
-# ANSI color escape sequences
-COLOR_HIGHLIGHT='\033[34;1m'
-COLOR_NORMAL='\033[0m'
-COLOR_BOLD='\033[1m'
+# Guard to prevent sourcing the script multiple times
+[ -n "$LCOMMON_SRC" ] && return
+LCOMMON_SRC=1
 
-if [ -f "${LAB_DIRECTORY}/lab.conf" ]; then
-   # Set some lab variables from lab.conf.
-   # Here we filter out array assignments (e.g. assignment of
-   # network interfaces to collision domains) because they
-   # are not supported by some shells. They will be handled
-   # separately later on.
 
-   LAB_VARIABLE_ASSIGNMENTS=$(grep -E '^[ \t]*(LAB_[A-Z]+|machines)=' "$LAB_DIRECTORY/lab.conf" | sed -r 's/^[ \t]*(LAB_[A-Z]+|machines)="?([^\"]*)"?[ \t]*$/\1="\2"/')
-   eval "$LAB_VARIABLE_ASSIGNMENTS"
-fi
+###############################################################################
+# Print out information about the labs in the given directories. Unset values
+# will be outputted as "<unknown>".
+# Usage:
+#   lab_welcome [DIR]...
+# Arguments:
+#  ... - list of lab directories
+###############################################################################
+lab_welcome() {
+   local lab_dirs=( "$@" )
 
-# This function prints a message with a highlighted color, in a way similar to
-# the echo command.
-becho() {
-   echo "$COLOR_BOLD"$@"$COLOR_NORMAL"
-}
+   local indent lab_dirs_str
+   local dir lab
 
-# This function builds a list of virtual machines that make up the current lab.
-# The list is returned inside variable LABHOSTS. If a list of hosts has been
-# provided on the command line, then hosts appearing both in the command line
-# and in the lab will be reported inside VHOSTLIST. If no host list has been
-# passed on the command line, then VHOSTLIST will store the same information
-# as LABHOSTS.
+   declare -A lab_versions lab_authors lab_emails lab_webs lab_descriptions
 
-buildAffectedVHostList() {
-   LABHOSTS=""
-   
-   if [ ! -z "$machines" ]; then
-      # Assume list of virtual machines is the one documented inside lab.conf
-      LABHOSTS="$machines"
-   else
-      # Check for virtual machines that contain spaces in their name
-      if ls "${LAB_DIRECTORY}" | grep -q " "; then
-         # Consider that the output of grep cannot be stored in an environment
-         # variable because that would replace end-of-line characters with
-         # spaces, which would impair the ability to recognize directory names
-         # with spaces.
-         ls "${LAB_DIRECTORY}" | grep " " | awk '
-            {print "Error: virtual machine \"" $0 "\" contains a space in its name."}
-            ' 1>&2
+   for dir in "${lab_dirs[@]}"; do
+         # Check that the lab directory exists
+      if [ ! -d "$dir" ]; then
+         warn "$dir: No such directory"
          exit 1
       fi
 
-      # Build list of virtual machines that are part of the lab
-      for LAB_ITEM in $(ls "${LAB_DIRECTORY}"); do
-         if [ -d "$LAB_DIRECTORY/$LAB_ITEM" -a "$LAB_ITEM" != "shared" \
-            -a "$LAB_ITEM" != "_test" -a "$LAB_ITEM" != "CVS" ]; then
-            LABHOSTS="$LABHOSTS $LAB_ITEM"
-         fi
+      lab=$(basename -- "$dir")
+
+      lab_dirs_str+=$indent$dir$'\n'
+      indent="                    "
+
+      # We use associative arrays for printing the values with their respective
+      # directory basename. SC2034 (variable appears unused) must be ignored
+      # because the arrays are only referenced by name.
+      # shellcheck disable=SC2034
+      lab_versions[$lab]=$(get_lab_variable "LAB_VERSION" "$dir")
+      # shellcheck disable=SC2034
+      lab_authors[$lab]=$(get_lab_variable "LAB_AUTHOR" "$dir")
+      # shellcheck disable=SC2034
+      lab_emails[$lab]=$(get_lab_variable "LAB_EMAIL" "$dir")
+      # shellcheck disable=SC2034
+      lab_webs[$lab]=$(get_lab_variable "LAB_WEB" "$dir")
+      # shellcheck disable=SC2034
+      lab_descriptions[$lab]=$(get_lab_variable "LAB_DESCRIPTION" "$dir")
+   done
+
+   lab_dirs_str=${lab_dirs_str%$'\n'}
+
+   # Convert the multi-lab arrays to flat, comma-separated lists and print
+   bold_print "Lab directory(ies): $color_blue$lab_dirs_str"
+   bold_print "Version(s):         $color_blue$(generate_info_str lab_versions)"
+   bold_print "Author(s):          $color_blue$(generate_info_str lab_authors)"
+   bold_print "Email(s):           $color_blue$(generate_info_str lab_emails)"
+   bold_print "URL(s):             $color_blue$(generate_info_str lab_webs)"
+   bold_print "Description(s):"
+   bold_print "$color_blue$(generate_info_str lab_descriptions)"
+}
+
+
+###############################################################################
+# Get the value of a parameter set in a lab's lab.conf file and write to
+# standard output.
+# Usage:
+#   get_lab_variable VARIABLE DIR
+# Arguments:
+#   $1 - lab variable name
+#   $2 - lab directory
+###############################################################################
+get_lab_variable() {
+   local variable=$1
+   local lab_conf="$2/lab.conf"
+
+   # Set lab variables from lab.conf. The sed expression prints only the first
+   # matching line and deletes the variable name and equals sign.
+   sed --quiet -- "0,/^$variable=/s///p" "$lab_conf"
+}
+
+
+###############################################################################
+# From a lab info associative array (key is directory basename, value is the
+# relevant attribute's value) construct a formatted list suitable for
+# lab_welcome output (i.e. value1 (dir1, dir2, ...), value2 (dir3, dir4, ...),
+# ...) and write to standard output.
+# Usage:
+#   generate_lab_info_str LAB_INFO
+# Arguments:
+#   $1 - lab information associative array name reference
+###############################################################################
+generate_info_str() {
+   local -n lab_info=$1
+
+   local lab value
+   local lab_info_str fs
+
+   declare -A collated_lab_info_values
+
+   # For each directory chosen, add its lab information value as a key to an
+   # array with a value of directory listings. For example, for a lab_info
+   # array of version numbers:
+   #
+   #     lab_info[lab3a]="1.0"
+   #     lab_info[lab3b]="1.1"
+   #     lab_info[lab3c]="1.0"
+   #     lab_info[lab3d]="2.0"
+   #
+   # This would be transformed into collated_lab_info_values:
+   #
+   #     collated_lab_info_values[1.0]="lab3a, lab3c"
+   #     collated_lab_info_values[1.1]="lab3b"
+   #     collated_lab_info_values[2.0]="lab3d"
+   for lab in "${!lab_info[@]}"; do
+      value=${lab_info[$lab]:-"<unknown>"}
+
+      # Append the lab name to its relevant value's list if the value has been
+      # seen before (exists as a key in the array). If not, start the list.
+      if array_contains "$value" "${!collated_lab_info_values[@]}"; then
+         collated_lab_info_values[$value]="${collated_lab_info_values[$value]}, $lab"
+      else
+         collated_lab_info_values[$value]=$lab
+      fi
+   done
+
+   # collated_lab_info_values is then flattened into a string to display in the
+   # lab_welcome dialog.
+   if [ ${#collated_lab_info_values[@]} -gt 1 ]; then
+      for value in "${!collated_lab_info_values[@]}"; do
+         lab_info_str+="$fs$value (${collated_lab_info_values[$value]})"
+
+         # Comma-separate subsequent interfaces
+         fs=", "
+      done
+   elif [ ${#collated_lab_info_values[@]} -eq 1 ]; then
+      # If all labs share the same value, it is not necessary to display the
+      # lab names.
+      lab_info_str=${!collated_lab_info_values[*]}
+   else
+      # If no lab has the parameter defined.
+      lab_info_str="<unknown>"
+   fi
+
+   printf "%s\n" "$lab_info_str"
+}
+
+
+###############################################################################
+# Remove temporary files from the lab directory and .netkit.
+# Usage:
+#   lab_clean VERBOSE DIR
+# Globals:
+#   lab_vhosts
+# Arguments:
+#   $1 - set to 1 for verbose mode, empty string for otherwise
+#   $2 - lab directory
+###############################################################################
+lab_clean() {
+   local verbose=$1
+   local lab_dir=$2
+
+   local vhost
+
+   get_lab_vhosts "$lab_dir"
+
+   bold_print "Cleaning up lab inside '$lab_dir'..."
+
+   for vhost in "${lab_vhosts[@]}"; do
+      # Remove vhost's UML directory
+      rm ${verbose:+"--verbose"} --force --recursive -- "${MCONSOLE_DIR:?}/$vhost"
+
+      # Remove files from the lab directory
+      rm ${verbose:+"--verbose"} --force -- "$lab_dir/$vhost."{"ready","disk","log","testdone"}
+   done
+
+   rm ${verbose:+"--verbose"} --force -- "$lab_dir/readyfor.test"
+}
+
+
+###############################################################################
+# Crash virtual machines of a Netkit lab.
+# Usage:
+#   lab_crash VERBOSE QUICK_MODE DIR KEEP_FS JUST_KILL
+# Globals:
+#   lab_vhosts
+# Arguments:
+#   $1 - set to 1 for verbose, empty string for otherwise
+#   $2 - set to 1 for quick mode on vcrash, empty string for otherwise
+#   $3 - lab directory
+#   $4 - set to 1 to keep the filesystem, empty string for otherwise
+#   $5 - set to 1 to just kill machine process, empty string for otherwise
+###############################################################################
+lab_crash() {
+   local verbose=$1
+   local quick_mode=$2
+   local lab_dir=$3
+   local keep_fs=$4
+   local just_kill=$5
+
+   local vcrash_args vhost
+
+   get_lab_vhosts "$lab_dir"
+
+   # shellcheck disable=2206
+   vcrash_args+=(
+      ${verbose:+"--verbose"}
+      ${quick_mode:+"--quick"}
+      ${keep_fs:-"--remove-fs"}
+      ${just_kill:+"--just-kill"}
+   )
+
+   for vhost in "${lab_vhosts[@]}"; do
+      bold_print "Crashing '$vhost'..."
+      "$NETKIT_HOME/bin/vcrash" "${vcrash_args[@]}" -- "$vhost" &&
+         rm ${verbose:+"--verbose"} --force -- "$lab_dir/$vhost.ready"
+   done
+
+   bold_print "Removing readyfor.test..."
+   rm --force -- "$lab_dir/readyfor.test"
+}
+
+
+###############################################################################
+# Set lab_vhosts to a list of machines in the lab taken from the directory
+# listing. If lab_vhosts is already set (such as by the user on the command
+# line), machines not present in the lab are removed from the array.
+# Usage:
+#   get_lab_vhosts DIR
+# Globals:
+#   lab_vhosts
+# Arguments:
+#   $1 - lab directory
+###############################################################################
+get_lab_vhosts() {
+   local lab_dir=$1
+
+   local vhost
+   local lab_vhosts_ref cmdline_vhosts
+
+   # Get lab.conf's LAB_MACHINES variable. This will override the directory
+   # listing for the machine list. If machine names are specified on the
+   # command line (existing lab_vhosts value), they will be checked against
+   # this list as opposed to the directory listing. Hide error if lab.conf is
+   # not present.
+   # Note: LAB_MACHINES is a comma-separated (whitespace is not ignored) list.
+   # This means if hostname_regex allows, machine names cannot have commas in
+   # them.
+   IFS="," read -ra lab_vhosts_ref <<< "$(
+      get_lab_variable "LAB_MACHINES" "$lab_dir" 2> /dev/null
+   )"
+
+   if [ "${#lab_vhosts_ref[@]}" -eq 0 ]; then
+      # Build list of virtual machines that are part of the lab from the
+      # directory listing if LAB_MACHINES is not set.
+      for dir in "$lab_dir/"*/; do
+         # If there are no subdirectories, "$lab_dir/"*/ will expand to a path
+         # to a directory named *; the for loop will still run over that one
+         # string. shopt -s nullglob will avoid this issue but has global
+         # implications. Avoid having to set nullglob by simply checking if the
+         # directory exists.
+         [ ! -d "$dir" ] && continue
+
+         vhost=$(basename -- "$dir")
+
+         # Avoid the shared and _test directories
+         array_contains "$vhost" "${invalid_hostnames[@]}" && continue
+
+         lab_vhosts_ref+=( "$vhost" )
       done
    fi
- 
-   # Check that virtual machines passed by command line are in the scenario
-   ORIGINAL_VHOSTLIST=$VHOSTLIST
-   VHOSTLIST=""
-   if [ ! -z "$ORIGINAL_VHOSTLIST" ]; then
-      for CURRENT_HOST in $ORIGINAL_VHOSTLIST; do
-         if echo $LABHOSTS | grep -qw $CURRENT_HOST; then
-            VHOSTLIST="$VHOSTLIST $CURRENT_HOST"
+
+   # If the user has explicitly provided a machine list via the command line
+   # (i.e. lab_vhosts already contains values when calling the function),
+   # verify that the given machines are in the lab (either LAB_MACHINES or
+   # directory listing).
+   if [ "${#lab_vhosts[@]}" -gt 0 ]; then
+      cmdline_vhosts=( "${lab_vhosts[@]}" )
+      unset lab_vhosts
+
+      for vhost in "${cmdline_vhosts[@]}"; do
+         if array_contains "$vhost" "${lab_vhosts_ref[@]}"; then
+            lab_vhosts+=( "$vhost" )
          else
-            echo 1>&2 "Warning: virtual machine \"${CURRENT_HOST}\" is not part of the lab in directory \"${LAB_DIRECTORY}\"."
+            echo 1>&2 "Warning: '$vhost' is not part of the lab in '$lab_dir'"
          fi
       done
    else
-      VHOSTLIST=$LABHOSTS
+      lab_vhosts=( "${lab_vhosts_ref[@]}" )
    fi
+
+   validate_hostnames "${lab_vhosts[@]}"
 }
 
 
-# This function prints out some information about the lab.
-labWelcome() {
-   [ -z "$LAB_VERSION" ] && LAB_VERSION="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_AUTHOR" ] && LAB_AUTHOR="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_EMAIL" ] && LAB_EMAIL="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_WEB" ] && LAB_WEB="${COLOR_NORMAL}<unknown>"
-   [ -z "$LAB_DESCRIPTION" ] && LAB_DESCRIPTION="${COLOR_NORMAL}<unknown>"
-
-   echo "${LAB_DIRECTORY}" | grep -qc " "
-   if [ $? -eq 0 ]; then
-         echo "${COLOR_BOLD}Lab directories${COLOR_NORMAL}: ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
-   else
-         echo "${COLOR_BOLD}Lab directory${COLOR_NORMAL}: ${COLOR_HIGHLIGHT}${LAB_DIRECTORY}${COLOR_NORMAL}"
-   fi
-   echo "${COLOR_BOLD}Version(s)${COLOR_NORMAL}:       ${COLOR_HIGHLIGHT}${LAB_VERSION}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Author(s)${COLOR_NORMAL}:        ${COLOR_HIGHLIGHT}${LAB_AUTHOR}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Email(s)${COLOR_NORMAL}:         ${COLOR_HIGHLIGHT}${LAB_EMAIL}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Web(s)${COLOR_NORMAL}:           ${COLOR_HIGHLIGHT}${LAB_WEB}${COLOR_NORMAL}"
-   echo "${COLOR_BOLD}Description(s)${COLOR_NORMAL}:"
-   echo "${COLOR_HIGHLIGHT}${LAB_DESCRIPTION}${COLOR_NORMAL}"
+###############################################################################
+# Print a string with bold formatting.
+# Usage:
+#   bold_print MESSAGE
+# Arguments:
+#   $1 - string to print
+###############################################################################
+bold_print() {
+   echo "$color_bold$1$color_normal"
 }
 
 
-# This function prints a message and attempts to remove a file passed as argument
-removeLabFolder() {
-   if [ -e "$1" ]; then
-      rm -rf "$1" > /dev/null 2>&1
-      [ ! -z "$VERBOSE" ] && echo "   Removed:   $(basename $1)"
-   else
-      [ ! -z "$VERBOSE" ] && echo "   Not found: $(basename $1)"
-   fi
-}
+# Ensure NETKIT_HOME is set
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
 
-# This function prints a message and attempts to remove a folder passed as argument
-removeLabFile() {
-   if [ -e "$1" ]; then
-      rm -f "$1" > /dev/null 2>&1
-      [ ! -z "$VERBOSE" ] && echo "   Removed:   $(basename $1)"
-   else
-      [ ! -z "$VERBOSE" ] && echo "   Not found: $(basename $1)"
-   fi
-}
-
-# This function removes temporary files inside the lab directory
-labClean() {
-   local CURRENT_FILE
-   buildAffectedVHostList
-   
-   becho "Cleaning up lab inside \"${LAB_DIRECTORY}\"..."
-   for VM in $VHOSTLIST; do
-      # Remove files from the lab directory. Note that dash does
-      # not support brace expansion
-      removeLabFolder ${MCONSOLE_DIR}/${VM}
-      removeLabFile ${LAB_DIRECTORY}/${VM}.ready
-      removeLabFile ${LAB_DIRECTORY}/${VM}.disk
-      removeLabFile ${LAB_DIRECTORY}/${VM}.log
-      removeLabFile ${LAB_DIRECTORY}/${VM}.testdone
-   done
-   
-   removeLabFile ${LAB_DIRECTORY}/readyfor.test
-}
+# shellcheck source=./script_utils
+. -- "$NETKIT_HOME/bin/script_utils"
 
 
-# This function gracefully shuts down virtual machines of a Netkit lab
-labHalt() {
-   local VHALT_OPTIONS
-
-   buildAffectedVHostList
-
-   VHALT_OPTIONS=""
-   [ -z "$VERBOSE" ] && VHALT_OPTIONS="$VHALT_OPTIONS -q"
-   [ ! -z "$REMOVE_FILESYSTEM" ] && VHALT_OPTIONS="$VHALT_OPTIONS -r"
-   
-   for VM in $VHOSTLIST; do
-      [ -z "$VERBOSE" ] && becho "Halting \"$VM\"... "
-      vhalt $VHALT_OPTIONS $VM && \
-         rm -f "${LAB_DIRECTORY}/${VM}.ready" > /dev/null 2>&1
-   done
-   
-   becho "Removing readyfor.test..."
-   rm -f "${LAB_DIRECTORY}/readyfor.test" > /dev/null 2>&1
-}
-
-
-# This function hardly crashes virtual machines of a Netkit lab
-labCrash() {
-   local VCRASH_OPTIONS
-
-   buildAffectedVHostList
-   
-   VCRASH_OPTIONS=""
-   [ -z "$VERBOSE" ] && VCRASH_OPTIONS="$VCRASH_OPTIONS -q"
-   [ -z "$KEEP_FILESYSTEM" ] && VCRASH_OPTIONS="$VCRASH_OPTIONS -r"
-   [ ! -z "$KILL_MODE" ] && VCRASH_OPTIONS="$VCRASH_OPTIONS -k"
-   
-   for VM in $VHOSTLIST; do      
-      [ -z "$VERBOSE" ] && becho "Crashing \"$VM\"... "
-      vcrash $VCRASH_OPTIONS $VM && \
-         rm -f "${LAB_DIRECTORY}/${VM}.ready" > /dev/null 2>&1
-   done
-   
-   becho "Removing readyfor.test..."
-   rm -f "${LAB_DIRECTORY}/readyfor.test" > /dev/null 2>&1
-}
-
-
-# This function starts a single virtual machine. The only argument is the name
-# of the virtual machine to start.
-startSingleVM() {
-   local VSTART_OPTIONS VM
-   VM=$1
-   VSTART_OPTIONS=""
-   # Prepare network interfaces and other per-virtual-machine configuration
-   # settings
-   if [ -e "$LAB_DIRECTORY/lab.conf" ]; then
-      # Check for duplicate settings (e.g., duplicate interface declarations)
-      # and/or parameters with spaces.
-      grep -E "^[ \t]*$(egrepEscape "$VM")\[.*\]=" "$LAB_DIRECTORY/lab.conf" | awk -v VM="$VM" -v FS="=" '
-         {
-            parameter_name=$1
-            value=substr($0,length(parameter_name)+2)
-            gsub(".*\\[","",parameter_name)
-            gsub("\\].*","",parameter_name)
-            if (match(parameter_name,"^[0-9]+$")) {
-               # This is an interface specification
-               if (parameter_name in parameter && !(parameter_name in warned)) {
-                  print "Warning: interface eth" parameter_name " for virtual machine \"" VM "\" is defined multiple times."
-                  print "Only preserving definition \"" parameter[parameter_name] "\"."
-                  warned[parameter_name]=1
-               }
-               else {
-                  parameter[parameter_name]=$0
-               }
-               if (match(value," ") || match(value,"_")) {
-                  print "Warning: collision domain name for interface eth" parameter_name " (" value ") on virtual machine \"" VM "\" contains invalid characters."
-                  gsub(" ","",value)
-                  gsub("_","",value)
-                  print "Renaming to \"" value "\"."
-               }
-            }
-            else {
-               # This is a generic parameter specification
-               if (parameter_name in parameter && !(parameter_name in warned)) {
-                  print "Warning: parameter " parameter_name " for virtual machine \"" VM "\" is configured multiple times."
-                  print "Only preserving setting \"" parameter[parameter_name] "\"."
-                  warned[parameter_name]=1
-               }
-               else {
-                  parameter[parameter_name]=$0
-               }
-               if (match(value," ")) {
-                  print "Warning: configuration setting for parameter \"" parameter_name "\" (" $2 ") on virtual machine \"" VM "\" contains spaces."
-                  gsub(" ","",$2)
-                  print "Renaming to \"" $2 "\"."
-               }
-            }
-         }' 1>&2
-      VSTART_OPTIONS=$(grep -E "^[ \t]*$(egrepEscape "$VM")\[.*\]=" "$LAB_DIRECTORY/lab.conf" | awk -v FS="=" '
-         {
-            parameter_name=$1
-            value=substr($0,length(parameter_name)+2)
-            gsub(".*\\[","",parameter_name)
-            gsub("\\].*","",parameter_name)
-            if (!(parameter_name in assigned_parameters)) {
-               gsub (" ","",value)
-               if (match(parameter_name,"^[0-9]+$")) {
-                  if (!match(value,"^tap")) {
-                     # This is not a tap interface: remove commas and dots from the
-                     # name of the collision domain
-                     gsub (",","",value)
-                     gsub ("\\.","",value)
-                  }
-                  gsub ("_","",value)
-                  parameter="--eth" parameter_name
-               }
-               else {
-                  if (length(parameter_name)==1) parameter="-" parameter_name
-                  else parameter="--" parameter_name
-               }
-               if (match(parameter_name,"^append")) {
-                 parameter="--append"
-               } 
-               if (length(value)>0)
-                  # This option requires an argument
-                  if (length(parameter_name)==1) printf "%s %s ",parameter,value
-                  else printf "%s=%s ",parameter,value
-               else
-                  # This is a simple option
-                  printf "%s ",parameter
-               assigned_parameters[parameter_name]=1
-            }
-         }')
-   fi
-      
-   # Add host lab and working directory
-   VSTART_OPTIONS="$VSTART_OPTIONS --hostlab=$LAB_DIRECTORY --hostwd=$PWD"
-
-   # Place virtual machine filesystem inside the lab directory
-   VSTART_OPTIONS="$VSTART_OPTIONS --filesystem=${LAB_DIRECTORY}/${VM}.disk"
-
-   # Check if is a testing phase
-   [ ! -z "$TESTMODE" ] && VSTART_OPTIONS="$VSTART_OPTIONS --test"
-   
-   # Remove .ready file, if existing
-   [ -e "${LAB_DIRECTORY}/$VM.ready" ] && rm -f S{LAB_DIRECTORY}/$VM.ready > /dev/null 2>&1
-
-   if [ -z "$VERBOSE" ]; then
-      becho "Starting \"$VM\"..."
-   else
-      becho "Starting \"$VM\" with options \"$BASE_VSTART_OPTIONS $VSTART_OPTIONS\"... "
-   fi
-   if ! vstart $BASE_VSTART_OPTIONS $VSTART_OPTIONS $VM; then
-      echo "Error while starting virtual machine \"$VM\"."
-      exit 1
-   fi
-
-   # Wait for virtual host startup script to create .ready file
-   if [ -z "$FASTMODE" ]; then
-      while [ ! -e "${LAB_DIRECTORY}/$VM.ready" ]; do
-         sleep 1
-      done
-      rm -f ${LAB_DIRECTORY}/$VM.ready > /dev/null 2>&1
-   fi
-   
-   # Wait for a specified amount of time before returning
-   if [ "$GRACE_TIME" -gt 0 ]; then
-      sleep $GRACE_TIME
-   fi
-}
-
-
-# This function starts up a Netkit lab
-labStart() {
-   buildAffectedVHostList
-
-   BASE_VSTART_OPTIONS=""
-   [ -z "$VERBOSE" ] && BASE_VSTART_OPTIONS="-q"
-   BASE_VSTART_OPTIONS="$BASE_VSTART_OPTIONS $PASSTHROUGH_OPTIONS"
-   
-   if [ -z "$VHOSTLIST" ]; then
-      echo 1>&2 "Warning: there are no virtual machines to be started."
-   else
-      for VM in $VHOSTLIST; do
-         startSingleVM $VM
-      done
-   fi
-   
-	# The readyfor.test file should not be created if we have been invoked
-	# with the --makefile option (=launch a single machine and exit).
-   [ ! -z "$TESTMODE" -a -z "$MAKEFILE" ] && : > "$LAB_DIRECTORY/readyfor.test"
-}
-
-
-# This function starts a Netkit lab while (optionally) using a dependency file.
-# The 'make' utility is required in order to make this work.
-labStartParallel() {
-   buildAffectedVHostList
-   
-   if [ -z "$VHOSTLIST" ]; then
-      echo 1>&2 "Warning: there are no virtual machines to be started."
-      return
-   fi
-   
-   # Pass "passthrough" options on to further invocations of this script
-   [ ! -z "$VERBOSE" ] && PASSTHROUGH_STUFF="-v"
-   for CURRENT_OPTION in $PASSTHROUGH_OPTIONS; do
-      PASSTHROUGH_STUFF="$PASSTHROUGH_STUFF -o $CURRENT_OPTION"
-   done
-   
-   # Pass testmode along subsequent invocations of this script
-   if [ ! -z "$TESTMODE" ]; then
-      COMMAND_NAME="ltest"
-   else
-      COMMAND_NAME="lstart"
-   fi
-   
-   # The make utility expects an empty argument when infinitely many jobs
-   # should be used.
-   [ "$MAX_SIMULTANEOUS_VMS" -eq 0 ] && MAX_SIMULTANEOUS_VMS=""
-   
-   # Play around with some makefile targets
-   {  echo "%: dummy-prerequisite-to-force-remaking"
-      echo '\t'"[ "\$*" != "lab.dep" ] && $COMMAND_NAME -d $LAB_DIRECTORY $PASSTHROUGH_STUFF --makefile \$*"
-      echo "dummy-prerequisite-to-force-remaking:"
-      echo '\t'"# Dummy line. Unuseful, yet necessary"
-   } | { cat; [ -f "$LAB_DIRECTORY/lab.dep" ] && cat "$LAB_DIRECTORY/lab.dep"; } | \
-   make -irsC $LAB_DIRECTORY -f - $VHOSTLIST -j $MAX_SIMULTANEOUS_VMS
-
-   [ ! -z "$TESTMODE" ] && : > "$LAB_DIRECTORY/readyfor.test"
-}
-
-
-# This function creates a link-level topology map of the lab. Its argument is
-# the name of the PNG file to save the map in.
-labMap() {
-   MAP_FILE="$1"
-   GRAPH_GENERATOR=$(which neato)
-   if [ -z "$GRAPH_GENERATOR" ]; then
-      echo 1>&2 "Error: the GraphViz library does not appear to be installed."
-      echo 1>&2 "Please install the GraphViz library."
-      return 1
-   fi
-   cat $CONFLIST | awk -v vhostlist="$HOSTLIST" '
-   BEGIN {
-      print "graph netkit_jh_graph {"
-      print "   overlap=\"prism\""
-      print "   overlap_scaling=\"-6.0\""
-      print "   resolution=400.0"
-      print "   splines=\"line\""
-
-      # Create array of hostnames
-      split(vhostlist, vm, " ")
-
-      # Create an array whose keys are virtual machine names
-      # vhosts = {"host1" : 1, "host2" : 1, "host3" : 1, ... }
-      for (i in vm) {
-         vhosts[vm[i]] = 1
-      }
-   }
-
-   # Matching an interface specification - "host[x]="
-   /^.+\[[0-9]+\]=/ {
-      lbracket_pos = match($0, "\\[")
-      rbracket_pos = match($0, "\\]")
-      equals_pos = match($0, "=")
-
-      # Get hostname, interface number, and collision domain name
-      machine_name = substr($0, 1, lbracket_pos - 1)
-      interface = substr($0, lbracket_pos + 1, rbracket_pos - lbracket_pos - 1)
-      collision_domain = substr($0, equals_pos + 1)
-
-      # Check if (hostname, interface number) pair has already appeared
-      if (interfaces[machine_name, interface] == 1) {
-         print "// Duplicate specification for interface eth" interface " on virtual machine " machine_name "."
-         print "// Only preserving the first specification."
-      } else {
-         collision_domains[collision_domain] = 1
-
-         # Only display hosts part of the lab
-         if (machine_name in vhosts) {
-            interfaces[machine_name,interface] = 1
-
-            # Create edge from host to collision domain
-            print "   \"" machine_name "\" -- \"" collision_domain \
-            "\" [taillabel =<<TABLE BGCOLOR=\"white\" BORDER=\"0\" CELLPADDING=\"1\" CELLSPACING=\"0\"><TR><TD>eth" \
-            interface "</TD></TR></TABLE>>, labeldistance = 1.5, labelfontsize = 8.0]"
-         }
-      }
-   }
-
-   # Matching an option specification - "host[option]="
-   /^.+\[[^0-9].*\]=/ {
-      lbracket_pos = match($0, "\\[")
-      rbracket_pos = match($0, "\\]")
-      equals_pos = match($0, "=")
-
-      # Get hostname, option, and option value
-      machine_name = substr($0, 1, lbracket_pos - 1)
-      option_name=substr($0, lbracket_pos + 1, rbracket_pos - lbracket_pos - 1)
-      option_value = substr($0, equals_pos + 1)
-
-      # options = {"host1" : "opt3=val\nopt2=val\nopt1=val", "host2" : ... }
-      options[machine_name] = options[machine_name] option_name " = " option_value "<BR/>"
-   }
-
-   END {
-      for (host in vhosts) {
-         print "   \"" host "\" [shape = box, label=<" host "<FONT POINT-SIZE=\"10\"><BR/>" options[host] \
-         "</FONT>>, height = 0.5, width = 0.5]"
-      }
-
-      for (cd in collision_domains) {
-         print "   \"" cd "\" [shape = plaintext, width = 0, height = 0, margin = \"0\"]"
-      }
-
-      print "}"
-   }'\
-   | $GRAPH_GENERATOR -Tpng -o "$MAP_FILE" 2>&1
-   return
-}
+# ANSI color escape sequences
+color_normal=$'\033[0m'
+color_bold=$'\033[1m'
+color_blue=$'\033[34m'

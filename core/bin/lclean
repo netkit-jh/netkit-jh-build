@@ -1,5 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
+#     Copyright 2020-2022 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
+#     Group, University of Warwick.
 #     Copyright 2002-2009 Stefano Pettini, Fabio Ricci, Massimo Rimondini
 #     Computer Networks Research Group, Roma Tre University.
 #
@@ -21,32 +23,40 @@
 # This script can be used to clean up a directory that contains a Netkit lab.
 # All temporary files are removed, including .disk files.
 
-SCRIPTNAME=$(basename $0)
 
-# The following line has been introduced to ensure backward compatibility
-: ${NETKIT_HOME:=$VLAB_HOME}
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
-   echo 1>&2 "please set it as described in the Netkit documentation and try"
-   echo 1>&2 "again."
-   exit 1
-fi
-
-CMDLINE="$0 $*"
-
-. "$NETKIT_HOME/bin/script_utils"
+###############################################################################
+# Write lclean's usage line to standard output.
+# Usage:
+#   usage_line
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
+}
 
 
-# Write to the vcommands log
-logWrite $0 $*
+###############################################################################
+# Write lclean's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+###############################################################################
+usage() {
+   local status=$1
 
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
 
-# This function is used to print the lclean usage
-help() {
-   echo
-   echo "Usage: $SCRIPTNAME [options] [MACHINE-NAME] ..."
    cat << END_OF_HELP
+$(usage_line)
+Clean a Netkit lab directory of temporary files and machine file systems.
 
 This command can be used to clean up a directory containing a Netkit lab. It
 takes care of removing any temporary files, that is, '.ready' files, '.log'
@@ -56,123 +66,104 @@ lost. Of course, any persistent part of the lab is preserved, including those
 files that are automatically copied inside virtual machines during the boot
 phase.
 
-Available options are:
+  -d DIR              clean up the lab inside DIR. By default, the cleaning
+                        process takes place in the current directory
 
-  -d DIRECTORY        Clean up the lab inside DIRECTORY. By default, the
-                      cleaning process takes place in the current directory.
-
-This command also supports the following standard options:
-
-  -h, --help          Show this help.
-  -v, --verbose       Show which files are being deleted.
-      --version       Print version information and exit.
+Miscellaneous:
+$(help_option)
+  -v, --verbose       show which files are being deleted
+$(version_option)
 
 The cleaning process involves temporary files generated for any of the virtual
-machines of the lab. If one or more MACHINE-NAMEs are passed on the command
-line, then only those files generated for the matching virtual machines are
-deleted, as well as the 'readyfor.test' file. If any of the MACHINE-NAMEs is
-invalid (i.e., it does not correspond to a virtual machine of the lab), it will
-simply be skipped.
+machines of the lab. If one or more MACHINEs are passed on the command line,
+then only those files generated for the matching virtual machines are deleted,
+as well as the 'readyfor.test' file. If any of the VM names are invalid (i.e.,
+it does not correspond to a virtual machine of the lab), it will simply be
+skipped.
 
 END_OF_HELP
+
+   exit "$status"
 }
 
 
-# This function checks whether its argument contains spaces
-checkSpaces() {
-   if echo "$1" | grep -q " "; then
-      warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-              "Argument \"$1\" contains spaces. They are not allowed."
-      exit 1
-   fi
-}
+# Ensure NETKIT_HOME is set
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. -- "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./lcommon
+. -- "$NETKIT_HOME/bin/lcommon"
+
+# Write to the vcommands log
+log_write "$0 $*"
 
 
 # Get command line options
-INVALID_OPTION=0
-OPT_LIST="help,version,verbose"
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "hd:v" "$@")
-if [ $? -gt 0 ]; then
-   INVALID_OPTION=1
+long_opts="help,verbose,version"
+short_opts="d:v"
+
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
 fi
 
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$getopt_opts"
 
-# Parse command line options
-parseCmdLine() {
-   while [ $# -gt 0 ]; do
-		CURRENT_ARGUMENT="$1"
-      case "$CURRENT_ARGUMENT" in
-      
-         -d)
-            shift; CURRENT_ARGUMENT="$1"
-            if [ ! -z "$LAB_DIRECTORY" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                  "Multiple directory specifications: where can I find the lab?"
-               exit 1
-            fi
-            LAB_DIRECTORY=$(makeAbsolutePath "$CURRENT_ARGUMENT");;
-         
-         --help|-h)
-            help
-            exit;;
-            
-         --verbose|-v)
-            VERBOSE=1;;
-         
-         --version)
-            showVersion
-            exit 0;;
-            
-         --)
-            shift
-            break;;
-      esac
-      shift
-   done
-   
-   while [ $# -gt 0 ]; do
-      checkSpaces "$1"
-      VHOSTLIST="$VHOSTLIST $1"
-      shift
-   done
-}
-eval parseCmdLine $CMDLINE_OPTIONS
+while true; do
+   case $1 in
+      -d)
+         lab_dir=$(readlink --canonicalize-missing -- "$2")
+         shift
+         ;;
+      --help)
+         usage 0
+         ;;
+      -v|--verbose)
+         verbose=1
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         warn "Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
 
+   shift
+done
 
-# Check whether user gave some strange options
-if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
-   exit 1
-fi
+# Non-option arguments are machine names
+lab_vhosts=( "$@" )
+validate_hostnames "${lab_vhosts[@]}"
+
 
 # If no lab directory has been given, assume current directory
-LAB_DIRECTORY=${LAB_DIRECTORY:-${PWD}}
-. "$NETKIT_HOME/bin/lcommon"
+: "${lab_dir:=$PWD}"
 
 # Check that the lab directory exists
-if [ ! -d "$LAB_DIRECTORY" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Lab directory ($LAB_DIRECTORY) does not exist."
-   exit 1
-fi
-
-# Check whether path to the lab directory contains spaces
-if containsRegexp LAB_DIRECTORY " "; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-            "Invalid lab directory: \"$LAB_DIRECTORY\" (path contains spaces)."
+if [ ! -d "$lab_dir" ]; then
+   warn "$lab_dir: Directory does not exist"
    exit 1
 fi
 
 
-# Print some information about the lab
-echo
-becho "====================== Cleaning up lab =========================="
-labWelcome
-becho "================================================================="
+# Print lab information
+print_divider "Cleaning up lab"
+lab_welcome "$lab_dir"
+print_divider
 
 # Clean up the lab directory
-labClean
-echo
-becho "Cleaning completed."
-becho "================================================================="
-
-echo
+lab_clean "$verbose" "$lab_dir"
+bold_print "Cleaning completed."
+print_divider

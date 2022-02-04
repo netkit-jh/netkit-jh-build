@@ -1,4 +1,5 @@
-/* (c) Copyright 2001-2004 Jeff Dike and others
+/* (c) Copyright 2021 Adam Bromiley
+ * (c) Copyright 2001-2004 Jeff Dike and others
  * Licensed under the GPL, see file COPYING
  *
  * This is uml_console version 2, a tool for querying a User Mode Linux 
