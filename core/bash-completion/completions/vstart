@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+
+#     Copyright 2021-2022 Adam Bromiley - Warwick Manufacturing Group,
+#     University of Warwick.
+#
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+# Bash completion function for vstart.
+
+
+###############################################################################
+# Bash completion function for vstart to fill the COMPREPLY array. Can
+# optionally be used by other functions that have passthrough options.
+# Usage:
+#   _vstart [PASSTHROUGH]
+# Globals:
+#   COMPREPLY
+# Arguments:
+#   $1 - set to 1 if used for passthrough completion, otherwise pass an empty
+#        string.
+###############################################################################
+_vstart() {
+   local previous_word current_word
+   local prefix suffix
+
+   local con0_args=( "xterm" "this" "tmux" "pty" "port:" "none" )
+   local con1_args=( "xterm" "this" "pty" "port:" "none" )
+   local xterm_args=( "alacritty" "gnome" "kitty" "konsole" "wsl" "wt" "xterm" )
+
+   if [ "${#@}" -ge 5 ]; then
+      # Passthrough options to vstart are being autocompleted (the parent
+      # command is lstart or ltest).
+      previous_word=$4
+      current_word=$5
+   else
+      previous_word=${COMP_WORDS[COMP_CWORD - 1]}
+      current_word=${COMP_WORDS[COMP_CWORD]}
+
+      # If the current word is the first argument, it cannot be an option
+      # parameter.
+      if [ "$COMP_CWORD" -eq 1 ]; then
+         _opts_compgen "vstart" "1" "$current_word"
+         return
+      fi
+
+      if [ "$current_word" = "=" ] && [[ "$previous_word" == --* ]]; then
+         # '--opt=' results in current_word="=", previous_word="--opt". We can
+         # model this as '--opt ' by just setting current_word to an empty string.
+         current_word=""
+      elif [ "$previous_word" = "=" ] && [ -n "$current_word" ]; then
+         # '--opt=param' results in current_word="param", previous_word="=". We
+         # therefore must get the option before the equals sign by tracking back
+         # another index of COMP_WORDS.
+         previous_word=${COMP_WORDS[COMP_CWORD - 2]}
+      fi
+   fi
+
+   # If the previous word is an option, the current word will be an option
+   # parameter or next option (in the case of --version, etc.).
+   # If it was a non-option argument (such as a machine name), the current word
+   # will be an option or another non-option argument.
+   case $previous_word in
+      --con0)
+         mapfile -t COMPREPLY < <(compgen -W "${con0_args[*]}" -- "$current_word");;
+      --con1)
+         mapfile -t COMPREPLY < <(compgen -W "${con1_args[*]}" -- "$current_word");;
+      -e|--exec)
+         mapfile -t COMPREPLY < <(compgen -A command -- "$current_word");;
+      --eth*)
+         _collision_domains_compgen "$(id --name --user)" "$current_word";;
+      -f|--filesystem)
+         mapfile -t COMPREPLY < <(compgen -A file -- "$current_word");;
+      -k|--kernel)
+         mapfile -t COMPREPLY < <(compgen -A file -- "$current_word");;
+      -l|--hostlab)
+         mapfile -t COMPREPLY < <(compgen -A directory -- "$current_word");;
+      -m|--model-fs)
+         mapfile -t COMPREPLY < <(compgen -A file -- "$current_word");;
+      --mount)
+         if [[ "$current_word" == *,* ]]; then
+            # Get the source directory
+            prefix="${current_word%%,*},"
+
+            # Get the destination directory as the current word
+            current_word=${current_word#*,}
+
+            # Reinstate the nospace rule and wipe the suffix (this is the final
+            # parameter).
+            compopt +o nospace
+            suffix=""
+         else
+            # If there is no comma, we are completing the source directory.
+            # Therefore, complete with a comma suffix and no space, ready to
+            # complete the destination directory after.
+            compopt -o nospace
+            suffix=","
+         fi
+
+         mapfile -t COMPREPLY < <(compgen -A directory -P "$prefix" -S "$suffix" -- "$current_word")
+         ;;
+      --xterm)
+         mapfile -t COMPREPLY < <(compgen -W "${xterm_args[*]}" -- "$current_word");;
+      --append|-M|--mem)
+         # These options take parameters that are not autocompletable
+         COMPREPLY=( );;
+      *)
+         # These options do not take parameters, so the current word is either
+         # an option or non-option argument.
+         #
+         # Covered options:
+         # -D, --debug, --dry-run, -F, --foreground, -H, --hide-disk-file,
+         # --help, --just-print, -n, --no-cow, --no-hosthome, --recon,
+         # --show-boot-log, --tmux-attached, --tmux-detached, -v, --verbose,
+         # --version, -W
+         _opts_compgen "vstart" "1" "$current_word"
+         ;;
+   esac
+}
+
+
+# shellcheck source=../helpers
+. -- "$NETKIT_HOME/bash-completion/helpers"
+
+complete -F _vstart vstart

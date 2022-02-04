@@ -9,13 +9,13 @@ bind-key h new-window -n "tmux-netkit-help" 'less $NETKIT_HOME/tools/tmuxhelp.md
 set -g mouse on
 set -s escape-time 0
 
-set-hook -g session-created 'rename-window netkit-vm; display-message "Starting #{session_name}"'
+set-hook -g session-created 'rename-window netkit-vhost; display-message "Starting #{session_name}"'
 
 # If pane 0 dies, kill any previous MACHINE-dead sessions, and rename this session
 # from MACHINE to MACHINE-dead
 set -g remain-on-exit on
 set-hook -g pane-died {
-    if -F "#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}}" {
+    if -F "#{&&:#{==:#{window_name},netkit-vhost},#{==:#{pane_index},0}}" {
         run-shell "tmux -L netkit has-session -t '=#{session_name}-dead' && tmux kill-session -t '=#{session_name}-dead'; tmux -L netkit rename-session -t '=#{session_name}' '#{session_name}-dead'"
     } {
         run-shell "tmux -L netkit kill-pane -t=#{session_name}:#{window_name}.#{pane_index}"
@@ -37,7 +37,7 @@ set-hook -g client-attached 'display-message "Connected to Netkit VM"'
 set -g focus-events on
 
 # Change status bar color if you move to host shell - so you dont get confused between netkit vm and host
-set-hook -g pane-focus-in 'if -F "#{&&:#{==:#{window_name},netkit-vm},#{==:#{pane_index},0}}" "set status-style bg=#8a32a9" "set status-style bg=#0073e6"'
+set-hook -g pane-focus-in 'if -F "#{&&:#{==:#{window_name},netkit-vhost},#{==:#{pane_index},0}}" "set status-style bg=#8a32a9" "set status-style bg=#0073e6"'
 
 bind c new-window -c "#{pane_current_path}"
 bind '"' split-window -c "#{pane_current_path}"

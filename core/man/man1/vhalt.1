@@ -24,14 +24,9 @@ This command supports the following options.
 .TP
 .B
 --quick
-.PD 0
-.TP
-.B
---quiet
 The default behaviour is to wait a few seconds in order to check whether the virtual
 machine has actually shut down. By using this option, \fIvhalt\fR issues the shutdown
 command and exits immediately, without waiting for termination of the virtual machine.
-This option also suppresses any output, except errors and warnings.
 
 This is useful, for example, to embed invocations of \fIvhalt\fR inside scripts.
 
@@ -46,7 +41,7 @@ Delete virtual machine (COW) filesystem after halting machine. This option does 
 affect in any way the model filesystem. In particular, using this option has no
 effect on machines started with the \fB\-\-no\-cow\fR or \fB\-W\fR option. See
 the README in the Netkit filesystem package for more information about COW and
-model filesystems.
+model filesystems. This cannot be used with the \fB\-\-quick\fR or \fB\-q\fR option.
 
 .TP
 .B

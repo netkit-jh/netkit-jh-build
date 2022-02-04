@@ -4,8 +4,6 @@ lstart \- start a netkit lab
 .SH SYNOPSIS
 \fBlstart\fR [options] [\fIMACHINE-NAME\fR...]
 
-\fBlrestart\fR [options] [\fIMACHINE-NAME\fR...]
-
 
 \" ########################################
 
@@ -17,9 +15,7 @@ can later be started with a single command as if it were a virtual network "labo
 
 The \fIlstart\fR command can be used to achieve this purpose. In particular, it starts
 a set of virtual machines that are part of a Netkit lab and configures them
-according to the parameters contained in the lab description. There is no
-difference between \fIlstart\fR and \fIlrestart\fR. The latter is just provided
-for backward compatibility.
+according to the parameters contained in the lab description.
 .br
 By default, all the virtual machines that make up the lab are started. If a list
 of \fIMACHINE\-NAME\fRs is provided, then only virtual machines with a matching

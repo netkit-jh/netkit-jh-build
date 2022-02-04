@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+
+#     Copyright 2021-2022 Adam Bromiley - Warwick Manufacturing Group,
+#     University of Warwick.
+#     Copyright 2004-2008 Fabio Ricci, Massimo Rimondini - Computer Networks
+#     Research Group, Roma Tre University.
+#
+#     This file is part of Netkit.
+#
+#     Netkit is free software: you can redistribute it and/or modify it under
+#     the terms of the GNU General Public License as published by the Free
+#     Software Foundation, either version 3 of the License, or (at your option)
+#     any later version.
+#
+#     Netkit is distributed in the hope that it will be useful, but WITHOUT ANY
+#     WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+#     FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+#     details.
+#
+#     You should have received a copy of the GNU General Public License along
+#     with Netkit.  If not, see <http://www.gnu.org/licenses/>.
+
+# This script is used to generate test signatures. It is meant to be run from
+# inside virtual machines.
+
+
+###############################################################################
+# Write netkit-test-phase's usage line to standard output.
+# Usage:
+#   usage_line
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [NUMBER[SUFFIX]]"
+}
+
+
+###############################################################################
+# Display a 3-character rolling dot in the background.
+# Usage:
+#   heartbeat
+# Globals:
+#   heartbeat_pid
+# Returns:
+#   None. Echoes the heartbeat's PID to standard output.
+###############################################################################
+heartbeat() {
+   local cursor_hide=$'\033[?25l'
+   echo -n "$cursor_hide"
+
+   while true; do
+      echo -en ".  \b\b\b"
+      sleep 1
+      echo -en " . \b\b\b"
+      sleep 1
+      echo -en "  .\b\b\b"
+      sleep 1
+      echo -en " . \b\b\b"
+      sleep 1
+   done &
+
+   heartbeat_pid=$!
+   disown "$heartbeat_pid"
+}
+
+
+###############################################################################
+# Kill an existing heartbeat process.
+# Usage:
+#   kill_heartbeat
+# Globals:
+#   r- heartbeat_pid
+###############################################################################
+kill_heartbeat() {
+   local cursor_show=$'\033[?25h'
+   kill "$heartbeat_pid"
+   echo -n "$cursor_show"
+}
+
+
+SCRIPTNAME=$(basename -- "$0")
+test_delay=${1:-"0"}
+
+
+# ANSI color escape sequences
+color_blue=$'\033[34m'
+color_bold_blue=$'\033[34;1m'
+color_normal=$'\033[0m'
+
+
+# Test directories
+hostlab_dir="/hostlab/"
+test_dir="$hostlab_dir/_test/"
+test_scripts_dir="$test_dir/scripts/"
+test_results_dir="$test_dir/results/"
+
+
+# Check if hostlab is mounted
+if [ ! -d "$hostlab_dir" ]; then
+   echo 1>&2 "$SCRIPTNAME: '$hostlab_dir' does not exist"
+   halt
+fi
+
+# Wait for lab to start (wait for readyfor.test)
+echo -n "${color_blue}Waiting for virtual machines to start... "
+until [ -e "$hostlab_dir/readyfor.test" ]; do
+   sleep 1
+done
+
+echo "ok."
+
+
+if [ "$test_delay" != "0" ]; then
+   echo "${color_bold_blue}Waiting for the lab to settle...$color_normal$color_blue"
+
+   if ! sleep -- "$test_delay" 2> /dev/null; then
+      echo 1>&2 "$SCRIPTNAME: Invalid sleep time '$test_delay'"
+      usage_line
+      halt
+   fi
+fi
+
+
+mkdir --parents -- "$test_results_dir" || halt
+
+###############################################################################
+# Run user defined tests
+###############################################################################
+if [ -x "$test_scripts_dir/shared.test" ]; then
+   echo -en "${color_bold_blue}Running shared user defined test, please wait...$color_normal$color_blue [   ]\b\b\b\b"
+
+   heartbeat
+   "$test_scripts_dir/shared.test" >> "$test_results_dir/$HOSTNAME.shared"
+   kill_heartbeat
+fi
+
+if [ -x "$test_scripts_dir/$HOSTNAME.test" ]; then
+   echo -en "${color_bold_blue}Running user defined test, please wait...$color_normal$color_blue [   ]\b\b\b\b"
+
+   heartbeat
+   "$test_scripts_dir/$HOSTNAME.test" > "$test_results_dir/$HOSTNAME.user"
+   kill_heartbeat
+fi
+
+
+###############################################################################
+# Run predefined tests
+###############################################################################
+echo -en "${color_bold_blue}Running predefined lab test, please wait...$color_normal$color_blue [   ]\b\b\b\b"
+heartbeat
+
+# Redirect standard output of all further commands to default test output file
+exec {unused_fd}>&1 > "$test_results_dir/$HOSTNAME.default"
+
+echo "[NETWORK INTERFACES]"
+ip addr show | grep --invert-match link
+echo
+
+echo "[ROUTING TABLE]"
+route --numeric | tail --lines +2
+echo
+
+# Show all active inet sockets
+echo "[LISTENING PORTS]"
+ss --query inet --processes --numeric --all
+echo
+
+echo "[PROCESSES]"
+ps -e -o uid,command
+echo
+
+# Restore standard output and close file descriptor 10
+exec 1>&{unused_fd} {unused_fd}>&-
+kill_heartbeat
+
+echo "Done."
+echo "This virtual machine should automatically shut down in a while."
+touch -- "$hostlab_dir/$HOSTNAME.testdone"
+halt

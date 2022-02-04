@@ -46,7 +46,7 @@ and model filesystems.
 .PD 0
 .TP
 .B
-\-\-kill
+\-\-just-kill
 There are two different ways of crashing a virtual machine. The first one is
 to send a special message that tells it to immediately shut down. This is also
 called the mconsole method. The second one is to simply kill running processes
@@ -78,14 +78,10 @@ crashed. This is useful to check whether all the hosts have been shut down.
 .TP
 .B
 \-\-quick
-.PD 0
-.TP
-.B
-\-\-quiet
 Do not check whether virtual machines have actually crashed. This results in a
 faster lab shutdown, but some hanging processes may be left behind. If this
 happens, try crashing the lab again without using this option or use \fBvclean\fR
-(see \fBvclean\fR(1)). This option also slightly reduces output information.
+(see \fBvclean\fR(1)).
 
 .PP
 The following standard options are also supported.
@@ -98,6 +94,15 @@ The following standard options are also supported.
 .B
 \-\-help
 Show usage information.
+
+.TP
+.B
+\-v
+.PD 0
+.TP
+.B
+\-\-verbose
+Show what processes are getting killed.
 
 .TP
 .B
@@ -124,7 +129,6 @@ Apart from this, \fIlcrash\fR supports no other environment variables.
 \fIlstart\fR(1),
 \fIlclean\fR(1),
 \fIlhalt\fR(1),
-\fIlrestart\fR(1),
 \fIlinfo\fR(1),
 \fIltest\fR(1),
 \fIvclean\fR(1),

@@ -61,54 +61,49 @@ ranging from 0 to a maximum value stored inside the \fInetkit.conf\fR file
 Interface \fBeth\fIN\fR will be attached to a (virtual) collision domain whose name
 is \fIDOMAIN\fR. A collision domain can be seen as a sort of virtual hub. Thus,
 attaching interfaces of different virtual machines to the same
-collision domain allows them to exchange network traffic. \fIDOMAIN\fR must not
-contain underscores ('\fB_\fR'), commas ('\fB,\fR') and dots ('\fB.\fR'), unless
-a "\fBtap\fR" collision domain is being configured (see below).
+collision domain allows them to exchange network traffic.
 
-The special domain name "\fBtap\fR" is reserved. When attaching an interface
-to a "\fBtap\fR" domain, an external (i.e., real) network can be reached
-through this interface. A "\fBtap\fR" collision domain must be declared with
-the following syntax:
+Including a comma in \fIDOMAIN\fR defines a 'tap' interface. This is a special socket
+that allows an external to be reached in the virtual machine. A 'tap' interface
+must be declared with the following syntax:
 
 .nf
---eth\fIN\fR=tap,\fITAP\-ADDRESS\fR,\fIGUEST\-ADDRESS\fR
+--eth\fIN\fR=\fIDOMAIN\fR,\fITAP\-ADDR\fR,\fIGUEST\-ADDR\fR
 .fi
                         
-where \fITAP\-ADDRESS\fR is the IP address of the host side of the interface
-and \fIGUEST\-ADDRESS\fR is the IP address of the interface inside the virtual
-machine (guest side). \fITAP\-ADDRESS\fR and \fIGUEST\-ADDRESS\fR must be on
-the same (sub)network and, most important, this network must \fInot\fR already
-exist on your host network (otherwise routing would be messed up). Interfaces
-connected to a "\fBtap\fR" collision domain are automatically configured and
-brought up inside virtual machines.
-
-There can be at most one "\fBtap\fR" collision domain for each user. Hence,
-if different virtual machines are configured for using "\fBtap\fR" connected
-interfaces, they also are on the same collision domain. \fITAP\-ADDRESS\fR is
-mandatory, but is only taken into account when a "\fBtap\fR" collision domain
-is first used (i.e., this is the first interface the current user ever connected
-to a "\fBtap\fR" collision domain). Otherwise, it simply ignored.
+where \fIDOMAIN\fR is a valid collision domain name, \fITAP_ADDR\fR is the IP address of
+the 'host side' of the interface and \fIGUEST_ADDR\fR is the IP address of the
+interface inside the virtual machine. \fITAP_ADDR\fR and \fIGUEST_ADDR\fR must be on
+the same /24 network. Machines can share a 'tap' interface if one uses the same
+\fIDOMAIN\fR and \fITAP_ADDR\fR for them. If an interface on the same \fIDOMAIN\fR with a
+different \fITAP_ADDR\fR already exists, an error will be thrown. Another
+interface with a \fITAP_ADDR\fR within the /24 subnet of another cannot be created;
+likewise, like a regular collision domain, two machines using the same 'tap'
+interface cannot share an IP address (there will be no explicit error for
+either of these scenarios.)
 
 .B
-*** IMPORTANT NOTES ABOUT USING "tap" COLLISION DOMAINS ***
+*** IMPORTANT NOTES ABOUT USING "tap" INTERFACES ***
 .RS
 .IP \(en 2
-Configuring "\fBtap\fR" domains for the first time requires administrative
+Configuring "\fBtap\fR" interfaces for the first time requires administrative
 (root) privileges. The \fIvstart\fR script will take care of asking you for the
 root password if needed. For more information about how Netkit gains root
-privileges, see \fBUSE_SUDO\fR and \fBSETTING UP NETKIT FOR USE WITH SUDO\fR in
-the man page of \fBnetkit.conf\fR(5). The following operations are performed
-when working as root:
+privileges, see \fBSETTING UP NETKIT FOR USE WITH SUDO\fR in the man page of
+\fBnetkit.conf\fR(5). The following operations are performed when working as
+root:
 
 1) The '/dev/net/tun' device is created (if it does not exist).
 .br
 2) Permissions for the '/dev/net/tun' device are set to 666 (read/write for all users).
 .br
-3) Any existing network device named 'nk_tap_\fIUSERNAME\fR' is brought down and
-removed (\fIUSERNAME\fR is the name of the current user).
+3) Any existing network device named 'nk_\fIINTERFACE_SHA256\fR' is brought down and
+removed (\fIINTERFACE_SHA256\fR is the SHA-256 digest of the concatenated SHA-256
+digests of the current username and collision domain name, truncated to 12
+characters long).
 .br
-4) A tap network device named 'nk_tap_\fIUSERNAME\fR' is created and configured to
-have IP address \fITAP\-ADDRESS\fR.
+4) A tap network device named 'nk_\fIINTERFACE_SHA256\fR' is created and configured to
+have IP address \fITAP\-ADDR\fR.
 .br
 5) Kernel based IP forwarding is enabled via the '/proc/sys/net/ipv4/ip_forward'
 special file.
@@ -119,17 +114,17 @@ rules are added to the current iptables configuration:
 
 *nat
 .br
--A POSTROUTING -j MASQUERADE
+--append POSTROUTING ! --out-interface lo --match comment --comment Netkit-JH --jump MASQUERADE
 .br
 *filter
 .br
--A FORWARD -i nk_tap_+ -j ACCEPT
+--append FORWARD --in-interface nk_+ --match comment --comment Netkit-JH --jump ACCEPT
 
 All these configuration settings can be easily removed by using the \fBvclean\fR
 command (see \fBvclean\fR(1)).
 
 .IP \(en 2
-Using "\fBtap\fR" domains requires some host-side configurations. These
+Using "\fBtap\fR" interfaces requires some host-side configurations. These
 configurations are not automatically removed after halting virtual machines.
 The \fBvclean\fR command must be used for this purpose (see \fBvclean\fR(1)).
 .RE
@@ -147,6 +142,11 @@ By default, the home directory of the current user is made available for
 reading/writing inside the virtual machine under the special directory
 '/hosthome'. This option disables this behaviour, thus not making the host
 filesystem accessible from inside the virtual machine.
+
+.TP
+.B
+--mount=\fISRC,DST\fR
+Mount \fISRC\fR directory from the host to \fIDST\fR directory in the virtual machine.
 
 .TP
 .B
@@ -342,11 +342,6 @@ konsole
 use the KDE Desktop Environment konsole.
 .TP
 .B
-konsole-tab
-same as \fBkonsole\fR, except different virtual machines are opened in different
-tabs of the same konsole window.
-.TP
-.B
 alacritty
 use the lightweight Alacritty terminal.
 .TP
@@ -403,38 +398,20 @@ Tell the virtual machine that the base directory for the laboratory is \fIDIRECT
 \fIDIRECTORY\fR is a directory on the host machine which contains information
 about the configuration of the laboratory.
 
-.TP
-.B
---mount=\fISRC,DEST\fR
-Mount \fISRC\fR directory from the host to \fIDEST\fR directory in the virtual machine.
-
-.TP
-.B
--w \fIDIRECTORY\fR
-.TP
-.B
---hostwd=\fIDIRECTORY\fR
-Set the lab working directory to \fIDIRECTORY\fR. \fIDIRECTORY\fR is a directory
-on the host machine which is used to store some temporary files (e.g., files
-that indicate that a virtual machine has completed the boot process).
 
 .PP
-\fBNotice\fR: options \fB\-l\fR,
+\fBNotice\fR: options \fB\-l\fR and
 .nh
-\fB\-\-hostlab\fR,
+\fB\-\-hostlab\fR
 .hy
-\fB\-w\fR, and
-.nh
-\fB\-\-hostwd\fR
-.hy
-make the host filesystem accessible inside the virtual machine even if the
-option \fB\-H\fR or
+make the host filesystem accessible inside the virtual machine even
+if the option \fB\-H\fR or
 .nh
 \fB\-\-no\-hosthome\fR
 .hy
 is being used. In particular, \fIDIRECTORY\fR is made available for reading/writing
-under the '/hostlab' or '/hostwd' directory in the virtual machine
-(depending on the option being used).
+under the '/hostlab' directory in the virtual machine (depending on the option
+being used).
 
 .SS Other options
 .TP
@@ -487,28 +464,24 @@ several settings (i.e., those that have been configured inside \fInetkit.conf\fR
 \(em see \fBnetkit.conf\fR(5)).
 
 .TP
-.B
--p
-.TP
-.B
---print
+\fB\-n\fR, \fB\-\-dry\-run\fR, \fB\-\-just\-print\fR, \fB\-\-recon\fR
 Instead of actually starting the virtual machine, just show which commands would
 be executed, including those used to start virtual hubs.
 
 .TP
 .B
--q
-.TP
-.B
---quiet
-Suppress any output except errors and warnings.
+--show-boot-log
+Do not hide the boot log with 'quiet' when the kernel is booting. This option
+is useful for finding errors in the boot sequence without having to use
+--debug.
 
 .TP
 .B
 --debug
 Run the virtual machine under a gdb instance to report more messages than with
---verbose, and for further debugging. The process requires a SIGINT delivery
-with kill -INT <pid> to start debugging (if the session booted successfully)
+--show-boot-log, and for further debugging. The process requires a SIGINT
+delivery with kill -INT <pid> to start debugging (if the session booted
+successfully).
 
 .TP
 .B
@@ -516,7 +489,7 @@ with kill -INT <pid> to start debugging (if the session booted successfully)
 .TP
 .B
 --verbose
-This option enables verbose kernel messages during the virtual machine boot phase.
+Show machine details and commands ran.
 
 .TP
 .B
@@ -532,45 +505,6 @@ a non-standard Netkit kernel or filesystem is being used).
 .SH "ENVIRONMENT VARIABLES"
 All Netkit commands require that the \fBNETKIT_HOME\fR variable contains
 the name of the directory Netkit is installed in.
-
-Default settings for newly started virtual machines can be overridden if the
-following environment variables are defined:
-
-.TP 20
-.B
-NETKIT_FILESYSTEM
-Name of the default model filesystem (must be the name of a file storing the whole
-model filesystem). Can be changed by using the \fB\-m\fR or \fB\-\-model\-fs\fR
-option.
-.TP
-.B
-NETKIT_MEMORY
-Amount of available RAM inside the virtual machine (in megabytes). Can be
-changed by using the \fB\-M\fR or \fB\-\-mem\fR option.
-.TP
-.B
-NETKIT_KERNEL
-Name of the virtual machine kernel (must be the name of a UML kernel). Can be
-changed by using the \fB\-k\fR or \fB\-\-kernel\fR option.
-.TP
-.B
-NETKIT_CON0
-Console mode for the primary console. Can be changed by using the \fB\-\-con0\fR
-option (see above the documentation of this option for a list of permitted
-values).
-.TP
-.B
-NETKIT_CON1
-Console mode for the secondary console. Can be changed by using the \fB\-\-con1\fR
-option (see above the documentation of this option for a list of permitted
-values).
-.TP
-.B
-NETKIT_TERM
-Terminal emulator program to be used for consoles in \fBxterm\fR mode. Can be
-changed by using the \fB\-\-xterm\fR option (see above the documentation of this
-option for a list of permitted values).
-
 
 \" ########################################
 
@@ -656,7 +590,7 @@ communication can actually take place.
 .TP
 .B
 .nf
-vstart router --eth0=tap,10.0.0.1,10.0.0.2 --eth1=A
+vstart router --eth0=tap-domain,10.0.0.1,10.0.0.2 --eth1=A
 .fi
 Start a new virtual machine named \fBrouter\fR. The machine will have two network
 interfaces. Interface \fBeth0\fR will be automatically configured to have IP address
@@ -681,10 +615,9 @@ to collision domains \fBA\fR and \fBB\fR and using filesystem
 .TP
 .B
 .nf
-vstart conTest --con0=xterm --con1=xterm --xterm=konsole-tab
+vstart conTest --con0=xterm --con1=xterm
 .fi
-Start a virtual machine named \fBconTest\fR having two consoles. They will be
-shown inside different tabs of the terminal emulator konsole.
+Start a virtual machine named \fBconTest\fR having two consoles.
 
 
 \" ########################################

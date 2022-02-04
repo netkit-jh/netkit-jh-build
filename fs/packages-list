@@ -9,7 +9,7 @@ bash-completion
 bind9
 bind9-host
 bird
-bridge-utils 
+bridge-utils
 bzip2
 console-common
 console-data
@@ -26,6 +26,7 @@ util-linux
 file
 freeradius
 ftp
+gawk
 hping3
 httptunnel
 iperf
@@ -53,6 +54,7 @@ openssh-client
 openssh-server
 openssl
 strongswan
+libstrongswan-extra-plugins
 openvpn
 # cpdns-recursor
 ppp

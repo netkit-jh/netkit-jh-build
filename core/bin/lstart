@@ -1,5 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
+#     Copyright 2020-2022 Billy Bromell, Adam Bromiley, Joseph Bunce, Joshua
+#     Hawking, Kunal Shah - Warwick Manufacturing Group, University of Warwick.
 #     Copyright 2002-2009 Stefano Pettini, Fabio Ricci, Massimo Rimondini
 #     Computer Networks Research Group, Roma Tre University.
 #
@@ -20,502 +22,745 @@
 
 # This script can be used to start a Netkit lab or a subportion of it.
 
-SCRIPTNAME=$(basename $0)
 
-# The following line has been introduced to ensure backward compatibility
-: ${NETKIT_HOME:=$VLAB_HOME}
-
-if [ -z "$NETKIT_HOME" ]; then
-   echo 1>&2 "$SCRIPTNAME: The NETKIT_HOME environment variable is not properly set;"
-   echo 1>&2 "please set it as described in the Netkit documentation and try"
-   echo 1>&2 "again."
-   exit 1
-fi
-
-CMDLINE="$0 $*"
-
-. "$NETKIT_HOME/bin/script_utils"
+###############################################################################
+# Write lstart/ltest's usage line to standard output.
+# Usage:
+#   usage_line
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]... [MACHINE]..."
+}
 
 
-# Write to the vcommands log
-logWrite $0 $*
+###############################################################################
+# Write lstart/ltest's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+###############################################################################
+usage() {
+   local status=$1
 
-# Used later on to return the status of the lab test
-EXIT_VALUE=0
+   local action=${SCRIPTNAME:1}
 
-# This function is used to print the lstart/ltest usage
-help() {
-   echo
-   echo "Usage: $SCRIPTNAME [options] [MACHINE-NAME] ..."
-   echo
-   if [ "$SCRIPTNAME" = "ltest" ]; then
-      echo "This command can be used to test a Netkit lab. Depending on the command line"
-   else
-      echo "This command can be used to start a Netkit lab. Depending on the command line"
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
    fi
-   cat << END_OF_HELP
-arguments, it is possible to start up the whole lab or just some of the
-virtual machines that compose it.
-Available options are:
 
-END_OF_HELP
-   if [ "$SCRIPTNAME" = "ltest" ]; then
-      echo "  -d DIRECTORY        Assume the lab to be tested is located inside DIRECTORY."
-   else
-      echo "  -d DIRECTORY        Assume the lab to be started is located inside DIRECTORY."
-   fi
+   usage_line
+
+   echo "${action^} a Netkit lab."
+
    cat << END_OF_HELP
-                      By default, it is assumed that the lab is located in the
-                      current directory.
-  -F, --force-lab     By default, Netkit refuses to start a lab in a directory
-                      that has neither a lab.conf nor a lab.dep file. Enable
-                      this option if you really want to start a lab without
-                      any of those two files.
+It is possible to start up the whole lab or just some of the virtual machines
+that compose it.
+  -d DIR              $action the lab located inside DIR. By default, the
+                        process takes place in the current directory
+  -F, --force-lab     by default, Netkit refuses to start a lab in a directory
+                        that has neither a lab.conf nor a lab.dep file. Enable
+                        this option if you really want to start a lab without
+                        any of those two
 END_OF_HELP
+
    if [ "$SCRIPTNAME" != "ltest" ]; then
       cat << END_OF_HELP
-  -f, --fast          Do not wait for a virtual machine to complete the boot
-                      phase before starting the next one. This option has no
-                      effect when parallel startup is being used, and is not
-                      impacted by the use of the -p option.
+  -f, --fast          do not wait for a virtual machine to complete the boot
+                        phase before starting the next one. This option has no
+                        effect when parallel startup is being used, and is not
+                        impacted by the use of the -p option
 END_OF_HELP
    fi
+
    cat << END_OF_HELP
-  --tmux-attached     Run each VM in tmux and start a terminal attached to the
-                      tmux session. This is the same as VM_CON0=tmux and
-                      TMUX_OPEN_TERMS=yes in netkit.conf
-  --tmux-detached     Run each VM in a tmux session without opening terminals.
-                      This is the same as VM_CON0=tmux and TMUX_OPEN_TERMS=no
-                      in netkit.conf
-  -l, --list          Show a list of running virtual machines after starting
-                      up the lab.
-  -o, --pass=OPTION   Pass OPTION unaltered to vstart. This will affect all the
-                      (newly started) virtual machines of the lab.
-  -p[VALUE]           Enable parallel startup, even if a lab.dep file does not
-                      exist inside the lab directory. If a VALUE is provided,
-                      it determines the maximum number of virtual machines that
-                      can be launched simultaneously. VALUE must be a positive
-                      integer. A VALUE of 0 corresponds to setting no limit.
-                      This option is incompatible with -s. Default setting if
+  --tmux-attached     run each VM in tmux and start a terminal attached to the
+                        tmux session. This is the same as VM_CON0=tmux and
+                        TMUX_OPEN_TERMS=yes in netkit.conf
+  --tmux-detached     run each VM in a tmux session without opening terminals.
+                        This is the same as VM_CON0=tmux and TMUX_OPEN_TERMS=no
+                        in netkit.conf
+  -l, --list          show a list of running virtual machines after starting up
+                        the lab.
+  -o, --pass=ARG      pass ARG unaltered to vstart. This will affect all the
+                        (newly started) virtual machines of the lab.
+  -p[VALUE]           enable parallel startup, even if a lab.dep file does not
+                        exist inside the lab directory. If a VALUE is provided,
+                        it determines the maximum number of virtual machines
+                        that can be launched simultaneously. VALUE must be a
+                        positive integer. A VALUE of 0 corresponds to setting
+                        no limit. This option is incompatible with -s. Default
+                        value is $MAX_SIMULTANEOUS_VMS.
+                        Note that this is an optional argument; when
+                        specifying VALUE it must be attached to the short
+                        option (-pVALUE)
+  -s, --sequential    disable parallel startup, even if a lab.dep file is found
+                        to exist inside the lab directory. This option
+                        conflicts with -p
+  -w, --wait=SECONDS  wait the specified amount of time before launching the
+                        next virtual machine. Of course, this is only useful
+                        when using either parallel startup or the -f option
 END_OF_HELP
-   echo "                      no VALUE is provided is $MAX_SIMULTANEOUS_VMS."
-   cat << END_OF_HELP
-  -s, --sequential    Disable parallel startup, even if a lab.dep file is found
-                      to exist inside the lab directory. This option conflicts
-                      with -p.
-  -w, --wait=SECONDS  Wait the specified amount of time before launching the
-                      next virtual machine. Of course, this is only useful when
-                      using either parallel startup or the -f option.
 
+   if [ "$SCRIPTNAME" = "ltest" ]; then
+      cat << END_OF_HELP
+
+ltest-specific options:
+      --delay=NUMBER[SUFFIX]  wait the specified amount of time after the lab
+                               starts before invoking test scripts. This can be
+                               used to allow the lab to settle. By default,
+                               ltest does not wait. NUMBER and, optionally,
+                               SUFFIX must be valid to the GNU sleep command
 END_OF_HELP
-if [ "$SCRIPTNAME" = "ltest" ]; then
+   fi
+
    cat << END_OF_HELP
-ltest-specific options follow:
 
-  -R, --rebuild-signature Unconditionally rebuild the test signature,
-                      overwriting any existing one.
-  -S, --script-mode   Use a terser and prettier output, suitable for automating
-                      the test of several labs.
-  --verify=TESTTYPE   When performing the test, force ltest to verify the
-                      outcome of the test specified by TESTTYPE. Allowed values
-                      for TESTTYPE are:
-                        user       check the outcome of user-defined tests only
-                        builtin    check the outcome of builtin tests only
-                        both       always check the outcome of all tests
-                      By default, for each virtual machine ltest verifies only
-                      the user-defined test if one is available in the
-                      signature, or only the built-in test otherwise.
-
-END_OF_HELP
-fi
-   cat << END_OF_HELP
-Other standard options are:
-
-  -h, --help          Show this help.
-  -v, --verbose       Show details about virtual machines while starting them.
-      --version       Print version information and exit.
+Miscellaneous:
+$(help_option)
+  -v, --verbose       show details about virtual machines while starting them
+$(version_option)
 
 Notice: using parallel startup requires the 'make' utility to be properly
 installed.
 
 By default, all the virtual machines of the lab are started. If one or more
-MACHINE-NAMEs are passed on the command line, then only those machines will be
-actually started. If any of the MACHINE-NAMEs is invalid (i.e., it does not
+MACHINEs are passed on the command line, then only those machines will be
+actually started. If any of the MACHINE names is invalid (i.e., it does not
 correspond to a virtual machine of the lab), it will simply be skipped.
 
 END_OF_HELP
-if [ "$SCRIPTNAME" = "ltest" ]; then
-   cat << END_OF_HELP
-The return value of ltest is zero (=good) if and only if the test completed
-successfully or a new test signature has been produced.
 
-END_OF_HELP
-fi
+   exit "$status"
 }
+
+
+###############################################################################
+# Start virtual machines of a Netkit lab sequentially.
+# Usage:
+#   lab_start FAST_MODE TEST_DELAY VERBOSE MAKEFILE DIR [PASSTHROUGH]...
+# Globals:
+#   lab_vhosts
+# Arguments:
+#   $1 - set to 1 for fast mode, empty string otherwise
+#   $2 - test delay as an argument to sleep, empty string otherwise
+#   $3 - set to 1 for verbose mode, empty string otherwise
+#   $4 - used internally when lstart is invoked with Make
+#   $5 - lab directory
+#  ... - array of options to pass through into vstart
+###############################################################################
+lab_start() {
+   local fast_mode=$1
+   local test_delay=$2
+   local verbose=$3
+   local makefile=$4
+   local lab_dir=$5
+   local passthrough_args=( "${@:6}" )
+
+   local vhost
+
+   get_lab_vhosts "$lab_dir"
+
+   if [ "${#lab_vhosts[@]}" -eq 0 ]; then
+      echo 1>&2 "Warning: there are no virtual machines to be started."
+      return
+   fi
+
+   [ -n "$test_delay" ] && passthrough_args+=( "--test=$test_delay" )
+
+   for vhost in "${lab_vhosts[@]}"; do
+      single_lab_vhost_start "$fast_mode" "$verbose" "$lab_dir" "$vhost" "${passthrough_args[@]}"
+   done
+
+   # The readyfor.test file should not be created if lstart has been invoked
+   # with the --makefile option (launch a single machine and exit).
+   [ -n "$test_delay" ] && [ -z "$makefile" ] && : > "$lab_dir/readyfor.test"
+}
+
+
+###############################################################################
+# Start a single virtual machine within a lab.
+# Usage:
+#   single_lab_vhost_start FAST_MODE VERBOSE DIR MACHINE [PASSTHROUGH]...
+# Arguments:
+#   $1 - set to 1 for fast mode, empty string otherwise
+#   $2 - set to 1 for verbose mode, empty string otherwise
+#   $3 - lab directory
+#   $4 - machine to start up
+#  ... - options to passthrough to vstart (appended on)
+###############################################################################
+single_lab_vhost_start() {
+   local fast_mode=$1
+   local verbose=$2
+   local lab_dir=$3
+   local vhost=$4
+   local passthrough_args=( "${@:5}" )
+
+   local configuration opt value
+
+   # Specify host lab directory, and place filesystem inside it
+   local vstart_args=(
+      "--hostlab" "$lab_dir"
+      "--filesystem" "$lab_dir/$vhost.disk"
+      ${verbose:+"--verbose"}
+   )
+
+   # Generate vstart argument list
+   if [ -e "$lab_dir/lab.conf" ]; then
+      while IFS= read -r configuration; do
+         # The [][] is ][ inside a bracket expression to match an opening or
+         # closing square bracket.
+         # NOTE: we assume hostname_regex does not allow square brackets, so
+         # the option string is the first instance of them.
+         opt=$(awk -F"[][]" '{ print $2 }' <<< "$configuration")
+
+         # Everything after the first '='
+         if str_contains "$configuration" "="; then
+            value=${configuration#*=}
+         else
+            unset value
+         fi
+
+         # If option is all-digit, it must be a network interface specification
+         [[ "$opt" =~ ^([0-9]|[1-9][0-9]+)$ ]] && opt="eth$opt"
+
+         if [ "${#opt}" -eq 1 ]; then
+            vstart_args+=( "-$opt" )
+         else
+            vstart_args+=( "--$opt" )
+         fi
+
+         # NOTE: if vstart is ever changed to have an option with an optional
+         # argument (denoted with '::' in the option string), an exception when
+         # appending the argument must be made (an '=' is required for long
+         # options, no delimiter for short ones).
+         [ -n "${value+x}" ] && vstart_args+=( "$value" )
+      done < <(grep -- "^$vhost\[.*\]" "$lab_dir/lab.conf")
+   fi
+
+   # Remove .ready file, if existing
+   rm --force -- "$lab_dir/$vhost.ready"
+
+   if ! "$NETKIT_HOME/bin/vstart" "${vstart_args[@]}" "${passthrough_args[@]}" -- "$vhost"; then
+      warn "Error while starting virtual machine '$vhost'"
+      exit 1
+   fi
+
+   # Wait for virtual host startup script to create .ready file
+   if [ -z "$fast_mode" ]; then
+      while [ ! -e "$lab_dir/$vhost.ready" ]; do
+         sleep 1
+      done
+
+      rm --force -- "$lab_dir/$vhost.ready"
+   fi
+
+   # Wait for a specified amount of time before returning
+   [ "$GRACE_TIME" -gt 0 ] && sleep -- "$GRACE_TIME"
+}
+
+
+###############################################################################
+# Start virtual machines of a Netkit lab simultaneously with GNU Make.
+# Usage:
+#   lab_start_parallel TEST_DELAY VERBOSE DIR [PASSTHROUGH]...
+# Globals:
+#   lab_vhosts
+# Arguments:
+#   $1 - set to non-zero length string for test mode, empty string otherwise
+#   $2 - test delay as an argument to sleep, empty string otherwise
+#   $3 - lab directory
+#  ... - array of options to pass through into vstart
+###############################################################################
+lab_start_parallel() {
+   local test_delay=$1
+   local verbose=$2
+   local lab_dir=$3
+   local passthrough_args=( "${@:4}" )
+
+   local lstart_args arg
+   local lstart_cmd escaped_lstart_cmd
+   local tab makefile_contents
+
+   get_lab_vhosts "$lab_dir"
+
+   if [ "${#lab_vhosts[@]}" -eq 0 ]; then
+      warn "There are no virtual machines to be started."
+      return
+   fi
+
+   # Pass "passthrough" options on to the second invocation of lstart/ltest
+   [ -n "$verbose" ] && lstart_args+=( "--verbose" )
+
+   for arg in "${passthrough_args[@]}"; do
+      lstart_args+=( "--pass" "$arg" )
+   done
+
+   # Pass testmode along subsequent invocations of this script
+   if [ -n "$test_delay" ]; then
+      program_name="$NETKIT_HOME/bin/ltest"
+      lstart_args+=( "--delay=$test_delay" )
+   else
+      program_name="$NETKIT_HOME/bin/lstart"
+   fi
+
+   # The make utility expects an empty argument to -j when infinitely many jobs
+   # should be used.
+   [ "$MAX_SIMULTANEOUS_VMS" -eq 0 ] && unset MAX_SIMULTANEOUS_VMS
+
+
+   lstart_cmd=( "$program_name" "-d" "$lab_dir" "--makefile" "${lstart_args[@]}" )
+
+   # We expand this array with the Q operator when writing to the Makefile.
+   # This ensures escaping sufficient for reuse in a shell command.
+   escaped_lstart_cmd=${lstart_cmd[*]@Q}
+
+   # Make requires all dollar signs (whether quoted or not) to be escaped with
+   # a second dollar sign.
+   escaped_lstart_cmd=${escaped_lstart_cmd//$/\$$}
+
+   # Labs are started in parallel with GNU Make, which automatically handles
+   # lab.dep (which is formatted as Makefile targets).
+   #
+   # The script is invoked with each VM name as a target on the command line,
+   # which directs Make to run:
+   #   lstart [...] --makefile <machine>
+   # for each machine. $* is a GNU Make automatic variable that expands to the
+   # % (stem) in the target. In this usage it will expand to the machine name.
+   #
+   # The contents of lab.dep is copied in if it exists, which creates a target
+   # for each machine with dependencies ("prerequisities" in Make).
+   # NOTE: The dummy target is required, which has the unwanted side-effect
+   # that machines cannot be named "dummy-prerequisite-to-force-remaking".
+   #
+   # The Makefile must use Bash as the shell for correct handling of ANSI-C
+   # expansions present after the previous Q-operator array expansion.
+   tab=$(printf "\t")
+
+   # We redirect stderr inside the Makefile to an unused file descriptor so
+   # Make error messages themselves can be hidden. The --ignore-errors option
+   # is not suitable since we still need to record Make's return value on
+   # lstart error.
+   exec {unused_fd}>&2
+
+   IFS="" read -rd "" makefile_contents << EOF
+SHELL := /bin/bash
+
+%: dummy-prerequisite-to-force-remaking
+${tab}[ '\$*' != "lab.dep" ] && $escaped_lstart_cmd '\$*' 2>&$unused_fd
+
+dummy-prerequisite-to-force-remaking:
+${tab}# Dummy line. Unuseful, yet necessary
+
+$(cat "$lab_dir/lab.dep" 2> /dev/null)
+EOF
+
+   # Read the Makefile from stdin without implicit rules, and hide the output. It
+   # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
+   make \
+      --no-builtin-rules \
+      --silent \
+      --directory "$lab_dir" \
+      --file - \
+      --jobs ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} \
+      -- \
+      "${lab_vhosts[@]}" \
+      <<< "$makefile_contents" 2> /dev/null
+   
+   ret=$?
+   exec {unused_fd}>&-
+
+   if [ "$ret" -eq 2 ]; then
+      warn "Error parallel-starting lab"
+      exit 1
+   fi
+
+   # Signal that every machine is ready for testing once booted.
+   [ -n "$test_delay" ] && : > "$lab_dir/readyfor.test"
+}
+
+
+###############################################################################
+# Check if there is a new release or prerelease Netkit-JH version on the
+# GitHub repository and provide a dialog and link if so.
+# Usage:
+#   new_version_check
+###############################################################################
+new_version_check() {
+   local last_update_check next_update_check
+   local current_date
+   local latest_release_version latest_prerelease_version
+   local latest_release_version_file latest_prerelease_version_file
+   local current_version
+
+   latest_release_version_file="$NETKIT_HOME/.latest-release-version"
+   latest_prerelease_version_file="$NETKIT_HOME/.latest-prerelease-version"
+
+   # Check whether we have polled in the last UPDATE_CHECK_PERIOD days
+   if [ -f "$NETKIT_HOME/.last-update-check" ]; then
+      last_update_check=$(cat -- "$NETKIT_HOME/.last-update-check")
+   else
+      last_update_check=0
+   fi
+
+   # Next check = date of the last one + UPDATE_CHECK_PERIOD (in seconds)
+   next_update_check=$((last_update_check + UPDATE_CHECK_PERIOD * 86400))
+
+   current_date=$(date +%s)
+
+   if [ "$current_date" -gt "$next_update_check" ] ||
+      [ ! -f "$latest_release_version_file" ] ||
+      [ ! -f "$latest_prerelease_version_file" ]; then
+
+      # We haven't checked in the past UPDATE_CHECK_PERIOD days or we have
+      # never checked (no version files) - check now.
+      echo "$current_date" > "$NETKIT_HOME/.last-update-check"
+
+      latest_release_version=$(get_latest_release_version)
+      latest_prerelease_version=$(get_latest_prerelease_version)
+
+      echo "$latest_release_version" > "$latest_release_version_file"
+      echo "$latest_prerelease_version" > "$latest_prerelease_version_file"
+   else
+      # We have checked in the past UPDATE_CHECK_PERIOD days and the version
+      # files both exist - get the latest versions locally.
+      latest_release_version=$(cat -- "$latest_release_version_file")
+      latest_prerelease_version=$(cat -- "$latest_prerelease_version_file")
+   fi
+
+   current_version=$(sed -- "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
+
+   compare_versions "$current_version" "$latest_release_version"
+   if [ "$?" -eq 2 ]; then
+      # If the current version is older than the latest stable release
+      bold_print "A new version ($latest_release_version) of Netkit-JH is available at:"
+      bold_print "   https://github.com/netkit-jh/netkit-jh-build/releases/$latest_release_version"
+   fi
+
+   compare_versions "$current_version" "$latest_prerelease_version"
+   if [ "$?" -eq 2 ]; then
+      # If the current version is older than the latest pre-release version
+      compare_versions "$latest_release_version" "$latest_prerelease_version"
+      if [ "$?" -eq 2 ]; then
+         # Latest pre-release version is newer than the latest stable release
+         bold_print "A new pre-release ($latest_prerelease_version) of Netkit-JH is available at:"
+         bold_print "   https://github.com/netkit-jh/netkit-jh-build/releases/$latest_prerelease_version"
+         bold_print "Warning: pre-release versions may be unstable."
+      fi
+   fi
+}
+
+
+###############################################################################
+# Get the latest Netkit-JH stable release version number from GitHub
+# Usage:
+#   get_latest_release_version
+###############################################################################
+get_latest_release_version() {
+   curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases" |
+      jq --raw-output ".[] | select(.prerelease==false) | .tag_name" |
+      sed '/-/!{s/$/_/}' |
+      sort --version-sort |
+      sed 's/_$//' |
+      tail --lines 1
+}
+
+
+###############################################################################
+# Get the latest Netkit-JH prerelease version number from GitHub
+# Usage:
+#   get_latest_prerelease_version
+###############################################################################
+get_latest_prerelease_version() {
+   curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases" |
+      jq --raw-output ".[] | select(.prerelease==true) | .tag_name" |
+      sed '/-/!{s/$/_/}' |
+      sort --version-sort |
+      sed 's/_$//' |
+      tail --lines 1
+}
+
+
+###############################################################################
+# Compare semantic version numbers
+# Usage:
+#   compare_versions VERSION1 VERSION2
+# Arguments:
+#   $1 - version number
+#   $2 - version number
+# Returns:
+#   0 when the versions are equal
+#   1 if VERSION1 > VERSION2
+#   2 if VERSION1 < VERSION2
+###############################################################################
+compare_versions() {
+   local version1=$1
+   local version2=$2
+
+   # Return 0 if equal
+   [ "$version1" = "$version2" ] && return 0
+
+   # Get the latest semantic version
+   latest_version=$(
+      printf "%s\n%s\n" "$version1" "$version2" |
+      sed '/-/!{s/$/_/}' |
+      sort --version-sort |
+      sed 's/_$//' |
+      tail --lines 1
+   )
+
+   [ "$version1" = "$latest_version" ] && return 1 || return 2
+}
+
+
+# Ensure NETKIT_HOME is set
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "The NETKIT_HOME environment variable is not set"
+   exit 1
+fi
+
+# shellcheck source=./script_utils
+. -- "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./lcommon
+. -- "$NETKIT_HOME/bin/lcommon"
+
+# Write to the vcommands log
+log_write "$0 $*"
 
 
 # Get command line options
-INVALID_OPTION=0
-OPT_LIST="help,version,verbose,list,pass:,makefile,sequential,wait:,force-lab"
-OPT_LIST="${OPT_LIST},tmux-attached,tmux-detached"
-SHORTOPT_LIST="hd:vlo:p::sw:F"
-if [ "$SCRIPTNAME" = "ltest" ]; then
-   OPT_LIST="${OPT_LIST},script-mode,rebuild-signature,verify:"
-   SHORTOPT_LIST="${SHORTOPT_LIST}SR"
-fi
-if [ "$SCRIPTNAME" != "ltest" ]; then
-   # Fast mode is not allowed in test mode
-   OPT_LIST="${OPT_LIST},fast"
-   SHORTOPT_LIST="${SHORTOPT_LIST}f"
-fi
-CMDLINE_OPTIONS=$(getopt -ql "$OPT_LIST" -- "$SHORTOPT_LIST" "$@")
-if [ $? -gt 0 ]; then
-   INVALID_OPTION=1
+long_opts="force-lab,help,list,makefile,pass:,sequential,tmux-attached,\
+tmux-detached,verbose,version,wait:"
+short_opts="d:Flo:p::svw:"
+
+if [ "$SCRIPTNAME" = "lstart" ]; then
+   long_opts+=",fast"
+   short_opts+="f"
+elif [ "$SCRIPTNAME" = "ltest" ]; then
+   long_opts+=",delay:"
 fi
 
-
-# Parse command line options
-parseCmdLine() {
-   while [ $# -gt 0 ]; do
-      CURRENT_ARGUMENT="$1"
-      case "$CURRENT_ARGUMENT" in
-         -d)
-            shift; CURRENT_ARGUMENT="$1"
-            if [ ! -z "$LAB_DIRECTORY" ]; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                  "Multiple directory specifications: where can I find the lab?"
-               exit 1
-            fi
-            LAB_DIRECTORY=$(makeAbsolutePath "$CURRENT_ARGUMENT");;
-         
-         --tmux-attached)
-            PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS --tmux-attached";;
-         --tmux-detached)
-            PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS --tmux-detached";;
-            
-         --force-lab|-F)
-            FORCE_LAB=1;;
-
-         --fast|-f)
-            FASTMODE=1;;
-         
-         --help|-h)
-            help
-            exit;;
-            
-         --list|-l)
-            LISTVM=1;;
-            
-         --makefile)
-            # This is a hidden option which is used by lstart/ltest itself when
-            # parallel startup is enabled.
-            MAKEFILE=1;;
-         
-         --pass|-o)
-            shift; CURRENT_ARGUMENT="$1"
-            PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS $CURRENT_ARGUMENT";;
-            
-         -p)
-            shift; CURRENT_ARGUMENT="$1"
-            if [ ! -z "$CURRENT_ARGUMENT" ]; then
-               if ! echo "$CURRENT_ARGUMENT" | grep -Eq "^[0-9]+$"; then
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                     "Invalid setting for option -p: \"$CURRENT_ARGUMENT\". Positive integer expected."
-                  exit 1
-               fi
-               if [ ! -z "$FORCE_PARALLEL_MODE" ]; then
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                     "Option -p is used multiple times."
-                  exit 1
-               fi
-               MAX_SIMULTANEOUS_VMS="$CURRENT_ARGUMENT"
-            fi
-            FORCE_PARALLEL_MODE=1;;
-            
-         --sequential|-s)
-            BE_SEQUENTIAL=1;;
-         
-         --verbose|-v)
-            VERBOSE=1;;
-
-         --version)
-            showVersion
-            exit 0;;
-            
-         --wait|-w)
-            shift; CURRENT_ARGUMENT="$1"
-            if ! echo "$CURRENT_ARGUMENT" | grep -Eq "^[0-9]+$"; then
-               warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                  "Invalid setting for option -w: \"$CURRENT_ARGUMENT\". Positive integer expected."
-               exit 1
-            fi
-            GRACE_TIME="$CURRENT_ARGUMENT";;
-         
-         --script-mode|-S)
-            SCRIPTMODE=1;;
-
-         --rebuild-signature|-R)
-            CREATE_SIGNATURE=1;;
-
-         --verify)
-            shift; CURRENT_ARGUMENT="$1"
-            case "$CURRENT_ARGUMENT" in
-               user|builtin|both)
-                  VERIFY="$CURRENT_ARGUMENT";;
-               *)
-                  warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-                     "Invalid setting for option --verify: \"$CURRENT_ARGUMENT\"."
-                  exit 1;;
-            esac;;
-
-         --)
-            shift
-            break;;
-      esac
-      shift
-   done
-   
-   while [ $# -gt 0 ]; do
-      checkSpaces "$1"
-      VHOSTLIST="$VHOSTLIST $1"
-      shift
-   done
-}
-eval parseCmdLine $CMDLINE_OPTIONS
-
-
-# Check whether user gave some strange options
-if [ $INVALID_OPTION -eq 1 ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Invalid option or missing option parameter."
-   exit 1
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
 fi
+
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$getopt_opts"
+
+while true; do
+   case $1 in
+      -d)
+         lab_dir=$(readlink --canonicalize-missing -- "$2")
+         shift
+         ;;
+      --delay)
+         test_delay=$2
+         shift
+         ;;
+      -F|--force-lab)
+         force_lab=1
+         ;;
+      -f|--fast)
+         fast_mode=1
+         ;;
+      --help)
+         usage 0
+         ;;
+      -l|--list)
+         list_vhosts=1
+         ;;
+      --makefile)
+         # This is a hidden option which is used by lstart/ltest itself when
+         # parallel startup is enabled.
+         makefile=1
+         ;;
+      -o|--pass)
+         passthrough_opts+=( "$2" )
+         shift
+         ;;
+      -p)
+         parallelisation=$2
+         shift
+
+         # Argument is optional - it will be an empty string if omitted.
+         case $parallelisation in
+            "")
+               # No argument means MAX_SIMULTAENEOUS_VMS is used
+               ;;
+            *[!0-9]*)
+               warn "Argument to option '-p' must be a positive integer or 0"
+               usage 1
+               ;;
+            *)
+               MAX_SIMULTANEOUS_VMS=$parallelisation
+               ;;
+         esac
+
+         parallel_mode=1
+         unset sequential_mode
+         ;;
+      -s|--sequential)
+         sequential_mode=1
+         unset parallel_mode
+         ;;
+      --tmux-attached)
+         passthrough_opts+=( "$1" )
+         ;;
+      --tmux-detached)
+         passthrough_opts+=( "$1" )
+         ;;
+      -v|--verbose)
+         verbose=1
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      -w|--wait)
+         case $2 in
+            ""|*[!0-9]*)
+               warn "Argument to option '-w' must be a positive integer or 0"
+               usage 1
+               ;;
+            *)
+               GRACE_TIME=$2
+               shift
+               ;;
+         esac
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         warn "Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
+
+# Non-option arguments are machine names
+lab_vhosts=( "$@" )
+validate_hostnames "${lab_vhosts[@]}"
+
 
 # If no lab directory has been given, assume current directory
-LAB_DIRECTORY=${LAB_DIRECTORY:-${PWD}}
+: "${lab_dir:=$PWD}"
 
 # Check that the lab directory exists
-if [ ! -d "$LAB_DIRECTORY" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" "Lab directory ($LAB_DIRECTORY) does not exist."
+if [ ! -d "$lab_dir" ]; then
+   warn "$lab_dir: No such directory"
    exit 1
 fi
 
-# Check whether path to the lab directory contains spaces
-if containsRegexp LAB_DIRECTORY " "; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-            "Invalid lab directory: \"$LAB_DIRECTORY\" (path contains spaces)."
-   exit 1
-fi
-
-. "$NETKIT_HOME/bin/lcommon"
 
 # Check whether parallel startup and -f are being used together
-if [ -f "$LAB_DIRECTORY/lab.dep" -a ! -z "$FASTMODE" -a -z "$BE_SEQUENTIAL" ]; then
-   echo 1>&2 "Warning: fast mode is ignored when using parallel startup."
+if [ -f "$lab_dir/lab.dep" ] && [ -n "$fast_mode" ] && [ -z "$sequential_mode" ]; then
+   warn "Fast mode is ignored when using parallel startup"
 fi
 
-# Check if -p and -s options are being used together
-if [ ! -z "$FORCE_PARALLEL_MODE" -a ! -z "$BE_SEQUENTIAL" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-            "Options -s and -p cannot be used together."
-   exit 1
-fi
 
 # Check if the script has been invoked for testing
 if [ "$SCRIPTNAME" = "ltest" ]; then
-   TESTMODE=1
+   : "${test_delay:="0"}"
+
+   # Default console is "none" for ltest. By prepending, we allow other
+   # passthrough options to override this.
+   passthrough_opts=( "--con0" "none" "--con1" "none" "${passthrough_opts[@]}" )
+
+   # Hide .disk files when running tests
+   passthrough_opts+=( "--hide-disk-file" )
 fi
 
-# By default, hide .disk files when running tests
-[ ! -z "$TESTMODE" ] && PASSTHROUGH_OPTIONS="$PASSTHROUGH_OPTIONS -D"
 
 # Quickly start a virtual machine and exit, if asked to
-if [ ! -z "$MAKEFILE" ]; then
-   # The VHOSTLIST variable already contains the name of the virtual machine(s)
-   # to be started.
-   
+if [ -n "$makefile" ]; then
    # Make sure to wait for .ready files to appear. Otherwise, no dependencies
    # would be satisfied!
-   unset FASTMODE
-   
-   labStart
-   exit
+   unset fast_mode
+   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_dir" "${passthrough_opts[@]}"
+   exit 0
 fi
 
-if [ ! -f "$LAB_DIRECTORY/lab.conf" -a ! -f "$LAB_DIRECTORY/lab.dep" -a -z "$FORCE_LAB" ]; then
-   warning "$SCRIPTNAME" "$CMDLINE" "$0" \
-            "This does not appear to be a lab directory. Use option -F to convince me it is."
+
+if [ ! -f "$lab_dir/lab.conf" ] && [ ! -f "$lab_dir/lab.dep" ] && [ -z "$force_lab" ]; then
+   warn "This does not appear to be a lab directory. Use option '-F' to ignore this error"
    exit 1
 fi
 
 
-update_available() {
-	if [ "${CHECK_FOR_UPDATES}" = "yes" ]; then
-		# Check whether we have polled in the last UPDATE_CHECK_PERIOD days
-		touch ${NETKIT_HOME}/.new-version
-		
-		last_update_check=$(test -f ${NETKIT_HOME}/.last-update-check && cat ${NETKIT_HOME}/.last-update-check || echo 0)
-		new_update_check=$(expr ${last_update_check} + ${UPDATE_CHECK_PERIOD} \* 86400)
-		now=$(date +%s)
-		
-		if [ ${now} -gt ${new_update_check} ]; then
-			# We haven't checked in the past UPDATE_CHECK_PERIOD days, check now
-			echo $(date +%s) > ${NETKIT_HOME}/.last-update-check
-			
-			curl --silent "https://api.github.com/repos/netkit-jh/netkit-jh-build/releases/latest" | # Get latest release from GitHub api
-				grep '"tag_name":' |                                            # Get tag line
-				sed -r 's/.*"([^"]+)".*/\1/' > "$NETKIT_HOME/.new-version"                                  # Pluck JSON value
-		fi
-		
-		latest_version=$(cat ${NETKIT_HOME}/.new-version)
-		current_version=$(sed "s/Netkit version //g" ${NETKIT_HOME}/netkit-version)
-		
-		if [ "${latest_version}" != "${current_version}" ]; then
-			echo "https://github.com/netkit-jh/netkit-jh-build/releases/${latest_version}"
-		fi
-	fi
-}
-
-
-# Get ready to start the lab
-UPDATE_AVAILABLE="$(update_available)"
-
-# Print some information about the lab
-[ -z "$SCRIPTMODE" ] && echo
-[ -z "$TESTMODE" ] && becho "======================== Starting lab ==========================="
-[ ! -z "$TESTMODE" -a -z "$SCRIPTMODE" ] && becho "======================== Testing lab ============================"
-[ -z "$SCRIPTMODE" ] && labWelcome
-[ -z "$SCRIPTMODE" ] && echo
-[ -z "$SCRIPTMODE" ] && becho "Having issues starting the lab? Run 'lclean' before running 'lstart'."
-[ -z "$SCRIPTMODE" ] && [ -n "${UPDATE_AVAILABLE}" ] && becho "Update available for Netkit-JH - download at ${UPDATE_AVAILABLE}"
-[ -z "$SCRIPTMODE" ] && becho "================================================================="
-
-
-if [ ! -z "$TESTMODE" ]; then
-   # By default, virtual machines are run without terminals during the tests.  We
-   # impose this by setting environment variables for vstart, if not alredy set.
-   # This still allows the user to override the setting by using an option like
-   # --pass=--con0=xterm
-   export NETKIT_CON0 NETKIT_CON1
-   : ${NETKIT_CON0:=none}
-   : ${NETKIT_CON1:=none}
-   
-   # Clean up the lab directory before starting
-   labClean >/dev/null 2>&1
+# Print lab information
+if [ -n "$test_delay" ]; then
+   print_divider "Testing lab"
+else
+   print_divider "Starting lab"
 fi
 
-[ ! -z "$SCRIPTMODE" ] && echo -n "Starting lab... "
+lab_welcome "$lab_dir"
+echo
+bold_print "Having issues starting the lab? Run 'lclean' before running 'lstart'."
+
+[ "$CHECK_FOR_UPDATES" = "yes" ] && new_version_check
+
+print_divider
+
+
+# Clean up the lab directory before starting
+[ -n "$test_delay" ] && lab_clean "$verbose" "$lab_dir" > /dev/null
+
+
 # Check whether a lab.dep file exists. If so, enable parallel startup of
 # virtual machines.
-if [ -f "$LAB_DIRECTORY/lab.dep" -a -z "$BE_SEQUENTIAL" ] || [ ! -z "$FORCE_PARALLEL_MODE" ]; then
-   # Use parallel startup
-   if [ -z "$SCRIPTMODE" ]; then
-      becho "You chose to use parallel startup."
-      labStartParallel
-   else
-      labStartParallel >/dev/null 2>&1
-   fi
+if [ -z "$sequential_mode" ] && [ -f "$lab_dir/lab.dep" ] || [ -n "$parallel_mode" ]; then
+   # Use parallel startup if not forced to be sequential and either lab.dep or
+   # parallel mode is enabled.
+   bold_print "You chose to use parallel startup."
+   lab_start_parallel "$test_delay" "$verbose" "$lab_dir" "${passthrough_opts[@]}"
 else
    # Use sequential startup
-   
-   # If VHOSTLIST is not empty, then labStart takes care of starting only
-   # the machines listed in VHOSTLIST; those appearing in VHOSTLIST but
-   # that are not part in the lab will simply be skipped.
-   if [ -z "$SCRIPTMODE" ]; then
-      labStart
-   else
-      labStart >/dev/null
-   fi
+
+   # If lab_vhosts is not empty, then lab_start takes care of starting only the
+   # machines listed in lab_vhosts; those appearing in lab_vhosts but that are
+   # not part in the lab will simply be skipped.
+   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_dir" "${passthrough_opts[@]}"
 fi
 
-COLOR_YELLOW='\033[33;1m'
-COLOR_RED='\033[31;1m'
-COLOR_GREEN='\033[32;1m'
-COLOR_NORMAL='\033[0m'
 
-if [ -z "$SCRIPTMODE" ]; then
-   echo
-   becho "The lab has been started."
-   becho "================================================================="
-else
-   echo -n "Testing... "
-fi
+echo
+bold_print "The lab has been started."
+print_divider
 
-if [ ! -z "$TESTMODE" ]; then
+
+if [ -n "$test_delay" ]; then
    # Wait for the test to finish
-   MACHINES_COUNT=$(echo $VHOSTLIST | wc -w)
-   while [ $(ls ${LAB_DIRECTORY}/*.testdone 2>/dev/null | wc -l) -lt "$MACHINES_COUNT" ]; do
+   vhost_count=${#lab_vhosts[@]}
+
+   tests_completed=0
+   while [ "$tests_completed" -lt "$vhost_count" ]; do
+      testdone_files=( "$lab_dir/"*.testdone )
+
+      # Test avoids the need for shopt -s nullglob
+      [ -f "${testdone_files[0]}" ] && tests_completed=${#testdone_files[@]}
       sleep 1
    done
 
-   # Test finished: now crash the lab
-   if [ -z "$SCRIPTMODE" ]; then
-      becho "Stopping lab..."
-   else
-      echo -n "Stopping lab... "
-   fi
-   labCrash >/dev/null 2>&1
-   labClean >/dev/null 2>&1
-
-   # Check whether we need to build a test signature or to verify
-   # the test outcome
-   if [ ! -d "$LAB_DIRECTORY/_test/signature" -o ! -z "$CREATE_SIGNATURE" ]; then
-      # (Re)create the test signature
-      rm -fr "$LAB_DIRECTORY/_test/signature" >/dev/null 2>&1
-      mv "$LAB_DIRECTORY/_test/results" "$LAB_DIRECTORY/_test/signature"
-      if [ -z "$SCRIPTMODE" ]; then
-         becho "Test signature created."
-      else
-         echo "test completed.\t\t[ ${COLOR_YELLOW}SIGN${COLOR_NORMAL} ]"
-      fi
-   else
-      # Verify the test outcome against the signature
-      case "$VERIFY" in
-         user)
-            diff -qEbB $LAB_DIRECTORY/_test/signature/*.user --to-file "$LAB_DIRECTORY/_test/results" >/dev/null 2>&1
-            EXIT_VALUE=$?;;
-         builtin)
-            diff -qEbB $LAB_DIRECTORY/_test/signature/*.default --to-file "$LAB_DIRECTORY/_test/results" >/dev/null 2>&1
-            EXIT_VALUE=$?;;
-         both)
-            diff -qEbBr "$LAB_DIRECTORY/_test/signature" --to-file "$LAB_DIRECTORY/_test/results" >/dev/null 2>&1
-            EXIT_VALUE=$?;;
-         *)
-            # VERIFY has not been set
-            EXIT_VALUE=0
-            for CURRENT_VHOST in $VHOSTLIST; do
-               if [ -f "$LAB_DIRECTORY/_test/signature/$CURRENT_VHOST.user" ]; then
-                  diff -qEbB "$LAB_DIRECTORY/_test/signature/$CURRENT_VHOST.user" --to-file "$LAB_DIRECTORY/_test/results" >/dev/null 2>&1
-                  EXIT_VALUE=$(($EXIT_VALUE + $?))
-               else
-                  if [ -f "$LAB_DIRECTORY/_test/signature/$CURRENT_VHOST.default" ]; then
-                     diff -qEbB "$LAB_DIRECTORY/_test/signature/$CURRENT_VHOST.default" --to-file "$LAB_DIRECTORY/_test/results" >/dev/null 2>&1
-                     EXIT_VALUE=$(($EXIT_VALUE + $?))
-                  fi
-               fi
-            done;;
-      esac
-      if [ -z "$SCRIPTMODE" ]; then
-         if [ "$EXIT_VALUE" -eq 0 ]; then
-            becho "Test succeeded."
-         else
-            becho "Test FAILED!"
-         fi
-      else
-         if [ "$EXIT_VALUE" -eq 0 ]; then
-            echo "test completed.\t\t[ ${COLOR_GREEN} OK ${COLOR_NORMAL} ]"
-         else
-            echo "test completed.\t\t[ ${COLOR_RED}FAIL${COLOR_NORMAL} ]"
-         fi
-      fi
-   fi
+   # Test finished, now crash the lab
+   bold_print "Stopping lab..."
+   lab_crash "$verbose" "" "$lab_dir" "" "" > /dev/null
+   lab_clean "$verbose" "$lab_dir" > /dev/null
+   bold_print "Test completed."
 fi
 
 # Show a list of running virtual machines, if asked to
-if [ ! -z "$LISTVM" ]; then
-   echo
-   vlist
-fi
+[ -n "$list_vhosts" ] && "$NETKIT_HOME/bin/vlist"
 
-[ -z "$SCRIPTMODE" ] && echo
-exit $EXIT_VALUE
-
+exit 0

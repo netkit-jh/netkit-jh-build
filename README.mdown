@@ -18,10 +18,13 @@ sudo apt install apt-utils git make debootstrap \
 cd netkit-jh-build
 sudo make
 ```
-or build with Docker:
+Install with `make install`.
+
+## Building from source (Docker)
+Netkit can alternatively be built with Docker to alleviate platform-specific issues:
 ```bash
 git clone https://github.com/netkit-jh/netkit-jh-build.git
 docker pull netkitjh/netkit-builder-deb
-docker run --privileged --rm -v $(pwd):/netkit-build -it netkitjh/netkit-builder-deb
+docker run --privileged --rm -v "$(pwd):/netkit-build" -it netkitjh/netkit-builder-deb
 ```
 Install with `make install`.

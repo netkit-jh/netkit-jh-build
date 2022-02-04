@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+
+###############################################################################
+#                                                                             #
+#                  THIS FILE IS READ-ONLY - SEE NETKIT.CONF.                  #
+#                                                                             #
+###############################################################################
+
+# This script contains the default Netkit configuration parameters. It is not
+# intended for standalone usage and should not be edited by the user. For
+# overriding parameters, netkit.conf should be used; use this or netkit.conf(5)
+# for reference.
+
+
+# Configuration file version, independant of Netkit's versioning system. It
+# should be incremented when parameters are added or deprecated, or when value
+# defaults are changed.
+CONFIG_VERSION=6
+
+
+# Command log file name (use a null file name to disable logging)
+LOGFILENAME=""
+
+# Directory path to use for the uml_dir argument. The directory stores the
+# mconsole socket and PID file.
+MCONSOLE_DIR="$HOME/.netkit/machines"
+
+# Virtual network hub sockets are named:
+#    $HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${user_sha256:0:8}_${domain_sha256:0:8}_$domain$HUB_SOCKET_EXTENSION
+# or, if a tap socket:
+#    $HUB_SOCKET_DIR/${HUB_SOCKET_PREFIX}_${user_sha256:0:8}_tap_${domain_sha256:0:8}_$domain$HUB_SOCKET_EXTENSION
+# The values must not contain commas, forward slashes (besides HUB_SOCKET_DIR),
+# or whitespace. Combined, they must be shorter than UNIX_PATH_MAX (108) - 1
+# characters, else the filepath would have no space for the collision domain
+# name.
+HUB_SOCKET_DIR="$HOME/.netkit/hubs"
+HUB_SOCKET_PREFIX="vhub"
+HUB_SOCKET_EXTENSION=".cnct"
+
+# Log file to record uml_switch output in
+HUB_LOG="$HUB_SOCKET_DIR/vhubs.log"
+
+# Default mount directory used by vpackage
+VPACKAGE_MOUNT_POINT="/mnt/netkit-fs-mount-point/"
+
+
+### MACHINE CONFIGURATION #####################################################
+# Default memory (in megabytes)
+VM_MEMORY=128
+
+# Actual machine memory will be increased by this amount. This is used to get a
+# proper result when using free -m inside the machine.
+VM_MEMORY_SKEW=4
+
+# Allowed range for machine memory (vstart --mem argument) (in megabytes)
+MIN_MEM=8
+MAX_MEM=512
+
+# Maximum number of network interfaces allowed on a machine. Interface indexing
+# ranges from 0 to MAX_INTERFACES - 1 (inclusive).
+MAX_INTERFACES=40
+
+# Model filesystem image used by the machines
+VM_MODEL_FS="$NETKIT_HOME/fs/netkit-fs"
+
+# UML kernel executable
+VM_KERNEL="$NETKIT_HOME/kernel/netkit-kernel"
+
+
+### CONSOLE CONFIGURATION #####################################################
+# Primary and secondary console. Allowed values are: none, xterm, this, pty,
+# port:port_number, and tmux (only valid for con0).
+VM_CON0=xterm
+VM_CON1=none
+
+# Open a terminal with the tmux session for the machine; this uses vconnect
+# directly after tmux session creation. This option only takes effect when the
+# console option argument is tmux.
+TMUX_OPEN_TERMS=no
+
+# Terminal emulator for consoles. Allowed values are: alacritty, gnome, kitty,
+# konsole, wsl, wt, and xterm.
+TERM_TYPE=xterm
+
+
+### LAB CONFIGURATION #########################################################
+# Maximum number of simultaneously started machines when parallel startup is
+# enabled (default action). Set it to 0 for no limit.
+MAX_SIMULTANEOUS_VMS=20
+
+# Wait the specified amount of time in seconds before starting the next machine
+# when fast mode (-f|--fast option of lstart) or parallel startup is enabled.
+GRACE_TIME=1
+
+
+### NETKIT UPDATE CHECKING ####################################################
+# When running lstart, a request will be sent to Github to check for a new
+# release of Netkit-JH.
+CHECK_FOR_UPDATES=yes
+
+# How many days to wait between checking for new releases
+UPDATE_CHECK_PERIOD=5

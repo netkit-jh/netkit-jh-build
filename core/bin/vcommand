@@ -1,112 +1,195 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-PARAMS=""
-COMMAND_TIMEOUT="1"
-VERBOSE="FALSE"
+#     Copyright 2021-2022 Billy Bromell, Adam Bromiley, Joshua Hawking -
+#     Warwick Manufacturing Group, University of Warwick.
+#
+#     This file is part of Netkit.
+# 
+#     Netkit is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     Netkit is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
-tmux_command(){ # $1 = machine name $2 = timeout, $3 = verbose, $4-# = command
-    session="$1"
-    target="${session}:netkit-vm.0"
-    timeout="$2"
-    verbose="$3"
-    shift 3
-    cmd="$*"
-    tmux -L netkit has-session -t="$session" 2>/dev/null
-    if [ $? -ne 0 ]; then
-        echo "tmux session does not exist for this machine."
-        exit 1
-    fi
 
-    # Generate UUID to work out where the command starts
-    cmd_uuid=$(cat /proc/sys/kernel/random/uuid)
-    [ "$VERBOSE" = "TRUE" ] && echo "UUID for command = $cmd_uuid"
-    tmux -L netkit send-keys -t="$target" "echo $cmd_uuid" ENTER
-    sleep 0.5
-    
-    ## RUN COMMAND ##
-    [ "$VERBOSE" = "TRUE" ] && echo -e "command: $cmd \n\n"
-    tmux -L netkit send-keys -t="$target" "$cmd" ENTER
-
-    ## SLEEP ##
-    sleep "$timeout"
-
-    # Get output buffer
-    tmux_buffer=$(tmux -L netkit capture-pane -t "$target" -S - -p)
-    [ "$VERBOSE" = "TRUE" ] && echo -e "buffer after command = $tmux_buffer \n\n"
-    
-    echo "$tmux_buffer" |  sed "1,/$cmd_uuid/d" - | head -n -1 | sed '1,2d' -
+###############################################################################
+# Write vcommand's usage line to standard output.
+# Usage:
+#   usage_line
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE [COMMAND]"
 }
 
-print_help(){
-    echo
-    echo -e " vcommand - send a command to a netkit virtual machine through its tmux session."
-    echo
-    echo -e " Example: vcommand -m web "
-    echo
-    echo -e "\toptions:"
-    echo
-    echo -e "\t-h | --help                       Print this Help."
-    echo -e "\t-m | --machine MACHINENAME       Name of the machine to send the command to."
-    echo -e "\t-n | --timeout N                  Set how long to wait before grabbing the output of the command."
-    echo -e "\t-v | --verbose                    Enables VERBOSE variable for adding debugging echo statements."
-    echo -e "\t-c | --command cmd                command to send to the machine. This should always be the"
-    echo -e "\t                                  last argument to vcommand"
-    echo
+
+###############################################################################
+# Write vcommand's usage as a full dialog or a "try --help".
+# Usage:
+#   usage STATUS
+# Arguments:
+#   $1 - status code to exit with. When zero, usage will write to standard
+#        output and describe all options (for --help). Else, it will write to
+#        standard error and be a brief usage and try-help message.
+# Returns:
+#   None - exits with a status code of STATUS
+###############################################################################
+usage() {
+   local status=$1
+
+   if [ "$status" -ne 0 ]; then
+      usage_line 1>&2
+      try_help
+      exit "$status"
+   fi
+
+   cat << END_OF_HELP
+$(usage_line)
+Send a COMMAND to MACHINE through its tmux session. The COMMAND is sent as a
+string literal to the tmux session with send-keys, making the user responsible
+for relevant quoting and escaping.
+
+  -n, --timeout=N     set how long to wait before grabbing the command output
+
+Miscellaneous:
+$(help_option)
+  -v, --verbose       display debugging messages
+$(version_option)
+
+END_OF_HELP
+
+   exit "$status"
 }
 
-# from https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
 
-while (( "$#" )); do
-  case "$1" in
-    -h|--help)
-      print_help
-      exit 0
-      ;;
-    -v|--verbose)
-      VERBOSE="TRUE"
-      shift 1
-      ;;
-    -n|--timeout)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-        COMMAND_TIMEOUT=$2
-        shift 2
-      else
-        echo "Error: Argument for $1 is missing" >&2
-        exit 1
-      fi
-      ;;
-    -m|--machine)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-        MACHINE_NAME=$2
-        shift 2
-      else
-        echo "Error: Argument for $1 is missing" >&2
-        exit 1
-      fi
-      ;;
-    -c|--command)
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-        shift
-        PARAMS="$*"
-        shift $#
-      else
-        echo "Error: Argument for $1 is missing" >&2
-        exit 1
-      fi
-      ;;
-    *) # unsupported flags
-      echo "Error: Unsupported flag $1" >&2
+###############################################################################
+# Enter command to tmux session via send-keys and return the output to standard
+# output.
+# Usage:
+#   tmux_command VERBOSE SESSION TIMEOUT [COMMAND]
+# Arguments:
+#   $1 - set to 1 for verbose mode, empty string otherwise
+#   $2 - tmux session name (machine hostname)
+#   $3 - seconds to wait after sending the command to tmux before reading the
+#        output.
+#   $4 - command string to send to the tmux session
+###############################################################################
+tmux_command() {
+   local verbose=$1
+   local session=$2
+   local timeout=$3
+   local cmd=$4
+
+   local cmd_uuid
+
+   local target="$session:netkit-vhost.0"
+
+   if ! tmux -L netkit has-session -t "$session" > /dev/null 2>&1; then
+      echo 1>&2 "tmux session does not exist for this machine"
       exit 1
-      ;;
-  esac
-done
+   fi
 
-eval set -- "$PARAMS"
+   # Generate UUID to work out where the command starts
+   cmd_uuid=$(cat /proc/sys/kernel/random/uuid)
 
-if [ -z ${MACHINE_NAME+x} ]; then
-    echo "Machine name not given."
-    print_help
-    exit 1
+   if [ -n "$verbose" ]; then
+      echo "Command UUID: $cmd_uuid"
+      echo "Command: $cmd"
+   fi
+
+   # Run command prefixed with a NOP of the UUID for output harvesting
+   tmux -L netkit send-keys -t "$target" -- ": $cmd_uuid; $cmd" Enter
+
+   # Wait for output to be generated
+   sleep -- "$timeout"
+
+   # Get output buffer
+   tmux_buffer=$(tmux -L netkit capture-pane -t "$target" -S - -p)
+
+   [ -n "$verbose" ] && printf "Buffer after command:\n%s\n" "$tmux_buffer"
+
+   # Print all lines after the final match of ": $cmd_uuid" and remove the last
+   # line (which should the next shell prompt.)
+   sed --quiet "/: $cmd_uuid/{n;h;b};H;\${x;p}" <<< "$tmux_buffer" |
+      head --lines -1
+}
+
+
+# Ensure NETKIT_HOME is set
+if [ -z "$NETKIT_HOME" ]; then
+   echo 1>&2 "The NETKIT_HOME environment variable is not set"
+   exit 1
 fi
 
-tmux_command $MACHINE_NAME $COMMAND_TIMEOUT $VERBOSE $PARAMS
+# shellcheck source=./script_utils
+. -- "$NETKIT_HOME/bin/script_utils"
+# shellcheck source=./vcommon
+. -- "$NETKIT_HOME/bin/vcommon"
+
+# Write to the vcommands log
+log_write "$0 $*"
+
+
+timeout=1
+
+
+# Get command line options
+long_opts="help,timeout:,verbose,version"
+short_opts="n:v"
+
+if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
+   # getopt will output the errorneous command-line argument
+   usage 1
+fi
+
+# (Safely) set positional parameters to those reordered by getopt
+eval set -- "$getopt_opts"
+
+while true; do
+   case $1 in
+      --help)
+         usage 0
+         ;;
+      -n|--timeout)
+         timeout=$2
+         shift
+         ;;
+      -v|--verbose)
+         verbose=1
+         ;;
+      --version)
+         show_version
+         exit 0
+         ;;
+      --)
+         shift
+         break
+         ;;
+      *)
+         warn "Unknown error parsing command line arguments"
+         usage 1
+         ;;
+   esac
+
+   shift
+done
+
+# Parse virtual machine name
+if [ $# -eq 0 ]; then
+   warn "Missing machine name"
+   usage 1
+fi
+
+vhost=$1
+validate_hostnames "$vhost"
+
+cmd=${*:2}
+
+
+tmux_command "$verbose" "$vhost" "$timeout" "$cmd"

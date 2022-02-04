@@ -3,5 +3,5 @@ DESCRIPTION=Simple lab with two machines joined by a router, using Gnome termina
 LAB_FOLDER=abr
 LAB_TIMEOUT=60
 FILES=ping_successful_a,ping_successful_b
-FILES_TIMEOUT=90
+TIMEOUT=90
 TERMINAL=gnome

@@ -106,30 +106,6 @@ share the same file.
 \fIDefault if no setting\fR: $HUB_SOCKET_DIR/vhubs.log
 
 
-.TP
-.B
-USE_SUDO
-This parameter determines how root privileges will be acquired when system-wide
-configurations need to be applied (e.g., a tap interface needs to be set up).
-If set to \fByes\fR, then Netkit will use the \fBsudo\fR(8) command for the
-purpose. By suitably setting up the \fBsudoers\fR(5) file, this can prevent the
-user from having to type the root password every time.
-.br
-If set to \fBno\fR, then Netkit will use the \fIsu\fR command instead, which
-requires inserting the root password for each privileged operation that needs to
-be carried out.
-.br
-For more information about how to set up the \fBsudoers\fR(5) file, see the
-section \fBSETTING UP NETKIT FOR USE WITH SUDO\fR below.
-
-\fISuggested value\fR: yes
-.br
-\fIDefault if no setting\fR: yes
-
-
-
-
-
 .SS
 Default settings for newly started virtual machines
 
@@ -301,12 +277,6 @@ Use the KDE Desktop Environment konsole.
 
 .TP
 .B
-konsole-tabs
-Same as \fBkonsole\fR, but different virtual machine consoles are opened inside
-different tabs of the same konsole window.
-
-.TP
-.B
 gnome
 Use the Gnome Desktop gnome-terminal.
 
@@ -342,35 +312,6 @@ use Windows Terminal (only available on wsl hosts with Windows Terminal installe
 \fISuggested value\fR: xterm
 .br
 \fIDefault if no setting\fR: xterm
-.RE
-
-.TP
-.B
-CON0_PORTHELPER
-This parameter should only be used in debugging issues in attaching the
-primary console of virtual machines. When the primary console is attached to a
-terminal emulator, Netkit can attempt to open the emulator in two different
-ways:
-
-.RS
-.IP \(em 3
-by directly starting the virtual machine kernel inside the terminal emulator, or
-.IP \(em 3
-by letting the virtual machine kernel open the terminal emulator on its own.
-.PP
-The second method is deemed as more standard when using User Mode Linux kernels
-(like Netkit's), but is slightly less efficient and more prone to crashes, as
-it relies on a separate software piece (the \fIport-helper\fR) for establishing
-a communication between the kernel and the terminal emulator. The first method
-is more efficient and robust and, for this reason, is currently adopted as
-default choice.
-
-No matter what the value of this parameter is, the secondary terminal will
-always be opened using the second strategy.
-
-\fISuggested value\fR: no
-.br
-\fIDefault if no setting\fR: no
 .RE
 
 .TP
@@ -440,15 +381,10 @@ labs with more than 4 machines).
 .SH "SETTING UP NETKIT FOR USE WITH SUDO"
 
 From time to time, Netkit requires administrative privileges on the host machine
-to set up particular configurations (e.g., "\fBtap\fR" interfaces). Netkit can
-exploit either the \fBsu\fR(1) or the \fBsudo\fR(8) command in order to do this.
-This behaviour can be configured by changing the value of the \fBUSE_SUDO\fR
-parameter. Depending on this choice, Netkit will ask for a different password:
-for the case of \fBsu\fR(1) it is the root password, while for the case of
-\fBsudo\fR(8) it usually is the user's password. In most setups, \fBsudo\fR(8)
-is able to keep user authentication information for a certain amount of time
-during which the password is not requested any longer, even for administrative
-operations. For this reason, by default Netkit uses \fBsudo\fR(8).
+to set up particular configurations (e.g., "\fBtap\fR" interfaces). Netkit will
+ask for the user's password. In most setups, \fBsudo\fR(8) is able to keep user
+authentication information for a certain amount of time during which the
+password is not requested any longer, even for administrative operations.
 
 By changing the \fBsudoers\fR(5) file it is possible to completely disable the
 password prompt, so that the password is never requested (not even the first
@@ -495,53 +431,6 @@ root's), and /bin/sh is the name of the command.
 
 \" ########################################
 
-.SH "ENVIRONMENT VARIABLES"
-
-Some configuration parameters can be overridden by simply defining an
-environment variable. A list of supported variables follow.
-
-.TP 20
-.B
-NETKIT_FILESYSTEM
-Name of the default model filesystem.
-
-\fICorresponding parameter\fR: \fBVM_MODEL_FS\fR
-
-.TP
-.B
-NETKIT_MEMORY
-Default amount of available memory inside virtual machines.
-
-\fICorresponding parameter\fR: \fBVM_MEMORY\fR
-
-.TP
-.B
-NETKIT_KERNEL
-Name of the UML kernel used by virtual machines
-
-\fICorresponding parameter\fR: \fBVM_KERNEL\fR
-
-.TP
-.B
-NETKIT_CON0
-.PD 0
-.TP
-.B
-NETKIT_CON1
-Device to which the primary and secondary consoles are attached.
-
-\fICorresponding parameter\fR: \fBVM_CON0\fR, \fBVM_CON1\fR
-
-.TP
-.B
-NETKIT_TERM
-Terminal emulator application to be used for consoles in \fBxterm\fR mode.
-
-\fICorresponding parameter\fR: \fBTERM_TYPE\fR
-
-
-\" ########################################
-
 .SH "SAMPLE netkit.conf FILE"
 
 .nf
@@ -556,7 +445,6 @@ HUB_SOCKET_DIR="$HOME/.netkit/hubs"
 HUB_SOCKET_PREFIX="vhub"
 HUB_SOCKET_EXTENSION=".cnct"
 HUB_LOG="$HUB_SOCKET_DIR/vhubs.log"
-USE_SUDO=yes
 
 VM_MEMORY=32
 VM_MEMORY_SKEW=4
@@ -565,7 +453,6 @@ VM_KERNEL="$NETKIT_HOME/kernel/netkit-kernel"
 
 VM_CON0=xterm
 VM_CON1=none
-CON0_PORTHELPER=no
 TERM_TYPE=xterm
 
 MAX_INTERFACES=40

@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-# Upon request, this file mounts a host directory containing kernel modules
-
+#     Copyright 2020-2022 Adam Bromiley, Joshua Hawking - Warwick Manufacturing
+#     Group, University of Warwick.
 #     Copyright 2002-2007 Massimo Rimondini - Computer Networks Research Group,
 #     Roma Tre University.
 #
@@ -20,6 +20,9 @@
 #     You should have received a copy of the GNU General Public License along
 #     with Netkit.  If not, see <http://www.gnu.org/licenses/>.
 
+# Upon request, this file mounts a host directory containing kernel modules.
+
+
 ### BEGIN INIT INFO
 # Provides:          netkit-mount-modules-dir
 # Required-Start:
@@ -35,32 +38,55 @@
 #                    usage inside virtual machines.
 ### END INIT INFO
 
-case "$1" in
-   start) 
 
-MODULES=$(cat /proc/cmdline | awk -v FS== -v RS=' ' '{if ($1=="modules") {print $2}}')
+###############################################################################
+# Write netkit-mount-modules-dir's usage line to standard output.
+# Usage:
+#   usage_line
+###############################################################################
+usage_line() {
+   echo "Usage: $SCRIPTNAME {start|stop}"
+}
 
-if [ -n "$MODULES" ]; then
-   MODULES="$MODULES"/lib/uml/modules
-   echo "Mounting kernel modules directory ($MODULES) on /lib/modules/ ..."
-   # Write access is needed for depmod in order to work properly
-   if [ ! -d /lib/modules ]
-   then
-       mkdir -p /lib/modules
-   fi
-   mount none /lib/modules/ -t hostfs -o rw,$MODULES
-else
-   echo "Modules directory not mounted."
-fi
 
-;;
-    stop)
-      KERNEL_VERSION=$(uname -r)
-      if [ -f /lib/modules/$KERNEL_VERSION/modules.dep ]; then
-         echo "Unmounting /lib/modules..."
+SCRIPTNAME=$(basename -- "$0")
+
+
+case $1 in
+   start)
+      # Full command used to invoke the process
+      mapfile -d "" -t kernel_cmd < "/proc/cmdline"
+
+      for arg in "${kernel_cmd[@]:1}"; do
+         opt=${arg%%=*}
+         value=${arg#*=}
+
+         if [ "$opt" = "modules" ]; then
+            modules=$value
+            break
+         fi
+      done
+
+      if [ -n "$modules" ]; then
+         modules="$modules/lib/uml/modules"
+         echo "Mounting kernel modules directory '$modules' to '/lib/modules'"
+
+         # Write access is needed for depmod in order to work properly
+         mkdir --parents /lib/modules
+         mount --types hostfs --options "rw,$modules" --source none --target /lib/modules/
+      else
+         echo "Modules directory not mounted"
+      fi
+      ;;
+   stop)
+      kernel_version=$(uname --kernel-release)
+      if [ -f "/lib/modules/$kernel_version/modules.dep" ]; then
+         echo "Unmounting /lib/modules"
          umount /lib/modules
       fi
-
-;;
+      ;;
+   *)
+      usage_line
+      exit 1
+      ;;
 esac
-

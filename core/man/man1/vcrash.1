@@ -27,7 +27,7 @@ The following options can be used to influence the way \fIvcrash\fR behaves.
 .PD 0
 .TP
 .B
---kill
+--just-kill
 By default, virtual machines are crashed by sending them a special directive
 through their management console (mconsole) socket. Such method is generally
 faster, but in some situations it may not work properly (for example, if a
@@ -46,15 +46,10 @@ most cases. If still it does not, try using \fIvclean\fR (see \fBvclean\fR(1)).
 .TP
 .B
 --quick
-.PD 0
-.TP
-.B
---quiet
 After crashing virtual machines, \fIvcrash\fR waits a few instants to check
-whether they have actually stopped. By using the \fB\-q\fR (\fB\-\-quick\fR,
-\fB\-\-quiet\fR) option, \fIvcrash\fR exits immediately, without waiting for the
-machine to stop. This option also suppresses any kind of output except errors
-and warnings.
+whether they have actually stopped. By using the \fB\-q\fR (\fB\-\-quick\fR)
+option, \fIvcrash\fR exits immediately, without waiting for the
+machine to stop.
 .br
 Notice that, when a virtual machine is crashed via its mconsole socket (default
 if the \fB\-k\fR option is not used), \fIvcrash\fR still waits for the crash
@@ -82,8 +77,7 @@ and model filesystems.
 --test
 Instead of actually crashing virtual machines, just show what would be done
 (i.e., which processes would be killed or which socket would be used to send
-the crash directive). This option cannot be used in conjunction with \fB\-q\fR
-(or \fB\-\-quick\fR, \fB\-\-quiet\fR).
+the crash directive).
 
 .TP
 .B
@@ -125,6 +119,15 @@ Show usage information.
 
 .TP
 .B
+-v
+.PD 0
+.TP
+.B
+--verbose
+Show which processes are getting killed.
+
+.TP
+.B
 --version
 Print information about the installed Netkit release and the host kernel version
 and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
@@ -141,33 +144,6 @@ All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
 name of the directory Netkit is installed in.
 
 Apart from this, \fIvcrash\fR supports no other environment variables.
-
-
-\" ########################################
-
-.SH BACKWARD COMPATIBILITY
-
-The following options are deprecated and you are encouraged not to use them. They
-are only provided to ensure backward compatibility with older versions of Netkit.
-
-.TP
-.B
---force
-This option can be used to crash a virtual machine for which both the PID and
-the name are known. When using \fB\-\-force\fR, \fIvcrash\fR switches to an
-alternative syntax. In particular, it takes exactly two arguments: the virtual
-machine PID and its name. Option \fB\-r\fR or \fB\-\-remove-fs\fR does not work
-when using \fB\-\-force\fR.
-
-This option had been introduced (but was undocumented) in older versions of
-\fIvcrash\fR with the purpose of speeding up the process of halting laboratories.
-With the current version of \fIvcrash\fR there isn't any reason to use it (not
-even for speeding up the crash).
-
-.TP
-.B
---root
-A synonym for \fB\-\-user\fR=\fB-\fR.
 
 
 \" ########################################

@@ -3,4 +3,4 @@ DESCRIPTION=Simple lab with a single machine verifying entropy counts are at suf
 LAB_FOLDER=entropy
 LAB_TIMEOUT=90
 FILES=entropy_successful
-FILES_TIMEOUT=30
+TIMEOUT=30

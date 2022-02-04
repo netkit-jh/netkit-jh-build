@@ -24,7 +24,7 @@ The syntax for this option is exactly the same as for the corresponding option o
 \fIDOMAIN\fR, in which case the network interface \fBethN\fR will be no longer
 available on the virtual machine.
 .br
-Please read the \fBvstart\fR documentation before using this option to setup "\fBtap\fR" collision domains.
+Please read the \fBvstart\fR documentation before using this option to setup "\fBtap\fR" interfaces.
 
 Attaching an already existing interface to a virtual machine causes an error.
 
@@ -43,23 +43,18 @@ Show usage information. This option also reports information about the range of
 allowed interface numbers, configured inside \fInetkit.conf\fR (see \fBnetkit.conf\fR(5)).
 
 .TP
-.B
--p
-.PD 0
-.TP
-.B
---print
+\fB\-n\fR, \fB\-\-dry\-run\fR, \fB\-\-just\-print\fR, \fB\-\-recon\fR
 Instead of actually starting virtual hubs and configuring network interfaces,
 just show which commands would be executed.
 
 .TP
 .B
--q
+-v
 .PD 0
 .TP
 .B
---quiet
-This option suppresses any kind of output, except errors and warnings.
+--verbose
+Show commands being ran.
   
 .TP
 .B
@@ -109,47 +104,46 @@ shut down. In order to do this, you should use the \fBvclean\fR command with the
 option \fB\-H\fR (see \fBvclean\fR(1)).
 
 An important difference with respect to attaching interfaces with \fIvstart\fR (see
-\fBvstart\fR(1)) is that, when using "\fBtap\fR" collision domains, the
-configuration of the virtual machine is not automatically updated. In particular,
-assume that interface eth0 has been set up using \fIvconf\fR with the following option:
+\fBvstart\fR(1)) is that, when using "\fBtap\fR" interfaces, the configuration
+of the virtual machine is not automatically updated. In particular, assume that
+interface eth0 has been set up using \fIvconf\fR with the following option:
 
 .nf
-\-\-eth0=tap,\fITAP\-ADDRESS\fR,\fIGUEST\-ADDRESS\fR
+--eth\fIN\fR=\fIDOMAIN\fR,\fITAP\-ADDR\fR,\fIGUEST\-ADDR\fR
 .fi
 
 After doing so, the following operations must be performed inside the virtual
 machine in order to make the interface operational:
 
 .IP 1) 3
-Interface eth0 must be assigned IP address \fIGUEST\-ADDRESS\fR. You can do this
+Interface eth0 must be assigned IP address \fIGUEST\-ADDR\fR. You can do this
 by using the following command:
 
 .nf
-ifconfig eth0 \fIGUEST\-ADDRESS\fR up
+ifconfig eth0 \fIGUEST\-ADDR\fR up
 .fi
 
-Notice that \fIvconf\fR does not consider the \fIGUEST\-ADDRESS\fR parameter,
+Notice that \fIvconf\fR does not consider the \fIGUEST\-ADDR\fR parameter,
 even if the command syntax requires it. Hence, you are free to use any IP
 address in configuring interface eth0 (provided that it is on the same (sub)network
-as \fITAP\-ADDRESS\fR). Nevertheless, it is a good rule to be coherent with the
-\fIGUEST\-ADDRESS\fR provided on the \fIvconf\fR command line.
+as \fITAP\-ADDR\fR). Nevertheless, it is a good rule to be coherent with the
+\fIGUEST\-ADDR\fR provided on the \fIvconf\fR command line.
 
 .IP 2) 3
 A default route must be configured to point to the host side of the "\fBtap\fR"
 interface. This can be achieved by issuing the following command:
 
 .nf
-route add default gw \fITAP\-ADDRESS\fR dev eth0
+route add default gw \fITAP\-ADDR\fR dev eth0
 .fi
 
 .PP
 Once this is done, the interface is ready for use.
 
 Please make sure you run 'vclean -H' (see \fBvclean\fR(1)) when a "\fBtap\fR"
-collision domain is no more used. Not doing so may result in the impossibility
-to correctly configure new "\fBtap\fR" collision domains. For example, this
-may prevent from correctly setting the \fITAP\-ADDRESS\fR for a new "\fBtap\fR"
-domain.
+interface is no more used. Not doing so may result in the impossibility to
+correctly configure new "\fBtap\fR" interfaces. For example, this may prevent
+from correctly setting the \fITAP\-ADDR\fR for a new "\fBtap\fR" interface.
 
 
 
@@ -179,7 +173,7 @@ to the virtual collision domain \fBA\fR.
 .TP
 .B
 .nf
-vconf --eth1=tap,10.0.0.1,10.0.0.2 -u foo pc2
+vconf --eth1=tap-domain,10.0.0.1,10.0.0.2 -u foo pc2
 .fi
 Configure a new interface (\fBeth1\fR) on virtual machine \fBpc2\fR owned
 by user \fBfoo\fR. The host side of the interface will be automatically configured
@@ -193,9 +187,8 @@ route add default gw 10.0.0.1 dev eth1
 
 Running this example requires administrative privileges. The \fIvconf\fR
 command will take care of asking you for the root password if needed. For more
-information about how Netkit gains root privileges, see \fBUSE_SUDO\fR and
-\fBSETTING UP NETKIT FOR USE WITH SUDO\fR in the man page of
-\fBnetkit.conf\fR(5).
+information about how Netkit gains root privileges, see \fBSETTING UP NETKIT
+FOR USE WITH SUDO\fR in the man page of \fBnetkit.conf\fR(5).
 
 
 \" ########################################
