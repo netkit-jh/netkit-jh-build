@@ -99,7 +99,6 @@ END_OF_HELP
 # Exit on a failed (non-zero return code) install command
 set -e
 
-
 SCRIPTNAME=$(basename -- "$0")
 
 
