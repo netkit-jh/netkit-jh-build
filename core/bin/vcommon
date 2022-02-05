@@ -643,9 +643,9 @@ invoke_uml_switch() {
    hub_log_cmd=(
       "stdbuf" "--output=0" "--"
       "awk"
-         "--assign" "HUB=$socket"
-         "--assign" "USER=$USER_ID"
-         "--assign" "TIME=$(date --iso-8601=seconds)"
+         "-v" "HUB=$socket"
+         "-v" "USER=$USER_ID"
+         "-v" "TIME=$(date --iso-8601=seconds)"
          '{printf "%s %15s %25s %s\n", TIME, USER, HUB, $0}'
    )
 
