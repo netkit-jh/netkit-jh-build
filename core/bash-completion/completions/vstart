@@ -38,7 +38,7 @@ _vstart() {
 
    local con0_args=( "xterm" "this" "tmux" "pty" "port:" "none" )
    local con1_args=( "xterm" "this" "pty" "port:" "none" )
-   local xterm_args=( "alacritty" "gnome" "kitty" "konsole" "wsl" "wt" "xterm" )
+   local xterm_args=( "alacritty" "gnome" "kitty" "kitty-tab" "konsole" "wsl" "wt" "xterm" )
 
    if [ "${#@}" -ge 5 ]; then
       # Passthrough options to vstart are being autocompleted (the parent

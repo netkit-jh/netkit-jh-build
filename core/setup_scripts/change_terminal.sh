@@ -53,10 +53,11 @@ Current terminal emulator (TERM_TYPE): '$TERM_TYPE'
 Which terminal emulator would you like to use for Netkit machines?
    (1) xterm - reliable, stable but ancient UI (default installation)
    (2) Alacritty - modern and GPU-accelerated terminal emulator
-   (3) kitty -  another modern and GPU-accelerated emulator
-   (4) GNOME Terminal - default terminal for Ubuntu
-   (5) wsl - WSL compatiblity through the Windows Console (conhost.exe)
-   (6) wt - WSL compatibility via Windows Terminal (recommended for WSL hosts)
+   (3) kitty - another modern and GPU-accelerated emulator
+   (4) kitty-tab - start all machines in unique tabs of the same kitty window
+   (5) GNOME Terminal - default terminal for Ubuntu
+   (6) wsl - WSL compatiblity through the Windows Console (conhost.exe)
+   (7) wt - WSL compatibility via Windows Terminal (recommended for WSL hosts)
 
 The TERM_TYPE variable will be set in:
    $netkit_conf
@@ -64,12 +65,12 @@ The TERM_TYPE variable will be set in:
 NOTE: required repositories/packages will be installed. For WSL compatibility,
 /etc/wsl.conf must be configured to append the host's PATH to the virtual
 machine's PATH. Ensure Windows Terminal is already installed on the host if
-selecting option (6).
+selecting option (7).
 END_OF_DIALOG
 
 
 while true; do
-   read -rp "Which terminal would you like to use [1-6]? " response
+   read -rp "Which terminal would you like to use [1-7]? " response
    case $response in
       1)
          if ! command -v -- "xterm" > /dev/null 2>&1; then
@@ -103,6 +104,16 @@ while true; do
          break
          ;;
       4)
+         if ! command -v -- "kitty" > /dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install kitty
+         fi
+
+         term_type="kitty-tab"
+         term_name="kitty-tab"
+         break
+         ;;
+      5)
          if ! command -v -- "gnome-terminal" > /dev/null 2>&1; then
             sudo apt-get update
             sudo apt-get install gnome-terminal
@@ -112,7 +123,7 @@ while true; do
          term_name="GNOME Terminal"
          break
          ;;
-      5)
+      6)
          if ! command -v -- "wsl.exe" > /dev/null 2>&1; then
             echo 1>&2 \
                "$SCRIPTNAME: wsl.exe: command not found. Is WSL configured to share environment variables with Windows?"
@@ -123,7 +134,7 @@ while true; do
          term_name="Windows Console"
          break
          ;;
-      6)
+      7)
          if ! command -v -- "wt.exe" > /dev/null 2>&1; then
             echo 1>&2 \
                "$SCRIPTNAME: wt.exe: command not found. Is WSL configured to share environment variables with Windows?"

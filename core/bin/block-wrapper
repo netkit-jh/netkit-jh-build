@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-#     Copyright 2020-2022 Billy Bromell, Adam Bromiley, Mohammed Habib, Joshua
-#     Hawking - Warwick Manufacturing Group, University of Warwick.
+#     Copyright 2020-2022 Billy Bromell, Adam Bromiley, Joseph Bunce, Mohammed
+#     Habib, Joshua Hawking - Warwick Manufacturing Group, University of
+#     Warwick.
 #
 #     This file is part of Netkit.
 # 
@@ -63,6 +64,7 @@ case $term in
    alacritty)  alacritty                                                  --command "${bash_cmd[@]}";;
    gnome)      gnome-terminal --title "$vhost"                            --        "${bash_cmd[@]}";;
    kitty)      kitty --title "$vhost"                                               "${bash_cmd[@]}";;
+   kitty-tab)  "$NETKIT_HOME/bin/kitty-tab.sh"                                      "${bash_cmd[@]}";;
    konsole)    konsole --nofork --title "$vhost"                          -e        "${bash_cmd[@]}";;
    wsl)        cmd.exe /c start wsl.exe                                             "${bash_cmd[@]}";;
    wt)         wt.exe --suppressApplicationTitle --title "$vhost" wsl.exe --exec    "${wt_safe_bash_cmd[@]}";;
