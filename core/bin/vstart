@@ -144,8 +144,8 @@ Console settings can be altered by the following options:
                           gnome        use the GNOME Terminal
                           kitty        use the lightweight Kitty terminal
                           kitty-tab    same as above, but different virtual
-                                       machines are opened in different kitty
-                                       tabs of the same window
+                                        machines are opened in different kitty
+                                        tabs of the same window
                           konsole      use the KDE Konsole
                           wsl          use Windows Subsystem for Linux (WSL) in
                                         a conhost.exe window
