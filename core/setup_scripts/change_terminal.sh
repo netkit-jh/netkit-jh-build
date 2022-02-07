@@ -65,12 +65,12 @@ The TERM_TYPE variable will be set in:
 NOTE: required repositories/packages will be installed. For WSL compatibility,
 /etc/wsl.conf must be configured to append the host's PATH to the virtual
 machine's PATH. Ensure Windows Terminal is already installed on the host if
-selecting option (6).
+selecting option (7).
 END_OF_DIALOG
 
 
 while true; do
-   read -rp "Which terminal would you like to use [1-6]? " response
+   read -rp "Which terminal would you like to use [1-7]? " response
    case $response in
       1)
          if ! command -v -- "xterm" > /dev/null 2>&1; then
