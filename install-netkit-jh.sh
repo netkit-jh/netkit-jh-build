@@ -236,7 +236,7 @@ else
    corrupt_files=$(
       cd -- "$download_dir" || exit 1
       sha256sum --check --quiet "release-$nk_version.sha256" 2> /dev/null |
-         cut --delimeter ":" --fields 1
+         cut -d ":" -f 1
    )
 
    if [ -n "$corrupt_files" ]; then
