@@ -209,8 +209,8 @@ if [ -n "$existing_kernel_files" ] && [ -n "$existing_fs_files" ] && [ -n "$exis
    cp --archive -- "$existing_fs_files/."     "$install_dir/"
    cp --archive -- "$existing_core_files/."   "$install_dir/"
 else
+   release_files_sha256="release-$nk_version.sha256"
    release_files=(
-      "release-$nk_version.sha256"
       "netkit-core-$nk_version.tar.bz2"
       "netkit-fs-$nk_version.tar.bz2"
       "netkit-kernel-$nk_version.tar.bz2"
@@ -218,7 +218,7 @@ else
 
    mkdir --parents -- "$download_dir"
 
-   for file in "${release_files[@]}"; do
+   for file in "${release_files[@]}" "$release_files_sha256"; do
       if [ -f "$download_dir/$file" ]; then
          echo "$download_dir/$file: file already exists; skipping"
          continue
@@ -253,8 +253,7 @@ else
          --verbose \
          --directory "$install_dir" \
          --strip-components 1 \
-         -- \
-         "$download_dir/$file"
+         --file "$download_dir/$file"
    done
 fi
 
@@ -346,7 +345,9 @@ echo "${color_bold}Netkit-JH is now installed$color_normal"
 # is 255 (an error not a warning). Also note that set -e is used in this
 # script.
 echo "Checking configuration..."
-"$install_dir/setup_scripts/check_configuration.sh" || [ $? -eq 255 ] && exit 1
+if ! "$install_dir/setup_scripts/check_configuration.sh"; then
+   [ $? -eq 255 ] && exit 1
+fi
 
 # Encourage user to set environment variables for the current terminal
 cat << END_OF_DIALOG
