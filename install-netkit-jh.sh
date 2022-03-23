@@ -297,6 +297,8 @@ for rc_file in "${rc_files[@]}"; do
 for file in "$NETKIT_HOME/bash-completion/completions/"*; do
    . "$file"
 done
+
+unset file
 EOF
    fi
 
