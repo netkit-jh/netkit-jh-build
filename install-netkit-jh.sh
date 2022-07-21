@@ -198,9 +198,10 @@ if [ -d "$install_dir/" ]; then
    echo "$install_dir: Directory exists; renaming to $backup_dir so contents are not disturbed"
    mv -- "$install_dir/" "$backup_dir/"
 else
-   mkdir --parents -- "$install_dir"
    unset backup_dir
 fi
+
+mkdir --parents -- "$install_dir"
 
 
 # Check whether they've specified extracted files
