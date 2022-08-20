@@ -214,7 +214,7 @@ single_lab_vhost_start() {
    # Generate vstart argument list
    if [ -e "$lab_dir/lab.conf" ]; then
       while IFS= read -r configuration; do
-         line_number=$(awk -F":" '{ print $1 }' <<< "$configuration")
+         line_number=${configuration%%:*}
 
          # The [][] is ][ inside a bracket expression to match an opening or
          # closing square bracket.
