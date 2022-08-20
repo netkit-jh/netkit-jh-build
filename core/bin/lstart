@@ -202,6 +202,7 @@ single_lab_vhost_start() {
    local vhost=$4
    local passthrough_args=( "${@:5}" )
 
+   local line_number
    local configuration opt value
 
    # Specify host lab directory, and place filesystem inside it
@@ -256,10 +257,9 @@ single_lab_vhost_start() {
    # Remove .ready file, if existing
    rm --force -- "$lab_dir/$vhost.ready"
 
-   if ! "$NETKIT_HOME/bin/vstart" "${vstart_args[@]}" "${passthrough_args[@]}" -- "$vhost"; then
-      warn "Error while starting virtual machine '$vhost'"
-      exit 1
-   fi
+   # If the machine fails to start, we ignore it (vstart would have provided an
+   # error message already).
+   "$NETKIT_HOME/bin/vstart" "${vstart_args[@]}" "${passthrough_args[@]}" -- "$vhost" || return 0
 
    # Wait for virtual host startup script to create .ready file
    if [ -z "$fast_mode" ]; then
@@ -370,8 +370,8 @@ ${tab}# Dummy line. Unuseful, yet necessary
 $(cat "$lab_dir/lab.dep" 2> /dev/null)
 EOF
 
-   # Read the Makefile from stdin without implicit rules, and hide the output. It
-   # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
+   # Read the Makefile from stdin without implicit rules, and hide the output.
+   # It is parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
    make \
       --no-builtin-rules \
       --silent \
@@ -381,14 +381,8 @@ EOF
       -- \
       "${lab_vhosts[@]}" \
       <<< "$makefile_contents" 2> /dev/null
-   
-   ret=$?
-   exec {unused_fd}>&-
 
-   if [ "$ret" -eq 2 ]; then
-      warn "Error parallel-starting lab"
-      exit 1
-   fi
+   exec {unused_fd}>&-
 
    # Signal that every machine is ready for testing once booted.
    [ -n "$test_delay" ] && : > "$lab_dir/readyfor.test"
