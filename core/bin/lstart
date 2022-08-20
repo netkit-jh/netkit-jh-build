@@ -214,6 +214,8 @@ single_lab_vhost_start() {
    # Generate vstart argument list
    if [ -e "$lab_dir/lab.conf" ]; then
       while IFS= read -r configuration; do
+         line_number=$(awk -F":" '{ print $1 }' <<< "$configuration")
+
          # The [][] is ][ inside a bracket expression to match an opening or
          # closing square bracket.
          # NOTE: we assume hostname_regex does not allow square brackets, so
@@ -240,8 +242,15 @@ single_lab_vhost_start() {
          # argument (denoted with '::' in the option string), an exception when
          # appending the argument must be made (an '=' is required for long
          # options, no delimiter for short ones).
-         [ -n "${value+x}" ] && vstart_args+=( "$value" )
-      done < <(grep -- "^$vhost\[.*\]" "$lab_dir/lab.conf")
+         if [ -n "${value+x}" ]; then
+            # Check for trailing whitespace
+            if [[ "$value" =~ ^.*[^[:graph:]]$ ]]; then
+               warn "$lab_dir/lab.conf: Line $line_number: Whitespace detected at end of value, this may have unintended consequences"
+            fi
+
+            vstart_args+=( "$value" )
+         fi
+      done < <(grep --line-number -- "^$vhost\[.*\]" "$lab_dir/lab.conf")
    fi
 
    # Remove .ready file, if existing
