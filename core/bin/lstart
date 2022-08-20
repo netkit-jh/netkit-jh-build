@@ -370,8 +370,8 @@ ${tab}# Dummy line. Unuseful, yet necessary
 $(cat "$lab_dir/lab.dep" 2> /dev/null)
 EOF
 
-   # Read the Makefile from stdin without implicit rules, and hide the output. It
-   # it parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
+   # Read the Makefile from stdin without implicit rules, and hide the output.
+   # It is parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
    make \
       --no-builtin-rules \
       --silent \
