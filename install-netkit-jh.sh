@@ -322,6 +322,7 @@ if [ -z "$no_packages" ]; then
       "curl"         # For update checking in lstart
       "iproute2"     # Interface management in manage_tuntap
       "iptables"     # To manage TUN/TAP traffic
+      "jq"           # For update checking via the GitHub API
       "lsof"         # To find unused virtual network hubs
       "make"         # Parallel lab start
       "util-linux"   # kill, getopt, mount, etc (should already be installed)
