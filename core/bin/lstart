@@ -294,8 +294,11 @@ lab_start_parallel() {
    local passthrough_args=( "${@:4}" )
 
    local lstart_args arg
+   local line target prerequisite prerequisites
    local lstart_cmd escaped_lstart_cmd
    local tab makefile_contents
+
+   declare -A dependencies
 
    get_lab_vhosts "$lab_dir"
 
@@ -324,6 +327,40 @@ lab_start_parallel() {
    [ "$MAX_SIMULTANEOUS_VMS" -eq 0 ] && unset MAX_SIMULTANEOUS_VMS
 
 
+   # Read every non-comment/non-blank line in lab.dep and extract the
+   # dependant machine and dependencies into an associative array (which
+   # removes duplicates).
+   while IFS= read -r line; do
+      # The dependant is always one machine on the LHS of the colon. We strip
+      # all whitespace from it.
+      target=${line%%:*}
+      target=${target//[^[:graph:]]/}
+
+      # The dependencies are on the RHS of the colon - split these into an
+      # array.
+      read -ra prerequisites <<< "${line#*:}"
+
+      # Add dependency relationship to associative array. This allows the
+      # following:
+      #    target1: prerequisite1 prerequisite2
+      #    target1: prerequisite3
+      # to condense down to:
+      #    target1: prerequisite1 prerequisite2 prerequisite3
+      dependencies[$target]+=" ${prerequisites[*]}"
+
+      # Add all other mentioned targets to the array so a recipe can still be
+      # generated for them.
+      for prerequisite in "${prerequisites[@]}"; do
+         dependencies[$prerequisite]+=""
+      done
+   done < <(grep --extended-regexp --invert-match -- '^ *#|^[^[:graph:]]*$' lab.dep)
+
+   # Add any machines not declared in lab.dep to the dependency array
+   for target in "${lab_vhosts[@]}"; do
+      dependencies[$target]+=""
+   done
+
+
    lstart_cmd=( "$program_name" "-d" "$lab_dir" "--makefile" "${lstart_args[@]}" )
 
    # We expand this array with the Q operator when writing to the Makefile.
@@ -335,54 +372,55 @@ lab_start_parallel() {
    escaped_lstart_cmd=${escaped_lstart_cmd//$/\$$}
 
    # Labs are started in parallel with GNU Make, which automatically handles
-   # lab.dep (which is formatted as Makefile targets).
+   # lab.dep (which is formatted as a Makefile).
    #
    # The script is invoked with each VM name as a target on the command line,
    # which directs Make to run:
    #   lstart [...] --makefile <machine>
-   # for each machine. $* is a GNU Make automatic variable that expands to the
-   # % (stem) in the target. In this usage it will expand to the machine name.
+   # for each machine.
    #
-   # The contents of lab.dep is copied in if it exists, which creates a target
-   # for each machine with dependencies ("prerequisities" in Make).
-   # NOTE: The dummy target is required, which has the unwanted side-effect
-   # that machines cannot be named "dummy-prerequisite-to-force-remaking".
+   # The contents of lab.dep is processed if it exists, which creates a recipe
+   # for each machine with dependencies ("prerequisities" in Make). A recipe is
+   # also created for each machine not in lab.dep but instead specified in
+   # lab_vhosts (i.e., every machine without a dependency).
    #
+   # To ensure every machine starts, regardless of a file existing with the
+   # same name (since Make operates off filenames), every machine is made a
+   # "phony" target.
+   # 
    # The Makefile must use Bash as the shell for correct handling of ANSI-C
    # expansions present after the previous Q-operator array expansion.
    tab=$(printf "\t")
 
-   # We redirect stderr inside the Makefile to an unused file descriptor so
-   # Make error messages themselves can be hidden. The --ignore-errors option
-   # is not suitable since we still need to record Make's return value on
-   # lstart error.
-   exec {unused_fd}>&2
-
-   IFS="" read -rd "" makefile_contents << EOF
+   # Set the shell and declare every machine a phony target
+   IFS= read -rd "" makefile_contents << EOF
 SHELL := /bin/bash
 
-%: dummy-prerequisite-to-force-remaking
-${tab}[ '\$*' != "lab.dep" ] && $escaped_lstart_cmd '\$*' 2>&$unused_fd
+.PHONY: ${!dependencies[@]}
 
-dummy-prerequisite-to-force-remaking:
-${tab}# Dummy line. Unuseful, yet necessary
-
-$(cat "$lab_dir/lab.dep" 2> /dev/null)
 EOF
+
+   # Create a recipe for every machine, specifying any dependencies where
+   # relevant.
+   for target in "${!dependencies[@]}"; do
+      makefile_contents+="$target: ${dependencies[$target]}
+$tab$escaped_lstart_cmd '$target'
+
+"
+   done
+
 
    # Read the Makefile from stdin without implicit rules, and hide the output.
    # It is parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
    make \
       --no-builtin-rules \
+      --ignore-errors \
       --silent \
       --directory "$lab_dir" \
-      --file - \
+      --file <(echo "$makefile_contents") \
       --jobs ${MAX_SIMULTANEOUS_VMS:+"$MAX_SIMULTANEOUS_VMS"} \
       -- \
-      "${lab_vhosts[@]}" \
-      <<< "$makefile_contents" 2> /dev/null
-
-   exec {unused_fd}>&-
+      "${lab_vhosts[@]}"
 
    # Signal that every machine is ready for testing once booted.
    [ -n "$test_delay" ] && : > "$lab_dir/readyfor.test"
