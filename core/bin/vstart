@@ -796,6 +796,14 @@ if [ -z "$just_print" ]; then
       warn "Filesystem '$fs' is already in use; specify a different filesystem"
       exit 1
    fi
+
+   if [ "$VM_CON0" = "tmux" ]; then
+      # Check if tmux session already exists
+      if tmux -L netkit has-session -t "$vhost" > /dev/null 2>&1; then
+         warn "tmux session already exists for machine '$vhost'"
+         exit 1
+      fi
+   fi
 fi
 
 

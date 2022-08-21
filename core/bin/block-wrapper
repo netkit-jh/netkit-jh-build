@@ -61,37 +61,15 @@ wt_safe_bash_cmd=( "bash" "-c" "$pid_cmd\\; ${kernel_cmd[*]@Q}" )
 
 
 case $term in
-   alacritty)  alacritty                                                  --command "${bash_cmd[@]}";;
-   gnome)      gnome-terminal --title "$vhost"                            --        "${bash_cmd[@]}";;
-   kitty)      kitty --title "$vhost"                                               "${bash_cmd[@]}";;
-   kitty-tab)  "$NETKIT_HOME/bin/kitty-tab.sh"                                      "${bash_cmd[@]}";;
-   konsole)    konsole --nofork --title "$vhost"                          -e        "${bash_cmd[@]}";;
-   wsl)        cmd.exe /c start wsl.exe                                             "${bash_cmd[@]}";;
-   wt)         wt.exe --suppressApplicationTitle --title "$vhost" wsl.exe --exec    "${wt_safe_bash_cmd[@]}";;
-   xterm)      xterm -xrm 'XTerm*allowTitleOps: false' -T "$vhost"        -e        "${bash_cmd[@]}";;
-   tmux)
-      # Check if tmux session already exists
-      if tmux -L netkit has-session -t "$vhost" > /dev/null 2>&1; then
-         while true; do
-            read -rp "tmux session already exists for machine $vhost. Kill session [y/N]? " response
-            case $response in
-               [Yy]|[Yy][Ee][Ss])
-                  # Kill existing tmux session
-                  tmux -L netkit kill-session -t "$vhost"
-                  break
-                  ;;
-               ""|[Nn]|[Nn][Oo])
-                  echo "tmux session in use - not starting $vhost."
-                  exit
-                  ;;
-            esac
-         done
-      fi
-
-      # Start detached tmux session
-      tmux -L netkit -f "$NETKIT_HOME/tools/tmux.conf" new-session -d -s "$vhost" "${bash_cmd[@]}"
-      ;;
-
+   alacritty)  alacritty --command                                                         "${bash_cmd[@]}";;
+   gnome)      gnome-terminal --title "$vhost" --                                          "${bash_cmd[@]}";;
+   kitty)      kitty --title "$vhost"                                                      "${bash_cmd[@]}";;
+   kitty-tab)  "$NETKIT_HOME/bin/kitty-tab.sh"                                             "${bash_cmd[@]}";;
+   konsole)    konsole --nofork --title "$vhost" -e                                        "${bash_cmd[@]}";;
+   wsl)        cmd.exe /c start wsl.exe                                                    "${bash_cmd[@]}";;
+   wt)         wt.exe --suppressApplicationTitle --title "$vhost" wsl.exe --exec           "${wt_safe_bash_cmd[@]}";;
+   xterm)      xterm -xrm 'XTerm*allowTitleOps: false' -T "$vhost" -e                      "${bash_cmd[@]}";;
+   tmux)       tmux -L netkit -f "$NETKIT_HOME/tools/tmux.conf" new-session -d -s "$vhost" "${bash_cmd[@]}";;
    *)
       echo "Terminal $term not supported, defaulting to xterm."
       xterm -xrm 'XTerm*allowTitleOps: false' -T "$vhost" -e "${bash_cmd[@]}"
