@@ -26,7 +26,7 @@
 #   usage_line
 ###############################################################################
 usage_line() {
-   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE"
+   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
 }
 
 
@@ -52,7 +52,7 @@ usage() {
 
    cat << END_OF_HELP
 $(usage_line)
-Connect to the tmux session of a Netkit MACHINE.
+Connect to the tmux session of a Netkit MACHINE or terminate existing ones.
 
   -l, --list          list all running sessions on the tmux 'netkit' server
   -k, --kill          kill the MACHINE's already-running tmux session (if
