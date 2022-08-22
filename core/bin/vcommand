@@ -172,7 +172,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -182,7 +182,7 @@ done
 
 # Parse virtual machine name
 if [ $# -eq 0 ]; then
-   warn "Missing machine name"
+   error "missing machine name"
    usage 1
 fi
 

@@ -111,7 +111,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -120,10 +120,10 @@ while true; do
 done
 
 if [ $# -eq 0 ]; then
-   warn "Missing collision domain name"
+   error "missing collision domain name"
    usage 1
 elif [ $# -gt 1 ]; then
-   warn "Can only specify one collision domain"
+   error "can only specify one collision domain"
    usage 1
 fi
 
@@ -138,13 +138,13 @@ if [ -e "$reg_socket" ]; then
 elif [ -e "$tap_socket" ]; then
    socket=$tap_socket
 else
-   warn "$hub_name: Cannot find hub socket for the collision domain"
-   usage 1
+   error "cannot find socket file for the '$hub_name' collision domain"
+   exit 1
 fi
 
 if [ ! -S "$socket" ]; then
-   warn "$socket: File is not a socket"
-   usage 1
+   error "$socket: file is not a socket"
+   exit 1
 fi
 
 

@@ -205,6 +205,8 @@ single_lab_vhost_start() {
    local line_number
    local configuration opt value
 
+   local lab_conf="$lab_dir/lab.conf"
+
    # Specify host lab directory, and place filesystem inside it
    local vstart_args=(
       "--hostlab" "$lab_dir"
@@ -213,7 +215,7 @@ single_lab_vhost_start() {
    )
 
    # Generate vstart argument list
-   if [ -e "$lab_dir/lab.conf" ]; then
+   if [ -e "$lab_conf" ]; then
       while IFS= read -r configuration; do
          line_number=${configuration%%:*}
 
@@ -246,12 +248,12 @@ single_lab_vhost_start() {
          if [ -n "${value+x}" ]; then
             # Check for trailing whitespace
             if [[ "$value" =~ ^.*[^[:graph:]]$ ]]; then
-               warn "$lab_dir/lab.conf: Line $line_number: Whitespace detected at end of value, this may have unintended consequences"
+               warn "$lab_conf:$line_number" "whitespace at end of line, this may have unintended consequences"
             fi
 
             vstart_args+=( "$value" )
          fi
-      done < <(grep --line-number -- "^$vhost\[.*\]" "$lab_dir/lab.conf")
+      done < <(grep --line-number -- "^$vhost\[.*\]" "$lab_conf")
    fi
 
    # Remove .ready file, if existing
@@ -303,7 +305,7 @@ lab_start_parallel() {
    get_lab_vhosts "$lab_dir"
 
    if [ "${#lab_vhosts[@]}" -eq 0 ]; then
-      warn "There are no virtual machines to be started."
+      error "there are no virtual machines to be started"
       return
    fi
 
@@ -636,8 +638,8 @@ while true; do
                # No argument means MAX_SIMULTAENEOUS_VMS is used
                ;;
             *[!0-9]*)
-               warn "Argument to option '-p' must be a positive integer or 0"
-               usage 1
+               error "argument to option '-p' must be a positive integer or 0"
+               exit 1
                ;;
             *)
                MAX_SIMULTANEOUS_VMS=$parallelisation
@@ -667,8 +669,8 @@ while true; do
       -w|--wait)
          case $2 in
             ""|*[!0-9]*)
-               warn "Argument to option '-w' must be a positive integer or 0"
-               usage 1
+               error "argument to option '-w' must be a positive integer or 0"
+               exit 1
                ;;
             *)
                GRACE_TIME=$2
@@ -681,7 +683,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -699,14 +701,14 @@ validate_hostnames "${lab_vhosts[@]}"
 
 # Check that the lab directory exists
 if [ ! -d "$lab_dir" ]; then
-   warn "$lab_dir: No such directory"
+   error "$lab_dir: no such directory"
    exit 1
 fi
 
 
 # Check whether parallel startup and -f are being used together
 if [ -f "$lab_dir/lab.dep" ] && [ -n "$fast_mode" ] && [ -z "$sequential_mode" ]; then
-   warn "Fast mode is ignored when using parallel startup"
+   warn "fast mode is ignored when using parallel startup"
 fi
 
 
@@ -734,7 +736,7 @@ fi
 
 
 if [ ! -f "$lab_dir/lab.conf" ] && [ ! -f "$lab_dir/lab.dep" ] && [ -z "$force_lab" ]; then
-   warn "This does not appear to be a lab directory. Use option '-F' to ignore this error"
+   error "this does not appear to be a lab directory; use option '-F' to ignore this error"
    exit 1
 fi
 

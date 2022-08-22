@@ -223,7 +223,7 @@ validate_hostnames() {
 
    for hostname in "${hostnames[@]}"; do
       if [[ ! "$hostname" =~ ^$hostname_regex$ ]] || array_contains "$hostname" "${invalid_hostnames[@]}"; then
-         warn "$hostname: Invalid hostname"
+         error "'$hostname' is an invalid hostname"
          exit 1
       fi
    done
@@ -319,7 +319,7 @@ validate_variable() {
    local queries=( "${@:3}" )
 
    if str_contains "$value" "${queries[@]}"; then
-      warn "$variable: Invalid character in configuration parameter"
+      error "$variable: invalid character in value '$value'"
       exit 1
    fi
 }
@@ -395,7 +395,7 @@ if [ -f "$NETKIT_HOME/netkit.conf.default" ]; then
    # shellcheck source=../netkit.conf.default
    . -- "$NETKIT_HOME/netkit.conf.default"
 else
-   warn "netkit.conf.default: file not found"
+   error "netkit.conf.default: file not found"
    exit 1
 fi
 

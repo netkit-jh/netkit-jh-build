@@ -144,7 +144,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -162,13 +162,13 @@ validate_hostnames "${lab_vhosts[@]}"
 
 # Check that the lab directory exists
 if [ ! -d "$lab_dir" ]; then
-   warn "$lab_dir: Directory does not exist"
+   error "$lab_dir: no such directory"
    exit 1
 fi
 
 # Filesystem cannot be removed if we are working in quick mode
 if [ -n "$rm_fs" ] && [ -z "$quick_mode" ]; then
-   warn "Filesystems cannot be removed (-r) when working in quick mode (-q)"
+   error "filesystems cannot be removed (-r) when working in quick mode (-q)"
    exit 1
 fi
 

@@ -127,8 +127,8 @@ while true; do
          if [ "$target_user" = "-" ]; then
             unset target_user
          elif ! id -- "$target_user" > /dev/null 2>&1; then
-            warn "$target_user: User does not exist"
-            usage 1
+            error "user '$target_user' does not exist"
+            exit 1
          fi
          ;;
       --version)
@@ -140,7 +140,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -150,7 +150,7 @@ done
 
 # Check whether virtual machine name is missing
 if [ $# -eq 0 ]; then
-   warn "Missing machine name"
+   error "missing machine name"
    usage 1
 fi
 
@@ -162,14 +162,14 @@ validate_hostnames "${vhosts[@]}"
 # Virtual machine filesystem cannot be removed in quick mode because the
 # machine may write files during shutdown.
 if [ -n "$rm_fs" ] && [ -n "$quick_mode" ]; then
-   warn "Filesystem cannot be removed in quick mode"
+   error "filesystem cannot be removed in quick mode"
    exit 1
 fi
 
 
 for vhost in "${vhosts[@]}"; do
    if ! get_vhost_info_by_name "$target_user" "$vhost"; then
-      warn "no virtual machine named '$vhost' exists${target_user:+" for user $target_user"}."
+      error "no virtual machine named '$vhost' exists${target_user:+" for user '$target_user'"}"
       exit 1
    fi
 
@@ -196,11 +196,11 @@ for vhost in "${vhosts[@]}"; do
          echo -n "."
       done
 
-      echo
+      echo ""
 
       # If machine is still up
       if get_machine_state "$target_user" "$vhost"; then
-         warn "could not shut down '$vhost'."
+         warn "could not shut down '$vhost'"
       else
          # Remove filesystem (.disk file)
          [ -n "$rm_fs" ] && [ -n "${vhost_info[disk]}" ] && rm --verbose -- "${vhost_info[disk]}"

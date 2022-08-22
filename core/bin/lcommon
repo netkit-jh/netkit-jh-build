@@ -49,7 +49,7 @@ lab_welcome() {
    for dir in "${lab_dirs[@]}"; do
          # Check that the lab directory exists
       if [ ! -d "$dir" ]; then
-         warn "$dir: No such directory"
+         error "$dir: no such directory"
          exit 1
       fi
 

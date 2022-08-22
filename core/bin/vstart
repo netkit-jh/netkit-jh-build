@@ -217,8 +217,8 @@ validate_ubd_arg() {
 
    for file in "${files[@]}"; do
       if str_contains "$file" "," ":"; then
-         warn "$file: Invalid character in filesystem path"
-         usage 1
+         error "invalid character in disk file or model filesystem path - '$file'"
+         exit 1
       fi
    done
 }
@@ -243,7 +243,7 @@ check_fs() {
    fs_type=$(stat --file-system --format "%T" -- "$file")
 
    if [[ ! "$fs_type" =~ ^($supportive_fs)$ ]]; then
-      warn "Filesystem '$fs_type' may not support sparse files, this could result in performance loss and disk space consumption"
+      warn "filesystem '$fs_type' may not support sparse files, this could result in performance loss and disk space consumption"
    fi
 }
 
@@ -398,7 +398,7 @@ while true; do
                [ "$opt" = "--con0" ] && VM_CON0=$console || VM_CON1=$console
                ;;
             *)
-               warn "$console: Unrecognized console"
+               error "'$console' is an invalid console type"
                usage 1
                ;;
          esac
@@ -447,8 +447,8 @@ while true; do
          VM_MEMORY=$2
 
          if [ "$VM_MEMORY" -lt "$MIN_MEM" ] || [ "$VM_MEMORY" -gt "$MAX_MEM" ]; then
-            warn "Memory out of permitted range (min: $MIN_MEM MB; max: $MAX_MEM MB)"
-            usage 1
+            error "'$VM_MEMORY' is outside the permitted range (min: $MIN_MEM MB; max: $MAX_MEM MB) for machine memory"
+            exit 1
          fi
 
          shift
@@ -498,7 +498,7 @@ while true; do
          shift
 
          if [[ ! "$TERM_TYPE" =~ ^(konsole|gnome|xterm|alacritty|kitty|kitty-tab|wsl|wt)$ ]]; then
-            warn "$TERM_TYPE: Unsupported terminal emulator"
+            error "'$TERM_TYPE' is an invalid terminal emulator"
             usage 1
          fi
          ;;
@@ -507,7 +507,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -517,10 +517,10 @@ done
 
 # Parse virtual machine name
 if [ $# -eq 0 ]; then
-   warn "Missing machine name"
+   error "missing machine name"
    usage 1
 elif [ $# -gt 1 ]; then
-   warn "Can only specify one machine"
+   error "can only specify one machine"
    usage 1
 fi
 
@@ -530,7 +530,7 @@ validate_hostnames "$vhost"
 
 # Check whether user is trying to attach more than one console to stdin/stdout
 if [ "$VM_CON0" = "this" ] && [ "$VM_CON1" = "this" ]; then
-   warn "Only one console can be attached to the current terminal"
+   error "only one console can be attached to the current terminal"
    usage 1
 fi
 
@@ -538,14 +538,14 @@ if [ -n "$no_cow" ]; then
    # Check whether a COW filesystem has been explictly provided when using the
    # '-W|--no-cow' option.
    if [ -n "$fs" ]; then
-      warn "Cannot provide a filesystem name with --no-cow"
+      error "cannot specify a filesystem name with '--no-cow'"
       usage 1
    fi
 
    # Check whether the user asked to hide the virtual machine filesystem while
    # using the '-W|--no-cow' option
    if [ -n "$rm_fs" ]; then
-      warn "Cannot hide the filesystem when using --no-cow"
+      error "cannot hide the filesystem when using '--no-cow'"
       usage 1
    fi
 fi
@@ -564,7 +564,7 @@ if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "
    esac
 
    if ! command -v -- "$term_executable" > /dev/null 2>&1; then
-      warn "$term_executable: Terminal emulator not found"
+      error "terminal emulator '$term_executable' could not found"
       exit 1
    fi
 fi
@@ -737,8 +737,8 @@ trap "rm --force -- '$out_file'" EXIT
          dst_mnt=${mnt_specification#*,}
 
          if str_contains "$src_mnt$dst_mnt" ","; then
-            warn "$mnt_specification: Invalid character in mount specification"
-            usage 1
+            error "invalid character in mount specification '$mnt_specification'"
+            exit 1
          fi
 
          echo "   Mount:      $src_mnt @ $dst_mnt"
@@ -787,20 +787,20 @@ rm --force -- "$out_file"
 if [ -z "$just_print" ]; then
    # Check whether the virtual machine already exists
    if get_machine_state "$USER_ID" "$vhost"; then
-      warn "Virtual machine '$vhost' is already running"
+      error "virtual machine '$vhost' is already running"
       exit 1
    fi
 
    # Check whether filesystem is already in use
    if file_in_use "$fs"; then
-      warn "Filesystem '$fs' is already in use; specify a different filesystem"
+      error "filesystem '$fs' is already in use; specify a different filesystem"
       exit 1
    fi
 
    if [ "$VM_CON0" = "tmux" ]; then
       # Check if tmux session already exists
       if tmux -L netkit has-session -t "$vhost" > /dev/null 2>&1; then
-         warn "tmux session already exists for machine '$vhost'; kill with 'vconnect -k'"
+         error "tmux session already exists for machine '$vhost'; kill with 'vconnect --kill'"
          exit 1
       fi
    fi

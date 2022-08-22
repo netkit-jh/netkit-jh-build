@@ -314,8 +314,8 @@ while true; do
          if [ "$target_user" = "-" ]; then
             unset target_user
          elif ! id -- "$target_user" > /dev/null 2>&1; then
-            warn "$target_user: User does not exist"
-            usage 1
+            error "user '$target_user' does not exist"
+            exit 1
          fi
          ;;
       -v|--verbose)
@@ -330,7 +330,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -340,7 +340,7 @@ done
 
 # Check whether virtual machine name is missing
 if [ $# -eq 0 ]; then
-   warn "Missing machine name"
+   error "missing machine name"
    usage 1
 fi
 
