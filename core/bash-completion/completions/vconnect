@@ -77,7 +77,8 @@ _vconnect() {
          # argument.
          #
          # Covered options:
-         # --help, -l, --list, -t, --terminal, --version
+         # --help, -k, --kill, --kill-all, -l, --list, -t, --terminal,
+         # --version
          case $current_word in
             -*)
                # Current word is a new option

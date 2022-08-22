@@ -26,7 +26,7 @@
 #   usage_line
 ###############################################################################
 usage_line() {
-   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE"
+   echo "Usage: $SCRIPTNAME [OPTION]... MACHINE..."
 }
 
 
@@ -52,9 +52,15 @@ usage() {
 
    cat << END_OF_HELP
 $(usage_line)
-Connect to the tmux session of a Netkit MACHINE.
+Connect to the tmux session of a Netkit MACHINE or terminate existing ones.
 
   -l, --list          list all running sessions on the tmux 'netkit' server
+  -k, --kill          kill the MACHINE's already-running tmux session (if
+                        exists)
+      --kill-all      kill all running tmux sessions on the 'netkit' server
+
+
+The following options control how the tmux session is connected to:
   -t, --terminal      connect to the tmux session from a new terminal. The
                         terminal opened is dependent on the TERM_TYPE set in
                         netkit.conf
@@ -137,8 +143,8 @@ unset TMUX
 
 
 # Get command line options
-long_opts="help,interval:,list,retry-count:,terminal,version"
-short_opts="lm:n:r:t"
+long_opts="help,interval:,kill,kill-all,list,retry-count:,terminal,version"
+short_opts="klm:n:r:t"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
@@ -152,6 +158,12 @@ while true; do
    case $1 in
       --help)
          usage 0
+         ;;
+      -k|--kill)
+         kill=1
+         ;;
+      --kill-all)
+         kill_all=1
          ;;
       -l|--list)
          list_only=1
@@ -191,18 +203,51 @@ if [ -n "$list_only" ]; then
    exit 0
 fi
 
+if [ -n "$kill_all" ]; then
+   tmux -L netkit kill-server
+   exit 0
+fi
+
 
 # Parse virtual machine name
 if [ $# -eq 0 ]; then
    warn "Missing machine name"
    usage 1
-elif [ $# -gt 1 ]; then
+fi
+
+vhosts=( "$@" )
+validate_hostnames "${vhosts[@]}"
+
+
+if [ -n "$kill" ]; then
+   for vhost in "${vhosts[@]}"; do
+      unset killed
+
+      if tmux -L netkit has-session -t "$vhost" 2>/dev/null; then
+         echo "Killing tmux session '$vhost'"
+         tmux -L netkit kill-session -t "$vhost"
+         killed=1
+      fi
+
+      if tmux -L netkit has-session -t "$vhost-dead" 2>/dev/null; then
+         echo "Killing tmux session '$vhost-dead'"
+         tmux -L netkit kill-session -t "$vhost-dead"
+         killed=1
+      fi
+
+      [ -z "$killed" ] && warn "No tmux sessions from '$vhost' to kill"
+   done
+
+   exit 0
+fi
+
+
+if [ "${#vhosts[@]}" -gt 1 ]; then
    warn "Can only specify one machine"
    usage 1
 fi
 
-vhost=$1
-validate_hostnames "$vhost"
+vhost=${vhosts[0]}
 
 
 echo -n "Connecting to '$vhost'."

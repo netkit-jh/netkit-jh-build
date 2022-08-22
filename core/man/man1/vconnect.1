@@ -26,6 +26,20 @@ Print help message and exit. Other arguments will be ignored.
 
 .TP
 .B
+-k
+.PD 0
+.TP
+.B
+--kill
+Kill the machine's already-running tmux session (if exists).
+
+.TP
+.B
+--kill-all
+Kill all running tmux sessions on the 'netkit' server.
+
+.TP
+.B
 -l
 .PD 0
 .TP
@@ -60,9 +74,9 @@ Name of the netkit machine to connect to.
 --retry-count \fIN\fR
 If the first attempt to connect to the tmux session fails,
 retry N times.
+
 .TP
 .B
-
 -n \fIX\fR
 .PD 0
 .TP
