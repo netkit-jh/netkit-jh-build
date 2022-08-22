@@ -231,15 +231,59 @@ validate_hostnames() {
 
 
 ###############################################################################
-# Echo a message to standard error in the format "$SCRIPTNAME: $MESSAGE".
+# Highlight single quoted words in a message.
 # Usage:
-#   warn MESSAGE
+#   color_quotes MESSAGE
 # Arguments:
 #   $1 - message
 ###############################################################################
-warn() {
+color_quotes() {
    local message=$1
-   echo 1>&2 "$SCRIPTNAME: $message"
+   sed -E "s/(^|[^[:alpha:]])('[^']*')($|[^[:alpha:]])/\1$color_bold\2$color_normal\3/g" <<< "$message"
+}
+
+
+###############################################################################
+# Echo a message to standard error in the following format:
+# $SCRIPTNAME: $FILENAME: warning: $MESSAGE
+# where "$FILENAME: " is optional and "warning:" is magenta colored.
+# Usage:
+#   warn [FILENAME] MESSAGE
+# Arguments:
+#   $1 - optional filename to include
+#   $2 - message
+###############################################################################
+warn() {
+   if [ "${#@}" -gt 1 ]; then
+      local filename="$1: "
+      local message=$2
+   else
+      local message=$1
+   fi
+
+   echo 1>&2 "$SCRIPTNAME: $color_bold${filename}${color_magenta}warning:$color_normal $(color_quotes "$message")"
+}
+
+
+###############################################################################
+# Echo a message to standard error in the following format:
+# $SCRIPTNAME: $FILENAME: error: $MESSAGE
+# where "$FILENAME: " is optional and "error:" is red colored.
+# Usage:
+#   error [FILENAME] MESSAGE
+# Arguments:
+#   $1 - optional filename to include
+#   $2 - message
+###############################################################################
+error() {
+   if [ "${#@}" -gt 1 ]; then
+      local filename="$1: "
+      local message=$2
+   else
+      local message=$1
+   fi
+
+   echo 1>&2 "$SCRIPTNAME: $color_bold${filename}${color_red}error:$color_normal $(color_quotes "$message")"
 }
 
 
@@ -335,6 +379,15 @@ fi
 
 # Set the script's name
 SCRIPTNAME=$(basename -- "$0")
+
+
+# ANSI color escape sequences
+color_normal=$'\033[0m'
+color_bold=$'\033[1m'
+color_red=$'\033[31m'
+# shellcheck disable=SC2034
+color_blue=$'\033[34m'
+color_magenta=$'\033[35m'
 
 
 # Read default Netkit configuration

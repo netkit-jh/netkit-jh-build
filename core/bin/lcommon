@@ -338,9 +338,3 @@ fi
 
 # shellcheck source=./script_utils
 . -- "$NETKIT_HOME/bin/script_utils"
-
-
-# ANSI color escape sequences
-color_normal=$'\033[0m'
-color_bold=$'\033[1m'
-color_blue=$'\033[34m'
