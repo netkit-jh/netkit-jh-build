@@ -80,10 +80,10 @@ END_OF_HELP
    fi
 
    cat << END_OF_HELP
-  --tmux-attached     run each VM in tmux and start a terminal attached to the
+      --tmux-attached  run each VM in tmux and start a terminal attached to the
                         tmux session. This is the same as VM_CON0=tmux and
                         TMUX_OPEN_TERMS=yes in netkit.conf
-  --tmux-detached     run each VM in a tmux session without opening terminals.
+      --tmux-detached  run each VM in a tmux session without opening terminals.
                         This is the same as VM_CON0=tmux and TMUX_OPEN_TERMS=no
                         in netkit.conf
   -l, --list          show a list of running virtual machines after starting up
