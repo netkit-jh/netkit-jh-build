@@ -138,7 +138,7 @@ validate_vpackage_subcmd() {
    local subcmds="list|update|upgrade|dist-upgrade|clean|autoremove|auto-remove|install|remove|purge"
 
    if [[ ! "$subcmd" =~ ^($subcmds)$ ]]; then
-      warn "Invalid subcommand '$subcmd'"
+      error "'$subcmd' is an invalid subcommand"
       usage 1
    fi
 }
@@ -165,14 +165,14 @@ mount_fs() {
    sudo mkdir --parents -- "$mnt_point"
 
    if ! sudo mount --options loop --source "$fs" --target "$mnt_point"; then
-      warn "Could not mount filesystem"
+      error "$fs: could not mount filesystem to '$mnt_point'"
       exit 1
    fi
 
    echo "Binding '$host_resolvconf' to '$mnt_point_resolvconf'"
 
    if ! sudo mount --options bind --source "$host_resolvconf" --target "$mnt_point_resolvconf"; then
-      warn "Could not bind mount name resolution file"
+      error "$host_resolvconf: could not bind mount name resolution file to '$mnt_point_resolvconf'"
       sudo umount -- "$mnt_point"
       exit 1
    fi
@@ -250,7 +250,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -260,7 +260,7 @@ done
 
 # The first non-option argument is the subcommand, the rest are package names
 if [ "$#" -lt 1 ]; then
-   warn "Missing subcommand"
+   error "missing subcommand"
    usage 1
 fi
 

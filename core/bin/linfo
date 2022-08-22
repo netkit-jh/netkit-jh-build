@@ -109,7 +109,7 @@ lab_map() {
    local graph_generator="neato"
 
    if ! command -v -- "$graph_generator" > /dev/null 2>&1; then
-      warn "$graph_generator: Graphviz graph generator not found"
+      error "$graph_generator: Graphviz graph generator not found"
       exit 1
    fi
 
@@ -266,7 +266,7 @@ while true; do
          if [ -d "${dirs[0]}" ]; then
             lab_dirs+=( "${dirs[@]}" )
          else
-            warn "List of lab directories could not be generated"
+            warn "no directories matching the search pattern could be found"
          fi
          ;;
       -d)
@@ -289,7 +289,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -298,7 +298,7 @@ while true; do
 done
 
 if [ $# -gt 0 ]; then
-   warn "Too many arguments"
+   error "too many arguments"
    exit 1
 fi
 
@@ -310,7 +310,7 @@ fi
 for lab_dir in "${lab_dirs[@]}"; do
    # Check that the lab directory exists
    if [ ! -d "$lab_dir" ]; then
-      warn "$lab_dir: No such directory"
+      error "$lab_dir: no such directory"
       exit 1
    fi
 
@@ -342,7 +342,7 @@ if [ -n "$map_file" ]; then
       lab_conf="$dir/lab.conf"
 
       if [ ! -f "$lab_conf" ]; then
-         warn "Unable to find file $lab_conf: Skipping."
+         warn "$lab_conf: no such file exists; skipping"
          continue
       fi
 
@@ -350,7 +350,7 @@ if [ -n "$map_file" ]; then
    done
 
    if [ "${#lab_confs[@]}" -eq 0 ]; then
-      warn "No valid lab.confs found - cannot create topology map."
+      error "no lab.confs found; cannot create topology map"
       exit 1
    fi
 

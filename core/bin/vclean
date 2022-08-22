@@ -144,7 +144,7 @@ kill_hubs() {
 
          if [ -z "$test_mode" ]; then
             echo -n ": Killing... "
-            kill "$hub_pid"  2> /dev/null && rm --force "$hub_file"
+            kill "$hub_pid"  2> /dev/null && rm --force -- "$hub_file" 2> /dev/null
             echo -n "done."
          fi
 
@@ -172,9 +172,9 @@ kill_all_tmux_sessions() {
 
    # We can only manage tmux sessions owned by the current user
    if [ -z "$target_user" ]; then
-      warn "Can only kill tmux sessions owned by $USER_ID (the current user)"
+      warn "can only kill tmux sessions owned by '$USER_ID' (the current user)"
    elif [ "$target_user" != "$USER_ID" ]; then
-      warn "Cannot kill tmux sessions owned by another user"
+      warn "cannot kill tmux sessions owned by another user"
       return
    fi
 
@@ -332,8 +332,8 @@ while true; do
          if [ "$target_user" = "-" ]; then
             unset target_user
          elif ! id -- "$target_user" > /dev/null 2>&1; then
-            warn "$target_user: User does not exist"
-            usage 1
+            error "user '$target_user' does not exist"
+            exit 1
          fi
          ;;
       -v|--verbose)
@@ -348,7 +348,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -358,14 +358,14 @@ done
 
 # Check for further arguments
 if [ $# -gt 0 ]; then
-   warn "Too many arguments"
+   error "too many arguments"
    usage 1
 fi
 
 
 # Actions --remove-hubs and --kill-machines are incompatible
 if [ -n "$rm_hubs" ] && [ -n "$kill_machines" ]; then
-   warn "Hub removal and machine kill cannot be performed simultaneously"
+   error "hub removal and machine kill cannot be performed simultaneously"
    exit 1
 fi
 
@@ -382,7 +382,7 @@ fi
 
 # --force is only effective with --remove-hubs
 [ -n "$force" ] && [ -z "$rm_hubs" ] &&
-   warn "--force is redundant when not used with --remove-hubs"
+   warn "'--force' is redundant when not used with '--remove-hubs'"
 
 
 [ -z "$target_user" ] && user_str="any user" || user_str=$target_user
@@ -439,7 +439,7 @@ if [ -n "$clean_dirs" ]; then
    # Clear out .netkit/ but keep netkit.conf
    find "$HOME/.netkit/"* \
       ! -name "netkit.conf" \
-      -exec rm ${verbose:+"--verbose"} --force --recursive {} +
+      -exec rm ${verbose:+"--verbose"} --force --recursive -- {} +
 fi
 
 

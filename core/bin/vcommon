@@ -37,7 +37,7 @@ VCOMMON_SRC=1
 # Arguments:
 #  ... - array of interface specifications (ethN=DOMAIN)
 # Returns:
-#   None. Will exit with usage 1 on invalid specification.
+#   None. Will exit with an invalid specification.
 ###############################################################################
 create_hub_list() {
    local interface_specifications=( "$@" )
@@ -54,8 +54,8 @@ create_hub_list() {
 
       # Check if interface has already been configured
       if array_contains "$interface" "${used_interfaces[@]}"; then
-         warn "$interface: Duplicate interface"
-         usage 1
+         error "'$interface' has already been configured"
+         exit 1
       fi
 
       # Remember that this network interface has been configured
@@ -67,13 +67,13 @@ create_hub_list() {
          IFS=, read -r hub_name tap_addr guest_addr <<< "$hub_specification"
 
          if ! is_inet_addr "$tap_addr"; then
-            warn "$tap_addr: Invalid tap address"
-            usage 1
+            error "'$tap_addr' is an invalid tap address"
+            exit 1
          fi
 
          if ! is_inet_addr "$guest_addr"; then
-            warn "$guest_addr: Invalid guest address"
-            usage 1
+            error "'$guest_addr' is an invalid guest address"
+            exit 1
          fi
       else
          # This is a normal interface
@@ -83,21 +83,21 @@ create_hub_list() {
 
       # Check for invalid characters in hub_name
       if ! validate_collision_domain_names "$hub_name"; then
-         warn "$hub_name: Invalid collision domain name"
-         usage 1
+         error "'$hub_name' is an invalid collision domain name"
+         exit 1
       fi
 
       if [ -n "$tap_addr" ]; then
          if [ -e "$(get_hub_socket "" "$hub_name")" ]; then
-            warn "$hub_name: Regular (not tap) hub socket under the same collision domain already exists"
-            usage 1
+            error "regular (not tap) hub socket named '$hub_name' already exists"
+            exit 1
          fi
 
          hub_list+=( "$hub_name,$tap_addr" )
       else
          if [ -e "$(get_hub_socket "1" "$hub_name")" ]; then
-            warn "$hub_name: Tap hub socket under the same collision domain already exists"
-            usage 1
+            error "tap hub socket named '$hub_name' already exists"
+            exit 1
          fi
 
          hub_list+=( "$hub_name" )
@@ -515,8 +515,8 @@ start_inet_hub() {
          # If the interface already exists, it must have the same IP as
          # requested.
          if ! ip addr show "$tap_name" | grep --quiet "inet $tap_addr"; then
-            warn "$tap_name: Interface already exists and is in usage with a different IP. Remove the interface or change the IP address"
-            usage 1
+            error "interface '$tap_name' already exists and is in usage with a different address; remove the interface or use a different address"
+            exit 1
          elif [ -z "$just_print" ]; then
             # Interface-address pair exists; wait for uml_switch to start
             wait_for_socket "$socket"
@@ -776,7 +776,7 @@ get_max_collision_domain_name_len() {
    local max_collision_domain_name_len=$(( 107 - ${#min_socket_path} ))
 
    if [ "$max_collision_domain_name_len" -lt 1 ]; then
-      warn "netkit.conf: uml_switch sockets must have a filepath shorter than 108 characters (UNIX_PATH_MAX)"
+      error "netkit.conf" "uml_switch sockets must have a filepath shorter than 108 characters (UNIX_PATH_MAX)"
       exit 1
    fi
 

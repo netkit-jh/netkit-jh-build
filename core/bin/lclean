@@ -135,7 +135,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -153,7 +153,7 @@ validate_hostnames "${lab_vhosts[@]}"
 
 # Check that the lab directory exists
 if [ ! -d "$lab_dir" ]; then
-   warn "$lab_dir: Directory does not exist"
+   error "$lab_dir: directory does not exist"
    exit 1
 fi
 

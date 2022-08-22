@@ -188,7 +188,7 @@ while true; do
          break
          ;;
       *)
-         warn "Unknown error parsing command line arguments"
+         error "unknown error parsing command line argument '$1'"
          usage 1
          ;;
    esac
@@ -211,7 +211,7 @@ fi
 
 # Parse virtual machine name
 if [ $# -eq 0 ]; then
-   warn "Missing machine name"
+   error "missing machine name"
    usage 1
 fi
 
@@ -235,7 +235,7 @@ if [ -n "$kill" ]; then
          killed=1
       fi
 
-      [ -z "$killed" ] && warn "No tmux sessions from '$vhost' to kill"
+      [ -z "$killed" ] && warn "no tmux sessions for '$vhost' to kill"
    done
 
    exit 0
@@ -243,7 +243,7 @@ fi
 
 
 if [ "${#vhosts[@]}" -gt 1 ]; then
-   warn "Can only specify one machine"
+   error "can only specify one machine"
    usage 1
 fi
 
