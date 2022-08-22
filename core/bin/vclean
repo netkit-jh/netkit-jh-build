@@ -79,7 +79,8 @@ By default, the script just removes unused virtual hubs.
   -K, --kill-machines  Kill all running virtual machines and virtual hubs. This
                         corresponds to crashing all running virtual machines
                         (even those that are frozen) and the virtual hubs they
-                        are attached to.
+                        are attached to. The 'netkit' tmux server will be
+                        killed for the current user.
   -T, --remove-tunnels  Remove tunnels and other configuration settings that
                          have been altered in order to set up "tap" interfaces.
                          If the user specified is not '-' (all), current
@@ -152,6 +153,40 @@ kill_hubs() {
    done
 
    [ -z "$found_unused_hub" ] && echo "No unused virtual hubs have been found."
+}
+
+
+###############################################################################
+# Kill all open tmux sessions.
+# Usage:
+#   kill_all_tmux_sessions TEST_MODE USER
+# Arguments:
+#   $1 - set to 1 for test mode, empty string otherwise
+#   $2 - owner of the machines; pass an empty string for all users
+# Returns:
+#   None.
+###############################################################################
+kill_all_tmux_sessions() {
+   local test_mode=$1
+   local target_user=$2
+
+   # We can only manage tmux sessions owned by the current user
+   if [ -z "$target_user" ]; then
+      warn "Can only kill tmux sessions owned by $USER_ID (the current user)"
+   elif [ "$target_user" != "$USER_ID" ]; then
+      warn "Cannot kill tmux sessions owned by another user"
+      return
+   fi
+
+   echo -n "tmux server 'netkit'"
+
+   if [ -z "$test_mode" ]; then
+      echo -n ": Killing... "
+      tmux -L netkit kill-server 2> /dev/null
+      echo -n "done."
+   fi
+
+   echo ""
 }
 
 
@@ -386,6 +421,10 @@ if [ -n "$kill_machines" ]; then
 
    # Force kill all uml_switch processes and clean up their hub files
    kill_hubs "1" "$test_mode" "${hub_pids[@]}"
+
+   # Kill the 'netkit' tmux server
+   echo "Killing Netkit tmux sessions owned by $user_str:"
+   kill_all_tmux_sessions "$test_mode" "$target_user"
 fi
 
 
