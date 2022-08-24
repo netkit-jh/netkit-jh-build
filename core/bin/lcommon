@@ -196,7 +196,7 @@ lab_clean() {
       rm ${verbose:+"--verbose"} --force --recursive -- "${MCONSOLE_DIR:?}/$vhost"
 
       # Remove files from the lab directory
-      rm ${verbose:+"--verbose"} --force -- "$lab_dir/$vhost."{"ready","disk","log","testdone"}
+      rm ${verbose:+"--verbose"} --force -- "$lab_dir/$vhost."{"disk","ready","testdone"}
    done
 
    rm ${verbose:+"--verbose"} --force -- "$lab_dir/readyfor.test"
