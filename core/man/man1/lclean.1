@@ -1,135 +1,112 @@
-.TH LCLEAN 1 "July 2010" "" Netkit
+.TH LCLEAN 1 2022-08-24 Linux "Netkit-JH Manual"
 .SH NAME
-lclean \- clean temporary files created after launching netkit lab
+lclean \- clean temporary files created after launching a Netkit-JH lab
 .SH SYNOPSIS
-\fBlclean\fR [options] [\fIMACHINE-NAME\fR...]
-
-
-\" ########################################
-
+.B lclean
+.RI [ OPTION "]... [" MACHINE ]...
 .SH DESCRIPTION
-\fIlclean\fR can be used to delete temporary files that have been created while
-running a Netkit lab. Some of the them are specific for
-each virtual machine, while others are unique for the whole lab. Some are
-written inside the directory from which \fIlstart\fR has been invoked, while
-others are placed inside the lab directory.
-.br
-Assuming that \fIlab\-path\fR is the directory where the lab is located,
-\fIlclean\fR deletes the following files, if found to exist:
-
-.RS
- ./\fImachine\-name\fR.ready
-.br
- ./\fImachine\-name\fR.disk
-.br
- ./\fImachine\-name\fR.log (no longer produced by latest releases, but still
- removed for backwards compatibility)
-.br
-\fIlab\-path\fR/readyfor.test
-.br
-.RE
-
-If invoked with no arguments, \fIlclean\fR removes temporary files for all the
-virtual machines that make up the lab (i.e., \fImachine\-name\fR is replaced
-by the name of each virtual machine). It is also possible to provide a list
-of \fIMACHINE\-NAME\fRs, in which case \fIlclean\fR just removes temporary
-files for those virtual machines (as well as the 'readyfor.test' file).
-
-Removing virtual machines COW filesystems (.disk files) implies that virtual
-machines contents are reverted to their original state when the lab is restarted.
-Of course, any persistent part of the lab is preserved, including those files
-that are automatically copied inside virtual machines during the boot phase.
-
-See the README file in the Netkit filesystem package for more information about
-COW filesystems.
-
-The following options are supported by \fIlclean\fR:
-
-.TP
-.B
-\-d \fIDIR\fR
-Assume the Netkit lab that is located inside \fIDIR\fR. If no \fB\-d\fR option
-is provided, \fIlclean\fR assumes that the lab is located in the
-current directory. The path to the lab directory (being that the current
-directory or one provided by \fB\-d\fR) must never contain spaces.
-
-This piece of information is necessary in order to remove some of the temporary
-files and to retrieve the list of the virtual machines that make up the lab.
-
+Remove temporary files (that is,
+.IR .ready ", " .testdone ", and " readyfor.test " files)"
+and filesystems
+.RI ( .disk " files)"
+created and used by Netkit-JH in a lab directory.
 .PP
-The following standard options are also supported.
-
+If invoked with no non-option arguments,
+.B lclean
+removes temporary files relating to all virtual machines that comprise the lab.
+Providing a list of
+.I MACHINE
+names limits removal of files to those just relating to the specified machines.
+The
+.I readyfor.test
+file is always deleted.
+Any invalid
+.IR MACHINE s
+will be skipped.
+.PP
+Removal of filesystems
+.RI ( .disk " files)"
+implies that the corresponding virtual machines' contents are reverted to their
+original state when the lab is restarted.
+.SH OPTIONS
+.SS General options
 .TP
-.B
-\-h
-.PD 0
+.BI \-d " DIR"
+Clean up the lab inside
+.IR DIR .
+By default, the cleaning process takes place in the current directory.
+.SS Miscellaneous options
 .TP
-.B
-\-\-help
-Show usage information.
-
+.B \-\-help
+Display a usage message and exit.
 .TP
-.B
-\-v
-.PD 0
-.TP
-.B
-\-\-verbose
+.BR \-v ", " \-\-verbose
 Show which files are being deleted.
-
 .TP
-.B
-\-\-version
-Print information about the installed Netkit release and the host kernel version
-and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
-then the corresponding information could not be retrieved (for example because
-a non-standard Netkit kernel or filesystem is being used).
-
-
-
-
-\" ########################################
-
-.SH "ENVIRONMENT VARIABLES"
-
-All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
-name of the directory Netkit is installed in.
-
-Apart from this, \fIlclean\fR supports no other environment variables.
-
-\" ########################################
-
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
+.SH FILES
+.TP
+.I lab.conf
+Located in the lab directory,
+.I lab.conf
+is used to get lab information from the special lab variables.
+If nonexistent an error will be shown but the core functionality of
+.B lclean
+will not be affected.
 .SH NOTES
-
-Despite the fact that the two command names sound similar, \fIlclean\fR has
-nothing to do with \fBvclean\fR(1). While \fIlclean\fR is a tool to get rid of
-temporary files inside a Netkit lab directory (i.e., it works on the host
-filesystem), \fBvclean\fR(1) is the Netkit "panic button", which allows to
-kill hanging processes and to restore settings that may have been altered by
-Netkit during past executions (firewall settings, configurations set up for tap
-interfaces, etc.).
-
-\" ########################################
-
+Despite sounding similar,
+.B lclean
+is completely unrelated in functionality to
+.BR vclean (1).
+While
+.B lclean
+removes temporary files inside a lab directory,
+.BR vclean (1)
+operates on the entire Netkit-JH install by terminating hanging processes,
+removing unused sockets and log files,
+and restoring network settings changed for tap interfaces.
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
 .SH "SEE ALSO"
-\fIlstart\fR(1),
-\fIlcrash\fR(1),
-\fIlhalt\fR(1),
-\fIlinfo\fR(1),
-\fIltest\fR(1),
-\fIvclean\fR(1),
-Netkit filesystem README.
-    
-
-\" ########################################
-
-.SH AUTHOR
-
-\fIlclean\fR script: Stefano Pettini, Fabio Ricci, Massimo Rimondini
-.br
-This man page: Fabio Ricci, Massimo Rimondini
-
-
-\" ########################################
-
-.so include/bugreport.man
+.BR lcrash (1),
+.BR lhalt (1),
+.BR linfo (1),
+.BR lstart (1),
+.BR ltest (1),
+.BR vclean (1)

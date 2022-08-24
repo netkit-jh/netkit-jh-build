@@ -56,15 +56,14 @@ usage() {
 
    cat << END_OF_HELP
 $(usage_line)
-Clean a Netkit lab directory of temporary files and machine file systems.
+Clean a Netkit lab directory of temporary files and machine filesystems.
 
 This command can be used to clean up a directory containing a Netkit lab. It
-takes care of removing any temporary files, that is, '.ready' files, '.log'
-files, the 'readyfor.test' file as well as virtual machines (COW) filesystems
-('.disk' files). Therefore, any change to the virtual machines filesystems is
-lost. Of course, any persistent part of the lab is preserved, including those
-files that are automatically copied inside virtual machines during the boot
-phase.
+takes care of removing any temporary files, that is, '.ready', '.testdone', and
+'readyfor.test' files as well as virtual machines (COW) filesystems ('.disk'
+files). Therefore, any change to the virtual machines filesystems is lost. Of
+course, any persistent part of the lab is preserved, including those files that
+are automatically copied inside virtual machines during the boot phase.
 
   -d DIR              clean up the lab inside DIR. By default, the cleaning
                         process takes place in the current directory
