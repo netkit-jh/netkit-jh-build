@@ -1,150 +1,153 @@
-.TH LCRASH 1 "November 2009" "" Netkit
+.TH LCRASH 1 2022-08-24 Linux "Netkit-JH Manual"
 .SH NAME
-lcrash \- crash machines of a netkit lab
+lcrash \- crash machines of a Netkit-JH lab
 .SH SYNOPSIS
-\fBlcrash\fR [options] [\fIMACHINE\-NAME\fR...]
-
+.B lcrash
+.RI [ OPTION "]... [" MACHINE ]...
 .SH DESCRIPTION
-The \fIlcrash\fR command can be used to forcedly shutdown all the virtual machines
-of a Netkit lab. This roughly corresponds to suddenly unplugging them from the power
-socket. \fIlcrash\fR uses the \fBvcrash\fR command to stop virtual machines
-(see \fBvcrash\fR(1)).
-
-If a list of \fIMACHINE\-NAME\fRs is provided, only virtual machines with a
-matching name \fIand\fR that are part of the lab will be crashed. Otherwise, all the
-machines of the lab are crashed.
-
-The following options are supported by \fIlcrash\fR:
-.TP
-.B
-\-d \fIDIRECTORY\fR
-Crash the Netkit lab that is located inside \fIDIRECTORY\fR. If no \fB\-d\fR
-option is provided, \fIlcrash\fR assumes that the lab is located in the
-current directory. The path to the lab directory (being that the current
-directory or one provided by \fB\-d\fR) must never contain spaces.
-
-.TP
-.B
-\-F
-.PD 0
-.TP
-.B
-\-\-keep-fs
-This option prevents \fIlcrash\fR from deleting virtual machines (COW)
-filesystems (.disk files). By default, \fIlcrash\fR removes the filesystem after
-crashing each virtual machine in order to ensure that virtual machines revert to
-their original state when the lab is restarted.
-
-Notice that the model filesystem is never removed, regardless of the use of
-this option.
-See the README file in the Netkit filesystem package for information about COW
-and model filesystems.
-
-.TP
-.B
-\-k
-.PD 0
-.TP
-.B
-\-\-just-kill
-There are two different ways of crashing a virtual machine. The first one is
-to send a special message that tells it to immediately shut down. This is also
-called the mconsole method. The second one is to simply kill running processes
-that correspond to the virtual machine.
-.br
-The mconsole method is usually faster, but may be ineffective if a virtual
-machine has somewhy frozen (in which case it is unable to receive messages). If
-it happens to fail, the other method (killing processes) is automatically tried.
-However, killing processes is considered a last resort.
-.br
-If the mconsole method fails too often, this option can be used to force
-\fIlcrash\fR to always kill processes. In general, there should be no need to
-use it.
-
-.TP
-.B
-\-l
-.PD 0
-.TP
-.B
-\-\-list
-Show a list of currently running virtual machines after the lab has been
-crashed. This is useful to check whether all the hosts have been shut down.
-
-.TP
-.B
-\-q
-.PD 0
-.TP
-.B
-\-\-quick
-Do not check whether virtual machines have actually crashed. This results in a
-faster lab shutdown, but some hanging processes may be left behind. If this
-happens, try crashing the lab again without using this option or use \fBvclean\fR
-(see \fBvclean\fR(1)).
-
+Forcibly shutdown all running virtual machines of a Netkit-JH lab.
+If they were physical machines,
+this would roughly correspond to unplugging them from the power socket.
 .PP
-The following standard options are also supported.
-
+First, the UML management console client,
+.B uml_mconsole
+is used to send a
+.B halt
+signal to the virtual machine.
+This is repeated once if it fails.
+If the machine is still online, the machine's processes are sent
+.B SIGTERM
+twice to safely terminate.
+If still running, the processes are sent
+.B SIGKILL
+as a last resort to terminate immediately.
+For more information on how machines are terminated, see
+.BR vcrash (1),
+which is used on each individual machine to shut it down.
+.PP
+If invoked with no non-option arguments,
+.B lcrash
+shuts down all virtual machines that comprise the lab.
+Providing a list of
+.IR MACHINE s
+allows the user to be explicit with what machines are shut down.
+Any invalid
+.I MACHINE
+names will be ignored.
+.SH
+.SS General options
 .TP
-.B
-\-h
-.PD 0
+.BI \-d " DIR"
+Crash the lab inside
+.IR DIR .
+By default, the current directory is used.
 .TP
-.B
-\-\-help
-Show usage information.
-
+.BR \-l ", " \-\-list
+Show a list of virtual machines still running after crashing the lab with
+.BR vlist (1).
+.SS Options affecting how machines are crashed
 .TP
-.B
-\-v
-.PD 0
+.BR \-F ", " \-\-keep\-fs
+Preserve changes to the virtual machines by not deleting machines' filesystems
+.RI ( .disk " files)."
+By default,
+.BR vcrash (1)
+is invoked with
+.BR \-\-remove\-fs
+so the filesystems are deleted.
 .TP
-.B
-\-\-verbose
-Show what processes are getting killed.
-
+.BR \-k ", " \-\-just\-kill
+Crash machines as usual but skip the attempts with
+.BR uml_mconsole ;
+this invokes
+.BR vcrash (1)
+with
+.BR \-\-just\-kill .
+The method is generally faster but may corrupt the machines' filesystems
+(which is not an issue if
+.B \-\-keep\-fs
+is not used since they will get deleted).
 .TP
-.B
-\-\-version
-Print information about the installed Netkit release and the host kernel version
-and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
-then the corresponding information could not be retrieved (for example because
-a non-standard Netkit kernel or filesystem is being used).
-
-
-\" ########################################
-
-.SH "ENVIRONMENT VARIABLES"
-
-All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
-name of the directory Netkit is installed in.
-
-Apart from this, \fIlcrash\fR supports no other environment variables.
-
-
-\" ########################################
-
+.BR \-q ", " \-\-quick
+Disable checking if machines have actually terminated.
+Like
+.BR \-\-just\-kill , 
+this option will skip invoking
+.B uml_mconsole
+however it also does not send a
+.B SIGTERM
+signal (i.e., only
+.B SIGKILL
+is used).
+.SS Miscellaneous options
+.TP
+.B \-\-help
+Display a usage message and exit.
+.TP
+.BR \-v ", " \-\-verbose
+Show which processes are getting terminated.
+.TP
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
+.SH FILES
+.TP
+.I lab.conf
+Located in the lab directory,
+.I lab.conf
+is used to read the
+.B LAB_MACHINES
+configuration variable if the user wishes to override the default behaviour of
+determining the hostname list from the directory listing.
+The file is also used to get lab information from the special lab variables.
+If the file is nonexistent, an error will be shown but the core functionality
+of
+.B lcrash
+will not be affected.
+See
+.BR lab.conf (5)
+for more information.
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
 .SH "SEE ALSO"
-\fIlstart\fR(1),
-\fIlclean\fR(1),
-\fIlhalt\fR(1),
-\fIlinfo\fR(1),
-\fIltest\fR(1),
-\fIvclean\fR(1),
-\fIvcrash\fR(1),
-Netkit filesystem README.
-    
-
-\" ########################################
-
-.SH AUTHOR
-
-\fIlcrash\fR script: Stefano Pettini, Massimo Rimondini
-.br
-This man page: Fabio Ricci, Massimo Rimondini
-
-
-\" ########################################
-
-.so include/bugreport.man
+.BR lclean (1),
+.BR lhalt (1),
+.BR linfo (1),
+.BR lstart (1),
+.BR ltest (1),
+.BR vcrash (1),
+.BR lab.conf (5)
