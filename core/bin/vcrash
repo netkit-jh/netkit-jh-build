@@ -150,6 +150,7 @@ kill_by_signaling() {
       # Just kill processes
       kill -KILL "${pids[@]}"
       kill -CONT "${pids[@]}"
+      echo "done."
       return 0
    fi
 
