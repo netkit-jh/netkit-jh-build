@@ -1,128 +1,133 @@
-.TH LHALT 1 "November 2009" "" Netkit
+.TH LHALT 1 2022-08-25 Linux "Netkit-JH Manual"
 .SH NAME
-lhalt \- halt machines of a netkit lab
+lhalt \- halt machines of a Netkit-JH lab
 .SH SYNOPSIS
-\fBlhalt\fR [options] [\fIMACHINE\-NAME\fR...]
-
-
-\" ########################################
-
+.B lhalt
+.RI [ OPTION "]... [" MACHINE ]...
 .SH DESCRIPTION
-The \fIlhalt\fR command can be used to gracefully shut down virtual machines of
-a Netkit lab. \fIlhalt\fR makes use of \fBvhalt\fR to halt virtual machines (see
-\fBvhalt\fR(1)).
-
-By default, \fIvhalt\fR stops all the virtual machines of the lab. If a list of
-\fIMACHINE\-NAME\fRs is provided, then only virtual machines with a
-matching name \fIand\fR that are part of the lab will be halted.
-
-The following options are supported by \fIlhalt\fR:
-.TP
-.B
-\-d \fIDIRECTORY\fR
-Halt the Netkit lab that is located inside \fIDIRECTORY\fR. If no \fB\-d\fR
-option is provided, \fIlhalt\fR assumes that the lab is located in the
-current directory. The path to the lab directory (being that the current
-directory or one provided by \fB\-d\fR) must never contain spaces.
-
-.TP
-.B
-\-l
-.PD 0
-.TP
-.B
-\-\-list
-Show a list of currently running virtual machines after the lab has been
-halted. This is useful to check whether all the hosts have been shut down.
-
-.TP
-.B
-\-q
-.PD 0
-.TP
-.B
-\-\-quick
-This option prevents \fIlhalt\fR from checking whether virtual machines have
-properly halted. Hence, it speeds up the halt process. Notice that, unlike
-\fBlcrash\fR (see \fBlcrash\fR(1)), a shutdown fails or succeeds regardless of
-the use of this option (i.e., no benefit is gained from retrying without this
-option).
-.br
-This option is incompatible with \fB\-r\fR or \fB\-\-remove\-fs\fR.
-
-.TP
-.B
-\-r
-.PD 0
-.TP
-.B
-\-\-remove-fs
-Delete virtual machines (COW) filesystems (.disk files) after halting the
-corresponding machines.
-Default action is to keep the filesystems, so that the lab can be restarted while
-preserving filesystem contents.
-.br
-Using this option never affects the model filesystem. This option is incompatible
-with \fB\-q\fR (\fB\-\-quick\fR).
-
-See the README in the Netkit filesystem package for information about COW and
-model filesystems.
-
-
+Gracefully shut down all running virtual machines of a Netkit-JH lab.
+If the user wishes to retain virtual machines' filesystems
+.RI ( .disk " files)"
+without risk of corruption, this method should be used over
+.BR lcrash (1).
 .PP
-The following standard options are also supported.
-
+The UML management console client,
+.BR uml_mconsole ,
+is used to invoke the Ctrl-Alt-Del handler of
+.BR init (8).
+Typically this would trigger a reboot with
+.RB shutdown (8)
+however the Netkit-JH filesystem has a modified
+.I inittab
+file which changes this behaviour to shutdown immediately.
+.PP
+If invoked with no non-option arguments,
+.B lhalt
+shuts down all virtual machines that comprise the lab.
+Providing a list of
+.IR MACHINE s
+allows the user to be explicit with what machines are shut down.
+Any invalid
+.I MACHINE
+names will be ignored.
+.SH OPTIONS
+.SS General options
 .TP
-.B
-\-h
-.PD 0
+.BI \-d " DIR"
+Shutdown the lab inside
+.IR DIR .
+By default, the current directory is used.
 .TP
-.B
-\-\-help
-Show usage information.
-
+.BR \-l ", " \-\-list
+Show a list of virtual machines still running after halting the lab with
+.BR vlist (1).
+.SS Options affecting how machines are crashed
 .TP
-.B
-\-\-version
-Print information about the installed Netkit release and the host kernel version
-and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
-then the corresponding information could not be retrieved (for example because
-a non-standard Netkit kernel or filesystem is being used).
-
-
-
-
-\" ########################################
-
-.SH "ENVIRONMENT VARIABLES"
-
-All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
-name of the directory Netkit is installed in.
-
-Apart from this, \fIlhalt\fR supports no other environment variables.
-
-
-\" ########################################
-
+.BR \-q ", " \-\-quick
+Disable checking if machines have actually shut down.
+This quickens the halt process but no warnings can be made if a machine fails
+to shut down.
+Unlike
+.BR lcrash (1),
+this does not affect how the machines shut down (i.e.,
+if a machine fails to halt, running without
+.B \-\-quick
+will not affect the outcome).
+It cannot be used in conjunction with
+.BR \-\-remove\-fs .
+.TP
+.BR \-r ", " \-\-remove\-fs
+After halting a machine delete its filesystem
+.RI ( .disk " file),
+if exists.
+This is incompatible with
+.BR \-\-quick .
+.SS Miscellaneous options
+.TP
+.B \-\-help
+Display a usage message and exit.
+.TP
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
+.SH FILES
+.TP
+.I lab.conf
+Located in the lab directory,
+.I lab.conf
+is used to read the
+.B LAB_MACHINES
+configuration variable if the user wishes to override the default behaviour of
+determining the hostname list from the directory listing.
+The file is also used to get lab information from the special lab variables.
+If the file is nonexistent, an error will be shown but the core functionality
+of
+.B lcrash
+will not be affected.
+See
+.BR lab.conf (5)
+for more information.
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
 .SH "SEE ALSO"
-\fIlstart\fR(1),
-\fIlclean\fR(1),
-\fIlcrash\fR(1),
-\fIlinfo\fR(1),
-\fIltest\fR(1),
-\fIvhalt\fR(1),
-Netkit filesystem README.
-
-
-\" ########################################
-   
-.SH AUTHOR
-
-\fIlhalt\fR script: Stefano Pettini, Massimo Rimondini
-.br
-This man page: Fabio Ricci, Massimo Rimondini
-
-
-\" ########################################
-
-.so include/bugreport.man
+.BR lclean (1),
+.BR lcrash (1),
+.BR linfo (1),
+.BR lstart (1),
+.BR ltest (1),
+.BR vcrash (1),
+.BR lab.conf (5)
