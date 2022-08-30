@@ -1,273 +1,265 @@
-.TH LSTART 1 "July 2010" "" Netkit
+.TH LSTART 1 2022-08-30 Linux "Netkit-JH Manual"
 .SH NAME
-lstart \- start a netkit lab
+lstart \- start a Netkit-JH lab
 .SH SYNOPSIS
-\fBlstart\fR [options] [\fIMACHINE-NAME\fR...]
-
-
-\" ########################################
-
+.B lstart
+.RI [ OPTION "]... [" MACHINE ]...
 .SH DESCRIPTION
-
-In order to ease setting up complex network experiences with Netkit it is possible
-to completely describe them into special configuration files, so that the experience
-can later be started with a single command as if it were a virtual network "laboratory".
-
-The \fIlstart\fR command can be used to achieve this purpose. In particular, it starts
-a set of virtual machines that are part of a Netkit lab and configures them
-according to the parameters contained in the lab description.
-.br
-By default, all the virtual machines that make up the lab are started. If a list
-of \fIMACHINE\-NAME\fRs is provided, then only virtual machines with a matching
-name \fIand\fR that are part of the lab are started.
-
-The configuration of a Netkit lab consists of some files and directories whose
-names, locations and contents are described in the page \fBlab.conf\fR(5).
-
-The following options are supported by \fIlstart\fR:
-.TP
-.B
-\-d \fIDIRECTORY\fR
-Start the Netkit lab that is located inside \fIDIRECTORY\fR. If no \fB\-d\fR
-option is provided, \fIlstart\fR assumes that the lab is located in the
-current directory. The path to the lab directory (being that the current
-directory or one provided by \fB\-d\fR) must never contain spaces.
-
-Note that, in order to avoid starting undesired virtual machines, \fIlstart\fR
-checks whether the current directory (or the directory specified with \fB\-d\fR)
-contains at least a "lab.conf" or a "lab.dep" file, and refuses to start the
-lab if none of these file exists. See option \fB\-F\fR below for disabling this
-behavior.
-
-.TP
-.B
-\-F
-.PD 0
-.TP
-.B
-\-\-force\-lab
-As a native behaviour, Netkit starts a virtual machine for each directory that it
-finds in a designed path, by default the current directory. In order to prevent
-the user from accidentally starting random virtual machines from a directory that
-does not contain a lab, lstart requires the presence of at least a "lab.conf"
-or a "lab.dep" file in the affected directory. If these files are not required
-for your setting, and you still want to launch your lab without creating either
-one, you can use option \fB\-F\fR or
-.nh
-\fB\-\-force\-lab\fR
-.hy
-to convince Netkit that a certain directory is indeed a lab.
-
-.TP
-.B
-\-f
-.PD 0
-.TP
-.B
-\-\-fast
-\fIlstart\fR always waits for a virtual machine to complete its boot phase before
-launching the next one. This option disables this behaviour, and allows to
-launch several virtual machines at once.
-.br
-This option has no effect if parallel startup is being used and is not impacted by
-the \fB\-p\fR option.
-
-.TP
-.PD 0
-.TP
-.B
-\-\-tmux\-attached
-Run each VM in a tmux session and start a terminal attached to this tmux session. This is the same as setting VM_CON0=tmux and TMUX_OPEN_TERMS=yes in netkit.conf
-
-.TP
-.PD 0
-.TP
-.B
-\-\-tmux\-detached
-Run each VM in a tmux session without opening any terminals. This is the same as setting VM_CON0=tmux and TMUX_OPEN_TERMS=no in netkit.conf
-
-.TP
-.B
-\-l
-.PD 0
-.TP
-.B
-\-\-list
-Show a list of currently running virtual machines after the lab has been
-started up. This is useful to check whether all the hosts are up and running.
-Notice that, when the \fB\-f\fR (or \fB\-\-fast\fR) option is being used, \fIlstart\fR
-does not wait for all the virtual machines of the lab to start up before
-printing this list, resulting in a possibly incomplete report. Hence, it is
-advised not to use \fB\-l\fR (or \fB\-\-list\fR) together with \fB\-f\fR (or
-\fB\-\-fast\fR).
-
-.TP
-.B
-\-o \fIOPTION\fR
-.PD 0
-.TP
-.B
-\-\-pass=\fIOPTION\fR
-\fIlstart\fR acts as a frontend to \fBvstart\fR (see \fBvstart\fR(1)). This option
-allows to pass an \fIOPTION\fR unaltered to every invocation of \fBvstart\fR.
-This means that all the virtual machines of the lab will be launched with option \fIOPTION\fR.
-\fIOPTION\fR should be specified exactly as it would be on the \fBvstart\fR command
-line, but always make sure that space characters are quoted (e.g., '-fdummy.disk'
-or '--append=debug' are ok, '-M 32' should be written as either '-M32' or '"-M 32"').
-
-.TP
-.B
-\-p[\fIVALUE\fR\fB]\fR
-Parallel startup is a special startup mode that allows to simultaneously boot
-several virtual machines. It is automatically enabled whenever a 'lab.dep' file
-is found to exist inside the lab directory. This option forces parallel startup,
-even if the 'lab.dep' file does not exist. In order to limit the load on your
-host, this option also allows to set a maximum number of virtual machines that
-at any time instant can be simultaneously booting.
-\fIVALUE\fR must be a positive integer. A \fIVALUE\fR of 0 corresponds
-to setting no limit. If no VALUE is provided, the default configured inside
-\fInetkit.conf\fR is assumed (see \fBnetkit.conf\fR(5)).
-.br
-This option conflicts with \fB\-s\fR (or \fB\-\-sequential\fR).
-
-This option overrides the default value of MAX_SIMULTANEOUS_VMS inside \fInetkit.conf\fR
-(see \fBnetkit.conf\fR(5)).
-
-\fBNotice\fR: parallel startup requires that the \fBmake\fR utility is properly
-installed on your system.
-
-.TP
-.B
-\-s
-.PD 0
-.TP
-.B
-\-\-sequential
-Disable parallel startup, even if a 'lab.dep' file is found to exist in the lab
-directory. This option is useful when you just want to launch specific virtual
-machines. In fact, if you just provide their \fIMACHINE\-NAME\fRs on the command
-line, \fIlstart\fR would still attempt to satisfy the dependencies, and this
-may result in starting other undesired virtual machines.
-.br
-This option cannot be used together with \fB\-p\fR.
-
-.TP
-.B
-\-w \fISECONDS\fR
-.PD 0
-.TP
-.B
-\-\-wait=\fISECONDS\fR
-Wait for the specified amount of time before launching the next virtual machine.
-This option is always enforced, but it just becomes handy (for example, to
-reduce the load on the host machine) when using either \fB\-f\fR (or \fB\-\-fast\fR)
-or parallel startup.
-
-This option overrides the default value of GRACE_TIME inside \fInetkit.conf\fR
-(see \fBnetkit.conf\fR(5)).
-
+Start all machines of a Netkit-JH lab and configure them and the virtual
+network according to parameters assigned in
+.IR lab.conf .
 .PP
-The following standard options are also supported.
-
+If invoked with no non-option arguments,
+.B lstart
+starts all virtual machines that comprise the lab.
+Providing a list of
+.IR MACHINE s
+allows the user to be explicit with what machines are booted.
+Any invalid
+.I MACHINE
+names will be ignored.
+.PP
+Refer to
+.BR lab.conf (5)
+for a description of what a Netkit-JH lab consists of and how to configure one.
+For more information on how machines are started, see
+.BR vstart (1),
+which is used on each individual machine to boot it.
+.SH OPTIONS
+.SS General options
 .TP
-.B
-\-h
-.PD 0
+.BI \-d " DIR"
+Crash the lab inside
+.IR DIR .
+By default, the current directory is used.
+To avoid starting undesired virtual machines,
+.B lstart
+will not start labs from directories without a
+.I lab.conf
+and
+.I lab.dep
+file.
+To skip this check, refer to
+.BR \-\-force\-lab .
 .TP
-.B
-\-\-help
-Show usage information.
-
+.BR \-F ", " \-\-force\-lab
+Ignore checks for
+.I lab.conf
+and
+.IR lab.dep .
+By default, if the files do not exist
+.B lstart
+will immediately exit from the boot process.
 .TP
-.B
-\-v
-.PD 0
+.BR \-l ", " \-\-list
+Show a list of virtual machines still running after starting the lab with
+.BR vlist (1).
+This may produce only a partial report with
+.B \-\-fast
+since machines are started in the background by default,
+and
+.B lstart
+will typically finish before they are fully booted.
+.SS Options affecting how the lab is started
 .TP
-.B
-\-\-verbose
+.BR \-f ", " \-\-fast
+Do not wait for a virtual machine to fully boot before starting the next one.
+This option has no effect when parallel startup is enabled (which it is by
+default when a
+.I lab.dep
+file exists or with
+.BR \-p ).
+.TP
+.BR \-p [\fIVALUE\fR]
+Enable parallel startup for the lab even if a
+.I lab.dep
+file does not exist.
+To change the number of machines that can be started simultaneously,
+the Netkit-JH configuration variable,
+.BR MAX_SIMULTANEOUS_VMS ,
+can be overrode with
+.IR VALUE .
+Since it is an optional argument, if specified
+.I VALUE
+must be attached to the short option
+.RB ( \-p \fIVALUE\fR).
+Parallel mode is enabled by default if a
+.I lab.dep
+file exists and
+.B \-\-sequential
+is not used.
+.IP
+Note: GNU Make must be installed to build the dependency tree.
+.TP
+.BR \-s ", " \-\-sequential
+Disable parallel startup, even if a
+.I lab.dep
+file exists.
+Machines will start one after the other;
+this can be useful if specific machines are stated as non-option arguments but
+they have dependencies which the user does not want booted.
+This option conflicts with
+.BR \-p .
+.TP
+.BR \-w ", " \-\-wait =\fISECONDS\fR
+Wait the specified amount of time before booting the next virtual machine.
+This is only useful when parallel startup is enabled
+(for example, if a lab's DHCP server requires time to allocate addresses)
+or with
+.B \-\-fast
+to reduce load on the host machine.
+This option overrides the
+.B GRACE_TIME
+Netkit-JH configuration variable.
+.SS Options affecting how machines are started
+.TP
+.BR \-o ", " \-\-pass =\fIARG\fR
+Pass arguments unaltered to the underlying
+.B vstart
+command for each machine.
+This will affect the invocation of every machine.
+See
+.BR vstart (1)
+for valid arguments.
+.TP
+.B \-\-tmux\-attached
+Run each machine in a tmux session and start a terminal attached to this tmux
+session.
+This is equivalent to setting the
+.B VM_CON0
+and
+.B TMUX_OPEN_TERMS
+Netkit-JH configuration variables to
+.B tmux
+and
+.B yes
+respectively.
+.TP
+.B \-\-tmux\-detached
+Run each machine in a tmux session without opening any terminals.
+This is equivalent to setting the
+.B VM_CON0
+and
+.B TMUX_OPEN_TERMS
+Netkit-JH configuration variables to
+.B tmux
+and
+.B no
+respectively.
+.SS Miscellaneous options
+.TP
+.B \-\-help
+Display a usage message and exit.
+.TP
+.BR \-v ", " \-\-verbose
 Show details about virtual machines while starting them.
-
 .TP
-.B
---version
-Print information about the installed Netkit release and the host kernel version
-and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
-then the corresponding information could not be retrieved (for example because
-a non-standard Netkit kernel or filesystem is being used).
-
-
-\" ########################################
-
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
 .SH FILES
-
-Apart from the lab configuration files, running a lab requires creating some
-temporary files inside the current directory (i.e., the one the \fIlstart\fR
-command is executed from) as well as inside the lab directory. Such files are:
-
 .TP
-.I ./\fImachine\fR.ready
-These files are created by \fIlstart\fR and are used to synchronize virtual
-machines when they are started. These files are automatically deleted when all the
-machines in the lab have properly started up. Yet, sometimes (e.g., when a virtual
-machine crashes in the boot phase) there may be '.ready' files left in the
-current directory even after the lab has been stopped. In this case you have to launch
-\fBlclean\fR (see \fBlclean\fR(1)) to get rid of them before the lab can be
-restarted.
-
+.I lab.conf
+Located in the lab directory,
+.I lab.conf
+is used to read the configuration of each virtual machine in a lab.
+The
+.B LAB_MACHINES
+configuration variable, if exists, is also read for the user to override the
+default behaviour of determining the hostname list from the directory listing.
+The file is also used to get lab information from the special lab variables.
+See
+.BR lab.conf (5)
+for more information.
 .TP
-.I ./\fImachine\fR.disk
-This is the COW filesystem for virtual machine \fImachine\fR. These files are
-automatically removed when the lab is crashed with \fBlcrash\fR (see \fBlcrash\fR(1)),
-so that virtual machines can revert to their original state when the lab is
-restarted. If you want to preserve .disk files, use the \fB\-F\fR (or \fB\-\-keep\-fs\fR)
-option of \fBlcrash\fR. On the other hand, \fBlhalt\fR(1) (see \fBlhalt\fR(1)) never
-removes .disk files, unless explicitly told to do it (with the \fB\-r\fR or
-\fB\-\-remove\-fs\fR option).
-
-See the README in the Netkit filesystem package for more information about COW
-filesystems.
-
+.I lab.dep
+Located in the lab directory,
+.I lab.dep
+is used to determine if the lab supports parallel startup and to read the
+dependency tree.
+See
+.BR lab.dep (5)
+for more information.
 .TP
-.I
-\fIlab\-path\fR/readyfor.test
-This file is automatically created by \fBltest\fR (see \fBltest\fR(1)). It is
-used to ensure that the status of running virtual machines is only retrieved when
-they have all completed their boot phase.
-
-
-\" ########################################
-
-.SH NOTES
-\fIlstart\fR is essentially a wrapper for \fBvstart\fR.
-Hence, if something goes wrong, try to investigate the parameters used in the
-invocation of \fBvstart\fR (they are reported in the \fIlstart\fR output) and read
-the \fBvstart\fR(1) documentation.
-
-
-\" ########################################
-
+.I MACHINE.disk
+Each
+.I .disk
+file is a machine's copy-on-write (COW) filesystem,
+storing changes made to the machine during runtime.
+These files are removed by default with
+.BR lcrash (1),
+however
+.BR lhalt (1)
+will retain them for rebooting the machines to their states when the lab was
+shut down.
+Like other temporary lab files,
+.BR lclean (1)
+may be used to remove them before restarting the lab.
+For more information on the COW filesystems, see
+.BR netkit (7).
+.TP
+.I MACHINE.ready
+Temporary files used by
+.B lstart
+to determine which machines have fully booted.
+Unless
+.B \-\-fast
+is used,
+.B lstart
+will not exit until the machine's
+.I .ready
+file has been detected.
+Sometimes, like when a machine fails in the boot phase, there may be
+.I .ready
+files left in the lab directory.
+In this instance,
+.BR lclean (1)
+may be required to remove them before restarting the lab.
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
 .SH "SEE ALSO"
-\fIlab.conf\fR(5),
-\fIlclean\fR(1),
-\fIlhalt\fR(1),
-\fIlcrash\fR(1),
-\fIlinfo\fR(1),
-\fIltest\fR(1),
-\fImake\fR(1),
-\fIvstart\fR(1),
-\fInetkit.conf\fR(5),
-Netkit filesystem README.
-    
-
-\" ########################################
-
-.SH AUTHOR
-
-\fIlstart\fR script: Stefano Pettini, Fabio Ricci, Massimo Rimondini
-.br
-This man page: Fabio Ricci, Massimo Rimondini
-
-
-\" ########################################
-
-.so include/bugreport.man
+.BR lclean (1),
+.BR lcrash (1),
+.BR lhalt (1),
+.BR linfo (1),
+.BR lstart (1),
+.BR ltest (1),
+.BR vlist (1),
+.BR vstart (1),
+.BR lab.conf (5),
+.BR lab.dep (5),
+.BR netkit.conf (5)
