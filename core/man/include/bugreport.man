@@ -1,4 +1,0 @@
-.SH "REPORTING BUGS"
-Report bugs to the Github issues page: https://github.com/netkit-jh/netkit-jh-build/issues
-
-Please follow the recommended templates when reporting bugs.
