@@ -98,6 +98,8 @@ Attach network interfaces to running virtual machines.
                         - Tunnel configurations are not automatically removed
                           when halting machines: you should use the vclean
                           script for this purpose.
+  -n, --dry-run, --just-print, --recon  do not actually start anything. Just
+                                         show which commands would be executed
   -u, --user=USERNAME  attach interfaces to a virtual machine owned by user
                         USERNAME. Using the special user name '-' results in
                         considering all users. If MACHINE is a virtual machine
@@ -108,8 +110,6 @@ Attach network interfaces to running virtual machines.
 
 Miscellaneous:
 $(help_option)
-  -n, --dry-run, --just-print, --recon  do not actually start anything. Just
-                                         show which commands would be executed
   -v, --verbose       show commands being ran
 $(version_option)
 
