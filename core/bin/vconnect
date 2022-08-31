@@ -59,7 +59,6 @@ Connect to the tmux session of a Netkit MACHINE or terminate existing ones.
                         exists)
       --kill-all      kill all running tmux sessions on the 'netkit' server
 
-
 The following options control how the tmux session is connected to:
   -t, --terminal      connect to the tmux session from a new terminal. The
                         terminal opened is dependent on the TERM_TYPE set in
