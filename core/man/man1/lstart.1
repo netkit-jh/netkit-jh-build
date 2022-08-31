@@ -26,6 +26,8 @@ For more information on how machines are started, see
 .BR vstart (1),
 which is used on each individual machine to boot it.
 .SH OPTIONS
+Unless specified otherwise, all options are also supported by
+.BR ltest (1).
 .SS General options
 .TP
 .BI \-d " DIR"
@@ -69,6 +71,8 @@ default when a
 .I lab.dep
 file exists or with
 .BR \-p ).
+.BR ltest (1)
+does not support this option.
 .TP
 .BR \-p [\fIVALUE\fR]
 Enable parallel startup for the lab even if a
@@ -256,7 +260,6 @@ file or, if not present,
 .BR lcrash (1),
 .BR lhalt (1),
 .BR linfo (1),
-.BR lstart (1),
 .BR ltest (1),
 .BR vlist (1),
 .BR vstart (1),
