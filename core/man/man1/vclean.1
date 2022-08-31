@@ -1,228 +1,168 @@
-.TH VCLEAN 1 "November 2009" "" Netkit
+.TH VCLEAN 1 2022-08-31 Linux "Netkit-JH Manual"
 .SH NAME
-vclean \- cleanup netkit processes and configurations
+vclean \- clean up the Netkit-JH install
 .SH SYNOPSIS
-\fBvclean\fR [options]
-
-
-\" ########################################
-
+.B vclean
+.RI [ OPTION ]...
 .SH DESCRIPTION
-
-The \fIvclean\fR command can be used to perform some cleanup operations on the
-host machine. In order to run virtual machines, Netkit launches several processes
-and sometimes performs some configuration changes (e.g., when setting up "\fBtap\fR"
-collision domains \(en see \fBvstart\fR(1) \(en). After stopping all the virtual
-machines the system is reverted to its original state. Nevertheless, sometimes
-it may be useful (or even necessary) to force a cleanup which stops hanging
-processes and removes any configuration change. In this sense, \fIvclean\fR
-can be considered as the Netkit "panic button".
-
-The use of \fIvclean\fR becomes necessary in (at least) the following situations:
-.IP \(en 2
-A network interface has been connected to a "\fBtap\fR" collision domain. After
-halting (or crashing) some virtual machines, the "\fBtap\fR" collision domain
-is not used any more and the corresponding configuration settings must be removed
-(see \fBvstart\fR(1) for a description of "\fBtap\fR" collision domains).
-.IP \(en 2
-A network interface has been attached "on the fly" to a running virtual machine
-by using \fBvconf\fR (see \fBvconf\fR(1)). After halting (or crashing) the
-machine, the corresponding virtual hub is still running and must be terminated.
-
+Perform a cleanup of the Netkit-JH install by terminating processes,
+removing temporary files, and resetting the host's tap configuration.
+When invoked without options, the script just removes unused virtual hubs.
 .PP
-
-\fIvclean\fR can perform several cleanup operations. If invoked without options,
-it just scans for virtual hubs launched by the current user that are still running
-but no longer used (i.e., there is no virtual machine that is connected to them).
-If any of the options listed below is provided, then only the requested action is
-performed. It is also possible to perform several actions in a single run.
-
+.B vclean
+is necessary in situations where labs have been improperly terminated,
+network interfaces have been added with
+.BR vconf (1),
+or a variety of other unforseen issues.
+If there is any error encountered without an obvious fix,
+the first port of call should be to run this utility;
+it should be considered as Netkit-JH's panic button.
+.PP
+The following functionality is available:
+.RS
+.IP \[bu] 4
+Kill processes associated with unused (or all) virtual hubs.
+.IP \[bu]
+Kill running virtual machines.
+.IP \[bu]
+Wipe the
+.BR MCONSOLE_DIR ", " HUB_SOCKET_DIR ", and"
+.I .netkit/
+directories (except the
+.I netkit.conf
+file).
+.IP \[bu]
+Remove host-side tap interface configurations.
+.RE
+.SH OPTIONS
+.SS General options
 .TP
-.B
---clean-all
-Equivalent to \fB--kill-machines\fR, \fB--clean-directories\fR, and
-\fB--remove-tunnels\fR. This option affects all users.
-
+.BR \-q ", " \-\-quick
+Disable checking if processes have actually terminated.
 .TP
-.B
---clean-directories
-Empty the '$MCONSOLE_DIR', '$HUB_SOCKET_DIR', and `$HOME/.netkit/' directories.
-This option affects all users.
-
+.B \-\-test
+Instead of actually cleaning the install,
+just show which operations will be performed.
 .TP
-.B
--f
-.PD 0
+.BR \-u ", " \-\-user =\fIUSERNAME\fR
+Perform the cleanup operations only on artefacts owned by
+.IR USERNAME .
+The special username
+.B \-
+denotes all users; this may require administrative privileges.
+.SS Options affecting how the system is cleaned
 .TP
-.B
---force
-When used with \fB--remove-hubs\fR, kill all (not just unused) virtual hubs and
-clean their files.
-
-.TP
-.B
--H
-.PD 0
-.TP
-.B
---remove-hubs
-Terminate running virtual hubs (collision domains) that are not used any more
-(i.e., those that have no virtual machines attached). This is the default action
-when \fIvclean\fR is invoked without options.
-
-.TP
-.B
--K
-.PD 0
-.TP
-.B
---kill-machines
-Terminate all running virtual machines and virtual hubs. Virtual machines are
-killed in the same way as the "vcrash -k" command would do (see \fBvcrash\fR(1)).
-.br
-This is probably the most effective "panic button". In fact, using this option
-should result in getting rid of all Netkit processes, even the hanging ones
-(unless they are hanging so hard that only a reboot can destroy them).
-
-.TP
-.B
--T
-.PD 0
-.TP
-.B
---remove-tunnels
-When using an interface attached to a "\fBtap\fR" collision domain for the
-first time, \fIvstart\fR (or \fIvconf\fR, depending on the command you have
-been using to configure the interface \(en see \fBvstart\fR(1), \fBvconf\fR(1))
-takes care of automatically configuring the necessary host-side settings and, if
-found, also the iptables firewall. For details about the configuration parameters
-being altered, see \fBvstart\fR(1).
-
-This option removes any host-side configurations and restores the previous
-firewall settings (if affecting all users). More precisely, the following
-operations are performed:
-
-1) If affecting all users with \fB\-\-user\fR=\fI\-\fR, both masquerading and
-packet forwarding for data passing through tap interfaces are disabled. In
-particular, the following rules are removed:
+.B \-\-clean\-all
+Equivalent to running
 .nf
-*nat
---append POSTROUTING ! --out-interface lo --match comment --comment Netkit-JH --jump MASQUERADE
-*filter
---append FORWARD --in-interface nk_+ --match comment --comment Netkit-JH --jump ACCEPT
+.RS
+.IP
+.BR vclean " " \c
+\-\-user=\- \-\-kill\-machines \-\-clean\-directories \-\-remove\-tunnels
+.RE
 .fi
-.br
-2) If affecting all users, kernel IP forwarding is disabled by echoing '0' to
-the special file
-.nh
-'/proc/sys/net/ipv4/ip_forward'.
-.hy
-.br
-3) Every tap interface owned by the user (on the host side) is brought down and
-the corresponding tap device is removed.
-.br
-4) If affecting all users, permissions for the '/dev/net/tun' device are set to
-660 (read/write for its owner and for other users in the same group; no
-permissions for other users).
-
-These operations require administrative privileges. The \fIvclean\fR
-command will take care of asking you for a password if needed. For more
-information about how Netkit gains root privileges, see \fBSETTING UP NETKIT
-FOR USE WITH SUDO\fR in the man page of \fBnetkit.conf\fR(5).
-
+.IP
+This action affects all users.
+It is the most successful option in fixing a Netkit-JH install.
 .TP
-.B
---test
-Instead of terminating virtual hubs and/or virtual machines, just show which
-processes would be killed. Action \fB\-\-remove\-tunnels\fR is not affected by the
-use of \fB\-\-test\fR.
-
+.B \-\-clean\-directories
+Wipe the
+.BR MCONSOLE_DIR ", " HUB_SOCKET_DIR ", and"
+.I .netkit/
+directories (except the
+.I netkit.conf
+file).
+This option affects all users if the directories are shared.
 .TP
-.B
--u \fIUSERNAME\fR
-.PD 0
+.BR \-f ", " \-\-force
+Kill all virtual hubs (not just unused ones).
+Should be used with
+.B \-\-remove\-hubs
+(enabled by default with no other options).
 .TP
-.B
---user=\fIUSERNAME\fR
-This options limits the scope of the above actions to virtual machines and hubs
-owned by user \fIUSERNAME\fR. By default, \fIvclean\fR only terminates machines
-and hubs owned by the current user (i.e., the one who launched \fIvclean\fR). The
-special user name '\fB\-\fR' is reserved, and can be used to perform cleanup
-actions on every machine and hub, regardless of the user who started it. Please
-\fBuse the '\-\-user=-' or '-u -' option with extreme care\fR: depending on the
-options you are using, this \fBmay crash ALL virtual machines that are currently
-running on the host machine\fR.
-
-Action \fB\-\-remove\-tunnels\fR is not affected by this option.
-
-.PP
-Other supported options are:
-
+.BR \-H ", " \-\-remove\-hubs
+Kill unused virtual hubs.
+This is
+.BR vclean 's
+default action if no other action has been requested.
 .TP
-.B
--h
-.PD 0
+.BR \-K ", " \-\-kill\-machines
+Kill all running virtual machines and virtual hubs.
+Like
+.BR vcrash (1),
+the termination may not be clean so any
+.I .disk
+files may be corrupted.
+The \(dqnetkit\(dq tmux server will also be killed for the current user.
 .TP
-.B
---help
-Show usage information.
-
+.BR \-T ", " \-\-remove\-tunnels
+Remove any \(dqtap\(dq interface configurations.
+This involves removing the network interfaces themselves and,
+if affecting users
+.RI ( \-\-user=- ),
+firewall rules for the interfaces' traffic.
+This option requires administrative privileges.
+.SS Miscellaneous options
 .TP
-.B
--q
-.PD 0
+.B \-\-help
+Display a usage message and exit.
 .TP
-.B
---quick
-By default, after killing processes \fIvclean\fR checks whether they have actually
-stopped. This option disables these checks, thus quickening the execution of \fIvclean\fR.
-
+.BR \-v ", " \-\-verbose
+Show affected artefacts.
 .TP
-.B
--v
-.PD 0
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
 .TP
-.B
---verbose
-Show affected processes and files.
-
-.TP
-.B
---version
-Print information about the installed Netkit release and the host kernel version
-and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
-then the corresponding information could not be retrieved (for example because
-a non-standard Netkit kernel or filesystem is being used).
-
-
-\" ########################################
-
-.SH "ENVIRONMENT VARIABLES"
-
-All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
-name of the directory Netkit is installed in.
-
-Apart from this, \fIvclean\fR supports no other environment variables.
-
-
-\" ########################################
-
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
 .SH NOTES
-
-\fIvclean\fR has nothing to do with \fBlclean\fR(1). While the former works as
-a vacuum cleaner for unused and/or hanging Netkit processes, the latter is a
-tool to clean up directories containing Netkit labs. In particular, \fIvclean\fR
-works on processes (which have not necessarily been originated in a Netkit lab)
-and, optionally, on the system configuration (to remove tunnels and firewall
-settings), while \fBlclean\fR(1) works on the host filesystem (with the purpose
-of cleaning up temporary files created after running a Netkit lab).
-
-\" ########################################
-
+Despite sounding similar,
+.B vclean
+is completely unrelated in functionality to
+.BR lclean (1).
+While
+.B vclean
+operates on the entire Netkit-JH install by terminating hanging processes,
+removing unused sockets and log files,
+and restoring network settings changed for tap interfaces,
+.BR lclean (1)
+removes temporary files inside a specific lab directory.
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
 .SH "SEE ALSO"
-\fIlclean\fR(1),
-\fIvconf\fR(1),
-\fIvcrash\fR(1),
-\fIvhalt\fR(1),
-\fIvlist\fR(1),
-\fIvstart\fR(1).
+.BR lclean (1),
+.BR vcrash (1),
+.BR netkit.conf (5),
+.BR netkit (7)
