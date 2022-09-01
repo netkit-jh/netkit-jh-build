@@ -1,82 +1,162 @@
-.TH VPACKAGE 1 "October 2021" "" "Netkit"
+.TH VPACKAGE 1 2022-09-01 Linux "Netkit-JH Manual"
 .SH NAME
-vpackage \- manage packages on the Netkit model filesystem
+vpackage \- manage packages on the Netkit-JH model filesystem
 .SH SYNOPSIS
 .B vpackage
-\fI\,COMMAND\/\fR [\fI\,OPTION\/\fR]... [\fI\,PACKAGE\/\fR]...
+.IR COMMAND " [" OPTION "]... [" PACKAGE ]...
 .SH DESCRIPTION
+Manage
+.IR PACKAGE s
+on the model Netkit-JH filesystem with
+.BR apt\-get (8)
+or
+.BR dpkg (1).
+.B vpackage
+Mounts the model filesystem at
+.B VM_MODEL_FS
+to
+.B VPACKAGE_MOUNT_POINT
+(both Netkit-JH configuration variables),
+changes the apparent root directory to the mount point
+then runs the relevant package management command before unmounting.
 .PP
-Manage PACKAGEs on the model Netkit filesystem with apt-get or dpkg.
+.B vpackage
+uses a similar command-line structure to the underlying package management
+commands, where the first argument is the mode of operation
+.RB ( COMMAND ).
+.SS Subcommands using apt-get as their underlying package management program
+.TP
+.B update
+Synchronise package index files with their respective sources.
+.TP
+.B upgrade
+Install the latest package versions.
+.TP
+.B dist\-upgrade
+Upgrade and potentially remove unnecessary packages.
+.TP
+.BR install " \fIPACKAGE\fR..."
+Install or upgrade packages and their dependencies.
+.TP
+.BR remove " \fIPACKAGE\fR..."
+Remove packages, leaving their configuration files.
+.TP
+.BR purge " \fIPACKAGE\fR..."
+Remove packages and their configuration files.
+.TP
+.BR clean
+Clear out the APT cache.
+.TP
+.BR autoremove " (alias " auto\-remove )
+Remove dependencies that are no longer needed.
+.SS Subcommands using other package management programs
+.TP
+.B list
+Run
+.I "dpkg \-\-list"
+to show all installed packages on the filesystem.
+.SH OPTIONS
+.SS General options
+.TP
+.BI \-d " DIR"
+Mount the filesystem at
+.IR DIR .
+If the mount point does not exist,
+.B vpackage
+will try to create it.
+The default location is the value of the
+.B VPACKAGE_MOUNT_POINT
+Netkit-JH configuration variable.
+.TP
+.BR \-f ", " \-\-filesystem =\fIFILE\fR
+Use
+.I FILE
+as the filesystem to be mounted.
+By default, this is the value of the
+.B VM_MODEL_FS
+Netkit-JH configuration variable.
+.TP
+.BR \-o ", " \-\-pass =\fIARG\fR
+Pass
+.I ARG
+unaltered to the underlying package management command.
+Useful for more advanced functionality which is not possible through
+.BR vpackage 's
+provided abstractions.
+.SS Options affecting the package management
+.TP
+.B \-\-only\-upgrade
+Do not install the selected packages, just upgrade them (if possible).
+This uses
+.BR apt\-get (8)'s
+.B \-\-only\-upgrade
+option and must be used with the
+.B install
+subcommand.
+.TP
+.BR \-y ", " \-\-assume\-yes ", " \-\-yes
+Automatically answer \(dqyes\(dq to all prompts provided by the package
+management commands to run
+.B vpackage
+non-interactively.
+This uses
+.BR apt\-get (8)'s
+.B \-\-assume\-yes
+option and therefore will not work with subcommands that use other package
+management utilities, like
+.BR dpkg (1).
+.SS Miscellaneous options
+.TP
+.B \-\-help
+Display a usage message and exit.
+.TP
+.BR \-n ", " \-\-just\-print ", " \-\-dry\-run ", " \-\-recon
+Use
+.B \-\-simulate
+with the underlying package management command to show which commands would be
+executed without running them.
+.TP
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
 .PP
-Unless the \fB\-\-help\fR option is given, one of the commands below must be
-present. The following COMMANDs operate exactly as apt-get would:
-.TP
-\fBupdate\fR
-synchronise package index files with their respective sources
-.TP
-\fBupgrade\fR
-install latest package versions
-.TP
-\fBdist-upgrade\fR
-upgrade and potentially remove unnecessary packages
-.TP
-\fBinstall\fR \fRPACKAGE\fR...
-install or upgrade packages and their dependencies
-.TP
-\fBremove\fR \fIPACKAGE\fR...
-remove packages, leaving their configuration files
-.TP
-\fBpurge\fR \fIPACKAGE\fR...
-remove packages and their configuration files
-.TP
-\fBclean\fR
-clear out the apt cache
-.TP
-\fBautoremove\fR (alias \fBauto-remove\fR)
-remove dependencies that are no longer needed
-.PP
-You can use the following options to configure \fIvpackage\fR or the underlying
-package management command:
-.TP
-\fB\-d\fR \fI\,DIRECTORY\/\fR
-mount the filesystem at the directory DIRECTORY. If the mount point does not
-exist, Netkit will try to create it. The default is $VPACKAGE_MOUNT_POINT
-.TP
-\fB\-f\fR, \fB\-\-filesystem\fR=\fI\,FILENAME\/\fR
-use \fIFILENAME\fR as the filesystem to be mounted. By default, this is $VM_MODEL_FS
-.TP
-\fB\-o\fR, \fB\-\-pass=\fI\,OPTION\/\fR
-pass \fIOPTION\fR unaltered to the underlying package management command
-.TP
-\fB\-\-only\-upgrade
-only install upgrades for the selected packages. This uses the \fB\-\-only\-upgrade\fR
-option to apt\-get and must be used with the \fBinstall\fR subcommand
-.TP
-\fB\-y\fR, \fB\-\-assume\-yes\fR, \fB\-\-yes\fR
-automatic yes to prompts to run all commands non\-interactively. This uses the
-\fB\-\-assume\-yes\fR underlying option and therefore will only work with
-apt\-get (dpkg has no such option)
-.PP
-Miscellaneous
-.TP
-\fB\-\-help\fR
-display this help and exit
-.TP
-\fB\-n\fR, \fB\-\-dry\-run\fR, \fB\-\-just\-print\fR, \fB\-\-recon\fR
-use the \fB\-\-simulate\fR option on the underlying package management command
-to show which commands would be executed
-.TP
-\fB\-\-version\fR
-output version information and exit
-
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
 .SH "SEE ALSO"
-\fIvclean\fR(1),
-\fIvcommand\fR(1),
-\fIvconf\fR(1),
-\fIvconnnect\fR(1),
-\fIvcrash\fR(1),
-\fIvdump\fR(1),
-\fIvhalt\fR(1),
-\fIvlist\fR(1),
-\fIvstart\fR(1),
-Netkit filesystem README.
+.BR dpkg (1),
+.BR netkit.conf (5),
+.BR netkit (7),
+.BR apt\-get (8)
