@@ -9,6 +9,13 @@ Forcibly shutdown all running virtual machines of a Netkit-JH lab.
 If they were physical machines,
 this would roughly correspond to unplugging them from the power socket.
 .PP
+Unlike
+.BR lhalt (1),
+.B lcrash
+may result in a dirty shutdown where integrity of the virtual machines'
+filesystems
+.RI ( .disk " files)"
+cannot be guaranteed.
 First, the UML management console client,
 .BR uml_mconsole ,
 is used to send a
@@ -34,6 +41,10 @@ allows the user to be explicit with what machines are shut down.
 Any invalid
 .I MACHINE
 names will be ignored.
+.PP
+To crash a machine that may not have been launched from a Netkit-JH lab
+(or to crash multiple machines from different labs), use
+.BR vcrash (1).
 .SH OPTIONS
 .SS General options
 .TP
