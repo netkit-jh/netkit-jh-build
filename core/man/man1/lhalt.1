@@ -16,7 +16,7 @@ The UML management console client,
 is used to invoke the Ctrl-Alt-Del handler of
 .BR init (8).
 Typically this would trigger a reboot with
-.RB shutdown (8)
+.BR shutdown (8)
 however the Netkit-JH filesystem has a modified
 .I inittab
 file which changes this behaviour to shutdown immediately.
@@ -30,6 +30,10 @@ allows the user to be explicit with what machines are shut down.
 Any invalid
 .I MACHINE
 names will be ignored.
+.PP
+To halt a machine that may not have been launched from a Netkit-JH lab
+(or to halt multiple machines from different labs), use
+.BR vhalt (1).
 .SH OPTIONS
 .SS General options
 .TP
@@ -41,7 +45,7 @@ By default, the current directory is used.
 .BR \-l ", " \-\-list
 Show a list of virtual machines still running after halting the lab with
 .BR vlist (1).
-.SS Options affecting how machines are crashed
+.SS Options affecting how machines are halted
 .TP
 .BR \-q ", " \-\-quick
 Disable checking if machines have actually shut down.
@@ -87,7 +91,7 @@ determining the hostname list from the directory listing.
 The file is also used to get lab information from the special lab variables.
 If the file is nonexistent, an error will be shown but the core functionality
 of
-.B lcrash
+.B lhalt
 will not be affected.
 See
 .BR lab.conf (5)
@@ -129,6 +133,6 @@ file or, if not present,
 .BR linfo (1),
 .BR lstart (1),
 .BR ltest (1),
-.BR vcrash (1),
+.BR vhalt (1),
 .BR vlist (1),
 .BR lab.conf (5)
