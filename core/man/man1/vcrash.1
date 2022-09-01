@@ -1,157 +1,131 @@
-.TH VCRASH 1 "July 2010" "" "Netkit"
+.TH VCRASH 1 2022-09-01 Linux "Netkit-JH Manual"
 .SH NAME
-vcrash \- crash a running netkit virtual machine
+vcrash \- crash running Netkit-JH machines
 .SH SYNOPSIS
-\fBvcrash\fR [options] \fIMACHINE\-ID\fR...
-
-
-\" ########################################
-
+.B vcrash
+.RI [ OPTION "]... " MACHINE ...
 .SH DESCRIPTION
-
-The \fIvcrash\fR command can be used to forcedly halt running virtual machines.
-It allows both to stop machines immediately (i.e., without having to go through
-their shutdown sequence) and to kill frozen machines. \fIMACHINE\-ID\fR can be
-either the PID or the name of a virtual machine.
-
-This command is quite similar to \fIvhalt\fR (see \fBvhalt\fR(1)), except that
-it is faster and its effect is comparable to that of unplugging the virtual machine
-power cord (as opposed to gracefully shutdown it). This also implies that crashed
-virtual machines will perform a file system integrity check upon their next boot.
-
-The following options can be used to influence the way \fIvcrash\fR behaves.
-
-.TP
-.B
--k
-.PD 0
-.TP
-.B
---just-kill
-By default, virtual machines are crashed by sending them a special directive
-through their management console (mconsole) socket. Such method is generally
-faster, but in some situations it may not work properly (for example, if a
-virtual machine is somewhy frozen). If an attempt to crash a virtual machine
-via the mconsole fails, \fIvcrash\fR automatically tries hard to kill the
-virtual machine processes.
-.br
-By using this option, the attempt with the mconsole socket is simply skipped,
-and \fIvcrash\fR directly kills virtual machine processes. This should work in
-most cases. If still it does not, try using \fIvclean\fR (see \fBvclean\fR(1)).
-
-.TP
-.B
--q
-.PD 0
-.TP
-.B
---quick
-After crashing virtual machines, \fIvcrash\fR waits a few instants to check
-whether they have actually stopped. By using the \fB\-q\fR (\fB\-\-quick\fR)
-option, \fIvcrash\fR exits immediately, without waiting for the
-machine to stop.
-.br
-Notice that, when a virtual machine is crashed via its mconsole socket (default
-if the \fB\-k\fR option is not used), \fIvcrash\fR still waits for the crash
-directive to reach the virtual machine before returning, even when using the
-\fB\-q\fR option. The reason why this is necessary is simple: if somehy the
-directive does not reach the virtual machine within a predefined timeout,
-\fIvcrash\fR takes care of quitting the mconsole helper tool before exiting,
-thus getting rid of unuseful hanging processes.
-      
-.TP
-.B
--r
-.PD 0
-.TP
-.B
---remove-fs
-Delete virtual machine (COW) filesystem after halting machine. This option does not
-affect in any way the model filesystem. In particular, using this option has no
-effect on machines started with the \fB\-\-no\-cow\fR or \fB\-W\fR option.
-See the README in the Netkit filesystem package for more information about COW
-and model filesystems.
-
-.TP
-.B
---test
-Instead of actually crashing virtual machines, just show what would be done
-(i.e., which processes would be killed or which socket would be used to send
-the crash directive).
-
-.TP
-.B
--u \fIUSERNAME\fR
-.PD 0
-.TP
-.B
---user=\fIUSERNAME\fR
-This option limits the range of action of \fIvcrash\fR to machines owned by user
-\fIUSERNAME\fR (i.e., only \fIUSERNAME\fR's machines can be killed). This is
-useful, for example, if you need to crash someone else's machines (which requires
-administrative privileges). By default, \fIvcrash\fR only operates on virtual
-machines owned by the current user (the one who issued the \fIvcrash\fR command).
-The special user name '\fB\-\fR' is reserved, and can be used to crash machines
-regardless of their owner.
-
-Consider that different users may be running virtual machines having the same
-name. Hence, special care must be taken when using the '\fB\-\-user=-\fR'
-option and one or more \fIMACHINE\-ID\fRs are virtual machine names. In this
-case, if two (or more) users are running virtual machines having the same \fIname\fR,
-then only the one returned by
-.nh
-'vlist --user=- \fIname\fR'
-.hy
-is halted.
-                      
+Forcibly shutdown running Netkit-JH
+.IR MACHINE s.
+If they were physical machines,
+this would roughly correspond to unplugging them from the power socket.
+Any invalid
+.I MACHINE
+names will be ignored.
 .PP
-
-\fIvcrash\fR also supports the following options:
-
+Unlike
+.BR vhalt (1),
+.B vcrash
+may result in a dirty shutdown where integrity of the virtual machines'
+filesystems
+.RI ( .disk " files)"
+cannot be guaranteed.
+First, the UML management console client,
+.BR uml_mconsole ,
+is used to send a
+.B halt
+signal to the virtual machine.
+This is repeated once if it fails.
+If the machine is still online, the machine's processes are sent
+.B SIGTERM
+twice to safely terminate.
+If still running, the processes are sent
+.B SIGKILL
+as a last resort to terminate immediately.
+.PP
+To crash an entire Netkit-JH lab, use
+.BR lcrash (1).
+.SH OPTIONS
+.SS General options
 .TP
-.B
--h
-.PD 0
+.B \-\-test
+Do not actually crash the machines,
+just show which processes will be affected.
 .TP
-.B
---help
-Show usage information.
-
+.BR \-u ", " \-\-user =\fIUSERNAME\fR
+Crash machines owned by a different user.
+The special username
+.B \-
+denotes all users and will cause
+.B vcrash
+to shutdown the first host reported by
+.IR "vlist \-\-user=\- MACHINE" .
+By default, machines owned by the current user are targetted.
+.SS Options affecting how machines are crashed
 .TP
-.B
--v
-.PD 0
+.BR \-k ", " \-\-just\-kill
+Crash machines as usual but skip the attempts with
+.BR uml_mconsole .
+The method is generally faster but may corrupt the machines' filesystems
+(which is not an issue if
+.B \-\-remove\-fs
+is used since they will get deleted).
 .TP
-.B
---verbose
-Show which processes are getting killed.
-
+.BR \-q ", " \-\-quick
+Disable checking if machines have actually terminated.
+Like
+.BR \-\-just\-kill , 
+this option will skip invoking
+.B uml_mconsole
+however it also does not send a
+.B SIGTERM
+signal (i.e., only
+.B SIGKILL
+is used).
 .TP
-.B
---version
-Print information about the installed Netkit release and the host kernel version
-and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
-then the corresponding information could not be retrieved (for example because
-a non-standard Netkit kernel or filesystem is being used).
-
-
-
-\" ########################################
-
-.SH "ENVIRONMENT VARIABLES"
-
-All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
-name of the directory Netkit is installed in.
-
-Apart from this, \fIvcrash\fR supports no other environment variables.
-
-
-\" ########################################
-
+.BR \-r ", " \-\-remove\-fs
+After crashing a machine delete its filesystem
+.RI ( .disk " file),
+if exists.
+.SS Miscellaneous options
+.TP
+.B \-\-help
+Display a usage message and exit.
+.TP
+.BR \-v ", " \-\-verbose
+Show which processes are getting terminated.
+.TP
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
 .SH "SEE ALSO"
-\fIvclean\fR(1),
-\fIvconf\fR(1),
-\fIvhalt\fR(1),
-\fIvlist\fR(1),
-\fIvstart\fR(1),
-Netkit filesystem README.
+.BR lcrash (1),
+.BR vhalt (1),
+.BR vlist (1),
+.BR vstart (1)
