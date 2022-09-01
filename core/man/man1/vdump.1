@@ -1,84 +1,106 @@
-.TH VDUMP 1 "May 2011" "" Netkit
+.TH VDUMP 1 2022-09-01 Linux "Netkit-JH Manual"
 .SH NAME
-vdump \- dump information traversing a uml_switch to standard output
+vdump \- dump packets from a Netkit-JH virtual hub
 .SH SYNOPSIS
-\fBvdump\fR \fIVIRTUAL-COLLISION-DOMAIN-ID\fR
-
-
-\" ########################################
-
+.B vdump
+.I DOMAIN
 .SH DESCRIPTION
-The \fIvdump\fR command starts uml_dump, which connect to a specific instance of 
-uml_switch then dump in CAP format the packets received by this virtual switch
-to standard output. This, sniffers like tcpdump or wireshark can be used to
-print packet information.
-
-
-The argument is the virtual collision domain id defined in lab.conf
-
-\" ########################################
-
-.SH OPTIONS
-
+Dump packets from a Netkit-JH virtual hub as a PCAP file to standard output.
+The hub is selected by specifying its collision domain name (value of
+.BR vstart (1)'s
+.BI \-\-eth N
+option or declared in
+.IR lab.conf ).
 .PP
-The following generic options are supported.
-
+.B vdump
+works as a wrapper around
+.BR uml_dump ,
+which itself connects to the UML switch managing the
+.IR DOMAIN .
+The packet capture can be dumped to a file and viewed in a utility like
+.BR tcpdump (8)
+or
+.BR wireshark (1),
+or observed live (see
+.BR EXAMPLES ).
+The capture can safely be terminated with a keyboard interrupt signal
+.RB ( Ctrl-C ).
+.SH OPTIONS
+.SS Miscellaneous options
 .TP
-.B
--h
-.PD 0
+.B \-\-help
+Display a usage message and exit.
 .TP
-.B
---help
-Show usage information.
-
-.TP
-.B
--v
-.PD 0
-.TP
-.B
---verbose
+.BR \-v ", " \-\-verbose
 Show the commands being ran.
-
 .TP
-.B
---version
-Print information about the installed Netkit release and the host kernel version
-and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
-then the corresponding information could not be retrieved (for example because
-a non-standard Netkit kernel or filesystem is being used).
-
-\" ########################################
-
-.SH "ENVIRONMENT VARIABLES"
-
-All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
-name of the directory Netkit is installed in.
-
-Apart from this, \fIvdump\fR supports no other environment variables.
-
-
-\" ########################################
-
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
 .SH EXAMPLES
-
-The following is an example using vdump to dump packets from the virtual
-collision domain id "A" and connect it to tcpdump for human readable
-description of the packets.
-
-  vdump A | tcpdump -r - -S 1500 -U
-
-If you prefer the graphical GUI wireshark:
-
-  vdump A | wireshark -i - -k
-  
-
-\" ########################################
-
+The following examples use
+.B vdump
+to capture packets from the virtual collision domain \(dqA\(dq.
+The basic usage would be dumping the packets to a PCAP file for analysis later:
+.nf
+.IP
+.BR vdump " A > capture.pcap"
+.fi
+.PP
+.BR tcpdump (8)
+can display packets live as they traverse across the hub:
+.nf
+.IP
+.BR vdump " A | " \c
+.BR tcpdump " \-r \-"
+.fi
+.PP
+Similarly,
+.BR wireshark (1)
+can do the same for viewing the packets graphically:
+.nf
+.IP
+.BR vdump " A | " \c
+.BR wireshark " \-i \- \-k"
+.fi
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
 .SH "SEE ALSO"
-\fIvclean\fR(1),
-\fIvconf\fR(1),
-\fIvcrash\fR(1),
-\fIvhalt\fR(1),
-\fIvstart\fR(1).
+.BR vstart (1),
+.BR wireshark (1),
+.BR netkit (7),
+.BR tcpdump (8)
