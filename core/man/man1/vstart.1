@@ -1,633 +1,384 @@
-.TH VSTART 1 "July 2010" "" Netkit
+.TH VSTART 1 2022-09-02 Linux "Netkit-JH Manual"
 .SH NAME
-vstart \- start a new netkit virtual machine
+vstart \- launch a new Netkit-JH machine
 .SH SYNOPSIS
-\fBvstart\fR [options] \fIMACHINE\-NAME\fR
-
-
-\" ########################################
-
+.B vstart
+.RI [ OPTION "]... " MACHINE
 .SH DESCRIPTION
-The \fIvstart\fR command can be used to start a new virtual machine named
-\fIMACHINE\-NAME\fR. Names of virtual machines must be unique for each user.
-Yet, different users can run machines having the same name.
+Start
+.I MACHINE
+with a given configuration.
+Names of virtual machines must be unique per user.
 .PP
-Without providing options, \fIvstart\fR starts a virtual machine whose configuration
-reflects the defaults stored inside the \fInetkit.conf\fR file
-(see \fBnetkit.conf\fR(5)). The options described below can be used to adjust the
-features of a virtual machine upon starting it.
-.PP
-Notice: unless differently stated, command line arguments (\fIMACHINE\-NAME\fR),
-option arguments (e.g., names of collision domains), and any path name (including
-the path to the current directory at the time of invoking \fIvstart\fR) should
-not contain space characters. Not complying to this causes \fIvstart\fR to raise an error.
-
-
-.SS Hardware/Kernel settings
+Invoking with no option arguments will launch the machine with a configuration
+reflecting the variables defined inside the Netkit-JH configuration file\(emsee
+.BR netkit.conf (5).
+.SH OPTIONS
+.SS General options
 .TP
-.B
--k \fIFILENAME\fR
-.PD 0
+.BR \-\-append =\fIPARAM\fR
+Append additional arguments to the UML kernel's command line.
+Since
+.I PARAM
+is added unprocessed to the command, it can be an
+.IR OPTION = VALUE
+pair.
+.B \-\-append
+can be repeated;
+parameters will be added in the same order in which they are provided.
+Documentation regarding supported kernel command-line parameters can be found
+in the kernel source tree.
 .TP
-.B
---kernel=\fIFILENAME\fR
-Each virtual machine can have its own kernel. By using this option, it is possible
-to explicitly choose which kernel should be used for the machine being started.
-\fIFILENAME\fR must be a UML kernel. The default kernel is configured inside the
-\fInetkit.conf\fR file (see \fBnetkit.conf\fR(5)).
-
+.B \-\-debug
+Run the virtual machine under a GDB instance to report more log messages than
+.B \-\-show\-boot\-log
+and to allow further debugging.
+This process requires a
+.B SIGINT
+delivery
+.RI ( "kill -INT PID" )
+to start debugging.
 .TP
-.B
--M \fIMEMORY\fR
-.PD 0
+.BR \-e ", " \-\-exec =\fICMD\fR
+Run
+.I CMD
+during the second boot phase (see
+.IR /etc/netkit/netkit-phase2 ).
 .TP
-.B
---mem=\fIMEMORY\fR
-Set the amount of available RAM inside the virtual machine to \fIMEMORY\fR MB. The
-range of valid amounts and the default amount of memory are both defined inside
-the \fInetkit.conf\fR file (see \fBnetkit.conf\fR(5)). Notice that the memory
-consumed by the virtual machine processes on the host machine can be slightly
-larger than this value.
-
-
+.BR -F ", " \-\-foreground
+Do not launch machines in the background.
+This is implictly enabled when the console mode is
+.BR this .
+.TP
+.BR \-n ", " \-\-dry\-run ", " \-\-just\-print ", " \-\-recon
+Do not run any command, just show what would get executed.
+.TP
+.BR \-\-show\-boot\-log
+Do not hide the Linux boot log in the virtual machine with the \(dqquiet\(dq
+kernel argument.
+This option is useful for quickly finding boot sequence errors.
+.SS Kernel settings
+.TP
+.BR \-k ", " \-\-kernel =\fIFILE\fR
+Use
+.I FILE
+as the UML kernel executable for the virtual machine.
+The default path is the
+.B VM_KERNEL
+configuration variable.
+.TP
+.BR \-M ", " \-\-mem =\fIMEM\fR
+Give the virtual machine
+.I MEM
+MB of RAM.
+Permitted values range from
+.B MIN_MEM
+MB to
+.B MAX_MEM
+MB, defaulting to
+.B VM_MEMORY
+MB.
 .SS Networking settings
 .TP
-.B
---eth\fIN\fR=\fIDOMAIN\fR
-Equip virtual machine with a network interface \fBeth\fIN\fR. \fIN\fR is an integer
-ranging from 0 to a maximum value stored inside the \fInetkit.conf\fR file
-(see \fBnetkit.conf\fR(5)).
-
-Interface \fBeth\fIN\fR will be attached to a (virtual) collision domain whose name
-is \fIDOMAIN\fR. A collision domain can be seen as a sort of virtual hub. Thus,
-attaching interfaces of different virtual machines to the same
-collision domain allows them to exchange network traffic.
-
-Including a comma in \fIDOMAIN\fR defines a 'tap' interface. This is a special socket
-that allows an external to be reached in the virtual machine. A 'tap' interface
-must be declared with the following syntax:
-
+.BR \-\-eth \fIN\fR=\fIDOMAIN\fR
+Add a network interface called
+.RI \(dqeth N \(dq,
+where
+.I N
+is a number between 0 and
+.BI MAX_INTERFACES \-1
+inclusive.
+.I DOMAIN
+is the Netkit-JH collision domain that the interface should be attached to.
+Special TAP domains may also be created with the following syntax:
 .nf
---eth\fIN\fR=\fIDOMAIN\fR,\fITAP\-ADDR\fR,\fIGUEST\-ADDR\fR
-.fi
-                        
-where \fIDOMAIN\fR is a valid collision domain name, \fITAP_ADDR\fR is the IP address of
-the 'host side' of the interface and \fIGUEST_ADDR\fR is the IP address of the
-interface inside the virtual machine. \fITAP_ADDR\fR and \fIGUEST_ADDR\fR must be on
-the same /24 network. Machines can share a 'tap' interface if one uses the same
-\fIDOMAIN\fR and \fITAP_ADDR\fR for them. If an interface on the same \fIDOMAIN\fR with a
-different \fITAP_ADDR\fR already exists, an error will be thrown. Another
-interface with a \fITAP_ADDR\fR within the /24 subnet of another cannot be created;
-likewise, like a regular collision domain, two machines using the same 'tap'
-interface cannot share an IP address (there will be no explicit error for
-either of these scenarios.)
-
-.B
-*** IMPORTANT NOTES ABOUT USING "tap" INTERFACES ***
 .RS
-.IP \(en 2
-Configuring "\fBtap\fR" interfaces for the first time requires administrative
-(root) privileges. The \fIvstart\fR script will take care of asking you for the
-root password if needed. For more information about how Netkit gains root
-privileges, see \fBSETTING UP NETKIT FOR USE WITH SUDO\fR in the man page of
-\fBnetkit.conf\fR(5). The following operations are performed when working as
-root:
-
-1) The '/dev/net/tun' device is created (if it does not exist).
-.br
-2) Permissions for the '/dev/net/tun' device are set to 666 (read/write for all users).
-.br
-3) Any existing network device named 'nk_\fIINTERFACE_SHA256\fR' is brought down and
-removed (\fIINTERFACE_SHA256\fR is the SHA-256 digest of the concatenated SHA-256
-digests of the current username and collision domain name, truncated to 12
-characters long).
-.br
-4) A tap network device named 'nk_\fIINTERFACE_SHA256\fR' is created and configured to
-have IP address \fITAP\-ADDR\fR.
-.br
-5) Kernel based IP forwarding is enabled via the '/proc/sys/net/ipv4/ip_forward'
-special file.
-.br
-6) If the iptables firewall is found, packet forwarding for data coming from the
-tap interface is enabled. Also, masquerading is enabled. More precisely, the following
-rules are added to the current iptables configuration:
-
-*nat
-.br
---append POSTROUTING ! --out-interface lo --match comment --comment Netkit-JH --jump MASQUERADE
-.br
-*filter
-.br
---append FORWARD --in-interface nk_+ --match comment --comment Netkit-JH --jump ACCEPT
-
-All these configuration settings can be easily removed by using the \fBvclean\fR
-command (see \fBvclean\fR(1)).
-
-.IP \(en 2
-Using "\fBtap\fR" interfaces requires some host-side configurations. These
-configurations are not automatically removed after halting virtual machines.
-The \fBvclean\fR command must be used for this purpose (see \fBvclean\fR(1)).
+.IP
+.BR \-\-eth \fIN\fR=\fIDOMAIN\fR,\fITAP_ADDR\fR,\fIGUEST_ADDR\fR
 .RE
-
-
+.fi
+.IP
+where
+.I DOMAIN
+is a valid collision domain name,
+.I TAP_ADDR
+is the IP address of the host's TAP interface, and
+.I GUEST_ADDR
+is the IP address of the regular interface inside the virtual machine.
+.IR TAP_ADDR " and " GUEST_ADDR
+must be on the same /24 subnetwork.
+Machines can share a TAP interface by using the same
+.IR DOMAIN " and " TAP_ADDR
+however, like with any regular subnetwork, issues will arise if they have equal
+.IR GUEST_ADDR s.
+Two interfaces cannot be created on the same
+.I DOMAIN
+but with different
+.IR TAP_ADDR s.
+Also, another interface cannot use a
+.I TAP_ADDR
+within the same /24 subnetwork as another;
+there is currently no error checking for this.
+.IP
+Note: management of TAP interfaces requires administrative privileges since the
+host's network interface and firewall configurations are modified;
+the script will only elevate privileges where necessary.
+TAP configurations on the host are not automatically removed when halting
+machines, the
+.BR vclean (1)
+utility must be used for this purpose.
+For more information on TAP interfaces, refer to
+.BR netkit (7).
 .SS Filesystem settings
 .TP
-.B
--H
-.PD 0
+.BR \-H ", " \-\-no\-hosthome
+Do not mount the user's
+.B HOME
+directory on the host to
+.I /hosthome/
+inside the virtual machine.
 .TP
-.B
---no-hosthome
-By default, the home directory of the current user is made available for
-reading/writing inside the virtual machine under the special directory
-'/hosthome'. This option disables this behaviour, thus not making the host
-filesystem accessible from inside the virtual machine.
-
+.BR \-\-mount =\fISRC\fR,\fIDST\fR
+Mount
+.I SRC
+directory from the host to
+.I DST
+directory (created if it does not exist) inside the virtual machine.
 .TP
-.B
---mount=\fISRC,DST\fR
-Mount \fISRC\fR directory from the host to \fIDST\fR directory in the virtual machine.
-
+.BR \-m ", " \-\-model\-fs =\fIFILE\fR
+Use
+.I FILE
+as a model filesystem for the virtual machine.
+This is the filesystem the machine uses before any modifications are made by
+the user.
+The default is
+.BR VM_MODEL_FS .
+Since the machines each have their own copy-on-write (COW) filesystem,
+.I FILE
+will not be altered in any way unless the
+.B \-\-no\-cow option is used.
+For more information on UML's filesystems, see
+.BR netkit (7).
 .TP
-.B
--m \fIMODEL\-FILESYSTEM\fR
-.PD 0
+.BR \-f ", " \-\-filesystem =\fIFILE\fR
+Use
+.I FILE
+as the machine's COW filesystem.
+By default, this is
+.IR MACHINE.disk .
+The option is incompatible with
+.BR \-\-no\-cow .
+For more information on UML's COW filesystems, see
+.BR netkit (7).
 .TP
-.B
---model-fs=\fIMODEL\-FILESYSTEM\fR
-.PD 0
-.TP
-.B
--f \fIFILESYSTEM\fR
-.PD 0
-.TP
-.B
---filesystem=\fIFILESYSTEM\fR
-Virtual machines need two special files which contain their filesystem.
-
-.RS
-.IP \(en 2
-The whole filesystem of the virtual machine is stored inside a \fImodel file\fR
-(also called \fIbacking file\fR). Upon first startup, every virtual machine has
-the same filesystem, which is the one stored in the \fImodel file\fR.
-.br
-The default name of this file is stored inside the file \fInetkit.conf\fR
-(see \fBnetkit.conf\fR(5)). By explicitly specifying a \fIMODEL\-FILESYSTEM\fR,
-a different model file can be used. \fIMODEL\-FILESYSTEM\fR is the name of a file
-that stores an entire model filesystem for the virtual machines.
-
-.IP \(en 2
-Changes being made to the model filesystem are stored in a different file, based
-on a \fICOW\fR (\fICopy on Write\fR) strategy: whatever is written to the filesystem
-is stored in an external file instead of overwriting the model filesystem.
-.br
-By default, every virtual machine has its own \fICOW file\fR. Such file is
-created in the current directory as soon as the virtual machine is first started. Its
-name is the same as the name of the virtual machine plus the suffix ".disk".
-For example, assuming the current directory is '/home/foo/', starting a new
-virtual machine named "pc1" automatically creates the file '/home/foo/pc1.disk'.
-.br
-By passing a \fIFILESYSTEM\fR name it is possible to use a different COW file.
-If \fIFILESYSTEM\fR is not found, a new file with this name is created. Otherwise,
-\fIFILESYSTEM\fR must be the name of a COW file that has been previously created
-by a virtual machine.
-.br
-Consider that COW files are never automatically removed after a machine has been
-halted or crashed (unless proper options of \fBvhalt\fR or \fBvcrash\fR are being
-used). This allows to preserve filesystem contents across reboots of the virtual
+.BR \-D ", " \-\-hide\-disk\-file
+Delete the COW filesystem
+.RI ( .disk " file)"
+as soon as it is created.
+This will not affect the virtual machine's functionality,
+however will mean any changes are lost between subsequent launches of the
 machine.
-
-.PP
-Both \fIMODEL\-FILESYSTEM\fR and \fIFILESYSTEM\fR must not contain commas ('\fB,\fR')
-in their names.
-
-Options \fB\-f\fR and \fB\-\-filesystem\fR cannot be used in conjunction with
-\fB\-W\fR or \fB\-\-no\-cow\fR.
-
-\fBNotice\fR: it is not possible to combine a \fICOW file\fR with different
-\fImodel file\fRs. Hence, virtual machines must always be started with the
-combination of \fImodel\fR and \fICOW file\fR used upon their first startup.
-
-.B
-*** IMPORTANT NOTES ABOUT THE HOST MACHINE FILESYSTEM ***
-
-In principle, there is no particular restriction on the choice of the filesystem
-(of the host machine) on which \fIMODEL\-FILESYSTEM\fR and \fIFILESYSTEM\fR
-are located. However, installing Netkit on a machine that uses a
-non-standard Linux filesystem (e.g., FAT32) may introduce performance losses
-and/or malfunctions. Please refer to the README file in the Netkit filesystem
-package for more information about this.
-
-.RE
-
-
+The option is incompatible with
+.BR \-\-no\-cow .
 .TP
-.B
--W
-.TP
-.B
---no-cow
-Instead of using two different files for storing filesystem data (as explained
-above), write filesystem changes directly on the model filesystem.
-
-\fINever start two virtual machines with the \fB\-W\fIq option\fR, or your
-filesystem image may get corrupted!
-
-This option cannot be used in conjunction with \fB\-f\fR, 
-.nh
-\fB\-\-filesystem\fR,
-.hy
-\fB\-D\fR, or
-.nh
-\fB\-\-hide\-disk\-file\fR.
-.hy
-
-\fBWarning\fR: by using this option, all the changes being made to the filesystem
-of the virtual machine are made permanent. Do \fBnot\fR use this option unless
-you know what you are doing!
-
-.TP
-.B
--D
-.TP
-.B
---hide-disk-file
-By using this option, the ".disk" file of virtual machines is no longer created
-(actually, it is deleted soon after it is created). This is useful if you do not
-want to scatter temporary disk images around your filesystem. Using this option
-does not compromise in any way the operation of virtual machines, except, of
-course, that the contents of virtual machine filesystems are irremediably lost as
-soon as the machines are stopped.
-
-This option cannot be used in conjunction with \fB\-W\fR or
-.nh
-\fB\-\-no\-cow\fR.
-.hy
-
-
+.BR \-W ", " \-\-no\-cow
+Do not use a COW filesystem.
+Instead, every change to the virtual machine's filesystem is applied directly
+to the model filesystem.
+Never launch multiple machines using the same model filesystem.
+This option is incompatible with
+.BR \-\-filesystem " and " \-\-hide\-disk\-file .
 .SS Console settings
 .TP
-.B
---con0=\fIMODE\fR
-.TP
-.B
---con1=\fIMODE\fR
-Each virtual machine can have at most two console windows, which correspond to
-the virtual terminals (ttys) of the real host. \fBcon0\fR is the primary console,
-and \fBcon1\fR is an optional, secondary console. Depending on the value of
-\fIMODE\fR, each console can be configured to be attached to different terminal
-emulator programs or devices. \fIMODE\fR can be one of the following:
-
+.BR \-\-con0 =\fIMODE\fR
+.TQ
+.BR \-\-con1 =\fIMODE\fR
+Attach the virtual machine's primary and secondary consoles, respectively, to a
+different device.
+Permitted values for
+.I MODE
+are:
 .RS
-.PP
 .TP
-.B
-xterm
-Attach console to a terminal emulator application (the application must be
-correctly installed).
+.B xterm
+Attach to a terminal emulator application.
 .TP
-.B
-this
-Attach console to stdin/stdout (i.e., use the current terminal); \fBthis\fR mode cannot
-be used for both the primary and the secondary console at the same time.
+.B this
+Use the current terminal by attaching to standard input/output.
+Only one console can use this option.
 .TP
-.B
-pty
-Attach console to a pseudo-terminal. You can later reach it by connecting a
-terminal emulator to the corresponding tty (for example, 'screen /dev/ttyp0').
+.B tmux
+Run in a
+.BR tmux (1)
+session (only valid with
+.BR \-\-con0 ).
+The session will be attached to in a new window if
+.B TMUX_OPEN_TERMS
+is set to
+.BR yes ,
+otherwise it can be attached to later with
+.BR vconnect (1).
+See
+.BR \-\-tmux\-attached / \-\-tmux\-detached
+for more information on controlling automatic attachment to the session.
 .TP
-.B
-port:\fItcp\-port\fR
-Attach console to TCP port \fItcp\-port\fR. This console can then be accessed
-by telnetting to that port. The virtual machine will not be actually started
-until the first connection is established. Notice that, if the connection is closed
-while the virtual machine is still running, it won't be possible to access the console
-by telnetting again to \fItcp\-port\fR. In such a case, the virtual machine
-can still be halted by using one of the commands \fBvhalt\fR or \fBvcrash\fR.
-
+.B pty
+Attach to a pseudoterminal.
+This can later be attached to by connecting a terminal emulator to the
+corresponding terminal, for example with
+.IR "screen /dev/ttyN" .
 .TP
-.B
-tmux
-Start the VM within a tmux session (only valid for the primary console).
-
+.BR port: N
+Attach to TCP port
+.IR N .
+This can then be accessed by telnetting to that port.
+The virtual machine will not be actually started until the first connection is
+established,
+and closing the connection will kill the server until the machine is restarted.
 .TP
-.B
-none
-Disable console (primary console cannot be disabled).
-
-.LP
-Default console settings (including the default terminal emulator application to
-be used) are stored inside the \fInetkit.conf\fR configuration file (see
-\fBnetkit.conf\fR(5)).
-
-Using the \fB\-\-con0\fR=\fBthis\fR option also implies \fB\-\-foreground\fR.
+.B none
+Disable the console.
 .RE
-
+.IP
+The default console modes are set in the
+.BR VM_CON0 " and " VM_CON1
+configuration variables.
 .TP
-.B
---xterm=\fITYPE\fR
-Consoles enabled in \fBxterm\fR \fIMODE\fR can make use of different terminal
-emulator applications. In particular, \fITYPE\fR can assume one of the following
-values:
-
+.B \-\-tmux\-attached
+Implicitly use the
+.B tmux
+primary console mode and attach a new window of the chosen terminal emulator
+to the tmux session.
+This is equivalent to
+.IR VM_CON0=tmux " and " TMUX_OPEN_TERMS=yes .
+.TP
+.B \-\-tmux\-detached
+Implicitly use the
+.B tmux
+primary console mode but do not attach to the session.
+This is useful if the user wishes to attach later or in their current terminal
+session.
+It is equivalent to
+.IR VM_CON0=tmux " and " TMUX_OPEN_TERMS=no .
+.TP
+.BR \-\-xterm =\fITYPE\fR
+Specify the terminal emulator application when the console mode is
+.BR xterm .
+The application must be installed on the host system.
+Supported values are:
 .RS
-.PP
 .TP
-.B
-gnome
-use the Gnome Desktop gnome\-terminal.
+.B alacritty
+The lightweight and hardware-accelerated Alacritty terminal.
 .TP
-.B
-konsole
-use the KDE Desktop Environment konsole.
+.B gnome
+Use the GNOME Terminal, GNOME's default terminal emulator.
 .TP
-.B
-alacritty
-use the lightweight Alacritty terminal.
+.B kitty
+kitty is a similar alternative to Alacritty.
 .TP
-.B
-kitty
-use the lightweight Kitty terminal.
+.B kitty\-tab
+Same as
+.B kitty
+but different machiens are opened in different tabs of the same window.
 .TP
-.B
-kitty-tab
-same as \fBkitty\fR, except different virtual machines are opened in different
-tabs of the same kitty window.
+.B konsole
+Use Konsole, KDE's default terminal emulator.
 .TP
-.B
-xterm
-use the standard xterm.
+.B wsl
+Use Windows Subsystem for Linux (WSL) with the default Windows terminal
+emulator.
+This is traditionally the Windows Console Host,
+.BR conhost.exe ,
+but modern systems may use Windows Terminal.
 .TP
-.B
-wsl
-use Windows Conhost (only available on wsl hosts).
+.B wt
+Use Windows Subsystem for Linux (WSL) with the Windows Terminal terminal
+emulator.
 .TP
-.B
-wt
-use Windows Terminal (only available on wsl hosts with Windows Terminal installed).
-
-.LP
-When attaching a console to a terminal emulator, make sure that the corresponding
-application is properly installed.
-.br
-The default terminal emulator application to be used is configured inside the
-\fInetkit.conf\fR file (see \fBnetkit.conf\fR(5)).
-
-  
-.SS Laboratory settings
-The following options can be used when setting up virtual laboratories. In general,
-it is unlikely that you need to directly use them. Instead, laboratories should
-be set up by using the \fBlstart\fR command (see \fBlstart\fR(1)).
-
+.B xterm
+Use xterm, the most compatible terminal emulator.
+.RE
+.IP
+The default terminal emulator is specified in the
+.B TERM_TYPE
+configuration variable.
+.SS Netkit-JH lab options
+Generally, these options should not be used. Instead, the lcommands should be
+used to manage labs. See
+.BR lstart (1)
+for more information.
 .TP
-.B
--e \fICOMMAND\fR
+.BR \-l ", " \-\-hostlab =\fIDIR\fR
+Mount
+.I DIR
+to
+.I /hostlab/
+inside the machine and signify to it that it is part of a Netkit-JH lab
+(which runs further commands in the startup scripts).
+.SS Miscellaneous options
 .TP
-.B
---exec=\fICOMMAND\fR
-Run a specific command inside the virtual machine during the boot phase.
-\fICOMMAND\fR should be the name of an executable command or script.
-
+.B \-\-help
+Display a usage message and exit.
 .TP
-.B
--l \fIDIRECTORY\fR
+.BR \-v ", " \-\-verbose
+Show details about the virtual machine when launching it.
 .TP
-.B
---hostlab=\fIDIRECTORY\fR
-Tell the virtual machine that the base directory for the laboratory is \fIDIRECTORY\fR.
-\fIDIRECTORY\fR is a directory on the host machine which contains information
-about the configuration of the laboratory.
-
-
-.PP
-\fBNotice\fR: options \fB\-l\fR and
-.nh
-\fB\-\-hostlab\fR
-.hy
-make the host filesystem accessible inside the virtual machine even
-if the option \fB\-H\fR or
-.nh
-\fB\-\-no\-hosthome\fR
-.hy
-is being used. In particular, \fIDIRECTORY\fR is made available for reading/writing
-under the '/hostlab' directory in the virtual machine (depending on the option
-being used).
-
-.SS Other options
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
 .TP
-.B
---append=\fIPARAMETER\fR
-Append additional kernel command line parameters when running the virtual machine
-kernel. \fIPARAMETER\fR can be the name of a kernel option (e.g., "quiet") or
-a pair \fIPARAMETER\fR=\fIVALUE\fR. Documentation about supported parameters can
-be found inside the kernel source tree (which you can download at http://www.kernel.org).
-
-This option can be used multiple times, so that several parameters can be appended.
-Parameters will be passed to the kernel in the same order in which they are
-provided.
-
-.TP
-.B
--F
-.TP
-.B
---foreground
-By default, virtual machines are started in background. By using this option,
-\fIvstart\fR waits for the virtual machine to halt (or crash) before giving
-the command line prompt back. Virtual machines are also started in foreground
-when using the \fB\-\-con0\fR=\fBthis\fR or \fB\-\-con1\fR=\fBthis\fR option.
-
-Regardless of this option, virtual hubs are always started in background.
-
-.TP
-.PD 0
-.TP
-.B
-\-\-tmux\-attached
-Run each VM in a tmux session and start a terminal attached to this tmux session. This is the same as setting VM_CON0=tmux and TMUX_OPEN_TERMS=yes in netkit.conf
-
-.TP
-.PD 0
-.TP
-.B
-\-\-tmux\-detached
-Run each VM in a tmux session without opening any terminals. This is the same as setting VM_CON0=tmux and TMUX_OPEN_TERMS=no in netkit.conf
-
-.TP
-.B
--h
-.TP
-.B
---help
-Show usage information. This option also prints out the default values for
-several settings (i.e., those that have been configured inside \fInetkit.conf\fR
-\(em see \fBnetkit.conf\fR(5)).
-
-.TP
-\fB\-n\fR, \fB\-\-dry\-run\fR, \fB\-\-just\-print\fR, \fB\-\-recon\fR
-Instead of actually starting the virtual machine, just show which commands would
-be executed, including those used to start virtual hubs.
-
-.TP
-.B
---show-boot-log
-Do not hide the boot log with 'quiet' when the kernel is booting. This option
-is useful for finding errors in the boot sequence without having to use
---debug.
-
-.TP
-.B
---debug
-Run the virtual machine under a gdb instance to report more messages than with
---show-boot-log, and for further debugging. The process requires a SIGINT
-delivery with kill -INT <pid> to start debugging (if the session booted
-successfully).
-
-.TP
-.B
--v
-.TP
-.B
---verbose
-Show machine details and commands ran.
-
-.TP
-.B
---version
-Print information about the installed Netkit release and the host kernel version
-and exit. If "\fI<unavailable>\fR" is printed instead of a version number,
-then the corresponding information could not be retrieved (for example because
-a non-standard Netkit kernel or filesystem is being used).
-
-
-\" ########################################
-
-.SH "ENVIRONMENT VARIABLES"
-All Netkit commands require that the \fBNETKIT_HOME\fR variable contains
-the name of the directory Netkit is installed in.
-
-\" ########################################
-
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
 .SH FILES
 .TP
-.I
-MACHINE-NAME.disk
-This is the default \fICOW\fR filesystem used by virtual machines. This file
-is automatically created in the current directory as soon as virtual machine
-\fIMACHINE\-NAME\fR is started, if it does not exist yet. It stores all the
-differences between the model filesystem and the current filesystem contents.
-.TP
-.I
-$NETKIT_HOME/netkit.conf
-.TP
-.I
-/etc/netkit.conf
-.TP
-.I
-~/.netkit/netkit.conf
-These files store global defaults for newly started virtual machines. They are
-considered in the order in which they are listed, so that users can override
-system wide settings. For more information about the contents of this file, see
-\fBnetkit.conf\fR(5).
-.TP
-.I
-~/.netkit/hubs/
-This directory stores temporary socket files that are needed for the virtual hubs
-to work properly. These files are automatically removed when unused. A different
-directory may also be configured inside the \fInetkit.conf\fR file (see
-\fBnetkit.conf\fR(5)).
-.TP
-.I
-~/.netkit/mconsole/
-This directory stores temporary socket files that are used to send special
-directives to the virtual machines (e.g., halting commands). These files are
-automatically removed when the corresponding virtual machine is halted or
-crashed. A different directory may also be configured inside the \fInetkit.conf\fR
-file (see \fBnetkit.conf\fR(5)).
-
-
-\" ########################################
-
-.SH EXAMPLES
-.TP
-.B
-.nf
-vstart pc1
-.fi
-Start a new virtual machine named \fBpc1\fR. The 'pc1.disk' file is
-also created in the current directory.
-
-.TP
-.B
-.nf
-vstart mypc1 -k /home/foo/kernel/uml\-kernel -M 128 -m /home/foo/filesystems/model\-fs
-.fi
-Start a new virtual machine named \fBmypc1\fR. The machine will run using kernel
-.nh
-'\fB/home/foo/kernel/uml\-kernel\fR',
-.hy
-will be equipped with \fB128\fR MB of RAM and its
-filesystem contents upon first boot will be those of the model file
-.nh
-'\fB/home/foo/filesystems/model\-fs\fR'.
-.hy
-
-.TP
-.B
-.nf
-vstart producer --eth0=A
-.fi
-.TP
-.B
-.nf
-vstart consumer --eth0=A
-.fi
-Start two virtual machines named \fBproducer\fR and \fBconsumer\fR, which will
-be able to exchange data with each other by using their network interfaces \fBeth0\fR.
-Such interfaces will have to be configured with an IP address before the
-communication can actually take place.
-
-.TP
-.B
-.nf
-vstart router --eth0=tap-domain,10.0.0.1,10.0.0.2 --eth1=A
-.fi
-Start a new virtual machine named \fBrouter\fR. The machine will have two network
-interfaces. Interface \fBeth0\fR will be automatically configured to have IP address
-\fB10.0.0.2\fR when the virtual machine is started. It will be connected to the real
-network, and will have host side IP address \fB10.0.0.1\fR. Interface \fBeth1\fR will be
-attached to the virtual collision domain (i.e., hub) named \fBA\fR and will have
-to be configured by hand inside the virtual machine (for example, by using
-\fBifconfig\fR).
-
-.TP
-.B
-.nf
-vstart test --eth0=A --eth1=B -f /home/foo/myFilesystem -p
-.fi
-Instead of actually starting a virtual machine, show which commands would be
-executed for running one named \fBtest\fR, with two network interfaces attached
-to collision domains \fBA\fR and \fBB\fR and using filesystem
-.nh
-'\fB/home/foo/myFilesystem\fR'.
-.hy
-
-.TP
-.B
-.nf
-vstart conTest --con0=xterm --con1=xterm
-.fi
-Start a virtual machine named \fBconTest\fR having two consoles.
-
-
-\" ########################################
-
+.I MACHINE.disk
+This is the default COW filesystem used by virtual machines.
+If it does not already exist, it is created in the current directory when
+.I MACHINE
+boots.
+It stores all of the differences between the model filesystem and the current
+filesystem contents, allowing persistent changes to be kept across reboots.
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
 .SH "SEE ALSO"
-\fIlstart\fR(1),
-\fInetkit.conf\fR(5),
-\fIvclean\fR(1),
-\fIvconf\fR(1),
-\fIvcrash\fR(1),
-\fIvhalt\fR(1),
-\fIvlist\fR(1),
-Netkit filesystem README.
+.BR lstart (1),
+.BR vclean (1),
+.BR vcommand (1),
+.BR vconf (1),
+.BR vconnect (1),
+.BR vcrash (1),
+.BR vhalt (1),
+.BR netkit.conf (5),
+.BR netkit (7)
