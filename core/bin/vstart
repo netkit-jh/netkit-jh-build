@@ -61,17 +61,15 @@ $(usage_line)
 Start MACHINE with a given configuration.
 
 You can use the following options to adjust the virtual machine parameters:
-      --ethN=[DOMAIN]  equip virtual machine with a network interface ethN,
+      --ethN=DOMAIN   equip virtual machine with a network interface ethN,
                         where N is a number between 0 and $((MAX_INTERFACES - 1)). DOMAIN is the
                         name of the collision domain the interface should be
-                        connected to. Using an empty DOMAIN name (e.g.,
-                        'eth0=') results in detaching the interface from a
-                        running virtual machine.
+                        connected to.
                         Including a comma in DOMAIN defines a 'tap' interface.
                         This is a special socket that allows an external
                         to be reached in the virtual machine. A 'tap' interface
                         must be declared with the following syntax:
-                          --ethX=DOMAIN,TAP_ADDR,GUEST_ADDR
+                          --ethN=DOMAIN,TAP_ADDR,GUEST_ADDR
                         where DOMAIN is a valid collision domain name,
                         TAP_ADDR is the IP address of the 'host side' of the
                         interface and GUEST_ADDR is the IP address of the
@@ -124,8 +122,7 @@ Filesystem settings can be tuned by using the following options:
 Console settings can be altered by the following options:
       --con0=MODE
       --con1=MODE     attach the virtual machine primary (con0) and secondary
-                        (con1) consoles to different devices or terminal
-                        emulators.
+                        (con1) consoles to different devices.
                         Allowed values for MODE are:
                           xterm   attach to a terminal emulator application
                           this    attach to stdin/stdout, i.e., use current
