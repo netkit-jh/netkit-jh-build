@@ -1,354 +1,484 @@
-.TH LAB.CONF 5 "July 2010" "" Netkit
+.TH LAB.CONF 5 2022-09-03 Linux "Netkit-JH Manual"
 .SH NAME
-lab.conf \- configuration of a Netkit lab
-.P
-lab.dep \- dependencies on the startup order of virtual machines in a lab
-
-
-\" ########################################
-
+lab.conf \- configuration of a Netkit-JH lab
+.SH SYNOPSIS
+.I lab.conf
+.PP
+.RI MACHINE /
+.br
+.RI MACHINE .startup
+.PP
+.I shared/
+.br
+.I shared.startup
+.PP
+.IR lab.dep " (see"
+.BR lab.dep (5))
+.PP
+.IR _test/results/ MACHINE .default " (see"
+.BR ltest (1))
+.br
+.IR _test/results/ MACHINE .shared
+.br
+.IR _test/results/ MACHINE .user
+.br
+.IR _test/scripts/ MACHINE .test
+.br
+.IR _test/scripts/shared.test
 .SH DESCRIPTION
-This page describes the files involved in the setup of a Netkit lab and
-illustrates the basic procedure to set up your own virtual network with Netkit.
-
-
-\" ########################################
-
-.SH "CONFIGURING A NETKIT LAB"
-
-A Netkit lab is essentially a directory containing some special files and
-subdirectories. Each subdirectory represents a virtual machine to be started,
-which will be named the same way as the subdirectory itself. Unless differently
-specified, simply the existence of a subdirectory causes a virtual machine to be
-started, even if the subdirectory is empty. Because of virtual machine naming
-conventions, subdirectories must not contain spaces in their names.
-
-The lab directory may contain files and subdirectories having a special meaning.
-In the following, \fIlab\-path\fR is assumed to be the directory where the lab
-is located.
-
-.TP
-.I
-\fIlab\-path\fR/lab.conf
-This is the main lab configuration file. In this file you can specify the names of
-virtual machines to be started, any option that should be used when launching them,
-and the topology of the network that connects them. Optionally, you
-can also provide some descriptive
-information for the lab, which will be displayed upon its startup. This file
-is not explicitly required, but running a lab without a \fIlab.conf\fR file is kind
-of useless...
-
-This file is a list of \fImachine\fR[\fIarg\fR]=\fIvalue\fR assignments, where
-\fIarg\fR can be an integer value or the name of a \fBvstart\fR option (see
-\fBvstart\fR(1)).
-
+This page describes the files involved in the setup of a Netkit-JH lab.
+A Netkit-JH lab is defined as an arbitrary directory containing some special
+files and subdirectories.
+Unless otherwise stated, all files mentioned here are located inside the lab
+directory.
+.PP
+See
+.B EXAMPLES
+for a demonstration directory structure and lab configuration.
+.SS Declaring a machine
+From here on out, a machine's hostname will be denoted as
+.IR MACHINE .
+The hostname must follow Debian's convention set out in
+.BR hostname (7),
+which is enforced by the
+.B hostname_regex
+variable in
+.RI \fBNETKIT_HOME\fR /bin/script_utils .
+This is also RFC-compliant.
+The hostname must therefore
 .RS
-.IP \(en 2
-If \fIarg\fR is an
-integer value, then \fIvalue\fR is the name of the collision domain to which
-interface \fBeth\fIarg\fR of machine \fImachine\fR must be connected (note that
-the name of the collision domain must not contain spaces (' '), underscores ('\fB_\fR'),
-commas ('\fB,\fR'), and dots ('\fB.\fR'), unless it is a "\fBtap\fR" collision
-domain - see \fBvstart\fR(1) for more information). For example, "pc1[0]=CD1" means that
-interface \fBeth0\fR of virtual machine \fBpc1\fR will be connected to collision
-domain \fBCD1\fR.
-.br
-The range of permitted network interfaces is configured inside the file
-\fInetkit.conf\fR (see \fBnetkit.conf\fR(5))
-.br
-The special collision domain name "\fBtap\fR" is reserved, and can be used to
-connect a network interface to an external network (e.g., the Internet). See
-\fBvstart\fR(1) for more information about "\fBtap\fR" collision domains.
-
-.IP \(en 2
-If \fIarg\fR is an option name, then \fImachine\fR will be launched with option
-\fIarg\fR set to value \fIvalue\fR. \fIarg\fR can be the name of any \fBvstart\fR
-option, being it short (e.g., \fB\-L\fR) or long (e.g., \fB\-\-mem\fR), without
-the leading dashes ('\fB\-\fR'). If the option requires an argument, it can be
-passed by providing a \fIvalue\fR. For those options that do not require an
-argument (e.g., \fB\-H\fR), \fIvalue\fR must be omitted.
-.br
-For example, "pc1[mem]=64" specifies that virtual machine \fBpc1\fR will be
-equipped with 64 MB of emulated memory, and "pc1[D]=" tells \fBvstart\fR to hide
-the .disk file for virtual machine \fBpc1\fR.
-
-.PP
-
-The special assignment "LAB_MACHINES=\fImachine\-list\fR" can be used to explicitly
-define the set of virtual machines that are part of the lab. This also allows to start
-a virtual machine even if the corresponding subdirectory does not exist.
-\fImachine\-list\fR is a comma separated list of virtual machine names.
-
-
-It is also possible to provide descriptive information about a lab by using
-one of the following special assignments:
-
-.IP \(en 2
-LAB_DESCRIPTION=\fIstring\fR (a brief description of the purpose of the lab)
-.IP \(en 2
-LAB_VERSION=\fIstring\fR (the version of the lab)
-.IP \(en 2
-LAB_AUTHOR=\fIstring\fR (people who have prepared the lab)
-.IP \(en 2
-LAB_EMAIL=\fIstring\fR (contacts of lab authors)
-.IP \(en 2
-LAB_WEB=\fIstring\fR (useful web reources related to the lab)
-.PP
-
-A line that does not match the above syntax is supposed to be a comment and is
-ignored by \fIlstart\fR. However, in order to establish a uniform convention,
-comment lines should always start with a hash character ('\fB#\fR').
+.IP \[bu] 4
+only contain alphanumeric characters and the hyphen (minus);
+.IP \[bu]
+not start or end with a hyphen (minus); and
+.IP \[bu]
+be 1 to 63 characters long.
 .RE
-
+.PP
+The hostnames are case-insensitive.
+A machine can also not be named \(dqshared\(dq or \(dq_test\(dq,
+for reasons discussed later in this document.
 .TP
-.I
-\fIlab\-path\fR/lab.dep
-If such a file exists in the lab directory, then parallel startup (see \fBlstart\fR(1))
-for that lab
-is automatically enabled, even if option \fB\-p\fR is not used.
-Parallel startup allows to launch several virtual
-machines at once while still obeying some startup order rules. The file \fIlab.dep\fR
-contains dependency rules which tell \fIlstart\fR the order in which virtual
-machines should be started.
-
-\fBNotice\fR: in order to be able to use parallel startup, the \fBmake\fR
-utility must be properly installed.
-
-If you are familiar with Makefiles, \fIlab.dep\fR is simply a list of rules, where
-both targets and prerequisites are names of virtual machines.
-.br
-In particular, a rule inside \fIlab.dep\fR has the following syntax:
-
+.RI MACHINE /
+Each subdirectory represents a virtual machine to be started,
+which will have a hostname the same as the subdirectory name.
+Unless otherwise specified,
+just the existence of a subdirectory causes a virtual machine to get launched,
+even if the subdirectory is empty.
+Because the
+.IR shared/ " and " _test/
+directories are for special functionality (discussed later in this document),
+machines cannot be named \(dqshared\(dq or \(dq_test\(dq, respectively.
+.IP
+Machine directories may contain files that you wish to make available (i.e.,
+copy) inside the virtual machine filesystem.
+A full hierarchy of directories can be created, where the root of the tree is
+.RI MACHINE / .
+For example, the file
+.RI MACHINE /etc/foobar
+will be copied into
+.I /etc/foobar
+of the virtual machine's filesystem.
+Files inside this directory overwrite existing ones in the model filesystem;
+they are also prioritised over those in
+.IR shared/ .
+.SS Configuring machines
+Virtual machines can be given network interfaces and their boot attributes
+(memory, kernel image, filesystem image, etc.) can be changed from the defaults
+set in the Netkit-JH configuration file (see
+.BR netkit.conf (5)).
+.TP
+.I lab.conf
+Every parameter of
+.BR vstart (1)
+can be modified in this file, per machine.
+This file must therefore be used to define the network topology of the lab.
+All lines starting with an invalid assignment are ignored by the parser,
+therefore comments can be made without any specific delimiter.
+A nice method to avoid conflicts with hostnames and lab variables is to use an
+invalid hostname character before the comment, like \(dq#\(dq.
+Note: whitespace in
+.I lab.conf
+is not ignored (there are no quoting or escaping rules).
+.IP
+The configuration file is a list of
+.IR MACHINE [ OPTION ]= VALUE
+assignments, where
+.I OPTION
+is the name of a
+.BR vstart (1)
+short or long option.
+This corresponds to running:
 .nf
-   MACHINE: MACHINE1 MACHINE2 ...
+.RS
+.IP
+.BR vstart " " \c
+.RI \-\- OPTION = VALUE " " MACHINE
+.RE
 .fi
-
-where MACHINE, MACHINE1, MACHINE2, ... are names of virtual machines. The rule
-states that MACHINE can only be started after MACHINE1, MACHINE2, ... have
-completed their boot. Notice that, it they are not dependent on each other, two
-(or more) virtual machines can also be started simultaneously. The maximum number
-of virtual machines that can be started simultaneously can be set by using the
-\fB\-p\fR option of \fIlstart\fR or by configuring the value MAX_SIMULTANEOUS_VMS
-inside \fInetkit.conf\fR (see \fBnetkit.conf\fR(5)).
-
-Lines starting with a hash character ('\fB#\fR') are assumed to be comments and
-simply ignored.
-
+.IP
+For options not requiring a value, simply omit
+.I VALUE
+(but keep the equals sign).
+The configuration line
+.IR MACHINE [ N ]= DOMAIN ,
+where
+.I N
+is an integer,
+will give the machine an
+.RI \(dqeth N \(dq
+network interface and attach it to the
+.I DOMAIN
+collision domain; this is equivalent to running:
+.nf
+.RS
+.IP
+.BR vstart " " \c
+.RI \-\-eth N = DOMAIN " " MACHINE
+.RE
+.fi
+.IP
+A collision domain is a network segment created by Netkit-JH with virtual
+network hubs
+(socket files on the host that the UML virtual machines can interface with).
+Essentially, all machines with a network interface on the same domain will be
+connected with the same physical wire.
+In Netkit-JH, a collision domain must comply with regular expression in
+.BR collision_domain_name_regex ,
+defined in
+.RI \fBNETKIT_HOME\fR /bin/vcommon .
+The name must
+.RS
+.RS
+.IP \[bu] 4
+only contain alphanumeric characters, the underscore, period, or hyphen
+(minus) and
+.IP \[bu]
+be shorter than
+.B UNIX_PATH_MAX
+when combined with other components of the socket file's full path.
+With the default values in
+.BR netkit.conf (5),
+this will leave roughly 55 characters for the domain name.
+.RE
+.RE
+.IP
+Like the option to
+.BR vstart (1),
+the
+.I DOMAIN
+can instead contain commas to configure a TAP interface
+.RI ( DOMAIN , TAP_ADDR , GUEST_ADDR ).
+This is a special setting which involves the creation of a new network
+interface on the host;
+it allows virtual machines to access the Internet and other external networks
+the host is connected to.
+See
+.BR vstart (1)
+for more information.
+.IP
+.I lab.conf
+can also be used to set special variables which provide metadata for the lab.
+This information is outputted to the user at the start of each lcommand.
+The assignments are simple
+.IR VARIABLE = VALUE
+lines; the following variables are supported:
+.RS
+.RS
 .TP
-.I
-\fIlab\-path\fR/\fImachine\fR/
-Each subdirectory inside \fIlab\-path\fR represents a virtual machine to be
-started, whose name will be the same as the one of the subdirectory.
-
-Optionally, this subdirectory may contain files that you wish to make available
-(i.e., copy) inside the virtual machine filesystem. You can also put a full hierarchy of
-directories here. When organizing files inside \fIlab\-path\fR/\fImachine\fR/,
-think of it as if it were the root ('\fB/\fR') directory of the virtual machine.
-For example, a file '\fIlab\-path\fR/\fImachine\fR/foo' will be copied into
-'/foo' inside virtual machine \fImachine\fR.
-
-In case of conflicts, files inside this subdirectory overwrite those
-inside \fIlab\-path\fR/shared/.
-
-.TP 
-.I
-\fIlab\-path\fR/\fImachine\fR.startup
-This file is a shell script that will be launched during the startup of
-virtual machine \fImachine\fR after all the other initialization scripts have
-been executed. This file may be useful, for example, to automatically setup
-IP addresses for network interfaces. It is not required to assign this script
-the executable permission.
-.br
-Note that this script is always executed by using \fB/bin/sh\fR as interpreter.
-If you would like to run a boot-time script using a different interpreter, just
-invoke it inside \fI\fImachine\fR.startup\fR.
-
+.B LAB_AUTHOR
+People who have prepared the lab.
 .TP
-.I
-\fIlab\-path\fR/\fImachine\fR.shutdown
-This file is a shell script that will be executed when virtual machine
-\fImachine\fR is either halted (not crashed) or rebooted. It is not required to
-assign this script the executable permission.
-.br
-Note that this script is always executed by using \fB/bin/sh\fR as interpreter.
-If you would like to run a halt-time script using a different interpreter, just
-invoke it inside \fI\fImachine\fR.shutdown\fR.
-
+.B LAB_DESCRIPTION
+A brief description of the lab.
 .TP
-.I
-\fIlab\-path\fR/shared/ 
-This subdirectory may contain files and directories that you want to make available (i.e., copy)
-inside every virtual machine filesystem. Files should be organized so that
-\fIlab\-path\fR/shared/ corresponds to the root ('\fB/\fR') directory of the
-virtual machines.
-
-In case of conflicts, files inside this subdirectory are overwritten by those
-inside \fIlab\-path\fR/\fImachine\fR/.
-
+.B LAB_EMAIL
+Contact addresses of the authors.
 .TP
-.I
-\fIlab\-path\fR/shared.startup
-This is a shell script that will be run on every virtual machine just
-before \fIlab\-path\fR/\fImachine\fR.startup\fR. It is not required to assign
-this script the executable permission.
-.br
-Note that this script is always executed by using \fB/bin/sh\fR as interpreter.
-If you would like to run a boot-time script using a different interpreter, just
-invoke it inside \fIshared.startup\fR.
-
+.B LAB_VERSION
+Version number of the lab.
 .TP
-.I
-\fIlab\-path\fR/shared.shutdown
-This is a shell script that will be run on every virtual machine just
-after \fIlab\-path\fR/\fImachine\fR.shutdown\fR. It is not required to assign
-this script the executable permission.
-.br
-Note that this script is always executed by using \fB/bin/sh\fR as interpreter.
-If you would like to run a halt-time script using a different interpreter, just
-invoke it inside \fIshared.shutdown\fR.
-
+.B LAB_WEB
+Useful web resources relating to the lab.
+.RE
+.RE
+.IP
+A further special assignment is also supported,
+.BR LAB_MACHINES ,
+which affects how the lcommands generate a list of the lab's virtual machines.
+The default behavior is to create this list from the lab's subdirectory names,
+as previously explained.
+The
+.B LAB_MACHINES
+variable, however,
+is used to explicitly declare machines that comprise the lab and override the
+directory listing.
+It allows the user to create arbitrary utility subdirectories in the lab
+directory without an lcommand mistaking them for machines.
+It also gives the ability to start a virtual machine even if its corresponding
+subdirectory does not exist.
+The variable's value is a comma-separated list of hostnames, for example:
+.nf
+.RS
+.IP
+LAB_MACHINES=apple,banana,grape
+.RE
+.fi
 .TP
-.I
-\fIlab\-path\fR/_test/
-This subdirectory contains information for performing a test of the lab. It may
-be automatically created by \fBltest\fR or may contain user created files
-describing customized tests. For more information about this directory,
-see \fBltest\fR(1).
-
-
-\" ########################################
-
-.SH "HOW TO INFLUENCE THE STARTUP ORDER OF VIRTUAL MACHINES"
-
-Virtual machines are usually launched in arbitrary order. However, there are
-several ways of influencing the order in which they are started up.
-
-.IP \(en 2
-The first way is to provide a list of \fIMACHINE\-NAME\fRs as argument to
-\fIlstart\fR. This ensures that virtual machines are started in the same order
-in which they are listed on the \fIlstart\fR command line. This method overrides
-ordering information obtained from \fIlab.conf\fR.
-
-.IP \(en 2
-It is also possible to use a \fIlab.dep\fR file. This would have the twofold
-benefit of allowing multiple virtual machines to start up simultaneously while
-still preserving a partial ordering among them. This method overrides ordering
-information passed by command line arguments.
-
-
-\" ########################################
-
+.I lab.dep
+If the dependency file exists in the lab directory, parallel startup is
+implicitly enabled.
+The configuration file allows the user to tell
+.BR lstart (1)
+what machines must be started before others.
+For more information, see
+.BR lab.dep (5).
+.SS Machine launch and shutdown scripts
+Shell scripts can be created to be ran at the end of a machine's boot phase or
+the start of its shutdown phase.
+The scripts are interpreted with Bash and do not need their executable bit set.
+See
+.I /etc/netkit/netkit-phase2
+for how exactly this is implemented.
+.TP
+.RI MACHINE .startup
+The final initialization step
+(except lab testing, if enabled)
+after booting a machine is running its startup script.
+This shell script can contain anything.
+In a Netkit-JH lab there would often be commands to bring the network
+interfaces up with an IP address and configure the routing table
+(since this is not done automatically).
+It is useful to start services too,
+since most services available on the filesystem are prevented from
+automatically starting on boot.
+.TP
+.RI MACHINE .shutdown
+The shutdown script is executed when a machine is halted or rebooted
+(not crashed).
+This may be useful to provide some cleanup operations.
+.SS Lab testing
+A Netkit-JH lab can be automatically launched with a set of scripts that output
+to the
+.I _test/
+subdirectory of the lab directory.
+Such functionality is available with the
+.BR ltest (1)
+command.
+.TP
+.IR _test/results/ MACHINE .default
+.TQ
+.IR _test/results/ MACHINE .shared
+.TQ
+.IR _test/results/ MACHINE .user
+Results from the test script included with the Netkit-JH install (see
+.IR /etc/netkit/netkit-test-phase ),
+.IR shared.test ,
+and the user-defined test script
+.RI (MACHINE .test ),
+respectively.
+Their contents are simply the standard output of the scripts.
+.TP
+.IR _test/scripts/ MACHINE .test
+.TQ
+.IR _test/scripts/shared.test
+The optional user-defined test scripts to be ran.
+.RI MACHINE .test
+is host-specific, whereas
+.I shared.test
+runs on every host.
+.SS Shared configurations
+.TP
+.I shared/
+.TQ
+.I shared.startup
+.TQ
+.I shared.shutdown
+Rather than copying configurations that should apply to every lab machine,
+the user can define a shared filesystem or startup/shutdown scripts.
+These operate the same as their machine-specific counterparts however take less
+precendence, so their operations can be overridden
+(i.e., the shared filesystem directory is copied into the machine before its
+own directory, and the shared startup/shutdown scripts are ran before the
+machine-specific ones).
+.SH NOTES
+.SS Temporary files
+When sharing a lab, be sure to remove any temporary files like
+.IR .ready " files,"
+.IR .testdone " files, and"
+.I readyfor.test
+files since they do not provide any additional data to the lab except
+increasing the possiblity of launch errors.
+This is with the exception of COW filesystems
+.RI ( .disk " files),"
+which would be desirable to keep if the lab distributor wishes to share
+temporary changes to each machines' filesystem after running the lab.
+Otherwise, keeping the files is a waste of space and they should be removed
+with
+.BR vclean (1).
+.SS Whitespace
+As previously mentioned,
+Netkit-JH configuration files will not ignore whitespace.
+If writing the lab on a Microsoft Windows system, therefore,
+the user must be sure to remove stray carriage return characters if their
+editor does not use UNIX-style line endings.
 .SH EXAMPLES
-
-The following one is a simple example of a Netkit lab, stored inside the
-directory '/home/foo/lab'.
-
-The directory contents are the following:
-
-.RS 3
+The following is a simple demonstration Netkit-JH lab.
+The lab directory can be anywhere on the machine
+(assuming file permissions are as expected).
+.SS Lab directory structure
+This is a typical lab directory structure.
+If using
+.BR ltest (1),
+there might be an
+.I _ltest/
+directory.
+.PP
+.RS
 .nf
-lab/
-|
-+- lab.conf
-+- lab.dep
-+- pc1/
-+- pc2/
-\\- router/
-   |
-   \\- etc/
-      |
-      \\- zebra/
-         |
-         \\- bgpd.conf
+.I a/
+.I b/
+.I dhcp\-server/
+.RS 4
+.I etc/
+.RS 4
+.I dnsmasq.conf
+.RE
+.RE
+.I router/
+.I shared/
+.RS 4
+.I etc/
+.RS 4
+.I passwd
+.RE
+.RE
+.I a.startup
+.I b.startup
+.I dhcp\-server.startup
+.I router.startup
+.I lab.conf
+.I lab.dep
+.I shared.startup
 .fi
 .RE
-
-The file lab.conf is made up as follows:
-
-.RS 3
+.SS Lab configuration
+A typical
+.I lab.conf
+file could look like this, where the \(dqrouter\(dq machine has two network
+interfaces.
+The \(dqdhcp\-server\(dq has been given 256 MB of memory instead of the default
+128 MB (note that increasing the memory is rarely required for low intensity
+applications).
+.PP
+.RS 4
+.I lab.conf
+.RE
+.RS
 .nf
-pc1[0]=CD1
-pc2[0]=CD2
+a[0]=CD1
+dhcp\-server[0]=CD1
+
 router[0]=CD1
 router[1]=CD2
-pc1[mem]=64
-router[mem]=128
+
+b[0]=CD2
+
+dhcp\-server[mem]=256
 .fi
 .RE
-
-The file lab.dep is made up as follows:
-
-.RS 3
+.PP
+This configuration creates the following network topology,
+where \(dqCD1\(dq and \(dqCD2\(dq are collision domains:
+.PP
+.RS
 .nf
-pc2: router pc1
+                   +\-\-\-\-\-\-\-\-\-\-\-\-+
+                   |   router   |
+                   +\- 0 \-\-\-\- 1 \-+
+                      |      |
++\-\-\-\-\-\-\-\-\-\-\-\-\-+       |      | CD2
+| dhcp-server 0 \-\-\-\-\-\-+      |
++\-\-\-\-\-\-\-\-\-\-\-\-\-+       |       \\    +\-\-\-\-\-\-\-\-\-\-\-\-\-+
+                  CD1 |         \-\- 0      b      |
++\-\-\-\-\-\-\-\-\-\-\-\-\-+      /             +\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|      a      0 \-\-\-\-
++\-\-\-\-\-\-\-\-\-\-\-\-\-+
 .fi
 .RE
-
-This lab implements the following network topology, where \fBCD1\fR and \fBCD2\fR
-are collision domains:
-
-.RS 3
+.PP
+The
+.I lab.dep
+is created to make the launch of \(dqa\(dq and \(dqb\(dq dependent on the
+launch of \(dqdhcp\-server\(dq.
+Because the network topology dictates that \(dqb\(dq cannot get an address
+allocated from the DHCP server until \(dqrouter\(dq is up, there's an
+additional dependency for this.
+See
+.BR lab.dep (5)
+for more information on the structure of this file.
+.PP
+.RS 4
+.I lab.dep
+.RE
+.RS
 .nf
-   eth0   eth0    eth1   eth0
-+---+       +------+       +---+
-|pc1+-------+router+-------+pc2|
-+---+  CD1  +------+  CD2  +---+
-64 MB        128 MB
+a: dhcp\-server
+b: dhcp\-server router
 .fi
 .RE
-
-The lab is extremely simple: there are no automatically configured network
-interfaces or services. There is only a simple configuration file for the BGP
-routing daemon (bgpd) that is automatically deployed inside virtual machine
-\fBrouter\fR under '/etc/zebra/bgpd.conf'.
-
-Assuming the current directory is '/home/foo', it is now possible to launch the
-lab by issuing the command:
-
-.RS 3
-.nf
-lstart -d lab/
-.fi
 .RE
-
-Since a lab.dep file has been created, this lab supports parallel startup.
-Because of the contents of the lab.dep file, \fBrouter\fR and \fBpc1\fR will be
-started simultaneously, while \fBpc2\fR will only be launched after they have
-completed their boot phase.
-
-
-\" ########################################
-
-.SH NOTES
-
-A Netkit lab is essentially a set of configuration files. Virtual machines
-filesystems (.disk files) do not provide additional data or information (except
-in very particular situations). Hence, when a Netkit lab is prepared for
-redistribution, make sure that virtual machines filesystems (.disk files) have
-been removed before creating the package. To this purpose, you can use the
-\fBlclean\fR(1) tool. Failure to do this would result in a
-useless waste of space.
-
-Users who are preparing their labs inside an operating system that is different
-from Linux may experience problems due to differences in line break conventions.
-In particular, Windows applications usually mark line breaks in text files with
-a sequence of CR+NL characters, while in Linux they only consist of a single NL.
-Using lab configuration files that have been processed inside some Windows
-editor may cause problems. In such a case, we recommend to use a standard conversion
-utility such as \fBflip\fR(1) on the
-affected files before using them.
-
-
-\" ########################################
-
+.PP
+Assuming the lab directory is
+.IR /home/netkit/demonstration\-lab/ ,
+the lab can now be launched with:
+.RS
+.TP
+.BR lstart " " \c
+\-d /home/netkit/demonstration\-lab/
+.RE
+.PP
+Since parallel startup is enabled,
+\(dqdhcp\-server\(dq and \(dqrouter\(dq will launch first, together.
+Once \(dqdhcp\-server\(dq has finished booting \(dqa\(dq will launch,
+however \(dqb\(dq will also have to wait for \(dqrouter\(dq's boot to finish.
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
 .SH "SEE ALSO"
-\fIflip\fR(1),
-\fIlclean\fR(1),
-\fIlstart\fR(1),
-\fIvstart\fR(1).
-
-
-\" ########################################
-
-.SH AUTHOR
-This man page: Massimo Rimondini
+.BR lstart (1),
+.BR ltest (1),
+.BR vclean (1),
+.BR vstart (1),
+.BR lab.dep (5),
+.BR netkit.conf (5),
+.BR hostname (7),
+.BR netkit (7)
