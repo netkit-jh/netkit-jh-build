@@ -8,7 +8,7 @@ vpackage \- manage packages on the Netkit-JH model filesystem
 Manage
 .IR PACKAGE s
 on the model Netkit-JH filesystem with
-.BR apt\-get (8)
+.BR apt-get (8)
 or
 .BR dpkg (1).
 .B vpackage
@@ -88,7 +88,7 @@ provided abstractions.
 .B \-\-only\-upgrade
 Do not install the selected packages, just upgrade them (if possible).
 This uses
-.BR apt\-get (8)'s
+.BR apt-get (8)'s
 .B \-\-only\-upgrade
 option and must be used with the
 .B install
@@ -100,7 +100,7 @@ management commands to run
 .B vpackage
 non-interactively.
 This uses
-.BR apt\-get (8)'s
+.BR apt-get (8)'s
 .B \-\-assume\-yes
 option and therefore will not work with subcommands that use other package
 management utilities, like
@@ -158,5 +158,5 @@ file or, if not present,
 .SH "SEE ALSO"
 .BR dpkg (1),
 .BR netkit.conf (5),
-.BR netkit (7),
-.BR apt\-get (8)
+.BR netkit-jh (7),
+.BR apt-get (8)
