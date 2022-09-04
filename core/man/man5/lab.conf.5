@@ -2,29 +2,25 @@
 .SH NAME
 lab.conf \- configuration of a Netkit-JH lab
 .SH SYNOPSIS
+.nf
 .I lab.conf
-.PP
+
 .RI MACHINE /
-.br
 .RI MACHINE .startup
-.PP
+
 .I shared/
-.br
 .I shared.startup
-.PP
-.IR lab.dep " (see"
+
+.IR lab.dep " (see " \c
 .BR lab.dep (5))
-.PP
-.IR _test/results/ MACHINE .default " (see"
+
+.IR _test/results/ MACHINE .default " (see " \c
 .BR ltest (1))
-.br
 .IR _test/results/ MACHINE .shared
-.br
 .IR _test/results/ MACHINE .user
-.br
 .IR _test/scripts/ MACHINE .test
-.br
 .IR _test/scripts/shared.test
+.fi
 .SH DESCRIPTION
 This page describes the files involved in the setup of a Netkit-JH lab.
 A Netkit-JH lab is defined as an arbitrary directory containing some special
