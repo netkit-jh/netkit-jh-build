@@ -1,1 +1,147 @@
-.so man5/lab.conf.5
+.TH LAB.DEP 5 2022-09-04 Linux "Netkit-JH Manual"
+.SH NAME
+lab.dep \- parallel launch configuration of a Netkit-JH lab
+.SH SYNOPSIS
+.I lab.dep
+.SH DESCRIPTION
+This page describes setting up a Netkit-JH lab with parallel startup by using
+the
+.I lab.dep
+file.
+Not only does it make the launch more efficient, since
+.BR lstart (1)
+can boot hosts simulatenously, it allows the user to define a boot
+order\(emwhat machines are dependent on others.
+.TP
+.I lab.dep
+It is recommended that every lab directory has a
+.I lab.dep
+file in the root.
+There are two benefits:
+.RS
+.RS
+.IP \[bu] 4
+Parallel startup is implictly enabled.
+This corresponds to using the
+.B \-p
+option of
+.BR lstart (1);
+the
+.B MAX_SIMULTANEOUS_VMS
+Netkit-JH configuration variable dictates how many machines can boot
+simulatenously.
+.IP \[bu] 4
+Machines dependent on the successful boot of another machine can be declared.
+.RE
+.RE
+.IP
+Stating dependencies is important when creating a lab where a server must exist
+before the clients try to use it in their boot sequence.
+Rather than using a bespoke dependency manager, Netkit-JH uses 
+.BR make (1).
+For consistency,
+.I lab.dep
+uses a Make-style syntax of:
+.RS
+.IP
+.IR target ": " dependencies ...
+.RE
+.IP
+So the line \(dqapple: banana grape\(dq will force
+.BR lstart (1)
+to boot machines \(dqbanana\(dq and \(dqgrape\(dq before booting \(dqapple\(dq.
+A machine is determined to have finished booting when its
+.I .ready
+file is created.
+.IP
+Comments can be added to the file with a \(dq#\(dq at the start of their line.
+.SH NOTES
+Unlike other configuration files, whitespace is ignored when parsing
+.IR lab.dep .
+This means machine hostnames cannot have whitespace in them
+(which should never be an issue in any case).
+.SH EXAMPLES
+This example follows that described in
+.BR lab.conf (5).
+The
+.I lab.conf
+file dictates the following network topology:
+.PP
+.RS
+.nf
+                   +\-\-\-\-\-\-\-\-\-\-\-\-+
+                   |   router   |
+                   +\- 0 \-\-\-\- 1 \-+
+                      |      |
++\-\-\-\-\-\-\-\-\-\-\-\-\-+       |      | CD2
+| dhcp\-server 0 \-\-\-\-\-\-+      |
++\-\-\-\-\-\-\-\-\-\-\-\-\-+       |       \\    +\-\-\-\-\-\-\-\-\-\-\-\-\-+
+                  CD1 |         \-\- 0      b      |
++\-\-\-\-\-\-\-\-\-\-\-\-\-+      /             +\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|      a      0 \-\-\-\-
++\-\-\-\-\-\-\-\-\-\-\-\-\-+
+.fi
+.RE
+.PP
+The
+.I .startup
+files of \(dqa\(dq and \(dqb\(dq have them request an IP address from the
+network's DHCP server (\(dqdhcp\-server\(dq) directly after booting.
+Since this happens without user intervention,
+the lab author must be assured that the DHCP server is booted before \(dqa\(dq
+and \(dqb\(dq make their requests, otherwise the requests will fail.
+\(dqb\(dq has a further constraint where its request will not reach the DHCP
+server unless the \(dqrouter\(dq is online.
+.PP
+The dependency configuration file is therefore created to define a dependency
+of \(dqa\(dq and \(dqb\(dq on \(dqdhcp\-server\(dq,
+and an additional dependency of \(dqb\(dq on \(dqrouter\(dq:
+.PP
+.RS 4
+.I lab.dep
+.RE
+.RS
+.nf
+a: dhcp\-server
+b: dhcp\-server router
+.fi
+.RE
+.RE
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
+.SH "SEE ALSO"
+.BR lstart (1),
+.BR make (1),
+.BR vstart (1),
+.BR lab.conf (5),
+.BR netkit.conf (5),
+.BR netkit (7)
