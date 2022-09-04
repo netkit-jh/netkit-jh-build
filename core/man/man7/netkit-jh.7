@@ -1,0 +1,177 @@
+.TH NETKIT-JH 7 2022-09-04 Linux "Netkit-JH Manual"
+.SH NAME
+Netkit-JH \- the network emulation toolkit
+.SH DESCRIPTION
+Netkit-JH is a self-contained, open-source solution for the emulation of
+computer networks.
+The environment involves implementing each network host as a User-mode Linux
+(UML) virtual machine and layer 1 links as virtual collision domains (hubs).
+.PP
+Each virtual machine can have an arbitrary number of network interfaces.
+Machines can also have zero network interfaces,
+however this is not the application Netkit-JH has been thought for.
+Netkit is not a host emulator, it is a network emulator.
+.PP
+Virtual machines use a regular Debian filesystem which has a variety of
+networking utilities installed on top such as routing daemons, servers,
+firewalls, and diagnostic tools.
+The
+.BR vpackage (1)
+script can be used to add new files or packages to the filesystem.
+.PP
+The kernel used by the machines is a standard Linux kernel which is compiled to
+be run as a userspace process; this is User-mode Linux (UML).
+More information on UML can be found on the kernel source tree and in the User
+Mode Linux book (Jeff Dike, 2006).
+.PP
+Netkit-JH commands are split into two distinct categories:
+\(dqvcommands\(dq and \(dqlcommands\(dq.
+The former are used to manage single virtual machines or the Netkit-JH install
+itself.
+The \(dqlcommands\(dq manage Netkit-JH \(dqlaboratories\(dq,
+which are directories defining the configurations of multiple virtual machines
+in a network.
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
+.SH FILES
+.TP
+.I /etc/netkit.conf
+.TQ
+.BI NETKIT_HOME /netkit.conf
+.TQ
+.I ~/.netkit/netkit.conf
+.TQ
+.BI NETKIT_HOME /netkit.conf.default
+Netkit-JH stores its configuration settings inside a file named
+.IR netkit.conf ,
+which can be placed in up to three locations to change its scope.
+The default settings are assigned in
+.IR netkit.conf.default ;
+the existence of this file is required in order to make Netkit-JH work.
+See
+.BR netkit.conf (5)
+for information about these files.
+.SH AUTHORS
+Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
+and other important contributors who are current or graduate students of WMG,
+University of Warwick.
+A full list of contributors can be found in copyright notices at the top of
+source files.
+.PP
+Netkit-JH is a fork of the now deprecated Netkit-NG,
+maintained by Julien Iguchi-Cartigny of the XLIM Research Institute,
+which itself is a fork of the original project (Netkit).
+Netkit was written by academics at the Computer Networks Laboratory of Roma Tre
+University before being abandoned in favour of Kathará,
+which utilises Python and Docker instead of Bash and UML.
+All iterations of Netkit have introduced important new features and upgraded
+existing ones.
+.PP
+The Netkit-JH team greatly appreciates the work of all previous and current
+maintainers.
+.SH "REPORTING BUGS"
+To report a bug with Netkit-JH,
+please create an issue with the recommended template on the project's
+.UR https://github.com/netkit-jh/netkit-jh-build/issues
+GitHub repository
+.UE .
+For a more complex bug that you know how to fix,
+please consider writing a patch and sending it as a pull request to the GitHub.
+.SH COPYRIGHT
+Like its predecessors,
+Netkit-JH is released under the terms of the GNU General Public License,
+version 3 or later. For a copy of the license see the included
+.I LICENSE.txt
+file or, if not present,
+.UR http://www.gnu.org/licenses/
+.UE .
+.SH "SEE ALSO"
+.BR lclean (1),
+.BR lcrash (1),
+.BR lhalt (1),
+.BR linfo (1),
+.BR lstart (1),
+.BR ltest (1),
+.BR vclean (1),
+.BR vcommand (1),
+.BR vconf (1),
+.BR vconnect (1),
+.BR vcrash (1),
+.BR vdump (1),
+.BR vhalt (1),
+.BR vlist (1),
+.BR vpackage (1),
+.BR vstart (1),
+.BR lab.conf (5),
+.BR lab.dep (5),
+.BR netkit.conf (5),
+.BR netkit-jh (7)
+.SS Resources recommended for learning more about UML or Netkit
+.TP
+.B Netkit-JH's GitHub repository
+.TQ GitHub repository
+.UR https://github.com/netkit-jh/netkit-jh-build
+.UE
+For the most up-to-date information on new releases.
+Please use the GitHub for raising awareness of bugs and for requesting or
+adding new features.
+.TP
+.B Netkit-JH's home page
+.TQ
+.UR https://netkit-jh.github.io/
+.UE
+For further documentation and tutorials on using Netkit-JH.
+.TP
+.B Netkit's home page
+.TQ
+.UR https://www.netkit.org/
+.UE
+The original Netkit project.
+It is now deprecated in favour of Kathará, but the published research papers on
+the development and workings of the project are fascinating.
+.TP
+.B Netkit-NG's home page
+.TQ
+.UR https://netkit-ng.github.io/
+.UE
+A fork of Netkit after it was abandoned but before Kathará was developed.
+The kernel and filesystem was updated alongside the addition of the
+.BR vdump (1)
+script.
+This is what Netkit-JH forked off from.
+.TP
+.B Kathará's home page
+.TQ
+.UR https://www.kathara.org/
+.UE
+The modern iteration of the original Netkit project by the original developers.
+Kathará is based on Python and Docker, not Bash and UML.
+.TP
+.B User-mode Linux's home page
+.TQ
+.UR http://user-mode-linux.sourceforge.net/
+.UE
+The official home page of UML.
+There are links to projects using UML, mailing lists, and other resources.
+.TP
+.B The Linux Kernel Archives
+.TQ
+.UR https://www.kernel.org/
+.UE
+Hosts a handy how-to guide to UML.
+.TP
+.B User Mode Linux
+.TQ
+Jeff Dike (2006)
+The official UML book, authored by UML's creator and maintainer.
+Offers the most in-depth and accurate information regarding UML,
+including guides on more complex applications of the software.
+.PP
+Please also consider referring to the
+.I README.mdown
+file provided with the program for information on building and installing
+Netkit-JH.
