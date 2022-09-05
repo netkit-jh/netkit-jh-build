@@ -175,63 +175,11 @@ this file can be modified to change the stock test functionality.
 To make permanent changes to the file, use
 .BR vstart (1)'s \-\-no\-cow
 or directly mount the filesystem to your host.
-.TP
-.I lab.conf
-Located in the lab directory,
-.I lab.conf
-is used to read the configuration of each virtual machine in a lab.
-The
-.B LAB_MACHINES
-configuration variable, if exists, is also read for the user to override the
-default behaviour of determining the hostname list from the directory listing.
-The file is also used to get lab information from the special lab variables.
-See
-.BR lab.conf (5)
-for more information.
-.TP
-.I lab.dep
-Located in the lab directory,
-.I lab.dep
-is used to determine if the lab supports parallel startup and to read the
-dependency tree.
-See
-.BR lab.dep (5)
-for more information.
-.TP
-.RI MACHINE .disk
-Each
-.I .disk
-file is a machine's copy-on-write (COW) filesystem,
-storing changes made to the machine during runtime.
-These files are removed by default with
-.BR lcrash (1),
-however
-.BR lhalt (1)
-will retain them for rebooting the machines to their states when the lab was
-shut down.
-Like other temporary lab files,
-.BR lclean (1)
-may be used to remove them before restarting the lab.
-For more information on the COW filesystems, see
-.BR netkit-jh (7).
-.TP
-.RI MACHINE .ready
-Temporary files used by
-.B lstart
-to determine which machines have fully booted.
-Unless
-.B \-\-fast
-is used,
-.B lstart
-will not exit until the machine's
-.I .ready
-file has been detected.
-Sometimes, like when a machine fails in the boot phase, there may be
-.I .ready
-files left in the lab directory.
-In this instance,
-.BR lclean (1)
-may be required to remove them before restarting the lab.
+.PP
+For other files relating to the launch of the lab, see
+.BR lstart (1) .
+Please note that all temporary files (including the COW filesystems)
+are removed at the end of testing.
 .SH AUTHORS
 Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
 and other important contributors who are current or graduate students of WMG,
