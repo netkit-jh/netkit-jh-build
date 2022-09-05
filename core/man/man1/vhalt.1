@@ -72,6 +72,20 @@ Output version information and exit.
 All Netkit-JH commands require that the
 .B NETKIT_HOME
 variable is set the path of the directory which Netkit-JH is installed in.
+.SH FILES
+.TP
+.I netkit.conf
+.TQ
+.BI NETKIT_HOME /netkit.conf.default
+Netkit-JH stores its configuration settings inside a file named
+.IR netkit.conf ,
+which can be placed in up to three locations to change its scope.
+The default settings are assigned in
+.IR netkit.conf.default ;
+the existence of this file is required in order to make Netkit-JH work.
+See
+.BR netkit.conf (5)
+for information about these files.
 .SH AUTHORS
 Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
 and other important contributors who are current or graduate students of WMG,
@@ -107,4 +121,5 @@ file or, if not present,
 .BR lhalt (1),
 .BR vcrash (1),
 .BR vlist (1),
-.BR vstart (1)
+.BR vstart (1),
+.BR netkit.conf (5)

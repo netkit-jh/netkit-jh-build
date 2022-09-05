@@ -3,23 +3,23 @@
 lab.conf \- configuration of a Netkit-JH lab
 .SH SYNOPSIS
 .nf
-.I lab.conf
+.B lab.conf
 
-.RI MACHINE /
-.RI MACHINE .startup
+.IB MACHINE /
+.IB MACHINE .startup
 
-.I shared/
-.I shared.startup
+.B shared/
+.B shared.startup
 
-.IR lab.dep " (see " \c
+.BR lab.dep " (see " \c
 .BR lab.dep (5))
 
-.IR _test/results/ MACHINE .default " (see " \c
+.BR _test/results/ \fIMACHINE\fR .default " (see " \c
 .BR ltest (1))
-.IR _test/results/ MACHINE .shared
-.IR _test/results/ MACHINE .user
-.IR _test/scripts/ MACHINE .test
-.IR _test/scripts/shared.test
+.BI _test/results/ MACHINE .shared
+.BI _test/results/ MACHINE .user
+.BI _test/scripts/ MACHINE .test
+.B _test/scripts/shared.test
 .fi
 .SH DESCRIPTION
 This page describes the files involved in the setup of a Netkit-JH lab.
@@ -297,6 +297,26 @@ precendence, so their operations can be overridden
 (i.e., the shared filesystem directory is copied into the machine before its
 own directory, and the shared startup/shutdown scripts are ran before the
 machine-specific ones).
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
+.SH FILES
+.TP
+.I netkit.conf
+.TQ
+.BI NETKIT_HOME /netkit.conf.default
+Netkit-JH stores its configuration settings inside a file named
+.IR netkit.conf ,
+which can be placed in up to three locations to change its scope.
+The default settings are assigned in
+.IR netkit.conf.default ;
+the existence of this file is required in order to make Netkit-JH work.
+See
+.BR netkit.conf (5)
+for information about these files.
 .SH NOTES
 .SS Temporary files
 When sharing a lab, be sure to remove any temporary files like

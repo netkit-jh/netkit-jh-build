@@ -3,11 +3,11 @@
 netkit.conf \- configuration of a Netkit-JH install
 .SH SYNOPSIS
 .nf
-.I /etc/netkit.conf
-.BI NETKIT_HOME /netkit.conf
-.I ~/.netkit/netkit.conf
+.B /etc/netkit.conf
+.RB NETKIT_HOME /netkit.conf
+.B ~/.netkit/netkit.conf
 
-.BI NETKIT_HOME /netkit.conf.default
+.RB NETKIT_HOME /netkit.conf.default
 .fi
 .SH DESCRIPTION
 This file contains configuration variables for the Netkit-JH install.
@@ -271,6 +271,12 @@ Values:
 .TP
 .B UPDATE_CHECK_PERIOD
 How many days to wait before checking for a new release again.
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
 .SH EXAMPLES
 The following is an example configuration file that overrides the defaults in
 .BI NETKIT_HOME /netkit.conf.default
