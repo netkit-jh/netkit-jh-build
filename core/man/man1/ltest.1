@@ -16,7 +16,7 @@ directory is created inside the lab directory.
 The user may premake this and create their own scripts inside the
 .I _test/scripts/
 subdirectory to be ran either on specific hosts (named
-.IR MACHINE.test ", where " MACHINE
+.RI MACHINE .test ", where " MACHINE
 is the hostname) or on all hosts (named
 .IR shared.test ).
 The scripts must be executable and can include a shebang if using Bash as the
@@ -124,16 +124,16 @@ All Netkit-JH commands require that the
 variable is set the path of the directory which Netkit-JH is installed in.
 .SH FILES
 .TP
-.I _test/results/MACHINE.default
+.IR _test/results/ MACHINE .default
 .TQ
-.I _test/results/MACHINE.shared
+.IR _test/results/ MACHINE .shared
 .TQ
-.I _test/results/MACHINE.user
+.IR _test/results/ MACHINE .user
 Output of the stock, shared, and user-created test results for
 .IR MACHINE ,
 respectively.
 .TP
-.I _test/scripts/MACHINE.test
+.IR _test/scripts/ MACHINE .test
 .TQ
 .I _test/scripts/shared.test
 User-created tests to be ran on either just
@@ -160,7 +160,8 @@ to determine when all machines have finished their tests.
 Located in the Netkit-JH filesystem,
 this file can be modified to change the stock test functionality.
 To make permanent changes to the file, use
-.BR vstart (1)'s \-\-no\-cow
+.BR vstart (1)'s
+.B \-\-no\-cow
 or directly mount the filesystem to your host.
 .TP
 .I netkit.conf
