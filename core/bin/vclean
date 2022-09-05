@@ -94,13 +94,12 @@ By default, the script just removes unused virtual hubs.
   -u, --user=USERNAME  Perform operations on processes and tunnels owned by
                         USERNAME. By using the special user name '-' all the
                         processes are affected, regardless of their user (this
-                        requires administrative privileges). Action
-                        --remove-tunnels is not affected by this option.
+                        requires administrative privileges).
+  -q, --quick         Quick mode - do not check if processes have actually
+                        stopped.
 
 Miscellaneous:
 $(help_option)
-  -q, --quick         Quick mode - do not check if processes have actually
-                        stopped.
   -v, --verbose       Show affected processes and files.
 $(version_option)
 

@@ -1,122 +1,79 @@
-.TH VCONNECT 1 "January 2021" "" Netkit-JH
+.TH VCONNECT 1 2022-08-31 Linux "Netkit-JH Manual"
 .SH NAME
-vconnect \- connect to the tmux session of a netkit virtual machine.
+vconnect \- attach to the tmux session of a running Netkit-JH machine
 .SH SYNOPSIS
-\fBvconnect\fR -m \fIMACHINE-NAME\fR --terminal --retry-count N --interval X
-
-This will connect you to the tmux session of machine with name MACHINE-NAME, opening a new terminal as defined by TERM_TYPE in netkit.conf. If the tmux session does not initially exist it will try N times to connect, waiting X seconds between each attempt. After this it will exit
-
-\" ########################################
-
+.B vconnect
+.RI [ OPTION "]... " MACHINE ...
 .SH DESCRIPTION
-The \fIvconnect\fR command connects you to the tmux session of a netkit virtual machine. You can connect either in your current shell, or in a new terminal.
-
-\" ########################################
-
+Attach to the tmux session of a Netkit-JH machine or terminate an existing one.
+Like
+.BR vcommand (1),
+.B vconnect
+relies on the running machine having an active tmux session;
+it should have been launched with a
+.B VM_CON0
+Netkit-JH variable value of
+.B tmux
+(possible by setting
+.I netkit.conf
+appropriately or by using
+.BR vstart "'s " \-\-con0 " or " \-\-tmux\-attached / \-\-tmux\-detached ).
 .SH OPTIONS
-
+.SS General options
 .TP
-.B
--h
-.PD 0
+.BR \-l ", " \-\-list
+List all running sessions on the \(dqnetkit\(dq tmux server.
 .TP
-.B
---help
-Print help message and exit. Other arguments will be ignored.
-
+.BR \-k ", " \-\-kill
+Terminate the
+.IR MACHINE 's
+already-running tmux session (if exists).
 .TP
-.B
--k
-.PD 0
+.B \-\-kill\-all
+Terminate all running sessions on the \(dqnetkit\(dq tmux server.
+.SS Options affecting how a session is attached to
 .TP
-.B
---kill
-Kill the machine's already-running tmux session (if exists).
-
+.BR \-t ", " \-\-terminal
+Connect to the tmux session in a new terminal window.
+The terminal emulator used depends on the
+.B TERM_TYPE
+Netkit-JH configuration variable.
 .TP
-.B
---kill-all
-Kill all running tmux sessions on the 'netkit' server.
-
+.BR \-r ", " \-\-retry\-count =\fIN\fR
+Maximum number of connection attempts that should be made.
 .TP
-.B
--l
-.PD 0
+.BR \-n ", " \-\-interval =\fIN\fR
+Number of seconds to wait between successive connection attempts.
+.SS Miscellaneous options
 .TP
-.B
---list
-List all running sessions on the tmux 'netkit' server.
-
+.B \-\-help
+Display a usage message and exit.
 .TP
-.B
--t
-.PD 0
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
 .TP
-.B
---terminal
-Connect to the tmux session from a new terminal. The terminal opened is dependent on the TERM_TYPE set in netkit.conf.
-
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
+.SH FILES
 .TP
-.B
--m \fIMACHINENAME\fR
-.PD 0
-.TP
-.B
---machine \fIMACHINENAME\fR
-Name of the netkit machine to connect to.
-
-.TP
-.B
--r \fIN\fR
-.PD 0
-.TP
-.B
---retry-count \fIN\fR
-If the first attempt to connect to the tmux session fails,
-retry N times.
-
-.TP
-.B
--n \fIX\fR
-.PD 0
-.TP
-.B
---interval \fIX\fR
-If the first attempt to connect to the tmux session fails,
-and retry-count is more than 1, sleep for X seconds between
-each attempt.
-
-
-\" ########################################
-
-.SH "ENVIRONMENT VARIABLES"
-
-All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
-name of the directory Netkit is installed in.
-
-Apart from this, \fIvconnect\fR supports no other environment variables.
-
-
-\" ########################################
-
+.I netkit.conf
+.TQ
+.BI NETKIT_HOME /netkit.conf.default
+Netkit-JH stores its configuration settings inside a file named
+.IR netkit.conf ,
+which can be placed in up to three locations to change its scope.
+The default settings are assigned in
+.IR netkit.conf.default ;
+the existence of this file is required in order to make Netkit-JH work.
+See
+.BR netkit.conf (5)
+for information about these files.
+.SH AUTHORS
+.so include/authors.man
 .SH "SEE ALSO"
-\fIvclean\fR(1),
-\fIvconf\fR(1),
-\fIvcrash\fR(1),
-\fIvhalt\fR(1),
-\fIvlist\fR(1),
-\fIvcommand\fR(1),
-\fIvstart\fR(1).
-
-
-\" ########################################
-
-.SH AUTHOR
-\fIvconnect\fR script: Billy Bromell
-.br
-This man page: Billy Bromell
-
-
-\" ########################################
-
-.so include/bugreport.man
+.BR vcommand (1),
+.BR vstart (1),
+.BR netkit.conf (5)

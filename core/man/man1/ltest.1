@@ -1,325 +1,195 @@
-.TH LTEST 1 "July 2010" "" Netkit
+.TH LTEST 1 2022-08-31 Linux "Netkit-JH Manual"
 .SH NAME
-ltest \- test a netkit lab
+ltest \- test a Netkit-JH lab
 .SH SYNOPSIS
-\fBltest\fR [options] [\fIMACHINE-NAME\fR...]
-
-
-\" ########################################
-
+.B ltest
+.RI [ OPTION "]... [" MACHINE ]...
 .SH DESCRIPTION
-
-\fIltest\fR is a tool for retrieving and saving information about the state of
-running virtual machines inside a Netkit lab. These information can then be
-distributed with the lab itself, so that users can easily test whether the lab
-still behaves in the expected way when it is being launched on a different
-machine or Netkit distribution.
-
-Basically, \fIltest\fR takes care of launching the lab in a 'test mode',
-running an ad\-hoc set of scripts on virtual machines, and storing their output
-on the host filesystem. After running the test, the lab is then automatically
-stopped and any temporary files are deleted (\fIlcrash\fR then \fIlclean\fR).
-
-In the following, it is assumed that \fIlab\-path\fR is the directory in which
-the lab is located.
-
-Whenever a test is run, a subdirectory '_test' is created inside \fIlab\-path\fR
-(if it does not already exist) and the results of the test are stored inside it.
-Any existing results of previous tests are overwritten.
-
-Providing a list of \fIMACHINE\-NAME\fRs on the command line has the effect of
-limiting the scope of the test to these virtual machines (comparing two
-tests performed on different sets of virtual machines obviously leads to a
-negative outcome).
-
-\fIltest\fR supports the same options as \fIlstart\fR(1), except \fB\-f\fR, and
-some additional options described below.
-
-\fBNOTE\fR: Unless differently specified (e.g., by using the \fB\-\-pass\fR
-option or environment variables), \fIltest\fR runs virtual machines without an
-attached terminal. Therefore, no window will pop up and no output will be shown
-by virtual machines during a test. This has been chosen in order to ease the
-automation of regression tests.
-
-
-\" ########################################
-
-
-.SH OPTIONS
-
-Besides the options supported by \fBlstart\fR, \fBltest\fR also support the
-following options:
-
-.TP
-.B
-\-\-delay=\fINUMBER\fR[\fISUFFIX\fR]
-Wait the specified amount of time after the lab starts before invoking test
-scripts. This can be used to allow the lab to settle. By default, ltest does
-not wait. \fINUMBER\fR and, optionally, \fISUFFIX\fR must be valid to the GNU \fBsleep\fR
-command.
-
-
-\" ########################################
-
-
-.SH "HOW TO PERFORM A TEST"
-
-A Netkit test consists of two kinds of scripts: \fBdefault\fR (built\-in) and
-\fBuser\fR.
-
-.IP \(en 2
-The \fBdefault\fR script is built\-in into the \fIltest\fR support scripts and
-cannot be changed by the user. It runs some commands inside the virtual machine in
-order to store the state of its network interfaces, routing table, listening TCP
-and UDP ports, and running processes.
-
-The output of the \fBdefault\fR script is saved into
-.nh
-'\fIlab\-path\fR/_test/results/\fImachine\fR.default\fR',
-.hy
-where \fImachine\fR is
-the name of the virtual machine the test has been performed on.
-The file format for the output of the default test is quite simple. There are
-several sections which are started by a textual description between square
-brackets. The contents of each section are the output of a specific command.
-The following list describes both the sections and the corresponding commands:
-
+Perform tests on a Netkit-JH lab by launching the lab and running a set of
+Netkit-JH or user-supplied test scripts on each machine.
+Results are saved to the lab directory on the host and checked for failures.
+After all tests are ran, the lab is halted.
+.PP
+When run, the
+.I _test
+directory is created inside the lab directory.
+The user may premake this and create their own scripts inside the
+.I _test/scripts/
+subdirectory to be ran either on specific hosts (named
+.RI MACHINE .test ", where " MACHINE
+is the hostname) or on all hosts (named
+.IR shared.test ).
+The scripts must be executable and can include a shebang if using Bash as the
+interpreter is undesired.
+The default test script provided with Netkit-JH lists a host's network
+interfaces, routing table, active ports, and running processes.
+See
+.I /etc/netkit/netkit-test-phase
+in the Netkit-JH filesystem for more information.
+.PP
+The testing is conducted at the end of the startup sequence's second phase once
+all machines have started (existence of the
+.I readyfor.test
+file in the lab directory) and the time delay has elapsed (see
+.BR \-\-delay ).
+The scripts are ran in the following order: shared, user, then default.
+Note: unless overridden, machines are launched without an attached terminal.
+.PP
+Result files are stored in
+.I _test/results/
+and named with a basename of
+.IR MACHINE \(emthe
+virtual machine's hostname\(emand extension of
+.IR shared ", " user ", or " default
+if they were results of a shared, user-created,
+or stock test script respectively.
+.PP
+To clarify, the following directory structure is typical:
+.PP
 .RS
-.TP
-.B
-[NETWORK INTERFACES]
-(essentially) the output of 'ip addr show'.
-
-.TP
-.B
-[ROUTING TABLE]
-(essentially) the output of 'route -n'.
-
-.TP
-.B
-[LISTENING PORTS]
-(essentially) the output of 'netstat -tuwln'.
-
-.TP
-.B
-[PROCESSES]
-(essentially) the output of 'ps -e -o uid,command'.
-.RE
-
-
-.IP \(en 2
-The \fBuser\fR script may be used to customize the test procedure. In particular,
-it can be used to dump information that are defined by a user through a personal
-script.
-
-\fIltest\fR reads the user test script for machine \fImachine\fR from
-.nh
-'\fIlab\-path\fR/_test/scripts/\fImachine\fR.test\fR'
-.hy
-and writes the output to
-.nh
-'\fIlab\-path\fR/_test/results/\fImachine\fR.user'.
-.hy
-Remember that the user test script must be marked as executable. You can achieve
-this by using the follwing command:
-
-.RS 2
-chmod +x \fIlab\-path\fR/_test/\fImachine\fR.test
-.RE
-
-.IP \(en 2
-A shared \fBuser\fR script may be used to run the same script for all machines
-being tested.
-
-\fIltest\fR reads the shared user test script from
-.nh
-'\fIlab\-path\fR/_test/scripts/shared.test\fR'
-.hy
-and writes the output to
-.nh
-'\fIlab\-path\fR/_test/results/\fImachine\fR.shared'.
-.hy
-
-\fBNotice\fR: every time you launch \fIltest\fR any existing output of previous
-tests is overwritten. Hence, remember to move output files elsewhere before
-performing other instances of the test.
-
-\" ########################################
-
-.SH FILES
-
-.SS Test scripts
-
-.TP
-.I
-\fIlab\-path\fR/_test/\fImachine\fR.test
-This is an executable script created by the user. Actually, it can be any
-kind of executable file (i.e., binary files are allowed as well) and, in case
-it is a script, it can be written in any scripting language whose interpreter
-is installed inside virtual machines.
-
-The only requirement is that it must be an executable file. To achieve this,
-you can use the following command:
-
-.nf
-chmod +x \fIlab\-path\fR/_test/\fImachine\fR.test
-.fi
-
-.SS Test output files
-
-The output of the test scripts is stored inside the following files:
-
-.TP
-.I
-\fIlab\-path\fR/_test/results/\fImachine\fR.default
-This file contains the output of the execution of the default test operations.
-
-.TP
-.I
-\fIlab\-path\fR/_test/results/\fImachine\fR.user
-This file contains the output of the execution of
-\fIlab\-path\fR/_test/\fImachine\fR.test\fR.
-
-.SS Other files
-
-.TP
-.I
-/etc/netkit/netkit-test-phase \fR(inside virtual machines)
-This file is the container for the default test script. It resides in the
-virtual machines filesystem. In case you want to alter the default test
-operations, this is the file you must work on.
-
-\fBNotice\fR: remember to launch a virtual machine by using the \fB\-W\fR option
-of \fBvstart\fR (see \fBvstart\fR(1)) in order to make the changes to
-\fInetkit\-test\-phase\fR permanent. Please read carefully the man page of
-\fBvstart\fR(1) and the README in the Netkit filesystem package before changing
-the Netkit filesystem.
-
-
-\" ########################################
-
-.SH EXAMPLES
-
-The following one is an example of a test file 'pc1.default' that has been
-generated by the default testing script:
-
-.RS 3
-.nf
-[INTERFACES]
-
-lo        Link encap:Local Loopback
-          inet addr:127.0.0.1  Mask:255.0.0.0
-          inet6 addr: ::1/128 Scope:Host
-          UP LOOPBACK RUNNING  MTU:16436  Metric:1
-
-
-[ROUTE]
-
-Kernel IP routing table
-Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
-
-[LISTENING PORTS]
-
-Active Internet connections (servers and established)
-Proto Recv-Q Send-Q Local Address           Foreign Address         State
-
-[PROCESSES]
-
-  UID COMMAND
-    0 init [2]
-    0 [ksoftirqd/0]
-    0 [events/0]
-    0 [khelper]
-    0 [kthread]
-    0 [kblockd/0]
-    0 [pdflush]
-    0 [pdflush]
-    0 [aio/0]
-    0 [kswapd0]
-    0 /bin/sh /etc/init.d/rc 2
-    0 /sbin/klogd
-    0 /sbin/syslogd
-    0 /bin/bash /etc/rc2.d/S99netkit-phase2 start
-    0 /bin/bash /etc/netkit/netkit-test-phase
-    0 /bin/ps -e -o uid,command
-.fi
-.RE
-
-In order to write a customized test script you can proceed as
-follows. Assume your lab is located inside directory
-.nh
-'/home/foo/lab',
-.hy
-and that
-it consists of machines \fBpc1\fR and \fBpc2\fR. The first step to customize the
-test is to create a subdirectory
-.nh
-'/home/foo/lab/_test'.
-.hy
-Once done, you can
-create your own test script
-.nh
-'/home/foo/lab/_test/pc1.test'
-.hy
-for machine \fBpc1\fR.
-For example, the following script can be used to dump the current system time
-of the virtual machine by using python:
-
-.RS 2
-.nf
-#!/usr/bin/python
-import time
-print time.asctime(time.localtime(time.time()));
-.fi
-.RE
-
-It is now possible to launch the lab in test mode by using 'ltest /home/foo/lab'.
-This will execute the default test operations (i.e., dump of network interfaces,
-routing table, etc.) on both \fBpc1\fR and \fBpc2\fR and the customized
-script on \fBpc1\fR only. The results of the tests will be saved into
-.nh
-'/home/foo/lab/_test/results',
-.hy
-and will consist of files 'pc1.default',
-'pc1.user', and 'pc2.default'. In particular, 'pc1.user' should look as
-follows:
-
-.RS 2
-.nf
-Thu Jul 21 18:31:25 2005
-.fi
-.RE
-
-
-\" ########################################
-
-.SH NOTES
-
-The typical usage of this script is for regression tests of Netkit labs over
-different version of Netkit and for testing that Netkit labs work properly on
-different host configurations.
-
-
-\" ########################################
-
-.SH "SEE ALSO"
-
-\fIlstart\fR(1),
-\fIlclean\fR(1),
-\fIlcrash\fR(1),
-\fIlinfo\fR(1),
-\fIlhalt\fR(1).
-    
-
-\" ########################################
-
-.SH AUTHOR
-
-ltest script: Fabio Ricci, Stefano Pettini, Massimo Rimondini
+.I _test/
+.RS
+.I results/
+.RS
+.I a.default
 .br
-This man page: Fabio Ricci, Massimo Rimondini
-
-
-\" ########################################
-
-.so include/bugreport.man
+.I a.shared
+.br
+.I a.user
+.br
+.I b.default
+.br
+.I b.shared
+.RE
+.I scripts/
+.RS
+.I a.test
+.br
+.I shared.test
+.RE
+.RE
+.RE
+.PP
+If invoked with no non-option arguments,
+.B ltest
+tests all virtual machines that comprise the lab.
+Providing a list of
+.IR MACHINE s
+allows the user to be explicit with what machines are tested.
+Any invalid
+.I MACHINE
+names will be ignored.
+.PP
+Refer to
+.BR lab.conf (5)
+for a description of what a Netkit-JH lab consists of and how to configure one.
+For more information on how machines are started, see
+.BR vstart (1),
+which is used on each individual machine to boot it, and
+.BR lstart (1),
+which is what the
+.B ltest
+script is a symbolic link to;
+.B ltest
+supports all the same options except
+.B \-\-fast
+and has an additional option,
+.BR \-\-delay .
+.SH OPTIONS
+See
+.BR lstart (1)
+for a full list of supported options (note:
+.BR -f ", " \-\-fast
+is exclusive to
+.BR lstart ).
+.SS Options affecting the test phase
+.TP
+.BR \-\-delay =\fINUMBER\fR[\fISUFFIX\fR]
+Wait the specified amount of time after the lab starts (detected with
+.IR readyfor.test )
+before executing test scripts.
+This can be used to allow the lab to settle
+(such as giving time for a DHCP server to allocate addresses).
+By default there is no delay.
+.I NUMBER
+and, optionally,
+.I SUFFIX
+(the unit of time) must be valid to
+.BR sleep (1).
+.SH ENVIRONMENT
+.TP
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
+.SH FILES
+.TP
+.IR _test/results/ MACHINE .default
+.TQ
+.IR _test/results/ MACHINE .shared
+.TQ
+.IR _test/results/ MACHINE .user
+Output of the stock, shared, and user-created test results for
+.IR MACHINE ,
+respectively.
+.TP
+.IR _test/scripts/ MACHINE .test
+.TQ
+.I _test/scripts/shared.test
+User-created tests to be ran on either just
+.I MACHINE
+or all machines, respectively.
+The files can be any kind of executable script or binary and,
+unless a shebang is used,
+are interpreted by Bash.
+.TP
+.I readyfor.test
+Temporary file created by
+.B ltest
+once all virtual machines are online.
+This signals to the machines that their test phase can commence.
+.TP
+.RI MACHINE .testdone
+File created in the lab directory by the virtual machine when the test phase
+has completed.
+This temporary file is used by
+.B ltest
+to determine when all machines have finished their tests.
+.TP
+.I /etc/netkit/netkit-test-phase
+Located in the Netkit-JH filesystem,
+this file can be modified to change the stock test functionality.
+To make permanent changes to the file, use
+.BR vstart (1)'s
+.B \-\-no\-cow
+or directly mount the filesystem to your host.
+.TP
+.I netkit.conf
+.TQ
+.BI NETKIT_HOME /netkit.conf.default
+Netkit-JH stores its configuration settings inside a file named
+.IR netkit.conf ,
+which can be placed in up to three locations to change its scope.
+The default settings are assigned in
+.IR netkit.conf.default ;
+the existence of this file is required in order to make Netkit-JH work.
+See
+.BR netkit.conf (5)
+for information about these files.
+.PP
+For other files relating to the launch of the lab, see
+.BR lstart (1) .
+Please note that all temporary files (including the COW filesystems)
+are removed at the end of testing.
+.SH AUTHORS
+.so include/authors.man
+.SH "SEE ALSO"
+.BR lclean (1),
+.BR lcrash (1),
+.BR lhalt (1),
+.BR linfo (1),
+.BR lstart (1),
+.BR vstart (1),
+.BR lab.conf (5),
+.BR lab.dep (5),
+.BR netkit.conf (5)

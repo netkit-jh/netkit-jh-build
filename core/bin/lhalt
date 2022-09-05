@@ -69,8 +69,7 @@ only a subset of the virtual machines that make up the lab.
   -q, --quick         disable checking whether virtual machines have properly
                         shut down. This quickens the halt process, but no
                         warnings are raised if a virtual machine is unable to
-                        shut down. It cannot be used together
-                        with -r
+                        shut down. It cannot be used together with -r
   -r, --remove-fs     delete virtual machines filesystems after halting them.
                         This never impacts the model filesystem. This option
                         cannot be used together with -q

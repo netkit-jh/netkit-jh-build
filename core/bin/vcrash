@@ -60,8 +60,7 @@ usage() {
    cat << END_OF_HELP
 $(usage_line)
 Kill running virtual machines without halting them. This roughly corresponds to
-disconnecting their power plug. MACHINE is either the name or the PID of a
-virtual machine.
+disconnecting their power plug.
 
   -k, --just-kill     by default, virtual machines are crashed by using their
                         mconsole socket. This method is generally faster, but
@@ -150,6 +149,7 @@ kill_by_signaling() {
       # Just kill processes
       kill -KILL "${pids[@]}"
       kill -CONT "${pids[@]}"
+      echo "done."
       return 0
    fi
 

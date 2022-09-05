@@ -1,107 +1,78 @@
-.TH VCOMMAND 1 "January 2021" "" Netkit-JH
+.TH VCOMMAND 1 2022-08-31 Linux "Netkit-JH Manual"
 .SH NAME
-vcommand \- send a command to a netkit virtual machine through its tmux session.
+vcommand \- execute a command on a Netkit-JH machine via its tmux session
 .SH SYNOPSIS
-\fBvcommand\fR -m \fIMACHINE-NAME\fR --timeout 10 --command ping -c1 127.0.0.1
-
-
-\" ########################################
-
+.B vcommand
+.RI [ OPTION "]... " MACHINE " [" COMMAND ]
 .SH DESCRIPTION
-
-\fIvcommand\fR will use the tmux send-keys command to type the command into the tmux session for the machine. It will then wait for the time specified by timeout, then read any new text that has appeared in the tmux session, and print this.
-
-.br
-Note that there is only one shell instance in tmux, so sending multiple commands at once / sending commands while the tmux session is being actively used may result in undesirable behaviour. vcommand gives you access to the input and output of the machines tty, and not an instance of a shell to execute commands in.
-
-\" ########################################
-
+Send a shell
+.I COMMAND
+to a running Netkit-JH
+.I MACHINE
+via its tmux session and send back its output.
+The
+.I COMMAND
+is sent as a string literal to the tmux session with
+.BR send\-keys ,
+making the user responsible for sufficient argument quoting and escaping.
+.PP
+.B vcommand
+relies on the host having an active tmux session,
+so it must have been invoked with a
+.B VM_CON0
+Netkit-JH variable value of
+.B tmux
+(possible by setting
+.I netkit.conf
+appropriately or by using
+.BR vstart "'s " \-\-con0 " or " \-\-tmux\-attached / \-\-tmux\-detached ).
+Because there is only one shell instance per tmux session,
+sending multiple commands at once or when it is attached and being used may
+cause undesirable behaviour;
+.B send\-keys
+provides access to the input of the machine's terminal not an isolated shell.
 .SH OPTIONS
-
+.SS General options
 .TP
-.B
--h
-.PD 0
+.BR \-n ", " \-\-timeout =\fIN\fR
+Wait
+.I N
+seconds after entering the command before reading its output.
+The default value is one second.
+If a command takes a while to execute, consider increasing this value.
+.SS Miscellaneous options
 .TP
-.B
---help
-Print help message and exit. Other arguments will be ignored.
-
+.B \-\-help
+Display a usage message and exit.
 .TP
-.B
--v
-.PD 0
-.TP
-.B
---verbose
+.BR \-v ", " \-\-verbose
 Display debugging messages.
-
 .TP
-.B
--m \fIMACHINENAME\fR
-.PD 0
+.B \-\-version
+Output version information and exit.
+.SH ENVIRONMENT
 .TP
-.B
---machine \fIMACHINENAME\fR
-Name of the netkit machine to send the command to.
-
+.B NETKIT_HOME
+All Netkit-JH commands require that the
+.B NETKIT_HOME
+variable is set the path of the directory which Netkit-JH is installed in.
+.SH FILES
 .TP
-.B
--n \fIN\fR
-.PD 0
-.TP
-.B
---timeout \fIN\fR
-Wait N seconds after entering the command to the tmux before grabbing any new output from the tmux session.
-
-The default value for this is 1 second.
-
-.br
-As we don't have an interactive shell we don't know when a command has finished executing. Therefore we have to choose how long we are going to wait before grabbing any new output.
-
-.TP
-.B
-
--c \fICOMMAND\fR
-.PD 0
-.TP
-.B
---command \fICOMMAND\fR
-Command to send to the tmux session. This should always be
-the last argument given to vcommand. Anything that follows this will be taken as one string and sent to the tmux session.
-
-
-
-\" ########################################
-
-.SH "ENVIRONMENT VARIABLES"
-
-All Netkit commands require that the \fBNETKIT_HOME\fR variable contains the
-name of the directory Netkit is installed in.
-
-Apart from this, \fIvcommand\fR supports no other environment variables.
-
-
-\" ########################################
-
+.I netkit.conf
+.TQ
+.BI NETKIT_HOME /netkit.conf.default
+Netkit-JH stores its configuration settings inside a file named
+.IR netkit.conf ,
+which can be placed in up to three locations to change its scope.
+The default settings are assigned in
+.IR netkit.conf.default ;
+the existence of this file is required in order to make Netkit-JH work.
+See
+.BR netkit.conf (5)
+for information about these files.
+.SH AUTHORS
+.so include/authors.man
 .SH "SEE ALSO"
-\fIvclean\fR(1),
-\fIvconf\fR(1),
-\fIvcrash\fR(1),
-\fIvhalt\fR(1),
-\fIvlist\fR(1),
-\fIvconnect\fR(1),
-\fIvstart\fR(1).
-
-
-\" ########################################
-
-.SH AUTHOR
-\fIvcommand\fR script: Billy Bromell
-.br
-This man page: Billy Bromell
-
-
-\" ########################################
-
-.so include/bugreport.man
+.BR vconnect (1),
+.BR vstart (1),
+.BR netkit.conf (5)

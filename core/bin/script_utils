@@ -427,7 +427,7 @@ validate_netkit_conf_variables
 #    [][]               - for lab.conf parsing
 #    ,                  - for LAB_MACHINES parsing
 #    [,:[:blank:]]      - for the ubd argument (.disk file is named after host)
-#    [\x00-\x27]        - for the on-the-fly Makefile used by lstart
+#    [\x00-\x27:]       - for the on-the-fly Makefile used by lstart
 hostname_regex="([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9])"
 
 # Invalid hostnames (tested irrespective of hostname_regex)
