@@ -168,41 +168,6 @@ All Netkit-JH commands require that the
 variable is set the path of the directory which Netkit-JH is installed in.
 .SH FILES
 .TP
-.I netkit.conf
-.TQ
-.BI NETKIT_HOME /netkit.conf.default
-Netkit-JH stores its configuration settings inside a file named
-.IR netkit.conf ,
-which can be placed in up to three locations to change its scope.
-The default settings are assigned in
-.IR netkit.conf.default ;
-the existence of this file is required in order to make Netkit-JH work.
-See
-.BR netkit.conf (5)
-for information about these files.
-.TP
-.I lab.conf
-Located in the lab directory,
-.I lab.conf
-is used to read the configuration of each virtual machine in a lab.
-The
-.B LAB_MACHINES
-configuration variable, if exists, is also read for the user to override the
-default behaviour of determining the hostname list from the directory listing.
-The file is also used to get lab information from the special lab variables.
-See
-.BR lab.conf (5)
-for more information.
-.TP
-.I lab.dep
-Located in the lab directory,
-.I lab.dep
-is used to determine if the lab supports parallel startup and to read the
-dependency tree.
-See
-.BR lab.dep (5)
-for more information.
-.TP
 .RI MACHINE .disk
 Each
 .I .disk
@@ -237,6 +202,41 @@ files left in the lab directory.
 In this instance,
 .BR lclean (1)
 may be required to remove them before restarting the lab.
+.TP
+.I lab.conf
+Located in the lab directory,
+.I lab.conf
+is used to read the configuration of each virtual machine in a lab.
+The
+.B LAB_MACHINES
+configuration variable, if exists, is also read for the user to override the
+default behaviour of determining the hostname list from the directory listing.
+The file is also used to get lab information from the special lab variables.
+See
+.BR lab.conf (5)
+for more information.
+.TP
+.I lab.dep
+Located in the lab directory,
+.I lab.dep
+is used to determine if the lab supports parallel startup and to read the
+dependency tree.
+See
+.BR lab.dep (5)
+for more information.
+.TP
+.I netkit.conf
+.TQ
+.BI NETKIT_HOME /netkit.conf.default
+Netkit-JH stores its configuration settings inside a file named
+.IR netkit.conf ,
+which can be placed in up to three locations to change its scope.
+The default settings are assigned in
+.IR netkit.conf.default ;
+the existence of this file is required in order to make Netkit-JH work.
+See
+.BR netkit.conf (5)
+for information about these files.
 .SH AUTHORS
 Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
 and other important contributors who are current or graduate students of WMG,

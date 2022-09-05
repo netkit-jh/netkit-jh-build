@@ -332,6 +332,14 @@ All Netkit-JH commands require that the
 variable is set the path of the directory which Netkit-JH is installed in.
 .SH FILES
 .TP
+.RI MACHINE .disk
+This is the default COW filesystem used by virtual machines.
+If it does not already exist, it is created in the current directory when
+.I MACHINE
+boots.
+It stores all of the differences between the model filesystem and the current
+filesystem contents, allowing persistent changes to be kept across reboots.
+.TP
 .I netkit.conf
 .TQ
 .BI NETKIT_HOME /netkit.conf.default
@@ -344,14 +352,6 @@ the existence of this file is required in order to make Netkit-JH work.
 See
 .BR netkit.conf (5)
 for information about these files.
-.TP
-.RI MACHINE .disk
-This is the default COW filesystem used by virtual machines.
-If it does not already exist, it is created in the current directory when
-.I MACHINE
-boots.
-It stores all of the differences between the model filesystem and the current
-filesystem contents, allowing persistent changes to be kept across reboots.
 .SH AUTHORS
 Netkit-JH is maintained by Adam Bromiley, Joshua Hawking,
 and other important contributors who are current or graduate students of WMG,
