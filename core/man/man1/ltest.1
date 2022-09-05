@@ -156,6 +156,19 @@ The files can be any kind of executable script or binary and,
 unless a shebang is used,
 are interpreted by Bash.
 .TP
+.I readyfor.test
+Temporary file created by
+.B ltest
+once all virtual machines are online.
+This signals to the machines that their test phase can commence.
+.TP
+.RI MACHINE .testdone
+File created in the lab directory by the virtual machine when the test phase
+has completed.
+This temporary file is used by
+.B ltest
+to determine when all machines have finished their tests.
+.TP
 .I /etc/netkit/netkit-test-phase
 Located in the Netkit-JH filesystem,
 this file can be modified to change the stock test functionality.
