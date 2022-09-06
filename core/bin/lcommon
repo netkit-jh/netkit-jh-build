@@ -231,7 +231,7 @@ lab_crash() {
    vcrash_args+=(
       ${verbose:+"--verbose"}
       ${quick_mode:+"--quick"}
-      ${keep_fs:-"--remove-fs"}
+      ${keep_fs:+"--keep-fs"}
       ${just_kill:+"--just-kill"}
    )
 
