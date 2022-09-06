@@ -106,11 +106,10 @@ print_vhost_summary() {
    #   USER    20
    #   VHOST   20
    #   PID      5
-   #   SIZE     9
-   # A single space is added between each column, too (3 between SIZE and
-   # INTERFACES).
-   [ -z "$no_header" ] && echo "USER                 VHOST                  PID      SIZE   INTERFACES"
-
+   #   SIZE    11
+   # A single space is added between each column, too (or 3 if field names are
+   # close).
+   [ -z "$no_header" ] && echo "USER                 VHOST                  PID   SIZE (KB)   INTERFACES"
    # Iterate over the PIDs of running Netkit instances.
    # The process hierarchy (relevance of the PGID) is documented in
    # scripts_utils.
@@ -126,7 +125,7 @@ print_vhost_summary() {
 
       get_vhost_info_by_pid "$pid"
 
-      # Total virtual memory usage of the process.
+      # Total virtual memory usage of the process in KiB.
       # Logically this should be the sum of every process in the group (PGID),
       # however in practice just taking the value of the parent process is
       # enough. The value should equate to roughly the size of the machine's
@@ -134,7 +133,7 @@ print_vhost_summary() {
       ((total_memory_usage += vhost_info[memory_usage]))
 
       # No column will be truncated on a value that is too long
-      printf "%-20s %-20s %5d %9d   " \
+      printf "%-20s %-20s %5d %11d   " \
          "${vhost_info[owner]}" \
          "${vhost_info[umid]}" \
          "${vhost_info[pid]}" \
