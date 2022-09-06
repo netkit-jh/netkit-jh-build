@@ -37,7 +37,8 @@ HUB_SOCKET_DIR="$HOME/.netkit/hubs"
 HUB_SOCKET_PREFIX="vhub"
 HUB_SOCKET_EXTENSION=".cnct"
 
-# Log file to record uml_switch output in
+# Log file to record uml_switch output (use a null file name to disable
+# logging).
 HUB_LOG="$HUB_SOCKET_DIR/vhubs.log"
 
 # Default mount directory used by vpackage
