@@ -58,7 +58,9 @@ $(usage_line)
 Dump packets from a Netkit DOMAIN (collision domain) to standard output.
 
 $(help_option)
-  -v, --verbose       show the commands being ran
+  -v, --verbose       show the commands being ran. To avoid conflict with the
+                        packet dump output, these messages will get sent to
+                        standard error
 $(version_option)
 
 END_OF_HELP
@@ -150,5 +152,5 @@ fi
 
 uml_dump_cmd=( "uml_dump" "$socket" )
 
-[ -n "$verbose" ] && echo "Running ==> ${uml_dump_cmd[*]}"
+[ -n "$verbose" ] && echo 1>&2 "Running ==> ${uml_dump_cmd[*]}"
 "${uml_dump_cmd[@]}"
