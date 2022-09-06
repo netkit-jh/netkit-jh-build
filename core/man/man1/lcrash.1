@@ -16,6 +16,7 @@ may result in a dirty shutdown where integrity of the virtual machines'
 filesystems
 .RI ( .disk " files)"
 cannot be guaranteed.
+Therefore, by default, filesystems are removed.
 First, the UML management console client,
 .BR uml_mconsole ,
 is used to send a
@@ -61,11 +62,7 @@ Show a list of virtual machines still running after crashing the lab with
 .BR \-F ", " \-\-keep\-fs
 Preserve changes to the virtual machines by not deleting machines' filesystems
 .RI ( .disk " files)."
-By default,
-.BR vcrash (1)
-is invoked with
-.BR \-\-remove\-fs
-so the filesystems are deleted.
+By default, the filesystems are deleted.
 .TP
 .BR \-k ", " \-\-just\-kill
 Crash machines as usual but skip the attempts with

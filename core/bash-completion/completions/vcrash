@@ -76,7 +76,7 @@ _vcrash() {
          # argument.
          #
          # Covered options:
-         # --help, --just-kill, -k, -q, --quick, -r, --remove-fs, --test, -v,
+         # -F, --help, --just-kill, -k, --keep-fs, -q, --quick, --test, -v,
          # --verbose, --version
          case $current_word in
             -*)

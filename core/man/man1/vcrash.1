@@ -20,6 +20,7 @@ may result in a dirty shutdown where integrity of the virtual machines'
 filesystems
 .RI ( .disk " files)"
 cannot be guaranteed.
+Therefore, by default, filesystems are removed.
 First, the UML management console client,
 .BR uml_mconsole ,
 is used to send a
@@ -53,13 +54,20 @@ to shutdown the first host reported by
 By default, machines owned by the current user are targetted.
 .SS Options affecting how machines are crashed
 .TP
+.BR \-F ", " \-\-keep\-fs
+Preserve changes to the virtual machines by not deleting machines' filesystems
+.RI ( .disk " files)."
+By default,
+.B vcrash
+removes the filesystems.
+.TP
 .BR \-k ", " \-\-just\-kill
 Crash machines as usual but skip the attempts with
 .BR uml_mconsole .
 The method is generally faster but may corrupt the machines' filesystems
 (which is not an issue if
-.B \-\-remove\-fs
-is used since they will get deleted).
+.B \-\-keep\-fs
+is not used since they will get deleted).
 .TP
 .BR \-q ", " \-\-quick
 Disable checking if machines have actually terminated.
@@ -72,11 +80,6 @@ however it also does not send a
 signal (i.e., only
 .B SIGKILL
 is used).
-.TP
-.BR \-r ", " \-\-remove\-fs
-After crashing a machine delete its filesystem
-.RI ( .disk " file),
-if exists.
 .SS Miscellaneous options
 .TP
 .B \-\-help

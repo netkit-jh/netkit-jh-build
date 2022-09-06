@@ -60,8 +60,16 @@ usage() {
    cat << END_OF_HELP
 $(usage_line)
 Kill running virtual machines without halting them. This roughly corresponds to
-disconnecting their power plug.
+disconnecting their power plug. This is very fast but at the same time may
+cause filesystem inconsistencies inside virtual machines. By default,
+filesystems are removed.
 
+  -F, --keep-fs       avoid deleting virtual machines filesystems. This is
+                        useful when virtual machines are to be restarted while
+                        preserving filesystem contents. By default, all the
+                        filesystems are deleted after crashing the
+                        corresponding virtual machine. Notice that, regardless
+                        of this option, the model filesystem is never deleted
   -k, --just-kill     by default, virtual machines are crashed by using their
                         mconsole socket. This method is generally faster, but
                         in some situations it may not work properly (for
@@ -78,10 +86,6 @@ disconnecting their power plug.
                         when mconsole is being used (default behaviour unless
                         -k is used). Of course, a check inside vcrash prevents
                         from waiting endlessly
-  -r, --remove-fs     delete virtual machine (COW) filesystem after crashing
-                        machine. Using this option has no effect on machines
-                        started with the --no-cow option. Log files are not
-                        removed
       --test          do not actually crash virtual machines. Just show which
                         processes would be killed or which mconsole socket
                         would be used to send the crash directive
@@ -280,8 +284,8 @@ target_user=$USER_ID
 
 
 # Get command line options
-long_opts="help,just-kill,quick,remove-fs,root,test,user:,verbose,version"
-short_opts="kqru:v"
+long_opts="help,just-kill,keep-fs,quick,test,user:,verbose,version"
+short_opts="Fkqu:v"
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
    # getopt will output the errorneous command-line argument
@@ -293,6 +297,9 @@ eval set -- "$getopt_opts"
 
 while true; do
    case $1 in
+      -F|--keep-fs)
+         keep_fs=1
+         ;;
       --help)
          usage 0
          ;;
@@ -301,9 +308,6 @@ while true; do
          ;;
       -q|--quick)
          quick_mode=1
-         ;;
-      -r|--remove-fs)
-         rm_fs=1
          ;;
       --test)
          test_mode=1
@@ -379,8 +383,8 @@ for vhost in "${vhosts[@]}"; do
          tmux -L netkit kill-session -t "$vhost-dead"
       fi
 
-      # Remove filesystem (.disk file)
-      [ -n "$rm_fs" ] && [ -n "${vhost_info[disk]}" ] &&
+      # Remove filesystem (.disk file) by default
+      [ -z "$keep_fs" ] && [ -n "${vhost_info[disk]}" ] &&
          rm --force --verbose -- "${vhost_info[disk]}"
    fi
 done
