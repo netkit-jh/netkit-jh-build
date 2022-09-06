@@ -326,7 +326,7 @@ get_vhost_info_by_pid() {
    # Effective user ID of the process (full username if not too long)
    vhost_info[owner]=$(ps --no-headers --format euser --pid "$pid")
 
-   # Total virtual memory usage of the process.
+   # Total virtual memory usage of the process in KiB.
    # Logically this should be the sum of every process in the group (PGID),
    # however in practice just taking the value of the parent process is enough.
    # The value should equate to roughly the size of the machine's memory.
