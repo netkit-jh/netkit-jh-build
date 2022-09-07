@@ -91,11 +91,11 @@ open_terminal() {
 
    case $TERM_TYPE in
       alacritty)     term_cmd=( "alacritty" "--command" );;
+      conhost)       term_cmd=( "conhost.exe" "--" "wsl.exe" "--exec" );;
       kitty)         term_cmd=( "kitty" );;
       kitty-tab)     term_cmd=( "$NETKIT_HOME/bin/kitty-tab.sh" );;
       konsole)       term_cmd=( "konsole" "--nofork" "-e" );;
-      wsl)           term_cmd=( "cmd.exe" "/c" "start" "wsl.exe" );;
-      wt)            term_cmd=( "cmd.exe" "/c" "wt.exe" "--profile" "netkit" "wsl.exe" );;
+      wt)            term_cmd=( "wt.exe" "wsl.exe" "--exec" );;
       xterm)         term_cmd=( "xterm" "-e" );;
       *)
          echo "Terminal '$TERM_TYPE' not supported, defaulting to xterm."

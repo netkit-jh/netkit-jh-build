@@ -1,7 +1,7 @@
 NAME=WSL compatiblity
-DESCRIPTION=Simple lab with two machines joined by a router, using Gnome terminal emulator.
+DESCRIPTION=Simple lab with two machines joined by a router, using Windows Console Host.
 LAB_FOLDER=abr
 LAB_TIMEOUT=60
 FILES=ping_successful_a,ping_successful_b
 TIMEOUT=90
-TERMINAL=wsl
+TERMINAL=conhost

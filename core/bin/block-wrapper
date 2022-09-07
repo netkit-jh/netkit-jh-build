@@ -62,11 +62,11 @@ wt_safe_bash_cmd=( "bash" "-c" "$pid_cmd\\; ${kernel_cmd[*]@Q}" )
 
 case $term in
    alacritty)  alacritty --command                                                         "${bash_cmd[@]}";;
+   conhost)    conhost.exe -- wsl.exe --exec                                               "${bash_cmd[@]}" > /dev/null 2>&1;;
    gnome)      gnome-terminal --title "$vhost" --                                          "${bash_cmd[@]}";;
    kitty)      kitty --title "$vhost"                                                      "${bash_cmd[@]}";;
    kitty-tab)  "$NETKIT_HOME/bin/kitty-tab.sh"                                             "${bash_cmd[@]}";;
    konsole)    konsole --nofork --title "$vhost" -e                                        "${bash_cmd[@]}";;
-   wsl)        cmd.exe /c start wsl.exe                                                    "${bash_cmd[@]}";;
    wt)         wt.exe --suppressApplicationTitle --title "$vhost" wsl.exe --exec           "${wt_safe_bash_cmd[@]}";;
    xterm)      xterm -xrm 'XTerm*allowTitleOps: false' -T "$vhost" -e                      "${bash_cmd[@]}";;
    tmux)       tmux -L netkit -f "$NETKIT_HOME/tools/tmux.conf" new-session -d -s "$vhost" "${bash_cmd[@]}";;

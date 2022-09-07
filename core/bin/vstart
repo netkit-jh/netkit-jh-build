@@ -138,14 +138,14 @@ Console settings can be altered by the following options:
       --xterm=TYPE    specify the terminal emulator application. The following
                         values are supported:
                           alacritty    use the lightweight Alacritty terminal
+                          conhost      use Windows Subsystem for Linux (WSL) in
+                                        a conhost.exe window
                           gnome        use the GNOME Terminal
                           kitty        use the lightweight Kitty terminal
                           kitty-tab    same as above, but different virtual
                                         machines are opened in different kitty
                                         tabs of the same window
                           konsole      use the KDE Konsole
-                          wsl          use Windows Subsystem for Linux (WSL) in
-                                        a conhost.exe window
                           wt           use Windows Subsystem for Linux (WSL) in
                                         a Windows Terminal window
                           xterm        use the standard xterm (default)
@@ -494,7 +494,7 @@ while true; do
          TERM_TYPE=$2
          shift
 
-         if [[ ! "$TERM_TYPE" =~ ^(konsole|gnome|xterm|alacritty|kitty|kitty-tab|wsl|wt)$ ]]; then
+         if [[ ! "$TERM_TYPE" =~ ^(alacritty|conhost|gnome|kitty|kitty-tab|konsole|wt|xterm)$ ]]; then
             error "'$TERM_TYPE' is an invalid terminal emulator"
             usage 1
          fi
@@ -553,9 +553,9 @@ if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "
    # Some xterm option arguments are not their relevant executable's name. We
    # hence map these edge cases here.
    case $TERM_TYPE in
+      conhost)       term_executable="conhost.exe";;
       gnome)         term_executable="gnome-terminal";;
       kitty-tab )    term_executable="kitty";;
-      wsl)           term_executable="wsl.exe";;
       wt)            term_executable="wt.exe";;
       *)             term_executable=$TERM_TYPE;;
    esac
