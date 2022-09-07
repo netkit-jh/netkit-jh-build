@@ -1,6 +1,8 @@
 apache2
 avahi-daemon
 bind9
+bird
+bird6
 cron
 dbus
 dnsmasq
