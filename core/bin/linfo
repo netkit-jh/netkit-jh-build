@@ -119,6 +119,37 @@ lab_map() {
 
 
 ###############################################################################
+# Suitably escape an identifier in the DOT language.
+# Usage:
+#   dot_escape STR
+# Arguments:
+#   $1 - string to escape
+###############################################################################
+dot_escape() {
+   # Backslash-escape all quotation marks.
+   echo "${1//\"/\\\"}"
+}
+
+
+###############################################################################
+# Suitably escape a substituted string in XML.
+# Usage:
+#   xml_escape STR
+# Arguments:
+#   $1 - string to escape
+###############################################################################
+xml_escape() {
+   # Replace &><"' with their respective XML escapes.
+   sed \
+      --expression "s/\&/\&amp;/g" \
+      --expression "s/>/\&gt;/g" \
+      --expression "s/</\&lt;/g" \
+      --expression "s/\"/\&quot;/g" \
+      --expression "s/'/\&apos;/g" <<< "$1"
+}
+
+
+###############################################################################
 # Generate a DOT language graph from a list of lab.conf files and virtual
 # machine names and write to standard output.
 # Usage:
@@ -174,7 +205,7 @@ EOF
 
          # Add an edge between the machine and its collision domain
          cat << EOF
-   "$vhost" -- "$value" [
+   "$(dot_escape "$vhost")" -- "$(dot_escape "$value")" [
       taillabel=<<TABLE BGCOLOR="white" BORDER="0" CELLPADDING="1" CELLSPACING="0"><TR><TD>eth$opt</TD></TR></TABLE>>,
       labeldistance=1.5,
       labelfontsize=8.0
@@ -186,16 +217,16 @@ EOF
          # safe.
          interface_ids[$vhost]+=" $opt "
       else
-         opts[$vhost]+="$opt${value+" = $value"}<BR/>"
+         opts[$vhost]+="$(xml_escape "$opt${value+" = $value"}")<BR/>"
       fi
    done < <(grep --extended-regexp --no-filename -- "^$hostname_regex\[.*\]" "${lab_confs[@]}")
 
    # Label each machine with its hostname and vstart options
    for vhost in "${lab_vhosts[@]}"; do
       cat << EOF
-   "$vhost" [
+   "$(dot_escape "$vhost")" [
       shape="box",
-      label=<$vhost<FONT POINT-SIZE="10"><BR/>${opts[$vhost]}</FONT>>,
+      label=<$(xml_escape "$vhost")<FONT POINT-SIZE="10"><BR/>${opts[$vhost]}</FONT>>,
       height=0.5,
       width=0.5
    ]
@@ -205,7 +236,7 @@ EOF
    # Remove bounding box from collision domain labels (just text)
    for hub_name in "${hub_names[@]}"; do
       cat << EOF
-   "$hub_name" [
+   "$(dot_escape "$hub_name")" [
       shape="plaintext",
       width=0,
       height=0,
