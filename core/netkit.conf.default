@@ -79,8 +79,8 @@ VM_CON1=none
 # console option argument is tmux.
 TMUX_OPEN_TERMS=no
 
-# Terminal emulator for consoles. Allowed values are: alacritty, gnome, kitty,
-# kitty-tab, konsole, wsl, wt, and xterm.
+# Terminal emulator for consoles. Allowed values are: alacritty, conhost,
+# gnome, kitty, kitty-tab, konsole, wt, and xterm.
 TERM_TYPE=xterm
 
 

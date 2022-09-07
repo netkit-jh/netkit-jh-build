@@ -29,11 +29,11 @@ echo ">  Checking availability of terminal emulator applications:"
 
 terminal_emulators=(
    "alacritty"
+   "conhost.exe"
    "gnome-terminal"
    "kitty"
    "konsole"
    "tmux"
-   "wsl.exe"
    "wt.exe"
    "xterm"
 )
