@@ -132,6 +132,24 @@ dot_escape() {
 
 
 ###############################################################################
+# Suitably escape a substituted string in XML.
+# Usage:
+#   xml_escape STR
+# Arguments:
+#   $1 - string to escape
+###############################################################################
+xml_escape() {
+   # Replace &><"' with their respective XML escapes.
+   sed \
+      --expression "s/\&/\&amp;/g" \
+      --expression "s/>/\&gt;/g" \
+      --expression "s/</\&lt;/g" \
+      --expression "s/\"/\&quot;/g" \
+      --expression "s/'/\&apos;/g" <<< "$1"
+}
+
+
+###############################################################################
 # Generate a DOT language graph from a list of lab.conf files and virtual
 # machine names and write to standard output.
 # Usage:
@@ -199,7 +217,7 @@ EOF
          # safe.
          interface_ids[$vhost]+=" $opt "
       else
-         opts[$vhost]+="$opt${value+" = $value"}<BR/>"
+         opts[$vhost]+="$(xml_escape "$opt${value+" = $value"}")<BR/>"
       fi
    done < <(grep --extended-regexp --no-filename -- "^$hostname_regex\[.*\]" "${lab_confs[@]}")
 
@@ -208,7 +226,7 @@ EOF
       cat << EOF
    "$(dot_escape "$vhost")" [
       shape="box",
-      label=<$vhost<FONT POINT-SIZE="10"><BR/>${opts[$vhost]}</FONT>>,
+      label=<$(xml_escape "$vhost")<FONT POINT-SIZE="10"><BR/>${opts[$vhost]}</FONT>>,
       height=0.5,
       width=0.5
    ]
