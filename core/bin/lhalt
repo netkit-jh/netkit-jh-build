@@ -166,7 +166,7 @@ if [ ! -d "$lab_dir" ]; then
 fi
 
 # Filesystem cannot be removed if we are working in quick mode
-if [ -n "$rm_fs" ] && [ -z "$quick_mode" ]; then
+if [ -n "$rm_fs" ] && [ -n "$quick_mode" ]; then
    error "filesystems cannot be removed (-r) when working in quick mode (-q)"
    exit 1
 fi
