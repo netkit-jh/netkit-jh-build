@@ -337,8 +337,12 @@ fi
 
 # Restore existing configuration file, if exists
 if [ -n "$backup_dir" ]; then
-   echo "Restoring previous configuration ($backup_dir/netkit.conf)"
-   cp -- "$backup_dir/netkit.conf" "$install_dir"
+   netkit_conf="$backup_dir/netkit.conf"
+   echo "Restoring previous configuration ($netkit_conf)"
+
+   if ! cp -- "$netkit_conf" "$install_dir"; then
+      echo 1>&2 "$SCRIPTNAME: $netkit_conf: File does not exist; ignoring"
+   fi
 fi
 
 
