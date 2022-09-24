@@ -137,7 +137,7 @@ case $action in
       echo "done."
 
       # Create a new masquerade rule if it doesn't already exist.
-      if ! "${sudo_cmd[@]}" iptables --table nat --check "${postrouting_rule[@]}" 2> /dev/null; then
+      if ! "${sudo_cmd[@]}" iptables --table nat --check "${postrouting_rule[@]}" > /dev/null 2>&1; then
          printf "Enabling masquerading...\t\t\t\t"
          if ! "${sudo_cmd[@]}" iptables --table nat --append "${postrouting_rule[@]}"; then
             echo "failed."
@@ -147,7 +147,7 @@ case $action in
       fi
 
       # Create a new forwarding rule if it doesn't already exist.
-      if ! "${sudo_cmd[@]}" iptables --check "${forward_rule[@]}" 2> /dev/null; then
+      if ! "${sudo_cmd[@]}" iptables --check "${forward_rule[@]}" > /dev/null 2>&1; then
          printf "Opening firewall for tunnel...\t\t\t\t"
          if ! "${sudo_cmd[@]}" iptables --insert "${forward_rule[@]}"; then
             echo "failed."
@@ -164,7 +164,7 @@ case $action in
 
       if [ -z "$target_user" ]; then
          printf "Checking firewall...\t\t\t\t\t"
-         if "${sudo_cmd[@]}" iptables --check "${forward_rule[@]}" 2> /dev/null; then
+         if "${sudo_cmd[@]}" iptables --check "${forward_rule[@]}" > /dev/null 2>&1; then
             echo "done."
             printf "Closing firewall...\t\t\t\t\t"
             if ! "${sudo_cmd[@]}" iptables --delete "${forward_rule[@]}"; then
@@ -176,7 +176,7 @@ case $action in
             echo "done."
          fi
 
-         if "${sudo_cmd[@]}" iptables --table nat --check "${postrouting_rule[@]}" 2> /dev/null; then
+         if "${sudo_cmd[@]}" iptables --table nat --check "${postrouting_rule[@]}" > /dev/null 2>&1; then
             printf "Disabling masquerading...\t\t\t\t"
             if ! "${sudo_cmd[@]}" iptables --table nat --delete "${postrouting_rule[@]}"; then
                echo "failed."
