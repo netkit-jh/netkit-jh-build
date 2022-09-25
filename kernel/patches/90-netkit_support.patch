@@ -113,7 +113,6 @@ diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
 +		}
 +		addr [0] &= 0xfe; /* clear multicast bit */
 +		addr [0] |= 0x02; /* set local assignment bit (IEEE802) */
-+		eth_hw_addr_set(dev, addr);
 +	#endif
 +	return;
  }
