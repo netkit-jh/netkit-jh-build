@@ -1,9 +1,10 @@
-diff -urpN b/arch/um/drivers/Makefile a/arch/um/drivers/Makefile
---- b/arch/um/drivers/Makefile	2013-12-16 19:28:47.782089822 +0100
-+++ a/arch/um/drivers/Makefile	2013-12-16 19:30:49.150095750 +0100
-@@ -17,9 +17,9 @@ ubd-objs := ubd_kern.o ubd_user.o
- port-objs := port_kern.o port_user.o
+Index: a/arch/um/drivers/Makefile
+===================================================================
+--- b/arch/um/drivers/Makefile
++++ a/arch/um/drivers/Makefile
+@@ -19,9 +19,9 @@ port-objs := port_kern.o port_user.o
  harddog-objs := harddog_kern.o harddog_user.o
+ rtc-objs := rtc_kern.o rtc_user.o
  
 -LDFLAGS_pcap.o = $(shell $(CC) $(KBUILD_CFLAGS) -print-file-name=libpcap.a)
 +LDFLAGS_pcap.o = -L$(shell dirname `$(CC) $(KBUILD_CFLAGS) -print-file-name=libpcap.a`) -lpcap
@@ -12,10 +13,11 @@ diff -urpN b/arch/um/drivers/Makefile a/arch/um/drivers/Makefile
 +LDFLAGS_vde.o = -L$(shell dirname `$(CC) $(CFLAGS) -print-file-name=libvdeplug.a`) -lvdeplug
  
  targets := pcap_kern.o pcap_user.o vde_kern.o vde_user.o
-
-diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
---- b/arch/um/drivers/net_kern.c	2021-07-27 03:48:35.633933822 -0700
-+++ a/arch/um/drivers/net_kern.c	2021-07-27 03:58:42.398457614 -0700
+ 
+Index: a/arch/um/drivers/net_kern.c
+===================================================================
+--- b/arch/um/drivers/net_kern.c
++++ a/arch/um/drivers/net_kern.c
 @@ -25,11 +25,61 @@
  #include <net_kern.h>
  #include <net_user.h>
@@ -79,15 +81,15 @@ diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
   * The drop_skb is used when we can't allocate an skb.  The
   * packet is read into drop_skb in order to get the data off the
 @@ -279,6 +329,7 @@ void uml_net_setup_etheraddr(struct net_
- 	unsigned char *addr = dev->dev_addr;
+ 	u8 addr[ETH_ALEN];
  	char *end;
  	int i;
 +	u8 hash[SHA1_DIGEST_SIZE];
  
  	if (str == NULL)
  		goto random;
-@@ -318,10 +369,27 @@ void uml_net_setup_etheraddr(struct net_
- 	}
+@@ -319,10 +370,28 @@ void uml_net_setup_etheraddr(struct net_
+ 	eth_hw_addr_set(dev, addr);
  	return;
  
 -random:
@@ -113,15 +115,17 @@ diff -urpN b/arch/um/drivers/net_kern.c a/arch/um/drivers/net_kern.c
 +		}
 +		addr [0] &= 0xfe; /* clear multicast bit */
 +		addr [0] |= 0x02; /* set local assignment bit (IEEE802) */
++		eth_hw_addr_set(dev, addr);
 +	#endif
 +	return;
  }
  
  static DEFINE_SPINLOCK(devices_lock);
-diff -urpN b/arch/um/drivers/ubd_kern.c a/arch/um/drivers/ubd_kern.c
---- b/arch/um/drivers/ubd_kern.c	2013-12-16 19:28:47.770089822 +0100
-+++ a/arch/um/drivers/ubd_kern.c	2013-12-16 19:30:49.182093627 +0100
-@@ -745,7 +745,7 @@ static void ubd_close_dev(struct ubd *ub
+Index: a/arch/um/drivers/ubd_kern.c
+===================================================================
+--- b/arch/um/drivers/ubd_kern.c
++++ a/arch/um/drivers/ubd_kern.c
+@@ -740,7 +740,7 @@ static void ubd_close_dev(struct ubd *ub
  static int ubd_open_dev(struct ubd *ubd_dev)
  {
  	struct openflags flags;
@@ -130,7 +134,7 @@ diff -urpN b/arch/um/drivers/ubd_kern.c a/arch/um/drivers/ubd_kern.c
  	int err, create_cow, *create_ptr;
  	int fd;
  
-@@ -754,6 +754,11 @@ static int ubd_open_dev(struct ubd *ubd_
+@@ -749,6 +749,11 @@ static int ubd_open_dev(struct ubd *ubd_
  	create_ptr = (ubd_dev->cow.file != NULL) ? &create_cow : NULL;
  	back_ptr = ubd_dev->no_cow ? NULL : &ubd_dev->cow.file;
  
@@ -142,12 +146,13 @@ diff -urpN b/arch/um/drivers/ubd_kern.c a/arch/um/drivers/ubd_kern.c
  	fd = open_ubd_file(ubd_dev->file, &ubd_dev->openflags, ubd_dev->shared,
  				back_ptr, &ubd_dev->cow.bitmap_offset,
  				&ubd_dev->cow.bitmap_len, &ubd_dev->cow.data_offset,
-diff -urpN b/arch/um/drivers/Kconfig a/arch/um/drivers/Kconfig
---- b/arch/um/drivers/Kconfig	2013-12-16 19:28:47.714089820 +0100
-+++ a/arch/um/drivers/Kconfig	2013-12-16 19:30:49.142096611 +0100
-@@ -21,6 +21,19 @@ config UML_NET
-         enable at least one of the following transport options to actually
-         make use of UML networking.
+Index: a/arch/um/drivers/Kconfig
+===================================================================
+--- b/arch/um/drivers/Kconfig
++++ a/arch/um/drivers/Kconfig
+@@ -153,6 +153,19 @@ config UML_NET
+ 	  enable at least one of the following transport options to actually
+ 	  make use of UML networking.
  
 +config UML_NET_RANDOM_MAC
 +	bool "Use random MAC addresses for network interfaces"
@@ -163,6 +168,5 @@ diff -urpN b/arch/um/drivers/Kconfig a/arch/um/drivers/Kconfig
 +        is useful to make MAC addresses predictable.
 +
  config UML_NET_ETHERTAP
- 	bool "Ethertap transport"
+ 	bool "Ethertap transport (obsolete)"
  	depends on UML_NET
-
