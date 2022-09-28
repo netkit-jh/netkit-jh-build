@@ -457,24 +457,30 @@ new_version_check() {
 
    current_date=$(date +%s)
 
-   if [ "$current_date" -gt "$next_update_check" ] ||
-      [ ! -f "$latest_release_version_file" ] ||
-      [ ! -f "$latest_prerelease_version_file" ]; then
+   if [ -f "$latest_release_version_file" ] &&
+      [ -f "$latest_prerelease_version_file" ]; then
+      # Get the latest versions locally.
+      latest_release_version=$(cat -- "$latest_release_version_file")
+      latest_prerelease_version=$(cat -- "$latest_prerelease_version_file")
+   fi
 
-      # We haven't checked in the past UPDATE_CHECK_PERIOD days or we have
-      # never checked (no version files) - check now.
-      echo "$current_date" > "$NETKIT_HOME/.last-update-check"
-
+   if [ -z "$latest_release_version" ] ||
+      [ -z "$latest_prerelease_version" ] ||
+      [ "$current_date" -gt "$next_update_check" ]; then
+      # The release files do not exist or are empty, or we haven't checked in
+      # the past UPDATE_CHECK_PERIOD days - check now.
       latest_release_version=$(get_latest_release_version)
       latest_prerelease_version=$(get_latest_prerelease_version)
 
+      if [ -z "$latest_release_version" ] ||
+         [ -z "$latest_prerelease_version" ]; then
+         warn "failed to get the latest Netkit-JH version information"
+         return
+      fi
+
+      echo "$current_date" > "$NETKIT_HOME/.last-update-check"
       echo "$latest_release_version" > "$latest_release_version_file"
       echo "$latest_prerelease_version" > "$latest_prerelease_version_file"
-   else
-      # We have checked in the past UPDATE_CHECK_PERIOD days and the version
-      # files both exist - get the latest versions locally.
-      latest_release_version=$(cat -- "$latest_release_version_file")
-      latest_prerelease_version=$(cat -- "$latest_prerelease_version_file")
    fi
 
    current_version=$(sed -- "s/Netkit version //g" "$NETKIT_HOME/netkit-version")
