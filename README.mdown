@@ -20,6 +20,12 @@ sudo make
 ```
 Install with `make install`.
 
+**Note:** packages required to actually run Netkit-JH must be installed separately:
+```bash
+sudo apt install bash binutils coreutils curl iproute2 \
+    iptables jq lsof make man-db util-linux xterm
+```
+
 ## Building from source (Docker)
 Netkit can alternatively be built with Docker to alleviate platform-specific issues:
 ```bash
@@ -28,3 +34,4 @@ docker pull netkitjh/netkit-builder-deb
 docker run --privileged --rm -v "$(pwd):/netkit-build" -it netkitjh/netkit-builder-deb
 ```
 Install with `make install`.
+Like when building from source with `make`, Netkit-JH dependencies must be installed separately.
