@@ -6,6 +6,7 @@ After=netkit-mount.service
 Type=oneshot
 ExecStart=/etc/netkit/netkit-phase1 start
 StandardOutput=journal+console
+WorkingDirectory=/root/
 
 [Install]
 WantedBy=multi-user.target
