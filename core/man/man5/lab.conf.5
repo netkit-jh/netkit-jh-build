@@ -233,6 +233,9 @@ For more information, see
 Shell scripts can be created to be ran at the end of a machine's boot phase or
 the start of its shutdown phase.
 The scripts are interpreted with Bash and do not need their executable bit set.
+Their working directory is
+.IR /root ,
+however it is good practice to use absolute paths in them where possible.
 See
 .I /etc/netkit/netkit-phase2
 for how exactly this is implemented.

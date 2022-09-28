@@ -6,7 +6,8 @@ Before=shutdown.target
 Type=oneshot
 ExecStart=/etc/netkit/netkit-phase1 start
 ExecStartPost=/etc/netkit/netkit-phase2 start
-StandardOutput=journal+console 
+StandardOutput=journal+console
+WorkingDirectory=/root/
 
 [Install]
 WantedBy=shutdown.target
