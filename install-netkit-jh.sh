@@ -325,6 +325,7 @@ if [ -z "$no_packages" ]; then
       "jq"           # For update checking via the GitHub API
       "lsof"         # To find unused virtual network hubs
       "make"         # Parallel lab start
+      "man-db"       # For viewing Netkit-JH man pages
       "util-linux"   # kill, getopt, mount, etc (should already be installed)
       "xterm"        # Default terminal emulator for Netkit
    )
