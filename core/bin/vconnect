@@ -102,7 +102,7 @@ open_terminal() {
          term_cmd=( "xterm" "-e" );;
    esac
 
-   nohup "${term_cmd[@]}" tmux -L netkit attach -t "$vhost" > /dev/null 2>&1 &
+   nohup "${term_cmd[@]}" tmux -L netkit attach -t "=$vhost" > /dev/null 2>&1 &
 }
 
 
@@ -115,7 +115,7 @@ open_terminal() {
 ###############################################################################
 tmux_connect() {
    local vhost=$1
-   tmux -L netkit attach -t="$vhost"
+   tmux -L netkit attach -t "=$vhost"
 }
 
 
@@ -222,15 +222,15 @@ if [ -n "$kill" ]; then
    for vhost in "${vhosts[@]}"; do
       unset killed
 
-      if tmux -L netkit has-session -t "$vhost" 2>/dev/null; then
+      if tmux -L netkit has-session -t "=$vhost" 2>/dev/null; then
          echo "Killing tmux session '$vhost'"
-         tmux -L netkit kill-session -t "$vhost"
+         tmux -L netkit kill-session -t "=$vhost"
          killed=1
       fi
 
-      if tmux -L netkit has-session -t "$vhost-dead" 2>/dev/null; then
+      if tmux -L netkit has-session -t "=$vhost-dead" 2>/dev/null; then
          echo "Killing tmux session '$vhost-dead'"
-         tmux -L netkit kill-session -t "$vhost-dead"
+         tmux -L netkit kill-session -t "=$vhost-dead"
          killed=1
       fi
 
@@ -253,7 +253,7 @@ echo -n "Connecting to '$vhost'."
 
 # Test that the tmux session exists retry_count number of times.
 attempts=0
-while ! tmux -L netkit has-session -t="$vhost" 2> /dev/null; do
+while ! tmux -L netkit has-session -t "=$vhost" 2> /dev/null; do
    ((++attempts))
 
    if [ "$attempts" -eq "$retry_count" ]; then

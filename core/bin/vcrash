@@ -373,14 +373,14 @@ for vhost in "${vhosts[@]}"; do
       # successfully shut down (if the previous commands returned 0).
 
       # Kill tmux sessions
-      if tmux -L netkit has-session -t "$vhost" 2>/dev/null; then
+      if tmux -L netkit has-session -t "=$vhost" 2>/dev/null; then
          echo "Killing tmux session '$vhost'"
-         tmux -L netkit kill-session -t "$vhost"
+         tmux -L netkit kill-session -t "=$vhost"
       fi
 
-      if tmux -L netkit has-session -t "$vhost-dead" 2>/dev/null; then
+      if tmux -L netkit has-session -t "=$vhost-dead" 2>/dev/null; then
          echo "Killing tmux session '$vhost-dead'"
-         tmux -L netkit kill-session -t "$vhost-dead"
+         tmux -L netkit kill-session -t "=$vhost-dead"
       fi
 
       # Remove filesystem (.disk file) by default
