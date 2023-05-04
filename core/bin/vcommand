@@ -90,7 +90,7 @@ tmux_command() {
 
    local target="$session:netkit-vhost.0"
 
-   if ! tmux -L netkit has-session -t "$session" > /dev/null 2>&1; then
+   if ! tmux -L netkit has-session -t "=$session" > /dev/null 2>&1; then
       echo 1>&2 "tmux session does not exist for this machine"
       exit 1
    fi
@@ -104,13 +104,13 @@ tmux_command() {
    fi
 
    # Run command prefixed with a NOP of the UUID for output harvesting
-   tmux -L netkit send-keys -t "$target" -- ": $cmd_uuid; $cmd" Enter
+   tmux -L netkit send-keys -t "=$target" -- ": $cmd_uuid; $cmd" Enter
 
    # Wait for output to be generated
    sleep -- "$timeout"
 
    # Get output buffer
-   tmux_buffer=$(tmux -L netkit capture-pane -t "$target" -S - -p)
+   tmux_buffer=$(tmux -L netkit capture-pane -t "=$target" -S - -p)
 
    [ -n "$verbose" ] && printf "Buffer after command:\n%s\n" "$tmux_buffer"
 

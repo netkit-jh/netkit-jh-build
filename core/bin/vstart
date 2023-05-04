@@ -796,7 +796,7 @@ if [ -z "$just_print" ]; then
 
    if [ "$VM_CON0" = "tmux" ]; then
       # Check if tmux session already exists
-      if tmux -L netkit has-session -t "$vhost" > /dev/null 2>&1; then
+      if tmux -L netkit has-session -t "=$vhost" > /dev/null 2>&1; then
          error "tmux session already exists for machine '$vhost'; kill with 'vconnect --kill'"
          exit 1
       fi
